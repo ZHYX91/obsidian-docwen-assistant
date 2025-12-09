@@ -1,0 +1,36 @@
+{
+  "name": "docwen-assistant",
+  "version": "1.0.0",
+  "description": "Obsidian plugin for launching DocWen converter with current file path",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --watch",
+    "build": "tsc --noEmit && esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote --minify",
+    "build:quick": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote",
+    "clean": "if exist dist rmdir /s /q dist && if exist release rmdir /s /q release",
+    "prebuild": "if not exist dist mkdir dist",
+    "version": "node version-bump.js && git add manifest.json versions.json",
+    "release": "node scripts/build.js"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "docwen",
+    "document",
+    "converter"
+  ],
+  "author": "ZhengYX",
+"license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "esbuild": "^0.25.11",
+    "obsidian": "^1.10.0",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZHYX91/docwen-obsidian.git"
+  }
+}
