@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md)
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
 
 # DocWen Assistant - Плагин Obsidian
 
@@ -14,7 +14,7 @@
 - ✅ **Браузер файлов**: Легко выберите исполняемый файл через диалог просмотра
 - ✅ **Обратная связь об успехе**: Дружественные уведомления при запуске
 - ✅ **Управление единственным экземпляром**: Автоматически отправляет файл в работающий экземпляр
-- ✅ **Многоязычная поддержка**: Поддержка 8 языков (zh-CN, zh-TW, en, de, fr, ru, pt, ja)
+- ✅ **Многоязычная поддержка**: Поддержка 11 языков (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
 
 ---
 
@@ -234,7 +234,7 @@ docwen-obsidian/
 
 ## 📜 Лицензия
 
-Этот проект лицензирован под лицензией ISC.
+Этот проект лицензирован под лицензией MIT.
 
 ### Контакты
 

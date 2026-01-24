@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md)
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
 
 # DocWen アシスタント - Obsidian プラグイン
 
@@ -14,7 +14,7 @@
 - ✅ **ファイルブラウザ**: 参照ダイアログで実行ファイルを簡単に選択
 - ✅ **成功フィードバック**: 起動時のフレンドリーな通知
 - ✅ **シングルインスタンス管理**: 実行中のインスタンスにファイルを自動送信
-- ✅ **多言語サポート**: 8言語をサポート (zh-CN, zh-TW, en, de, fr, ru, pt, ja)
+- ✅ **多言語サポート**: 11言語をサポート (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
 
 ---
 
@@ -234,7 +234,7 @@ docwen-obsidian/
 
 ## 📜 ライセンス
 
-このプロジェクトは ISC ライセンスの下でライセンスされています。
+このプロジェクトは MIT ライセンスの下でライセンスされています。
 
 ### 連絡先
 

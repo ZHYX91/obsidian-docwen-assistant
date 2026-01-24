@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md)
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
 
 # DocWen 助手 - Obsidian 插件
 
@@ -14,7 +14,7 @@
 - ✅ **文件选择器**: 通过浏览对话框轻松选择可执行文件
 - ✅ **成功反馈**: 启动时显示友好的通知消息
 - ✅ **单实例管理**: 自动向运行中的实例发送文件
-- ✅ **多语言支持**: 支持 8 种语言（简中、繁中、英、德、法、俄、葡、日）
+- ✅ **多语言支持**: 支持 11 种语言（简中、繁中、英、德、法、俄、葡、日、西、韩、越）
 
 ---
 
@@ -234,7 +234,7 @@ docwen-obsidian/
 
 ## 📜 许可证
 
-本项目使用 ISC 许可证。
+本项目使用 MIT 许可证。
 
 ### 联系方式
 

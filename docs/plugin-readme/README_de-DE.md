@@ -1,3 +1,5 @@
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
+
 # DocWen Assistant
 
 Obsidian-Plugin zum Starten des DocWen-Konverters.
@@ -6,13 +8,13 @@ Obsidian-Plugin zum Starten des DocWen-Konverters.
 
 1. Kopieren Sie diesen Ordner in das Verzeichnis `.obsidian/plugins/` Ihres Obsidian-Vaults
 2. Laden Sie die Plugins in den Obsidian-Einstellungen neu
-3. Aktivieren Sie das Plugin „DocWen Assistant"
+3. Aktivieren Sie das Plugin "DocWen Assistant"
 4. Konfigurieren Sie den Pfad zur ausführbaren Datei in den Plugin-Einstellungen
 
 ## Verwendung
 
 - Klicken Sie auf das Dokumentsymbol in der linken Seitenleiste, um DocWen zu starten
-- Verwenden Sie die Befehlspalette (Strg/Cmd + P) und suchen Sie nach „DocWen"
+- Verwenden Sie die Befehlspalette (Strg/Cmd + P) und suchen Sie nach "DocWen"
 - Wenn eine Datei geöffnet ist, wird ihr Pfad automatisch an DocWen übergeben
 
 ## Enthaltene Dateien
@@ -23,3 +25,6 @@ Obsidian-Plugin zum Starten des DocWen-Konverters.
 - `README*.md` - Dokumentation
 
 Weitere Informationen finden Sie auf der Plugin-Einstellungsseite.
+
+Repo: https://github.com/ZHYX91/docwen-obsidian
+License: MIT

@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md)
+[English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
 
 # DocWen Assistent - Obsidian Plugin
 
@@ -14,7 +14,7 @@ Ein Obsidian-Plugin für die [DocWen](https://github.com/ZHYX91/docwen) Desktop-
 - ✅ **Datei-Browser**: Einfache Auswahl der ausführbaren Datei über Durchsuchen-Dialog
 - ✅ **Erfolgsrückmeldung**: Freundliche Benachrichtigungen beim Start
 - ✅ **Einzelinstanz-Verwaltung**: Sendet Dateien automatisch an laufende Instanz
-- ✅ **Mehrsprachige Unterstützung**: Unterstützt 8 Sprachen (zh-CN, zh-TW, en, de, fr, ru, pt, ja)
+- ✅ **Mehrsprachige Unterstützung**: Unterstützt 11 Sprachen (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
 
 ---
 
@@ -234,7 +234,7 @@ docwen-obsidian/
 
 ## 📜 Lizenz
 
-Dieses Projekt ist unter der ISC-Lizenz lizenziert.
+Dieses Projekt ist unter der MIT-Lizenz lizenziert.
 
 ### Kontakt
 

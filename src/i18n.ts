@@ -1,15 +1,18 @@
 /**
  * DocWen Obsidian Plugin - Internationalization Module
  * 
- * Supports 8 languages matching the main DocWen application:
+ * Supports 11 languages matching the main DocWen application:
  * - zh-cn: Simplified Chinese
  * - zh-tw: Traditional Chinese
  * - en: English
  * - de: German
  * - fr: French
  * - ru: Russian
- * - pt: Portuguese
+ * - pt: Portuguese (Brazil)
  * - ja: Japanese
+ * - es: Spanish
+ * - ko: Korean
+ * - vi: Vietnamese
  */
 
 // Translation type definition
@@ -334,6 +337,111 @@ const translations: Record<string, Translations> = {
     noticeCommandFailed: "コマンドの送信に失敗しました。DocWen プログラムを確認してください。",
     noticePathUpdated: "パスを更新しました",
   },
+
+  "es": {
+    ribbonTooltip: "Iniciar DocWen",
+    commandLaunch: "Iniciar DocWen",
+    commandLaunchWithFile: "Iniciar DocWen con el archivo actual",
+    
+    settingsTitle: "Ajustes de DocWen Assistant",
+    settingsExePath: "Ruta del ejecutable",
+    settingsExePathDesc: "Introduce la ruta completa al programa DocWen (p. ej., DocWen.exe).",
+    settingsExePathPlaceholder: "p. ej., C:\\Users\\TuNombre\\Desktop\\DocWen.exe",
+    settingsBrowse: "Examinar...",
+    settingsPathStatus: "Estado de la ruta",
+    settingsPathValid: "✓ La ruta es válida",
+    settingsPathInvalid: "✗ Error: El archivo no existe",
+    settingsPathNotSet: "Ruta no configurada",
+    settingsPathNotExe: "⚠ Advertencia: La extensión del archivo no es .exe",
+    settingsPathNotFile: "✗ Error: La ruta no apunta a un archivo",
+    settingsUsageTitle: "Uso",
+    settingsUsageList: `
+      <ul>
+        <li>Haz clic en el icono de documento en la barra lateral izquierda para iniciar DocWen</li>
+        <li>Usa la paleta de comandos (Ctrl/Cmd + P) y busca "DocWen"</li>
+        <li>Si hay un archivo abierto, su ruta se pasará automáticamente a DocWen</li>
+      </ul>
+    `,
+    
+    noticePathNotSet: "Primero configura la ruta del ejecutable en los ajustes del plugin.",
+    noticePathNotExist: "El ejecutable no existe. Revisa la configuración de la ruta.",
+    noticeLaunched: "DocWen iniciado",
+    noticeLaunchedWithFile: "DocWen iniciado (con archivo: {filename})",
+    noticeFileAdded: "Archivo añadido: {filename}",
+    noticeWindowActivated: "Ventana de DocWen activada",
+    noticeCommandFailed: "No se pudo enviar el comando. Revisa el programa DocWen.",
+    noticePathUpdated: "Ruta actualizada",
+  },
+
+  "ko": {
+    ribbonTooltip: "DocWen 실행",
+    commandLaunch: "DocWen 실행",
+    commandLaunchWithFile: "현재 파일로 DocWen 실행",
+    
+    settingsTitle: "DocWen Assistant 설정",
+    settingsExePath: "실행 파일 경로",
+    settingsExePathDesc: "DocWen 프로그램(예: DocWen.exe)의 전체 경로를 입력하세요.",
+    settingsExePathPlaceholder: "예: C:\\Users\\YourName\\Desktop\\DocWen.exe",
+    settingsBrowse: "찾아보기...",
+    settingsPathStatus: "경로 상태",
+    settingsPathValid: "✓ 경로가 유효합니다",
+    settingsPathInvalid: "✗ 오류: 파일이 존재하지 않습니다",
+    settingsPathNotSet: "경로가 설정되지 않았습니다",
+    settingsPathNotExe: "⚠ 경고: 파일 확장자가 .exe가 아닙니다",
+    settingsPathNotFile: "✗ 오류: 경로가 파일을 가리키지 않습니다",
+    settingsUsageTitle: "사용 방법",
+    settingsUsageList: `
+      <ul>
+        <li>왼쪽 사이드바의 문서 아이콘을 클릭하여 DocWen을 실행합니다</li>
+        <li>명령 팔레트(Ctrl/Cmd + P)에서 "DocWen"을 검색합니다</li>
+        <li>파일이 열려 있으면 해당 경로가 자동으로 DocWen에 전달됩니다</li>
+      </ul>
+    `,
+    
+    noticePathNotSet: "먼저 플러그인 설정에서 실행 파일 경로를 지정하세요.",
+    noticePathNotExist: "실행 파일이 존재하지 않습니다. 경로 설정을 확인하세요.",
+    noticeLaunched: "DocWen을 실행했습니다",
+    noticeLaunchedWithFile: "DocWen을 실행했습니다(파일: {filename})",
+    noticeFileAdded: "파일이 추가되었습니다: {filename}",
+    noticeWindowActivated: "DocWen 창을 활성화했습니다",
+    noticeCommandFailed: "명령 전송에 실패했습니다. DocWen 프로그램을 확인하세요.",
+    noticePathUpdated: "경로가 업데이트되었습니다",
+  },
+
+  "vi": {
+    ribbonTooltip: "Khởi chạy DocWen",
+    commandLaunch: "Khởi chạy DocWen",
+    commandLaunchWithFile: "Khởi chạy DocWen với tệp hiện tại",
+    
+    settingsTitle: "Cài đặt DocWen Assistant",
+    settingsExePath: "Đường dẫn file thực thi",
+    settingsExePathDesc: "Nhập đường dẫn đầy đủ tới chương trình DocWen (ví dụ: DocWen.exe).",
+    settingsExePathPlaceholder: "ví dụ: C:\\Users\\YourName\\Desktop\\DocWen.exe",
+    settingsBrowse: "Duyệt...",
+    settingsPathStatus: "Trạng thái đường dẫn",
+    settingsPathValid: "✓ Đường dẫn hợp lệ",
+    settingsPathInvalid: "✗ Lỗi: Tệp không tồn tại",
+    settingsPathNotSet: "Chưa đặt đường dẫn",
+    settingsPathNotExe: "⚠ Cảnh báo: Phần mở rộng không phải .exe",
+    settingsPathNotFile: "✗ Lỗi: Đường dẫn không trỏ tới tệp",
+    settingsUsageTitle: "Cách dùng",
+    settingsUsageList: `
+      <ul>
+        <li>Nhấn biểu tượng tài liệu ở thanh bên trái để khởi chạy DocWen</li>
+        <li>Dùng command palette (Ctrl/Cmd + P) và tìm "DocWen"</li>
+        <li>Nếu đang mở một tệp, đường dẫn của tệp sẽ được tự động truyền sang DocWen</li>
+      </ul>
+    `,
+    
+    noticePathNotSet: "Vui lòng đặt đường dẫn file thực thi trong cài đặt plugin trước.",
+    noticePathNotExist: "Không tồn tại file thực thi. Vui lòng kiểm tra cấu hình đường dẫn.",
+    noticeLaunched: "Đã khởi chạy DocWen",
+    noticeLaunchedWithFile: "Đã khởi chạy DocWen (kèm tệp: {filename})",
+    noticeFileAdded: "Đã thêm tệp: {filename}",
+    noticeWindowActivated: "Đã kích hoạt cửa sổ DocWen",
+    noticeCommandFailed: "Gửi lệnh thất bại. Vui lòng kiểm tra chương trình DocWen.",
+    noticePathUpdated: "Đã cập nhật đường dẫn",
+  },
 };
 
 // Language aliases mapping
@@ -348,6 +456,10 @@ const languageAliases: Record<string, string> = {
   "ru-ru": "ru",
   "pt-br": "pt",
   "ja-jp": "ja",
+  "es-es": "es",
+  "es-419": "es",
+  "ko-kr": "ko",
+  "vi-vn": "vi",
 };
 
 // Current locale cache
