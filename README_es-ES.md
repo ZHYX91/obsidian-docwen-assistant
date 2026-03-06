@@ -7,14 +7,17 @@ Un plugin de Obsidian para la aplicación de escritorio [DocWen](https://github.
 ## ✨ Funciones
 
 ### Funciones principales
-- ✅ **Acceso rápido en la barra lateral**: Añade un icono a la barra lateral de Obsidian para abrir DocWen con un clic
-- ✅ **Paso automático de archivos**: Pasa automáticamente la ruta del archivo actualmente abierto a DocWen
-- ✅ **Integración con la paleta de comandos**: Acceso rápido mediante Ctrl/Cmd + P
-- ✅ **Validación de ruta**: Validación en tiempo real de la ruta del ejecutable
-- ✅ **Selector de archivo**: Selecciona fácilmente el ejecutable mediante el cuadro de diálogo de exploración
-- ✅ **Confirmación de éxito**: Notificaciones amigables al iniciar
-- ✅ **Gestión de instancia única**: Envía el archivo a la instancia en ejecución automáticamente
-- ✅ **Soporte multilenguaje**: Admite 11 idiomas (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
+- ✅ **Inicio rápido desde la barra lateral**: añade un icono en la barra lateral para iniciar con un clic
+- ✅ **Envío automático de archivos**: envía automáticamente la ruta del archivo abierto a DocWen
+- ✅ **Integración con la paleta de comandos**: acceso rápido con Ctrl/Cmd + P
+- ✅ **Exportación en segundo plano (CLI)**: exporta a Word/Excel/Markdown con DocWenCLI.exe sin abrir la GUI (pueden aparecer selectores cuando sea necesario)
+- ✅ **Numeración de títulos (CLI)**: agrega/elimina numeración de títulos Markdown con DocWenCLI.exe
+- ✅ **Comprobación doctor (CLI)**: diagnóstico/validación del entorno con un clic
+- ✅ **Validación de ruta**: validación en tiempo real de la ruta del ejecutable
+- ✅ **Selector de archivos**: selecciona el ejecutable desde un diálogo de exploración
+- ✅ **Confirmación de éxito**: notificaciones amigables al iniciar
+- ✅ **Gestión de instancia única**: envía el archivo a la instancia en ejecución
+- ✅ **Soporte multilingüe**: 11 idiomas (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
 ---
 
@@ -22,19 +25,17 @@ Un plugin de Obsidian para la aplicación de escritorio [DocWen](https://github.
 
 ### Requisitos previos
 
-1. **Instalar Node.js**
+1. **Instala Node.js**
    - Visita el [sitio oficial de Node.js](https://nodejs.org/)
    - Descarga e instala la versión LTS
    - Verifica la instalación: `node -v` y `npm -v`
 
-2. **Instalar dependencias**
+2. **Instala dependencias**
    ```bash
    npm install
    ```
 
-### Modo de desarrollo
-
-Usa el modo watch durante el desarrollo para recompilar automáticamente cuando cambie el código:
+### Modo desarrollo
 
 ```bash
 npm run dev
@@ -52,52 +53,46 @@ npm run build:quick
 npm run build
 ```
 
-#### Compilación de lanzamiento (empaquetado automático)
+#### Compilación de release (empaquetado automático)
 ```bash
 npm run release
-# O ejecútalo directamente: node scripts/build.js
+# O ejecutar directamente: node scripts/build.js
 ```
-
-Este comando:
-1. Compila el código TypeScript
-2. Crea el directorio de lanzamiento
-3. Copia los archivos necesarios
-4. Genera las instrucciones de uso
 
 ---
 
 ## 🚀 Instalar en Obsidian
 
-### Método 1: Usar el script de lanzamiento (recomendado)
+### Método 1: Usar el script de release (recomendado)
 
-1. Ejecuta la compilación de lanzamiento:
+1. Ejecuta:
    ```bash
    npm run release
    ```
 
-2. Copia la carpeta `release/docwen-assistant` a:
+2. Copia la carpeta `release/docwen-assistant` en:
    ```
    <Tu Vault>/.obsidian/plugins/
    ```
 
 3. En Obsidian:
    - Abre `Settings` → `Community plugins`
-   - Haz clic en `Reload plugins`
-   - Habilita `DocWen Assistant`
+   - Pulsa `Reload plugins`
+   - Activa `DocWen Assistant`
 
 ### Método 2: Instalación manual
 
-1. Compila el plugin:
+1. Compila:
    ```bash
    npm run build
    ```
 
-2. Crea el directorio del plugin:
+2. Crea el directorio:
    ```
    <Tu Vault>/.obsidian/plugins/docwen-assistant/
    ```
 
-3. Copia estos archivos al directorio:
+3. Copia:
    - `main.js`
    - `manifest.json`
 
@@ -107,15 +102,15 @@ Este comando:
 
 ## ⚙️ Configuración
 
-1. Abre `Settings` → `Community plugins` → `DocWen Assistant` en Obsidian
+1. Abre Obsidian `Settings` → `Community plugins` → `DocWen Assistant`
 
-2. Configura la ruta del ejecutable:
-   - **Opción 1**: Introduce la ruta directamente
-   - **Opción 2**: Haz clic en el botón `Browse...` para seleccionar el archivo
+2. Configura la ruta del ejecutable GUI o CLI (uno es suficiente):
+   - Ruta completa a `DocWen.exe` o `DocWenCLI.exe`
+   - Si solo configuras uno, el plugin intenta detectar el otro en la misma carpeta
 
-3. Validación de la ruta:
-   - ✓ Verde indica una ruta válida
-   - ✗ Rojo indica una ruta inválida o que el archivo no existe
+3. Validación de ruta:
+   - ✓ Verde indica ruta válida
+   - ✗ Rojo indica ruta inválida o archivo no encontrado
 
 ---
 
@@ -123,58 +118,64 @@ Este comando:
 
 ### Iniciar DocWen
 
-Tres formas de iniciar:
+Tres maneras de iniciar:
 
-1. **Icono en la barra lateral**
+1. **Icono de la barra lateral**
    - Haz clic en el icono de documento en la barra lateral izquierda
 
 2. **Paleta de comandos**
-   - Pulsa `Ctrl/Cmd + P` para abrir la paleta de comandos
-   - Busca \"DocWen\" y selecciona \"Iniciar DocWen\"
+   - Pulsa `Ctrl/Cmd + P` y busca “Iniciar DocWen”
 
 3. **Iniciar con el archivo actual**
-   - Busca \"DocWen\" en la paleta de comandos y selecciona \"Iniciar DocWen con el archivo actual\"
-   - Solo está disponible cuando hay un archivo abierto
+   - Busca “Iniciar DocWen con el archivo actual”
+   - Solo aparece cuando hay un archivo abierto
 
-### Paso automático de archivos
+### Exportación en segundo plano (CLI, sin abrir GUI)
 
-- Si hay un archivo Markdown abierto, el plugin pasa automáticamente su ruta completa a DocWen
-- Si no hay ningún archivo abierto, solo inicia el programa DocWen
+Busca en la paleta de comandos:
+- “Exportar a Word (Docx) en segundo plano” — para archivos `.md`/`.markdown`/`.txt`, selecciona una plantilla
+- “Exportar a Excel (XLSX) en segundo plano” — para archivos `.md`/`.markdown`/`.txt`, selecciona una plantilla
+- “Exportar a Markdown (MD) en segundo plano” — si hay tipos de optimización disponibles para el tipo de archivo y el idioma, selecciona uno (o sáltalo)
+
+Requiere `DocWenCLI.exe`.
+
+### Numeración de títulos (CLI)
+
+Busca:
+- “Agregar numeración a títulos Markdown” — selecciona un esquema de numeración
+- “Eliminar numeración de títulos Markdown”
+
+Solo disponible cuando hay un archivo `.md` abierto. Requiere `DocWenCLI.exe`.
+
+### Comprobación doctor (CLI)
+
+Busca:
+- “Comprobación doctor de DocWen”
+
+Requiere `DocWenCLI.exe`.
+
+### Envío automático de archivos
+
+- Si hay un archivo abierto, el plugin envía automáticamente su ruta completa a DocWen
+- Si no hay archivo abierto, solo inicia DocWen
 
 ### Gestión de instancia única
 
-- **Primer clic** → Inicia DocWen y pasa el archivo actual
-- **Clic de nuevo (con archivo)** → Sustituye por el nuevo archivo (modo de archivo único)
+- **Primer clic** → Inicia DocWen y envía el archivo actual
+- **Clic de nuevo (con archivo)** → Reemplaza por el nuevo archivo (modo de archivo único)
 - **Clic de nuevo (sin archivo)** → Activa la ventana de DocWen
 
 ---
 
 ## 🛠️ Scripts de desarrollo
 
-### Comandos disponibles
-
 | Comando | Descripción |
 |---------|-------------|
-| `npm run dev` | Modo de desarrollo (watch) |
-| `npm run build` | Compilación completa (verificación de tipos + minificación) |
-| `npm run build:quick` | Compilación rápida (sin verificación de tipos) |
-| `node version-bump.js [patch\|minor\|major]` | Actualizar número de versión |
-| `npm run release` | Compilar paquete de lanzamiento |
-
-### Gestión de versiones
-
-Actualizar número de versión:
-
-```bash
-# Versión de parche (1.0.0 → 1.0.1)
-node version-bump.js patch
-
-# Versión menor (1.0.0 → 1.1.0)
-node version-bump.js minor
-
-# Versión mayor (1.0.0 → 2.0.0)
-node version-bump.js major
-```
+| `npm run dev` | Modo desarrollo (watch) |
+| `npm run build` | Compilación completa (tipos + minificar) |
+| `npm run build:quick` | Compilación rápida (sin tipos) |
+| `node version-bump.js [patch\|minor\|major]` | Actualizar versión |
+| `npm run release` | Construir paquete de release |
 
 ---
 
@@ -182,30 +183,28 @@ node version-bump.js major
 
 ```
 docwen-obsidian/
-├── src/                 # 📁 Directorio de código fuente
+├── src/                 # Código fuente
 │   ├── main.ts          # Lógica principal del plugin
 │   ├── settings.ts      # Página de ajustes
-│   ├── i18n.ts          # Módulo de internacionalización
-│   ├── utils/           # Funciones utilitarias (futuro)
-│   ├── types/           # Definiciones de tipos (futuro)
-│   └── commands/        # Módulos de comandos (futuro)
-├── dist/                # 🔨 Directorio de salida de la compilación
-│   └── main.js          # Código compilado
-├── scripts/             # 📜 Scripts de compilación
-│   ├── build.bat        # Compilación con un clic en Windows
-│   ├── build.js         # Script de compilación multiplataforma
-│   └── README.md        # Guía de uso de scripts
-├── release/             # 📦 Artefactos de lanzamiento
-├── .vscode/             # 🛠️ Configuración del editor
-│   └── settings.json    # Ajustes de VS Code
-├── manifest.json        # Manifest del plugin
-├── package.json         # Configuración del proyecto
-├── tsconfig.json        # Configuración de TypeScript
-├── .eslintrc.json       # Configuración de ESLint
-├── .gitignore          # Archivo gitignore
-├── version-bump.js     # Script de gestión de versiones
-├── README.md           # Este documento (Inglés)
-└── README_zh-CN.md     # Documentación en chino
+│   ├── i18n.ts          # Internacionalización
+│   └── utils/
+│       └── suggest-modal.ts
+├── dist/                # Salida de compilación
+│   └── main.js
+├── docs/                # Documentación
+│   └── plugin-readme/    # README para usuarios (multi-idioma)
+├── scripts/             # Scripts de build
+│   ├── build.bat
+│   ├── build.js
+│   └── README.md
+├── release/             # Artefactos de release
+├── manifest.json
+├── package.json
+├── tsconfig.json
+├── eslint.config.cjs
+├── .gitignore
+├── version-bump.js
+└── README*.md
 ```
 
 ---
@@ -213,35 +212,28 @@ docwen-obsidian/
 ## 🐛 Solución de problemas
 
 ### El plugin no carga
-
-1. Comprueba que `main.js` y `manifest.json` se hayan copiado correctamente
-2. Haz clic en `Reload plugins` en Obsidian
-3. Revisa la consola de desarrollador (`Ctrl/Cmd + Shift + I`) para ver errores
+1. Verifica que `main.js` y `manifest.json` se han copiado correctamente
+2. Pulsa `Reload plugins` en Obsidian
+3. Revisa la consola (`Ctrl/Cmd + Shift + I`)
 
 ### No se puede iniciar DocWen
+1. Verifica la ruta del ejecutable
+2. Confirma que el estado de ruta aparece en verde ✓
+3. Verifica permisos de ejecución
 
-1. Comprueba si la ruta del ejecutable es correcta
-2. Confirma que el estado de la ruta se muestra en verde ✓
-3. Confirma que el ejecutable tiene permisos adecuados
-
-### La ruta del archivo no se pasa
-
-1. Confirma que hay un archivo abierto
-2. Comprueba si la ruta contiene caracteres especiales
-3. Revisa los logs de consola para ver los argumentos enviados
+### No se envía la ruta del archivo
+1. Asegúrate de que hay un archivo abierto
+2. Revisa si la ruta contiene caracteres especiales
+3. Revisa el log/console para ver los argumentos
 
 ---
 
 ## 📜 Licencia
 
-Este proyecto está bajo la licencia MIT.
+Este proyecto está licenciado bajo la Licencia MIT.
 
 ### Contacto
 
 - **GitHub**: https://github.com/ZHYX91/docwen-obsidian
-- **Proyecto principal DocWen**: https://github.com/ZHYX91/docwen
-- **Contacto del autor**: zhengyx91@hotmail.com
-
----
-
-**Autor**: ZhengYX
+- **Proyecto DocWen**: https://github.com/ZHYX91/docwen
+- **Autor**: zhengyx91@hotmail.com

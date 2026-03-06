@@ -1,3 +1,12 @@
+# ==============================
+# 排除所有 . 开头的文件和文件夹
+# ==============================
+.*
+# 白名单：需要提交的 dot 文件
+!.gitignore
+!.gitattributes
+!.editorconfig
+
 # 编译输出
 main.js
 *.js.map
@@ -5,12 +14,7 @@ main.js
 # Node 模块
 node_modules/
 
-# 开发工具
-.vscode/
-.idea/
-
 # 操作系统文件
-.DS_Store
 Thumbs.db
 
 # 日志文件
@@ -22,13 +26,9 @@ yarn-error.log*
 # 临时文件
 *.tmp
 *.temp
-.cache/
 
 # 构建输出
 dist/
 build/
 release/
 
-# 环境配置
-.env
-.env.local

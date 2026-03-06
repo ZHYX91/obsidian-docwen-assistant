@@ -10,11 +10,14 @@ Un plugin Obsidian pour l'application de bureau [DocWen](https://github.com/ZHYX
 - ✅ **Lancement rapide depuis la barre latérale**: Ajoutez une icône à la barre latérale d'Obsidian pour un lancement en un clic
 - ✅ **Transmission automatique de fichiers**: Transmet automatiquement le chemin du fichier actuellement ouvert à DocWen
 - ✅ **Intégration à la palette de commandes**: Accès rapide via Ctrl/Cmd + P
+- ✅ **Export en arrière-plan (CLI)**: Exporter vers Word/Excel/Markdown via DocWenCLI.exe sans ouvrir l'interface GUI (un sélecteur peut apparaître si nécessaire)
+- ✅ **Numérotation des titres (CLI)**: Ajouter/supprimer la numérotation des titres Markdown via DocWenCLI.exe
+- ✅ **Vérification doctor (CLI)**: Vérification de l'environnement/diagnostic en un clic
 - ✅ **Validation du chemin**: Validation en temps réel du chemin de l'exécutable
 - ✅ **Explorateur de fichiers**: Sélectionnez facilement le fichier exécutable via la boîte de dialogue de navigation
 - ✅ **Retour de succès**: Notifications conviviales au lancement
 - ✅ **Gestion d'instance unique**: Envoie automatiquement le fichier à l'instance en cours d'exécution
-- ✅ **Support multilingue**: Prend en charge 11 langues (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
+- ✅ **Support multilingue**: Prend en charge 11 langues (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
 ---
 
@@ -109,9 +112,9 @@ Cette commande va:
 
 1. Ouvrez Obsidian `Paramètres` → `Plugins communautaires` → `DocWen Assistant`
 
-2. Configurez le chemin de l'exécutable:
-   - **Option 1**: Entrez le chemin directement
-   - **Option 2**: Cliquez sur le bouton `Parcourir...` pour sélectionner le fichier
+2. Configurez le chemin vers l'exécutable GUI ou CLI (un seul suffit) :
+   - Chemin complet vers `DocWen.exe` ou `DocWenCLI.exe`
+   - Si un seul est défini, l'autre sera détecté automatiquement dans le même dossier
 
 3. Validation du chemin:
    - ✓ Vert indique un chemin valide
@@ -136,9 +139,33 @@ Trois façons de lancer:
    - Recherchez "Lancer DocWen avec le fichier actuel" dans la palette de commandes
    - Disponible uniquement lorsqu'un fichier est ouvert
 
+### Export en arrière-plan (CLI, sans ouverture de GUI)
+
+Recherchez dans la palette de commandes :
+- « Exporter en Word (Docx) en arrière-plan » — pour les fichiers `.md`/`.markdown`/`.txt`, choisissez un modèle dans le sélecteur
+- « Exporter en Excel (XLSX) en arrière-plan » — pour les fichiers `.md`/`.markdown`/`.txt`, choisissez un modèle dans le sélecteur
+- « Exporter en Markdown (MD) en arrière-plan » — si des types d'optimisation sont disponibles pour le type de fichier et la langue, choisissez-en un (ou ignorez)
+
+Nécessite `DocWenCLI.exe`.
+
+### Numérotation des titres (CLI)
+
+Recherchez dans la palette de commandes :
+- « Ajouter la numérotation aux titres Markdown » — sélectionnez un schéma de numérotation
+- « Supprimer la numérotation des titres Markdown »
+
+Disponible uniquement lorsqu'un fichier `.md` est ouvert. Nécessite `DocWenCLI.exe`.
+
+### Vérification doctor (CLI)
+
+Recherchez dans la palette de commandes :
+- « Vérification doctor DocWen »
+
+Nécessite `DocWenCLI.exe`.
+
 ### Transmission automatique de fichiers
 
-- Si un fichier Markdown est ouvert, le plugin transmet automatiquement son chemin complet à DocWen
+- Si un fichier est ouvert, le plugin transmet automatiquement son chemin complet à DocWen
 - Si aucun fichier n'est ouvert, lance uniquement le programme DocWen
 
 ### Gestion d'instance unique
@@ -186,11 +213,12 @@ docwen-obsidian/
 │   ├── main.ts          # Logique principale du plugin
 │   ├── settings.ts      # Page des paramètres
 │   ├── i18n.ts          # Module d'internationalisation
-│   ├── utils/           # Fonctions utilitaires (futur)
-│   ├── types/           # Définitions de types (futur)
-│   └── commands/        # Modules de commandes (futur)
+│   └── utils/           # Modules utilitaires
+│       └── suggest-modal.ts # Sélecteur (modal)
 ├── dist/                # 🔨 Répertoire de sortie de construction
 │   └── main.js          # Code compilé
+├── docs/                # 📄 Documentation
+│   └── plugin-readme/    # README utilisateur (multi-langues)
 ├── scripts/             # 📜 Scripts de construction
 │   ├── build.bat        # Construction en un clic Windows
 │   ├── build.js         # Script de construction multiplateforme
@@ -201,7 +229,7 @@ docwen-obsidian/
 ├── manifest.json        # Manifeste du plugin
 ├── package.json         # Configuration du projet
 ├── tsconfig.json        # Configuration TypeScript
-├── .eslintrc.json       # Configuration ESLint
+├── eslint.config.cjs    # Configuration ESLint
 ├── .gitignore          # Fichier Git ignore
 ├── version-bump.js     # Script de gestion des versions
 ├── README.md           # Documentation anglaise

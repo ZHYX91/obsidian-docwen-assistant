@@ -9,13 +9,30 @@ Obsidian plugin for launching DocWen converter.
 1. Copy this folder to your Obsidian vault's `.obsidian/plugins/` directory
 2. Reload plugins in Obsidian settings
 3. Enable "DocWen Assistant" plugin
-4. Configure the executable path in plugin settings
+4. Configure `DocWen.exe` or `DocWenCLI.exe` path in plugin settings (either one is enough)
 
 ## Usage
 
 - Click the document icon in the left sidebar to launch DocWen
 - Use the command palette (Ctrl/Cmd + P) and search for "DocWen"
 - If a file is currently open, its path will be automatically passed to DocWen
+
+### Background Export (requires DocWenCLI.exe)
+
+- “Export to Word (Docx) in background” — for `.md`/`.markdown`/`.txt` files, select a template
+- “Export to Excel (XLSX) in background” — for `.md`/`.markdown`/`.txt` files, select a template
+- “Export to Markdown (MD) in background” — select an optimization type if available (or skip)
+
+### Heading Numbering (requires DocWenCLI.exe)
+
+- “Add numbering to Markdown headings” — select a numbering scheme
+- “Remove numbering from Markdown headings”
+
+Only available for `.md` files.
+
+### Diagnostics (requires DocWenCLI.exe)
+
+- “DocWen doctor check” — check environment and dependencies
 
 ## Files Included
 
@@ -26,5 +43,7 @@ Obsidian plugin for launching DocWen converter.
 
 For more information, see the plugin settings page.
 
-Repo: https://github.com/ZHYX91/docwen-obsidian
-License: MIT
+## Links
+
+- Plugin repo: https://github.com/ZHYX91/docwen-obsidian
+- DocWen repo: https://github.com/ZHYX91/docwen

@@ -9,13 +9,30 @@ Plugin Obsidian para iniciar o conversor DocWen.
 1. Copie esta pasta para o diretório `.obsidian/plugins/` do seu cofre Obsidian
 2. Recarregue os plugins nas configurações do Obsidian
 3. Ative o plugin "DocWen Assistant"
-4. Configure o caminho do executável nas configurações do plugin
+4. Configure o caminho para `DocWen.exe` ou `DocWenCLI.exe` nas configurações do plugin (um é suficiente)
 
 ## Uso
 
 - Clique no ícone de documento na barra lateral esquerda para iniciar o DocWen
 - Use a paleta de comandos (Ctrl/Cmd + P) e pesquise "DocWen"
 - Se um arquivo estiver aberto, seu caminho será automaticamente passado para o DocWen
+
+### Exportação em segundo plano (requer DocWenCLI.exe)
+
+- “Exportar para Word (Docx) em segundo plano” — para arquivos `.md`/`.markdown`/`.txt`, selecione um modelo
+- “Exportar para Excel (XLSX) em segundo plano” — para arquivos `.md`/`.markdown`/`.txt`, selecione um modelo
+- “Exportar para Markdown (MD) em segundo plano” — selecione um tipo de otimização se disponível (ou pule)
+
+### Numeração de títulos (requer DocWenCLI.exe)
+
+- “Adicionar numeração aos títulos Markdown” — selecione um esquema de numeração
+- “Remover numeração dos títulos Markdown”
+
+Disponível apenas para arquivos `.md`.
+
+### Diagnósticos (requer DocWenCLI.exe)
+
+- “Verificação doctor do DocWen” — verificar ambiente e dependências
 
 ## Arquivos Incluídos
 
@@ -26,5 +43,7 @@ Plugin Obsidian para iniciar o conversor DocWen.
 
 Para mais informações, consulte a página de configurações do plugin.
 
-Repo: https://github.com/ZHYX91/docwen-obsidian
-License: MIT
+## Links
+
+- Repositório do plugin: https://github.com/ZHYX91/docwen-obsidian
+- Repositório do DocWen: https://github.com/ZHYX91/docwen

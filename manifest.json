@@ -1,9 +1,9 @@
 {
   "id": "docwen-assistant",
   "name": "DocWen Assistant",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "minAppVersion": "0.12.0",
-  "description": "Launch DocWen converter from Obsidian and pass the current file path. Supports single instance management.",
+  "description": "Launch DocWen from Obsidian, pass current file path, and support background export/doctor via DocWenCLI. Includes single instance management.",
   "author": "ZhengYX",
   "authorUrl": "https://github.com/ZHYX91",
   "isDesktopOnly": true

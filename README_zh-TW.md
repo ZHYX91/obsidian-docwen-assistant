@@ -10,11 +10,14 @@
 - ✅ **側邊欄快捷啟動**: 在 Obsidian 左側欄新增圖示，一鍵啟動 DocWen
 - ✅ **自動檔案傳遞**: 自動將目前開啟的檔案路徑傳遞給 DocWen
 - ✅ **命令面板整合**: 透過 Ctrl/Cmd + P 快速存取外掛功能
+- ✅ **背景匯出（CLI）**: 透過 DocWenCLI.exe 在背景匯出為 Word/Excel/Markdown（需要時會彈出選擇器）
+- ✅ **標題序號（CLI）**: 透過 DocWenCLI.exe 為 Markdown 標題添加/清理序號
+- ✅ **doctor 自檢（CLI）**: 一鍵檢查 DocWen 環境與依賴
 - ✅ **路徑驗證**: 即時驗證可執行檔路徑的有效性
 - ✅ **檔案選擇器**: 透過瀏覽對話框輕鬆選擇可執行檔
 - ✅ **成功回饋**: 啟動時顯示友善的通知訊息
 - ✅ **單一實例管理**: 自動向執行中的實例傳送檔案
-- ✅ **多語言支援**: 支援 11 種語言（簡中、繁中、英、德、法、俄、葡、日、西、韓、越）
+- ✅ **多語言支援**: 支援 11 種語言（簡中、繁中、英、德、法、俄、葡、日、韓、西、越）
 
 ---
 
@@ -109,9 +112,9 @@ npm run release
 
 1. 開啟 Obsidian `設定` → `第三方外掛` → `DocWen Assistant`
 
-2. 設定可執行檔路徑:
-   - **方式 1**: 直接輸入路徑
-   - **方式 2**: 點擊 `瀏覽...` 按鈕選擇檔案
+2. 設定可執行檔路徑（二選一即可）:
+   - `DocWen.exe` 的完整路徑，或 `DocWenCLI.exe` 的完整路徑
+   - 若只填其中一個，外掛會嘗試從同目錄自動識別另一個
 
 3. 路徑驗證:
    - ✓ 綠色表示路徑有效
@@ -136,9 +139,33 @@ npm run release
    - 在命令面板搜尋「使用目前檔案啟動 DocWen」
    - 僅在有開啟檔案時可用
 
+### 背景匯出（不彈出 GUI）
+
+在命令面板中搜尋：
+- 「背景匯出為 Word（Docx）」 — 對 `.md`/`.markdown`/`.txt` 檔案會彈出模板選擇器
+- 「背景匯出為 Excel（XLSX）」 — 對 `.md`/`.markdown`/`.txt` 檔案會彈出模板選擇器
+- 「背景匯出為 Markdown（MD）」 — 若目前檔案類型與語言下有可用的優化類型，會彈出選擇器供選擇（也可跳過不選）
+
+需要 `DocWenCLI.exe`。
+
+### 標題序號（CLI）
+
+在命令面板中搜尋：
+- 「為 Markdown 標題添加序號」 — 從選擇器中選擇序號方案
+- 「清理 Markdown 標題序號」
+
+僅在開啟 `.md` 檔案時可用。需要 `DocWenCLI.exe`。
+
+### doctor 自檢
+
+在命令面板中搜尋：
+- 「DocWen doctor 自我檢查」
+
+需要 `DocWenCLI.exe`。
+
 ### 自動檔案傳遞
 
-- 如果有開啟的 Markdown 檔案，外掛會自動將完整路徑傳遞給 DocWen
+- 如果有開啟檔案，外掛會自動將完整路徑傳遞給 DocWen
 - 如果沒有開啟檔案，僅啟動 DocWen 程式
 
 ### 單一實例管理
@@ -186,11 +213,12 @@ docwen-obsidian/
 │   ├── main.ts          # 外掛主邏輯
 │   ├── settings.ts      # 設定頁面
 │   ├── i18n.ts          # 國際化模組
-│   ├── utils/           # 工具函式（未來擴充）
-│   ├── types/           # 型別定義（未來擴充）
-│   └── commands/        # 命令模組（未來擴充）
+│   └── utils/           # 工具模組
+│       └── suggest-modal.ts # 選擇器彈窗
 ├── dist/                # 🔨 建置輸出目錄
 │   └── main.js          # 編譯後的程式碼
+├── docs/                # 📄 文件
+│   └── plugin-readme/    # 使用者文件（多語言）
 ├── scripts/             # 📜 建置腳本
 │   ├── build.bat        # Windows 一鍵建置
 │   ├── build.js         # 跨平台建置腳本
@@ -201,7 +229,7 @@ docwen-obsidian/
 ├── manifest.json        # 外掛清單
 ├── package.json         # 專案設定
 ├── tsconfig.json        # TypeScript 設定
-├── .eslintrc.json       # ESLint 設定
+├── eslint.config.cjs    # ESLint 設定
 ├── .gitignore          # Git 忽略檔案
 ├── version-bump.js     # 版本管理腳本
 ├── README.md           # 英文文件

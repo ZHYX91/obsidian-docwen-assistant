@@ -10,11 +10,14 @@ An Obsidian plugin for the [DocWen](https://github.com/ZHYX91/docwen) desktop ap
 - ✅ **Sidebar Quick Launch**: Add an icon to the Obsidian sidebar for one-click launch
 - ✅ **Automatic File Passing**: Automatically pass the currently open file path to DocWen
 - ✅ **Command Palette Integration**: Quick access via Ctrl/Cmd + P
+- ✅ **Background Export (CLI)**: Export to Word/Excel/Markdown via DocWenCLI.exe without opening the GUI (pickers may appear when needed)
+- ✅ **Heading Numbering (CLI)**: Add/remove numbering for Markdown headings via DocWenCLI.exe
+- ✅ **Doctor Check (CLI)**: One-click environment/diagnostics check
 - ✅ **Path Validation**: Real-time validation of executable path
 - ✅ **File Browser**: Easily select executable file via browse dialog
 - ✅ **Success Feedback**: Friendly notifications on launch
 - ✅ **Single Instance Management**: Automatically sends file to running instance
-- ✅ **Multi-language Support**: Supports 11 languages (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
+- ✅ **Multi-language Support**: Supports 11 languages (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
 ---
 
@@ -109,9 +112,9 @@ This command will:
 
 1. Open Obsidian `Settings` → `Community plugins` → `DocWen Assistant`
 
-2. Configure executable path:
-   - **Option 1**: Enter path directly
-   - **Option 2**: Click `Browse...` button to select file
+2. Configure GUI or CLI executable path (either one is enough):
+   - Full path to `DocWen.exe` or `DocWenCLI.exe`
+   - If only one is set, the plugin tries to auto-detect the other in the same folder (e.g., detect `DocWenCLI.exe` next to `DocWen.exe`, and vice versa)
 
 3. Path validation:
    - ✓ Green indicates valid path
@@ -136,9 +139,33 @@ Three ways to launch:
    - Search "Launch DocWen with current file" in command palette
    - Only available when a file is open
 
+### Background Export (CLI, no GUI popup)
+
+Search in command palette:
+- “Export to Word (Docx) in background” — for `.md`/`.markdown`/`.txt` files, select a template from the picker
+- “Export to Excel (XLSX) in background” — for `.md`/`.markdown`/`.txt` files, select a template from the picker
+- “Export to Markdown (MD) in background” — if optimization types are available for the current file type and language, select one from the picker (or skip)
+
+Requires `DocWenCLI.exe`.
+
+### Heading Numbering (CLI)
+
+Search in command palette:
+- “Add numbering to Markdown headings” — select a numbering scheme from the picker
+- “Remove numbering from Markdown headings”
+
+Only available when a `.md` file is open. Requires `DocWenCLI.exe`.
+
+### Doctor Check (CLI)
+
+Search in command palette:
+- “DocWen doctor check”
+
+Requires `DocWenCLI.exe`.
+
 ### Automatic File Passing
 
-- If a Markdown file is open, the plugin automatically passes its full path to DocWen
+- If a file is open, the plugin automatically passes its full path to DocWen
 - If no file is open, only launches the DocWen program
 
 ### Single Instance Management
@@ -186,11 +213,12 @@ docwen-obsidian/
 │   ├── main.ts          # Plugin main logic
 │   ├── settings.ts      # Settings page
 │   ├── i18n.ts          # Internationalization module
-│   ├── utils/           # Utility functions (future)
-│   ├── types/           # Type definitions (future)
-│   └── commands/        # Command modules (future)
+│   └── utils/           # Utility modules
+│       └── suggest-modal.ts # Picker modal
 ├── dist/                # 🔨 Build output directory
 │   └── main.js          # Compiled code
+├── docs/                # 📄 Documentation
+│   └── plugin-readme/    # User-facing README (multi-language)
 ├── scripts/             # 📜 Build scripts
 │   ├── build.bat        # Windows one-click build
 │   ├── build.js         # Cross-platform build script
@@ -201,7 +229,7 @@ docwen-obsidian/
 ├── manifest.json        # Plugin manifest
 ├── package.json         # Project configuration
 ├── tsconfig.json        # TypeScript configuration
-├── .eslintrc.json       # ESLint configuration
+├── eslint.config.cjs    # ESLint configuration
 ├── .gitignore          # Git ignore file
 ├── version-bump.js     # Version management script
 ├── README.md           # This document (English)

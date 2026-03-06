@@ -1,40 +1,41 @@
 [English](README.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md) | [Deutsch](README_de-DE.md) | [Français](README_fr-FR.md) | [Русский](README_ru-RU.md) | [Português](README_pt-BR.md) | [日本語](README_ja-JP.md) | [Español](README_es-ES.md) | [한국어](README_ko-KR.md) | [Tiếng Việt](README_vi-VN.md)
 
-# DocWen Assistant - Plugin Obsidian
+# DocWen Assistant - Plugin cho Obsidian
 
-Một plugin Obsidian dành cho ứng dụng máy tính [DocWen](https://github.com/ZHYX91/docwen).
+Plugin Obsidian dành cho ứng dụng desktop [DocWen](https://github.com/ZHYX91/docwen).
 
 ## ✨ Tính năng
 
-### Tính năng cốt lõi
-- ✅ **Khởi chạy nhanh ở thanh bên**: Thêm biểu tượng vào thanh bên của Obsidian để mở DocWen chỉ với 1 lần nhấp
-- ✅ **Tự động truyền tệp**: Tự động truyền đường dẫn tệp đang mở sang DocWen
-- ✅ **Tích hợp Command Palette**: Truy cập nhanh qua Ctrl/Cmd + P
-- ✅ **Xác thực đường dẫn**: Kiểm tra đường dẫn file thực thi theo thời gian thực
-- ✅ **Trình chọn tệp**: Dễ dàng chọn file thực thi bằng hộp thoại duyệt
-- ✅ **Phản hồi thành công**: Thông báo thân thiện khi khởi chạy
-- ✅ **Quản lý một phiên chạy**: Tự động gửi tệp tới phiên đang chạy
-- ✅ **Hỗ trợ đa ngôn ngữ**: Hỗ trợ 11 ngôn ngữ (zh-CN, zh-TW, en, de, fr, ru, pt, ja, es-ES, ko-KR, vi-VN)
+### Tính năng chính
+- ✅ **Khởi chạy nhanh từ thanh bên**: thêm biểu tượng ở sidebar để khởi chạy một chạm
+- ✅ **Tự động truyền tệp**: tự động gửi đường dẫn tệp đang mở sang DocWen
+- ✅ **Tích hợp Command Palette**: truy cập nhanh bằng Ctrl/Cmd + P
+- ✅ **Xuất nền (CLI)**: xuất sang Word/Excel/Markdown bằng DocWenCLI.exe mà không mở GUI (có thể hiển thị hộp chọn khi cần)
+- ✅ **Đánh số tiêu đề (CLI)**: thêm/xóa đánh số tiêu đề Markdown bằng DocWenCLI.exe
+- ✅ **Kiểm tra doctor (CLI)**: kiểm tra môi trường/chẩn đoán một chạm
+- ✅ **Xác thực đường dẫn**: kiểm tra đường dẫn tệp thực thi theo thời gian thực
+- ✅ **Chọn tệp**: chọn tệp thực thi qua hộp thoại duyệt
+- ✅ **Phản hồi thành công**: thông báo thân thiện khi khởi chạy
+- ✅ **Quản lý một phiên bản**: tự động gửi tệp cho phiên bản đang chạy
+- ✅ **Hỗ trợ đa ngôn ngữ**: 11 ngôn ngữ (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
 ---
 
 ## 📦 Bắt đầu nhanh
 
-### Yêu cầu trước
+### Chuẩn bị
 
-1. **Cài đặt Node.js**
-   - Truy cập [Trang chính thức Node.js](https://nodejs.org/)
+1. **Cài Node.js**
+   - Truy cập [Node.js](https://nodejs.org/)
    - Tải và cài bản LTS
-   - Kiểm tra cài đặt: `node -v` và `npm -v`
+   - Kiểm tra: `node -v` và `npm -v`
 
-2. **Cài đặt phụ thuộc**
+2. **Cài dependencies**
    ```bash
    npm install
    ```
 
 ### Chế độ phát triển
-
-Dùng chế độ watch trong quá trình phát triển để tự động biên dịch lại khi có thay đổi:
 
 ```bash
 npm run dev
@@ -42,35 +43,29 @@ npm run dev
 
 ### Build plugin
 
-#### Build nhanh (không kiểm tra kiểu)
+#### Build nhanh (không kiểm tra type)
 ```bash
 npm run build:quick
 ```
 
-#### Build đầy đủ (có kiểm tra kiểu và nén/minify)
+#### Build đầy đủ (kiểm tra type + nén)
 ```bash
 npm run build
 ```
 
-#### Build phát hành (tự đóng gói)
+#### Build release (đóng gói tự động)
 ```bash
 npm run release
 # Hoặc chạy trực tiếp: node scripts/build.js
 ```
 
-Lệnh này sẽ:
-1. Biên dịch mã TypeScript
-2. Tạo thư mục release
-3. Sao chép các tệp cần thiết
-4. Tạo hướng dẫn sử dụng
-
 ---
 
 ## 🚀 Cài vào Obsidian
 
-### Cách 1: Dùng script phát hành (khuyến nghị)
+### Cách 1: Dùng script release (khuyến nghị)
 
-1. Chạy build phát hành:
+1. Chạy:
    ```bash
    npm run release
    ```
@@ -82,40 +77,40 @@ Lệnh này sẽ:
 
 3. Trong Obsidian:
    - Mở `Settings` → `Community plugins`
-   - Nhấn `Reload plugins`
+   - Bấm `Reload plugins`
    - Bật `DocWen Assistant`
 
 ### Cách 2: Cài thủ công
 
-1. Build plugin:
+1. Build:
    ```bash
    npm run build
    ```
 
-2. Tạo thư mục plugin:
+2. Tạo thư mục:
    ```
    <Your Vault>/.obsidian/plugins/docwen-assistant/
    ```
 
-3. Sao chép các tệp sau vào thư mục:
+3. Sao chép:
    - `main.js`
    - `manifest.json`
 
-4. Tải lại và bật plugin trong Obsidian
+4. Reload và bật plugin trong Obsidian
 
 ---
 
 ## ⚙️ Cấu hình
 
-1. Mở `Settings` → `Community plugins` → `DocWen Assistant` trong Obsidian
+1. Mở Obsidian `Settings` → `Community plugins` → `DocWen Assistant`
 
-2. Cấu hình đường dẫn file thực thi:
-   - **Tuỳ chọn 1**: Nhập trực tiếp đường dẫn
-   - **Tuỳ chọn 2**: Nhấn nút `Browse...` để chọn tệp
+2. Thiết lập đường dẫn tệp thực thi GUI hoặc CLI (chỉ cần một):
+   - Đường dẫn đầy đủ đến `DocWen.exe` hoặc `DocWenCLI.exe`
+   - Nếu chỉ đặt một, plugin sẽ tự dò cái còn lại trong cùng thư mục
 
-3. Trạng thái xác thực:
-   - ✓ Màu xanh nghĩa là đường dẫn hợp lệ
-   - ✗ Màu đỏ nghĩa là đường dẫn không hợp lệ hoặc không tìm thấy tệp
+3. Xác thực đường dẫn:
+   - ✓ Màu xanh: đường dẫn hợp lệ
+   - ✗ Màu đỏ: đường dẫn không hợp lệ hoặc không tìm thấy tệp
 
 ---
 
@@ -123,58 +118,64 @@ Lệnh này sẽ:
 
 ### Khởi chạy DocWen
 
-Có 3 cách để khởi chạy:
+3 cách:
 
-1. **Biểu tượng ở thanh bên**
-   - Nhấn biểu tượng tài liệu ở thanh bên trái
+1. **Biểu tượng sidebar**
+   - Bấm biểu tượng tài liệu ở thanh bên trái
 
 2. **Command Palette**
-   - Nhấn `Ctrl/Cmd + P` để mở command palette
-   - Tìm \"DocWen\" và chọn \"Khởi chạy DocWen\"
+   - Nhấn `Ctrl/Cmd + P` và tìm “Khởi chạy DocWen”
 
 3. **Khởi chạy với tệp hiện tại**
-   - Tìm \"DocWen\" trong command palette và chọn \"Khởi chạy DocWen với tệp hiện tại\"
-   - Chỉ khả dụng khi đang mở một tệp
+   - Tìm “Khởi chạy DocWen với tệp hiện tại”
+   - Chỉ hiện khi đang mở một tệp
 
-### Tự động truyền đường dẫn tệp
+### Xuất nền (CLI, không mở GUI)
 
-- Nếu đang mở tệp Markdown, plugin sẽ tự động truyền đường dẫn đầy đủ sang DocWen
-- Nếu không có tệp đang mở, plugin chỉ khởi chạy chương trình DocWen
+Tìm trong Command Palette:
+- “Xuất Word (Docx) chạy nền” — với tệp `.md`/`.markdown`/`.txt`, chọn một template
+- “Xuất Excel (XLSX) chạy nền” — với tệp `.md`/`.markdown`/`.txt`, chọn một template
+- “Xuất Markdown (MD) chạy nền” — nếu có loại tối ưu phù hợp với loại tệp và ngôn ngữ, hãy chọn một (hoặc bỏ qua)
 
-### Quản lý một phiên chạy
+Cần `DocWenCLI.exe`.
 
-- **Nhấn lần đầu** → Mở DocWen và truyền tệp hiện tại
-- **Nhấn lại (có tệp)** → Thay thế bằng tệp mới (chế độ một tệp)
-- **Nhấn lại (không có tệp)** → Kích hoạt cửa sổ DocWen
+### Đánh số tiêu đề (CLI)
+
+Tìm:
+- “Thêm đánh số vào tiêu đề Markdown” — chọn một kiểu đánh số
+- “Xóa đánh số tiêu đề Markdown”
+
+Chỉ khả dụng khi đang mở tệp `.md`. Cần `DocWenCLI.exe`.
+
+### Kiểm tra doctor (CLI)
+
+Tìm:
+- “Kiểm tra doctor của DocWen”
+
+Cần `DocWenCLI.exe`.
+
+### Tự động truyền tệp
+
+- Nếu đang mở một tệp, plugin sẽ tự động gửi đường dẫn đầy đủ sang DocWen
+- Nếu không có tệp mở, chỉ khởi chạy DocWen
+
+### Quản lý một phiên bản
+
+- **Lần bấm đầu** → Khởi chạy DocWen và gửi tệp hiện tại
+- **Bấm lại (có tệp)** → Thay bằng tệp mới (chế độ một tệp)
+- **Bấm lại (không có tệp)** → Kích hoạt cửa sổ DocWen
 
 ---
 
 ## 🛠️ Script phát triển
 
-### Các lệnh có sẵn
-
 | Lệnh | Mô tả |
-|---------|-------------|
-| `npm run dev` | Chế độ phát triển (watch) |
-| `npm run build` | Build đầy đủ (type check + minify) |
-| `npm run build:quick` | Build nhanh (không type check) |
-| `node version-bump.js [patch\|minor\|major]` | Cập nhật số phiên bản |
-| `npm run release` | Build gói phát hành |
-
-### Quản lý phiên bản
-
-Cập nhật số phiên bản:
-
-```bash
-# Patch (1.0.0 → 1.0.1)
-node version-bump.js patch
-
-# Minor (1.0.0 → 1.1.0)
-node version-bump.js minor
-
-# Major (1.0.0 → 2.0.0)
-node version-bump.js major
-```
+|------|------|
+| `npm run dev` | Phát triển (watch) |
+| `npm run build` | Build đầy đủ (type + nén) |
+| `npm run build:quick` | Build nhanh (không type) |
+| `node version-bump.js [patch\|minor\|major]` | Tăng phiên bản |
+| `npm run release` | Tạo gói release |
 
 ---
 
@@ -182,66 +183,57 @@ node version-bump.js major
 
 ```
 docwen-obsidian/
-├── src/                 # 📁 Thư mục mã nguồn
-│   ├── main.ts          # Logic chính của plugin
-│   ├── settings.ts      # Trang cài đặt
-│   ├── i18n.ts          # Mô-đun đa ngôn ngữ
-│   ├── utils/           # Tiện ích (tương lai)
-│   ├── types/           # Định nghĩa kiểu (tương lai)
-│   └── commands/        # Mô-đun lệnh (tương lai)
-├── dist/                # 🔨 Thư mục đầu ra build
-│   └── main.js          # Mã đã biên dịch
-├── scripts/             # 📜 Script build
-│   ├── build.bat        # Build một chạm cho Windows
-│   ├── build.js         # Script build đa nền tảng
-│   └── README.md        # Hướng dẫn dùng script
-├── release/             # 📦 Sản phẩm phát hành
-├── .vscode/             # 🛠️ Cấu hình editor
-│   └── settings.json    # Cài đặt VS Code
-├── manifest.json        # Manifest plugin
-├── package.json         # Cấu hình dự án
-├── tsconfig.json        # Cấu hình TypeScript
-├── .eslintrc.json       # Cấu hình ESLint
-├── .gitignore          # Git ignore
-├── version-bump.js     # Script quản lý phiên bản
-├── README.md           # Tài liệu này (tiếng Anh)
-└── README_zh-CN.md     # Tài liệu tiếng Trung
+├── src/
+│   ├── main.ts
+│   ├── settings.ts
+│   ├── i18n.ts
+│   └── utils/
+│       └── suggest-modal.ts
+├── dist/
+│   └── main.js
+├── docs/
+│   └── plugin-readme/
+├── scripts/
+│   ├── build.bat
+│   ├── build.js
+│   └── README.md
+├── release/
+├── manifest.json
+├── package.json
+├── tsconfig.json
+├── eslint.config.cjs
+├── .gitignore
+├── version-bump.js
+└── README*.md
 ```
 
 ---
 
 ## 🐛 Khắc phục sự cố
 
-### Plugin không tải được
-
-1. Kiểm tra `main.js` và `manifest.json` đã được sao chép đúng chưa
-2. Nhấn `Reload plugins` trong Obsidian
-3. Mở Developer Console (`Ctrl/Cmd + Shift + I`) để xem lỗi
+### Plugin không tải
+1. Kiểm tra đã copy đúng `main.js` và `manifest.json`
+2. Bấm `Reload plugins` trong Obsidian
+3. Xem console (`Ctrl/Cmd + Shift + I`)
 
 ### Không khởi chạy được DocWen
+1. Kiểm tra đường dẫn tệp thực thi
+2. Xác nhận trạng thái đường dẫn màu xanh ✓
+3. Kiểm tra quyền chạy
 
-1. Kiểm tra đường dẫn file thực thi có đúng không
-2. Xác nhận trạng thái đường dẫn hiển thị màu xanh ✓
-3. Xác nhận file thực thi có quyền phù hợp
-
-### Không truyền được đường dẫn tệp
-
-1. Xác nhận đang mở một tệp
-2. Kiểm tra đường dẫn có ký tự đặc biệt không
-3. Kiểm tra log console về các tham số đã truyền
+### Không gửi được đường dẫn tệp
+1. Đảm bảo đang có tệp mở
+2. Kiểm tra ký tự đặc biệt trong đường dẫn
+3. Kiểm tra log/console để xem tham số
 
 ---
 
 ## 📜 Giấy phép
 
-Dự án này được phát hành theo giấy phép MIT.
+Dự án này được cấp phép theo MIT License.
 
 ### Liên hệ
 
 - **GitHub**: https://github.com/ZHYX91/docwen-obsidian
-- **Dự án DocWen chính**: https://github.com/ZHYX91/docwen
-- **Liên hệ tác giả**: zhengyx91@hotmail.com
-
----
-
-**Tác giả**: ZhengYX
+- **DocWen**: https://github.com/ZHYX91/docwen
+- **Tác giả**: zhengyx91@hotmail.com

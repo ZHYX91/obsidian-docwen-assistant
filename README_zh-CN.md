@@ -10,11 +10,14 @@
 - ✅ **侧边栏快捷启动**: 在 Obsidian 左侧栏添加图标，一键启动 DocWen
 - ✅ **自动文件传递**: 自动将当前打开的文件路径传递给 DocWen
 - ✅ **命令面板集成**: 通过 Ctrl/Cmd + P 快速访问插件功能
+- ✅ **后台静默转换（CLI）**: 调用 DocWenCLI.exe 后台导出为 Word/Excel/Markdown（需要时会弹出选择器）
+- ✅ **标题序号（CLI）**: 通过 DocWenCLI.exe 为 Markdown 标题添加/清理序号
+- ✅ **doctor 自检（CLI）**: 一键检查 DocWen 环境与依赖
 - ✅ **路径验证**: 实时验证可执行文件路径的有效性
 - ✅ **文件选择器**: 通过浏览对话框轻松选择可执行文件
 - ✅ **成功反馈**: 启动时显示友好的通知消息
 - ✅ **单实例管理**: 自动向运行中的实例发送文件
-- ✅ **多语言支持**: 支持 11 种语言（简中、繁中、英、德、法、俄、葡、日、西、韩、越）
+- ✅ **多语言支持**: 支持 11 种语言（简中、繁中、英、德、法、俄、葡、日、韩、西、越）
 
 ---
 
@@ -109,9 +112,9 @@ npm run release
 
 1. 打开 Obsidian `设置` → `第三方插件` → `DocWen Assistant`
 
-2. 配置可执行文件路径:
-   - **方式 1**: 直接输入路径
-   - **方式 2**: 点击 `浏览...` 按钮选择文件
+2. 配置可执行文件路径（GUI）或命令行工具路径（CLI）（二选一即可）:
+   - `DocWen.exe` 的完整路径，或 `DocWenCLI.exe` 的完整路径
+   - 若只填写其中一个，插件会尝试从同目录自动识别另一个（例如：在 `DocWen.exe` 同目录寻找 `DocWenCLI.exe`，反之亦然）
 
 3. 路径验证:
    - ✓ 绿色表示路径有效
@@ -136,9 +139,33 @@ npm run release
    - 在命令面板搜索 "使用当前文件启动 DocWen"
    - 仅在有打开文件时可用
 
+### 后台导出（不弹出 GUI）
+
+在命令面板中搜索：
+- “后台导出为 Word（Docx）” — 对 `.md`/`.markdown`/`.txt` 文件会弹出模板选择器
+- “后台导出为 Excel（XLSX）” — 对 `.md`/`.markdown`/`.txt` 文件会弹出模板选择器
+- “后台导出为 Markdown（MD）” — 如果当前文件类型和语言下存在可用优化类型，会弹出选择器供选择（也可跳过不选）
+
+需要 `DocWenCLI.exe`。
+
+### 标题序号（CLI）
+
+在命令面板中搜索：
+- “为 Markdown 标题添加序号” — 从选择器中选择序号方案
+- “清理 Markdown 标题序号”
+
+仅在打开 `.md` 文件时可用。需要 `DocWenCLI.exe`。
+
+### doctor 自检
+
+在命令面板中搜索：
+- “DocWen doctor 自检”
+
+需要 `DocWenCLI.exe`。
+
 ### 自动文件传递
 
-- 如果有打开的 Markdown 文件，插件会自动将完整路径传递给 DocWen
+- 如果有打开的文件，插件会自动将完整路径传递给 DocWen
 - 如果没有打开文件，仅启动 DocWen 程序
 
 ### 单实例管理
@@ -186,11 +213,12 @@ docwen-obsidian/
 │   ├── main.ts          # 插件主逻辑
 │   ├── settings.ts      # 设置页面
 │   ├── i18n.ts          # 国际化模块
-│   ├── utils/           # 工具函数（未来扩展）
-│   ├── types/           # 类型定义（未来扩展）
-│   └── commands/        # 命令模块（未来扩展）
+│   └── utils/           # 工具模块
+│       └── suggest-modal.ts # 选择器弹窗
 ├── dist/                # 🔨 构建输出目录
 │   └── main.js          # 编译后的代码
+├── docs/                # 文档
+│   └── plugin-readme/    # 用户文档（多语言）
 ├── scripts/             # 📜 构建脚本
 │   ├── build.bat        # Windows 一键构建
 │   ├── build.js         # 跨平台构建脚本
@@ -201,7 +229,7 @@ docwen-obsidian/
 ├── manifest.json        # 插件清单
 ├── package.json         # 项目配置
 ├── tsconfig.json        # TypeScript 配置
-├── .eslintrc.json       # ESLint 配置
+├── eslint.config.cjs    # ESLint 配置
 ├── .gitignore          # Git 忽略文件
 ├── version-bump.js     # 版本管理脚本
 ├── README.md           # 英文文档

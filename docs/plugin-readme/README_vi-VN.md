@@ -6,25 +6,44 @@ Plugin Obsidian để khởi chạy bộ chuyển đổi DocWen.
 
 ## Cài đặt
 
-1. Sao chép thư mục này vào thư mục `.obsidian/plugins/` trong vault Obsidian của bạn
+1. Sao chép thư mục này vào `.obsidian/plugins/` trong vault Obsidian của bạn
 2. Tải lại plugin trong phần cài đặt Obsidian
-3. Bật plugin \"DocWen Assistant\"
-4. Cấu hình đường dẫn file thực thi trong phần cài đặt plugin
+3. Bật plugin “DocWen Assistant”
+4. Cấu hình đường dẫn `DocWen.exe` hoặc `DocWenCLI.exe` trong phần cài đặt plugin (chỉ cần một)
 
-## Sử dụng
+## Cách dùng
 
-- Nhấn biểu tượng tài liệu ở thanh bên trái để khởi chạy DocWen
-- Dùng command palette (Ctrl/Cmd + P) và tìm \"DocWen\"
-- Nếu đang mở một tệp, đường dẫn của tệp sẽ được tự động truyền sang DocWen
+- Nhấn icon tài liệu ở thanh bên để khởi chạy DocWen
+- Mở Command Palette (Ctrl/Cmd + P) và tìm “DocWen”
+- Nếu có file đang mở, đường dẫn sẽ được tự động gửi sang DocWen
 
-## Tệp bao gồm
+### Xuất nền (cần DocWenCLI.exe)
+
+- “Xuất Word (Docx) chạy nền” — với file `.md`/`.markdown`/`.txt`, chọn template
+- “Xuất Excel (XLSX) chạy nền” — với file `.md`/`.markdown`/`.txt`, chọn template
+- “Xuất Markdown (MD) chạy nền” — chọn loại tối ưu nếu có (hoặc bỏ qua)
+
+### Đánh số tiêu đề (cần DocWenCLI.exe)
+
+- “Thêm đánh số vào tiêu đề Markdown” — chọn kiểu đánh số
+- “Xóa đánh số tiêu đề Markdown”
+
+Chỉ áp dụng cho file `.md`.
+
+### Chẩn đoán (cần DocWenCLI.exe)
+
+- “Kiểm tra doctor của DocWen” — kiểm tra môi trường và phụ thuộc
+
+## Các file bao gồm
 
 - `main.js` - Mã chính của plugin
 - `manifest.json` - Manifest plugin
 - `styles.css` - CSS (nếu có)
 - `README*.md` - Tài liệu
 
-Để biết thêm thông tin, hãy xem trang cài đặt của plugin.
+Xem thêm ở trang cài đặt của plugin.
 
-Repo: https://github.com/ZHYX91/docwen-obsidian
-License: MIT
+## Liên kết
+
+- Repo plugin: https://github.com/ZHYX91/docwen-obsidian
+- Repo DocWen: https://github.com/ZHYX91/docwen
