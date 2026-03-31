@@ -16,6 +16,7 @@ Plugin Obsidian dành cho ứng dụng desktop [DocWen](https://github.com/ZHYX9
 - ✅ **Xác thực đường dẫn**: kiểm tra đường dẫn tệp thực thi theo thời gian thực
 - ✅ **Chọn tệp**: chọn tệp thực thi qua hộp thoại duyệt
 - ✅ **Phản hồi thành công**: thông báo thân thiện khi khởi chạy
+- ✅ **Menu chuột phải**: Nhấp chuột phải vào tệp trong trình duyệt → menu con DocWen (chuyển đổi định dạng, đánh số tiêu đề, mở trong DocWen)
 - ✅ **Quản lý một phiên bản**: tự động gửi tệp cho phiên bản đang chạy
 - ✅ **Hỗ trợ đa ngôn ngữ**: 11 ngôn ngữ (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -61,42 +62,24 @@ npm run release
 
 ---
 
-## 🚀 Cài vào Obsidian
+## 🚀 Cài đặt vào Obsidian
 
-### Cách 1: Dùng script release (khuyến nghị)
+### Cách 1: Tải bản phát hành (Khuyến nghị)
 
-1. Chạy:
+1. Truy cập trang [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases)
+2. Tải xuống và giải nén phiên bản mới nhất
+3. Sao chép thư mục `docwen-assistant` vào `<Vault của bạn>/.obsidian/plugins/`
+4. Trong Obsidian: `Cài đặt` → `Plugin cộng đồng` → `Tải lại plugin` → Bật `DocWen Assistant`
+
+### Cách 2: Biên dịch từ mã nguồn
+
+1. Cài đặt phụ thuộc và biên dịch:
    ```bash
+   npm install
    npm run release
    ```
-
-2. Sao chép thư mục `release/docwen-assistant` vào:
-   ```
-   <Your Vault>/.obsidian/plugins/
-   ```
-
-3. Trong Obsidian:
-   - Mở `Settings` → `Community plugins`
-   - Bấm `Reload plugins`
-   - Bật `DocWen Assistant`
-
-### Cách 2: Cài thủ công
-
-1. Build:
-   ```bash
-   npm run build
-   ```
-
-2. Tạo thư mục:
-   ```
-   <Your Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. Sao chép:
-   - `main.js`
-   - `manifest.json`
-
-4. Reload và bật plugin trong Obsidian
+2. Sao chép thư mục `release/docwen-assistant` vào `<Vault của bạn>/.obsidian/plugins/`
+3. Tải lại và bật plugin trong Obsidian
 
 ---
 
@@ -139,6 +122,15 @@ Tìm trong Command Palette:
 
 Cần `DocWenCLI.exe`.
 
+### Menu chuột phải
+
+Nhấp chuột phải vào tệp trong trình duyệt tệp để xem menu con **DocWen**. Các thao tác khả dụng phụ thuộc vào loại tệp:
+
+- **Chuyển đổi sang Markdown** — cho tệp docx, xlsx, pdf, hình ảnh, v.v.
+- **Chuyển đổi sang Word (Docx)** / **Chuyển đổi sang Excel (XLSX)** — cho tệp `.md`/`.markdown`/`.txt`
+- **Thêm/Xóa đánh số tiêu đề** — chỉ cho tệp `.md`
+- **Mở trong DocWen** — khả dụng cho tất cả tệp
+
 ### Đánh số tiêu đề (CLI)
 
 Tìm:
@@ -174,6 +166,8 @@ Cần `DocWenCLI.exe`.
 | `npm run dev` | Phát triển (watch) |
 | `npm run build` | Build đầy đủ (type + nén) |
 | `npm run build:quick` | Build nhanh (không type) |
+| `npm run lint` | Kiểm tra ESLint |
+| `npm run lint:fix` | Tự động sửa ESLint |
 | `node version-bump.js [patch\|minor\|major]` | Tăng phiên bản |
 | `npm run release` | Tạo gói release |
 

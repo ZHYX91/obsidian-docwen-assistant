@@ -30,6 +30,15 @@ DocWen 변환기를 실행하기 위한 Obsidian 플러그인입니다.
 
 `.md` 파일만 사용할 수 있습니다.
 
+### 우클릭 컨텍스트 메뉴
+
+파일 탐색기에서 파일을 우클릭하면 **DocWen** 하위 메뉴가 표시됩니다:
+
+- **Markdown로 변환** — docx, xlsx, pdf, 이미지 파일 등
+- **Word(Docx)로 변환** / **Excel(XLSX)로 변환** — `.md`/`.markdown`/`.txt` 파일용
+- **제목 번호 추가/제거** — `.md` 파일만 해당
+- **DocWen에서 열기** — 모든 파일에서 사용 가능
+
 ### 진단(DocWenCLI.exe 필요)
 
 - “DocWen doctor 검사” — 환경과 의존성을 점검합니다

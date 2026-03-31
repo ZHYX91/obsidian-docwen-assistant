@@ -16,6 +16,7 @@
 - ✅ **パス検証**: 実行ファイルパスのリアルタイム検証
 - ✅ **ファイルブラウザ**: 参照ダイアログで実行ファイルを簡単に選択
 - ✅ **成功フィードバック**: 起動時のフレンドリーな通知
+- ✅ **右クリックメニュー**: エクスプローラーでファイルを右クリック → DocWen サブメニュー（形式変換、番号管理、DocWen で開く）
 - ✅ **シングルインスタンス管理**: 実行中のインスタンスにファイルを自動送信
 - ✅ **多言語サポート**: 11言語をサポート (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -69,42 +70,24 @@ npm run release
 
 ---
 
-## 🚀 Obsidian へのインストール
+## 🚀 Obsidian にインストール
 
-### 方法1: リリーススクリプトを使用（推奨）
+### 方法1：リリースをダウンロード（推奨）
 
-1. リリースビルドを実行:
+1. [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases) ページにアクセス
+2. 最新バージョンをダウンロードして解凍
+3. `docwen-assistant` フォルダを `<あなたの Vault>/.obsidian/plugins/` にコピー
+4. Obsidian で：`設定` → `コミュニティプラグイン` → `プラグインを再読み込み` → `DocWen Assistant` を有効化
+
+### 方法2：ソースコードからビルド
+
+1. 依存関係をインストールしてビルド：
    ```bash
+   npm install
    npm run release
    ```
-
-2. `release/docwen-assistant` フォルダを以下にコピー:
-   ```
-   <あなたの Vault>/.obsidian/plugins/
-   ```
-
-3. Obsidian で:
-   - `設定` → `コミュニティプラグイン` を開く
-   - `プラグインを再読み込み` をクリック
-   - `DocWen Assistant` を有効化
-
-### 方法2: 手動インストール
-
-1. プラグインをビルド:
-   ```bash
-   npm run build
-   ```
-
-2. プラグインディレクトリを作成:
-   ```
-   <あなたの Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. 以下のファイルをディレクトリにコピー:
-   - `main.js`
-   - `manifest.json`
-
-4. Obsidian でプラグインを再読み込みして有効化
+2. `release/docwen-assistant` フォルダを `<あなたの Vault>/.obsidian/plugins/` にコピー
+3. Obsidian でプラグインを再読み込みして有効化
 
 ---
 
@@ -148,6 +131,15 @@ npm run release
 
 `DocWenCLI.exe` が必要です。
 
+### 右クリックメニュー
+
+ファイルエクスプローラーでファイルを右クリックすると、**DocWen** サブメニューが表示されます。利用可能なアクションはファイルの種類によって異なります：
+
+- **Markdown に変換** — docx、xlsx、pdf、画像ファイルなど
+- **Word（Docx）に変換** / **Excel（XLSX）に変換** — `.md`/`.markdown`/`.txt` ファイル用
+- **見出し番号の追加/削除** — `.md` ファイルのみ
+- **DocWen で開く** — すべてのファイルで利用可能
+
 ### 見出し番号（CLI）
 
 コマンドパレットで検索:
@@ -185,6 +177,8 @@ npm run release
 | `npm run dev` | 開発モード（watch） |
 | `npm run build` | フルビルド（型チェック + 圧縮） |
 | `npm run build:quick` | クイックビルド（型チェックなし） |
+| `npm run lint` | ESLint チェック |
+| `npm run lint:fix` | ESLint 自動修正 |
 | `node version-bump.js [patch\|minor\|major]` | バージョン番号を更新 |
 | `npm run release` | リリースパッケージをビルド |
 

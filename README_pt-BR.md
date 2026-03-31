@@ -16,6 +16,7 @@ Um plugin Obsidian para o aplicativo de desktop [DocWen](https://github.com/ZHYX
 - ✅ **Validação de caminho**: Validação em tempo real do caminho do executável
 - ✅ **Navegador de arquivos**: Selecione facilmente o arquivo executável através do diálogo de navegação
 - ✅ **Feedback de sucesso**: Notificações amigáveis no lançamento
+- ✅ **Menu de contexto (clique direito)**: Clique direito em um arquivo no explorador → submenu DocWen (converter formatos, gerenciar numeração, abrir no DocWen)
 - ✅ **Gerenciamento de instância única**: Envia automaticamente o arquivo para a instância em execução
 - ✅ **Suporte multilíngue**: Suporta 11 idiomas (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -71,40 +72,22 @@ Este comando irá:
 
 ## 🚀 Instalar no Obsidian
 
-### Método 1: Usando o script de release (Recomendado)
+### Método 1: Baixar Release (Recomendado)
 
-1. Execute a construção de release:
+1. Acesse a página de [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases)
+2. Baixe e extraia a versão mais recente
+3. Copie a pasta `docwen-assistant` para `<Seu Vault>/.obsidian/plugins/`
+4. No Obsidian: `Configurações` → `Plugins da comunidade` → `Recarregar plugins` → Ativar `DocWen Assistant`
+
+### Método 2: Compilar a partir do código-fonte
+
+1. Instalar dependências e compilar:
    ```bash
+   npm install
    npm run release
    ```
-
-2. Copie a pasta `release/docwen-assistant` para:
-   ```
-   <Seu Vault>/.obsidian/plugins/
-   ```
-
-3. No Obsidian:
-   - Abra `Configurações` → `Plugins da comunidade`
-   - Clique em `Recarregar plugins`
-   - Ative `DocWen Assistant`
-
-### Método 2: Instalação manual
-
-1. Construa o plugin:
-   ```bash
-   npm run build
-   ```
-
-2. Crie o diretório do plugin:
-   ```
-   <Seu Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. Copie estes arquivos para o diretório:
-   - `main.js`
-   - `manifest.json`
-
-4. Recarregue e ative o plugin no Obsidian
+2. Copiar a pasta `release/docwen-assistant` para `<Seu Vault>/.obsidian/plugins/`
+3. Recarregar e ativar o plugin no Obsidian
 
 ---
 
@@ -148,6 +131,15 @@ Pesquise na paleta de comandos:
 
 Requer `DocWenCLI.exe`.
 
+### Menu de contexto (clique direito)
+
+Clique direito em um arquivo no explorador de arquivos para ver o submenu **DocWen**. As ações disponíveis dependem do tipo de arquivo:
+
+- **Converter para Markdown** — para arquivos docx, xlsx, pdf, imagens, etc.
+- **Converter para Word (Docx)** / **Converter para Excel (XLSX)** — para arquivos `.md`/`.markdown`/`.txt`
+- **Adicionar/Remover numeração de títulos** — apenas para arquivos `.md`
+- **Abrir no DocWen** — disponível para todos os arquivos
+
 ### Numeração de títulos (CLI)
 
 Pesquise na paleta de comandos:
@@ -185,6 +177,8 @@ Requer `DocWenCLI.exe`.
 | `npm run dev` | Modo de desenvolvimento (watch) |
 | `npm run build` | Construção completa (verificação de tipos + minificação) |
 | `npm run build:quick` | Construção rápida (sem verificação de tipos) |
+| `npm run lint` | Verificação ESLint |
+| `npm run lint:fix` | Correção automática ESLint |
 | `node version-bump.js [patch\|minor\|major]` | Atualizar número da versão |
 | `npm run release` | Construir pacote de release |
 

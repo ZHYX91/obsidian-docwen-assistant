@@ -30,6 +30,15 @@ Plugin Obsidian para iniciar o conversor DocWen.
 
 Disponível apenas para arquivos `.md`.
 
+### Menu de contexto (clique direito)
+
+Clique direito em um arquivo no explorador de arquivos para ver o submenu **DocWen**:
+
+- **Converter para Markdown** — para arquivos docx, xlsx, pdf, imagens, etc.
+- **Converter para Word (Docx)** / **Converter para Excel (XLSX)** — para arquivos `.md`/`.markdown`/`.txt`
+- **Adicionar/Remover numeração de títulos** — apenas para arquivos `.md`
+- **Abrir no DocWen** — disponível para todos os arquivos
+
 ### Diagnósticos (requer DocWenCLI.exe)
 
 - “Verificação doctor do DocWen” — verificar ambiente e dependências

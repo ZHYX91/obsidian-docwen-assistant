@@ -16,6 +16,7 @@ Un plugin de Obsidian para la aplicación de escritorio [DocWen](https://github.
 - ✅ **Validación de ruta**: validación en tiempo real de la ruta del ejecutable
 - ✅ **Selector de archivos**: selecciona el ejecutable desde un diálogo de exploración
 - ✅ **Confirmación de éxito**: notificaciones amigables al iniciar
+- ✅ **Menú contextual (clic derecho)**: Clic derecho en un archivo del explorador → submenú DocWen (convertir formatos, gestionar numeración, abrir en DocWen)
 - ✅ **Gestión de instancia única**: envía el archivo a la instancia en ejecución
 - ✅ **Soporte multilingüe**: 11 idiomas (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -63,40 +64,22 @@ npm run release
 
 ## 🚀 Instalar en Obsidian
 
-### Método 1: Usar el script de release (recomendado)
+### Método 1: Descargar Release (Recomendado)
 
-1. Ejecuta:
+1. Ve a la página de [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases)
+2. Descarga y extrae la última versión
+3. Copia la carpeta `docwen-assistant` a `<Tu Vault>/.obsidian/plugins/`
+4. En Obsidian: `Ajustes` → `Plugins de la comunidad` → `Recargar plugins` → Activar `DocWen Assistant`
+
+### Método 2: Compilar desde el código fuente
+
+1. Instalar dependencias y compilar:
    ```bash
+   npm install
    npm run release
    ```
-
-2. Copia la carpeta `release/docwen-assistant` en:
-   ```
-   <Tu Vault>/.obsidian/plugins/
-   ```
-
-3. En Obsidian:
-   - Abre `Settings` → `Community plugins`
-   - Pulsa `Reload plugins`
-   - Activa `DocWen Assistant`
-
-### Método 2: Instalación manual
-
-1. Compila:
-   ```bash
-   npm run build
-   ```
-
-2. Crea el directorio:
-   ```
-   <Tu Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. Copia:
-   - `main.js`
-   - `manifest.json`
-
-4. Recarga y habilita el plugin en Obsidian
+2. Copiar la carpeta `release/docwen-assistant` a `<Tu Vault>/.obsidian/plugins/`
+3. Recargar y activar el plugin en Obsidian
 
 ---
 
@@ -139,6 +122,15 @@ Busca en la paleta de comandos:
 
 Requiere `DocWenCLI.exe`.
 
+### Menú contextual (clic derecho)
+
+Haz clic derecho en un archivo en el explorador de archivos para ver el submenú **DocWen**. Las acciones disponibles dependen del tipo de archivo:
+
+- **Convertir a Markdown** — para archivos docx, xlsx, pdf, imágenes, etc.
+- **Convertir a Word (Docx)** / **Convertir a Excel (XLSX)** — para archivos `.md`/`.markdown`/`.txt`
+- **Agregar/Eliminar numeración de títulos** — solo para archivos `.md`
+- **Abrir en DocWen** — disponible para todos los archivos
+
 ### Numeración de títulos (CLI)
 
 Busca:
@@ -174,6 +166,8 @@ Requiere `DocWenCLI.exe`.
 | `npm run dev` | Modo desarrollo (watch) |
 | `npm run build` | Compilación completa (tipos + minificar) |
 | `npm run build:quick` | Compilación rápida (sin tipos) |
+| `npm run lint` | Verificación ESLint |
+| `npm run lint:fix` | Corrección automática ESLint |
 | `node version-bump.js [patch\|minor\|major]` | Actualizar versión |
 | `npm run release` | Construir paquete de release |
 

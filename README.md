@@ -16,6 +16,7 @@ An Obsidian plugin for the [DocWen](https://github.com/ZHYX91/docwen) desktop ap
 - ✅ **Path Validation**: Real-time validation of executable path
 - ✅ **File Browser**: Easily select executable file via browse dialog
 - ✅ **Success Feedback**: Friendly notifications on launch
+- ✅ **Right-click Context Menu**: Right-click any file in the explorer → DocWen submenu (convert formats, manage heading numbering, open in DocWen)
 - ✅ **Single Instance Management**: Automatically sends file to running instance
 - ✅ **Multi-language Support**: Supports 11 languages (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -71,40 +72,22 @@ This command will:
 
 ## 🚀 Install to Obsidian
 
-### Method 1: Using Release Script (Recommended)
+### Method 1: Download Release (Recommended)
 
-1. Run release build:
+1. Go to the [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases) page
+2. Download and extract the latest release
+3. Copy the `docwen-assistant` folder to `<Your Vault>/.obsidian/plugins/`
+4. In Obsidian: `Settings` → `Community plugins` → `Reload plugins` → Enable `DocWen Assistant`
+
+### Method 2: Build from Source
+
+1. Install dependencies and build:
    ```bash
+   npm install
    npm run release
    ```
-
-2. Copy the `release/docwen-assistant` folder to:
-   ```
-   <Your Vault>/.obsidian/plugins/
-   ```
-
-3. In Obsidian:
-   - Open `Settings` → `Community plugins`
-   - Click `Reload plugins`
-   - Enable `DocWen Assistant`
-
-### Method 2: Manual Installation
-
-1. Build the plugin:
-   ```bash
-   npm run build
-   ```
-
-2. Create plugin directory:
-   ```
-   <Your Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. Copy these files to the directory:
-   - `main.js`
-   - `manifest.json`
-
-4. Reload and enable the plugin in Obsidian
+2. Copy the `release/docwen-assistant` folder to `<Your Vault>/.obsidian/plugins/`
+3. Reload and enable the plugin in Obsidian
 
 ---
 
@@ -148,6 +131,15 @@ Search in command palette:
 
 Requires `DocWenCLI.exe`.
 
+### Right-click Context Menu
+
+Right-click any file in the file explorer to see the **DocWen** submenu. Available actions depend on file type:
+
+- **Convert to Markdown** — for docx, xlsx, pdf, images, etc.
+- **Convert to Word (Docx)** / **Convert to Excel (XLSX)** — for `.md`/`.markdown`/`.txt` files
+- **Add/Remove heading numbering** — for `.md` files only
+- **Open in DocWen** — available for all files
+
 ### Heading Numbering (CLI)
 
 Search in command palette:
@@ -185,6 +177,8 @@ Requires `DocWenCLI.exe`.
 | `npm run dev` | Development mode (watch) |
 | `npm run build` | Full build (type check + minify) |
 | `npm run build:quick` | Quick build (no type check) |
+| `npm run lint` | ESLint check |
+| `npm run lint:fix` | ESLint auto-fix |
 | `node version-bump.js [patch\|minor\|major]` | Update version number |
 | `npm run release` | Build release package |
 

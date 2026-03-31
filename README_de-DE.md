@@ -16,6 +16,7 @@ Ein Obsidian-Plugin für die [DocWen](https://github.com/ZHYX91/docwen) Desktop-
 - ✅ **Pfadvalidierung**: Echtzeit-Validierung des ausführbaren Dateipfads
 - ✅ **Datei-Browser**: Einfache Auswahl der ausführbaren Datei über Durchsuchen-Dialog
 - ✅ **Erfolgsrückmeldung**: Freundliche Benachrichtigungen beim Start
+- ✅ **Rechtsklick-Kontextmenü**: Rechtsklick auf eine Datei im Explorer → DocWen-Untermenü (Formate konvertieren, Nummerierung verwalten, in DocWen öffnen)
 - ✅ **Einzelinstanz-Verwaltung**: Sendet Dateien automatisch an laufende Instanz
 - ✅ **Mehrsprachige Unterstützung**: Unterstützt 11 Sprachen (zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -71,40 +72,22 @@ Dieser Befehl wird:
 
 ## 🚀 In Obsidian installieren
 
-### Methode 1: Mit Release-Skript (Empfohlen)
+### Methode 1: Release herunterladen (Empfohlen)
 
-1. Release-Build ausführen:
+1. Gehen Sie zur [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases)-Seite
+2. Laden Sie die neueste Version herunter und entpacken Sie sie
+3. Kopieren Sie den Ordner `docwen-assistant` nach `<Ihr Vault>/.obsidian/plugins/`
+4. In Obsidian: `Einstellungen` → `Community-Plugins` → `Plugins neu laden` → `DocWen Assistant` aktivieren
+
+### Methode 2: Aus Quellcode erstellen
+
+1. Abhängigkeiten installieren und erstellen:
    ```bash
+   npm install
    npm run release
    ```
-
-2. Den Ordner `release/docwen-assistant` kopieren nach:
-   ```
-   <Ihr Vault>/.obsidian/plugins/
-   ```
-
-3. In Obsidian:
-   - `Einstellungen` → `Community-Plugins` öffnen
-   - `Plugins neu laden` klicken
-   - `DocWen Assistant` aktivieren
-
-### Methode 2: Manuelle Installation
-
-1. Plugin erstellen:
-   ```bash
-   npm run build
-   ```
-
-2. Plugin-Verzeichnis erstellen:
-   ```
-   <Ihr Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. Diese Dateien in das Verzeichnis kopieren:
-   - `main.js`
-   - `manifest.json`
-
-4. Plugin in Obsidian neu laden und aktivieren
+2. Den Ordner `release/docwen-assistant` nach `<Ihr Vault>/.obsidian/plugins/` kopieren
+3. Plugin in Obsidian neu laden und aktivieren
 
 ---
 
@@ -148,6 +131,15 @@ In der Befehlspalette suchen:
 
 Erfordert `DocWenCLI.exe`.
 
+### Rechtsklick-Kontextmenü
+
+Rechtsklick auf eine Datei im Datei-Explorer zeigt das **DocWen**-Untermenü. Verfügbare Aktionen hängen vom Dateityp ab:
+
+- **In Markdown konvertieren** — für docx, xlsx, pdf, Bilder usw.
+- **In Word (Docx) konvertieren** / **In Excel (XLSX) konvertieren** — für `.md`/`.markdown`/`.txt` Dateien
+- **Überschriftennummerierung hinzufügen/entfernen** — nur für `.md` Dateien
+- **In DocWen öffnen** — für alle Dateien verfügbar
+
 ### Überschriftennummerierung (CLI)
 
 In der Befehlspalette suchen:
@@ -185,6 +177,8 @@ Erfordert `DocWenCLI.exe`.
 | `npm run dev` | Entwicklungsmodus (Watch) |
 | `npm run build` | Vollständiger Build (Typprüfung + Minimierung) |
 | `npm run build:quick` | Schnell-Build (ohne Typprüfung) |
+| `npm run lint` | ESLint-Prüfung |
+| `npm run lint:fix` | ESLint automatisch beheben |
 | `node version-bump.js [patch\|minor\|major]` | Versionsnummer aktualisieren |
 | `npm run release` | Release-Paket erstellen |
 

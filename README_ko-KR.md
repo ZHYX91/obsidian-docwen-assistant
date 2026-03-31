@@ -16,6 +16,7 @@
 - ✅ **경로 검증**: 실행 파일 경로를 실시간으로 검증
 - ✅ **파일 선택**: 찾아보기 대화상자로 실행 파일을 쉽게 선택
 - ✅ **성공 피드백**: 실행 시 친절한 알림 표시
+- ✅ **우클릭 컨텍스트 메뉴**: 탐색기에서 파일 우클릭 → DocWen 하위 메뉴 (형식 변환, 번호 관리, DocWen에서 열기)
 - ✅ **단일 인스턴스 관리**: 실행 중인 인스턴스에 파일 자동 전송
 - ✅ **다국어 지원**: 11개 언어(zh-CN, zh-TW, en, de, fr, ru, pt-BR, ja, ko, es, vi)
 
@@ -63,40 +64,22 @@ npm run release
 
 ## 🚀 Obsidian에 설치
 
-### 방법 1: 릴리스 스크립트 사용(권장)
+### 방법 1: 릴리스 다운로드 (권장)
 
-1. 실행:
+1. [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases) 페이지로 이동
+2. 최신 버전을 다운로드하고 압축 해제
+3. `docwen-assistant` 폴더를 `<당신의 Vault>/.obsidian/plugins/`에 복사
+4. Obsidian에서: `설정` → `커뮤니티 플러그인` → `플러그인 다시 불러오기` → `DocWen Assistant` 활성화
+
+### 방법 2: 소스에서 빌드
+
+1. 의존성 설치 및 빌드:
    ```bash
+   npm install
    npm run release
    ```
-
-2. `release/docwen-assistant` 폴더를 다음 위치로 복사:
-   ```
-   <Your Vault>/.obsidian/plugins/
-   ```
-
-3. Obsidian에서:
-   - `Settings` → `Community plugins`
-   - `Reload plugins` 클릭
-   - `DocWen Assistant` 활성화
-
-### 방법 2: 수동 설치
-
-1. 빌드:
-   ```bash
-   npm run build
-   ```
-
-2. 플러그인 디렉터리 생성:
-   ```
-   <Your Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. 다음 파일을 복사:
-   - `main.js`
-   - `manifest.json`
-
-4. Obsidian에서 플러그인 재로딩 후 활성화
+2. `release/docwen-assistant` 폴더를 `<당신의 Vault>/.obsidian/plugins/`에 복사
+3. Obsidian에서 플러그인을 다시 불러오고 활성화
 
 ---
 
@@ -139,6 +122,15 @@ npm run release
 
 `DocWenCLI.exe`가 필요합니다.
 
+### 우클릭 컨텍스트 메뉴
+
+파일 탐색기에서 파일을 우클릭하면 **DocWen** 하위 메뉴가 표시됩니다. 사용 가능한 작업은 파일 유형에 따라 다릅니다:
+
+- **Markdown로 변환** — docx, xlsx, pdf, 이미지 파일 등
+- **Word(Docx)로 변환** / **Excel(XLSX)로 변환** — `.md`/`.markdown`/`.txt` 파일용
+- **제목 번호 추가/제거** — `.md` 파일만 해당
+- **DocWen에서 열기** — 모든 파일에서 사용 가능
+
 ### 제목 번호 매기기(CLI)
 
 명령 팔레트에서 검색:
@@ -174,6 +166,8 @@ npm run release
 | `npm run dev` | 개발 모드(watch) |
 | `npm run build` | 전체 빌드(타입 검사 + 압축) |
 | `npm run build:quick` | 빠른 빌드(타입 검사 없음) |
+| `npm run lint` | ESLint 검사 |
+| `npm run lint:fix` | ESLint 자동 수정 |
 | `node version-bump.js [patch\|minor\|major]` | 버전 업데이트 |
 | `npm run release` | 릴리스 패키지 생성 |
 

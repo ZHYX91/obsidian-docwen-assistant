@@ -30,6 +30,15 @@ Plugin Obsidian để khởi chạy bộ chuyển đổi DocWen.
 
 Chỉ áp dụng cho file `.md`.
 
+### Menu chuột phải
+
+Nhấp chuột phải vào tệp trong trình duyệt tệp để xem menu con **DocWen**:
+
+- **Chuyển đổi sang Markdown** — cho tệp docx, xlsx, pdf, hình ảnh, v.v.
+- **Chuyển đổi sang Word (Docx)** / **Chuyển đổi sang Excel (XLSX)** — cho tệp `.md`/`.markdown`/`.txt`
+- **Thêm/Xóa đánh số tiêu đề** — chỉ cho tệp `.md`
+- **Mở trong DocWen** — khả dụng cho tất cả tệp
+
 ### Chẩn đoán (cần DocWenCLI.exe)
 
 - “Kiểm tra doctor của DocWen” — kiểm tra môi trường và phụ thuộc

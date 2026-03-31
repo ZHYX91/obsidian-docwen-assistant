@@ -16,6 +16,7 @@
 - ✅ **路径验证**: 实时验证可执行文件路径的有效性
 - ✅ **文件选择器**: 通过浏览对话框轻松选择可执行文件
 - ✅ **成功反馈**: 启动时显示友好的通知消息
+- ✅ **右键菜单**: 在文件列表中右键任意文件 → DocWen 子菜单（格式转换、序号管理、用 DocWen 打开）
 - ✅ **单实例管理**: 自动向运行中的实例发送文件
 - ✅ **多语言支持**: 支持 11 种语言（简中、繁中、英、德、法、俄、葡、日、韩、西、越）
 
@@ -71,40 +72,22 @@ npm run release
 
 ## 🚀 安装到 Obsidian
 
-### 方法一：使用发布脚本（推荐）
+### 方法一：下载发布包（推荐）
 
-1. 运行发布构建:
+1. 前往 [GitHub Releases](https://github.com/ZHYX91/docwen-obsidian/releases) 页面
+2. 下载并解压最新版本
+3. 将 `docwen-assistant` 文件夹复制到 `<你的 Vault>/.obsidian/plugins/`
+4. 在 Obsidian 中：`设置` → `第三方插件` → `重新加载插件` → 启用 `DocWen Assistant`
+
+### 方法二：从源码构建
+
+1. 安装依赖并构建:
    ```bash
+   npm install
    npm run release
    ```
-
-2. 将 `release/docwen-assistant` 文件夹复制到:
-   ```
-   <你的 Vault>/.obsidian/plugins/
-   ```
-
-3. 在 Obsidian 中:
-   - 打开 `设置` → `第三方插件`
-   - 点击 `重新加载插件`
-   - 启用 `DocWen Assistant`
-
-### 方法二：手动安装
-
-1. 构建插件:
-   ```bash
-   npm run build
-   ```
-
-2. 创建插件目录:
-   ```
-   <你的 Vault>/.obsidian/plugins/docwen-assistant/
-   ```
-
-3. 复制以下文件到该目录:
-   - `main.js`
-   - `manifest.json`
-
-4. 在 Obsidian 中重新加载并启用插件
+2. 将 `release/docwen-assistant` 文件夹复制到 `<你的 Vault>/.obsidian/plugins/`
+3. 在 Obsidian 中重新加载并启用插件
 
 ---
 
@@ -148,6 +131,15 @@ npm run release
 
 需要 `DocWenCLI.exe`。
 
+### 右键菜单
+
+在文件列表中右键任意文件，可以看到 **DocWen** 子菜单。可用操作取决于文件类型：
+
+- **转为 Markdown** — 适用于 docx、xlsx、pdf、图片等文件
+- **转为 Word（Docx）** / **转为 Excel（XLSX）** — 适用于 `.md`/`.markdown`/`.txt` 文件
+- **添加/清理标题序号** — 仅适用于 `.md` 文件
+- **用 DocWen 打开** — 所有文件均可用
+
 ### 标题序号（CLI）
 
 在命令面板中搜索：
@@ -185,6 +177,8 @@ npm run release
 | `npm run dev` | 开发模式（watch） |
 | `npm run build` | 完整构建（类型检查 + 压缩） |
 | `npm run build:quick` | 快速构建（无类型检查） |
+| `npm run lint` | ESLint 检查 |
+| `npm run lint:fix` | ESLint 自动修复 |
 | `node version-bump.js [patch\|minor\|major]` | 更新版本号 |
 | `npm run release` | 构建发布包 |
 

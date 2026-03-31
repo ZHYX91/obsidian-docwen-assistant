@@ -30,6 +30,15 @@
 
 仅对 `.md` 文件可用。
 
+### 右键菜单
+
+在文件列表中右键任意文件，可以看到 **DocWen** 子菜单：
+
+- **转为 Markdown** — 适用于 docx、xlsx、pdf、图片等文件
+- **转为 Word（Docx）** / **转为 Excel（XLSX）** — 适用于 `.md`/`.markdown`/`.txt` 文件
+- **添加/清理标题序号** — 仅适用于 `.md` 文件
+- **用 DocWen 打开** — 所有文件均可用
+
 ### 诊断（需要 DocWenCLI.exe）
 
 - “DocWen doctor 自检” — 检查环境与依赖
