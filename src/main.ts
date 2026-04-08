@@ -40,7 +40,7 @@ interface NumberingSchemeItem {
  * Main plugin class for launching and communicating with DocWen converter
  */
 export default class DocWenPlugin extends Plugin {
-  settings: PluginSettings;
+  settings!: PluginSettings;
   private readonly IPC_DIR_NAME = "docwen";
 
   private getDocwenLangCode(): string | null {
@@ -132,11 +132,11 @@ export default class DocWenPlugin extends Plugin {
       let stdout = "";
       let stderr = "";
 
-      child.stdout?.on("data", (d) => (stdout += d.toString()));
-      child.stderr?.on("data", (d) => (stderr += d.toString()));
+      child.stdout?.on("data", (d: Buffer) => (stdout += d.toString()));
+      child.stderr?.on("data", (d: Buffer) => (stderr += d.toString()));
 
-      child.on("error", (e) => reject(e));
-      child.on("close", (code) => {
+      child.on("error", (e: Error) => reject(e));
+      child.on("close", (code: number | null) => {
         const out = stdout.trim();
         if (!out) {
           reject(new Error(stderr || `empty_stdout (code=${code})`));
@@ -195,12 +195,12 @@ export default class DocWenPlugin extends Plugin {
 
   /**
    * Fetch available templates from CLI
-   * CLI command: templates list [--for docx|xlsx] --json --quiet
+   * CLI command: templates list [--target docx|xlsx] --json --quiet
    */
   private async fetchTemplates(target?: string): Promise<TemplateItem[] | null> {
     try {
       const args: string[] = ["templates", "list"];
-      if (target) args.push("--for", target);
+      if (target) args.push("--target", target);
       const result = await this.runCliJson(args);
       if (result?.success && result?.data?.templates) {
         return result.data.templates;
@@ -213,11 +213,11 @@ export default class DocWenPlugin extends Plugin {
 
   /**
    * Fetch available optimization types from CLI
-   * CLI command: optimizations list [--scope xxx] --json --quiet
+   * CLI command: list optimizations [--scope xxx] --json --quiet
    */
   private async fetchOptimizations(scope?: string): Promise<OptimizationItem[] | null> {
     try {
-      const args: string[] = ["optimizations", "list"];
+      const args: string[] = ["list", "optimizations"];
       if (scope) args.push("--scope", scope);
       const result = await this.runCliJson(args);
       if (result?.success && result?.data?.optimizations) {
@@ -914,7 +914,7 @@ export default class DocWenPlugin extends Plugin {
     const ribbonIconEl = this.addRibbonIcon(
       "file-text",
       t("ribbonTooltip"),
-      (evt: MouseEvent) => {
+      (_evt: MouseEvent) => {
         this.launchOrSendFile();
       }
     );
@@ -1232,41 +1232,11 @@ export default class DocWenPlugin extends Plugin {
    * @param filePath - Optional file path to pass as argument
    */
   launchExecutable(filePath: string | null = null) {
-    const isExistingFile = (p: string): boolean => {
-      try {
-        return fs.statSync(p).isFile();
-      } catch {
-        return false;
-      }
-    };
-
-    const guiPathRaw = (this.settings.executablePath || "").trim().replace(/^['"]|['"]$/g, "");
-    const cliPathRaw = (this.settings.cliExecutablePath || "").trim().replace(/^['"]|['"]$/g, "");
-
-    let resolved: string | null = null;
-
-    if (guiPathRaw) {
-      const p = path.normalize(guiPathRaw);
-      if (!isExistingFile(p)) {
-        new Notice(t("noticePathNotExist"));
-        return;
-      }
-      resolved = p;
-    } else if (cliPathRaw) {
-      const cliPath = path.normalize(cliPathRaw);
-      if (!isExistingFile(cliPath)) {
-        new Notice(t("noticePathNotExist"));
-        return;
-      }
-
-      const candidate = path.join(path.dirname(cliPath), "DocWen.exe");
-      if (!isExistingFile(candidate)) {
-        new Notice(t("noticePathNotExist"));
-        return;
-      }
-      resolved = candidate;
-    } else {
-      new Notice(t("noticePathNotSet"));
+    const resolved = this.resolveGuiExecutablePath();
+    if (!resolved) {
+      // Distinguish "not set" vs "set but not found"
+      const hasAnyPath = (this.settings.executablePath || "").trim() || (this.settings.cliExecutablePath || "").trim();
+      new Notice(t(hasAnyPath ? "noticePathNotExist" : "noticePathNotSet"));
       return;
     }
 

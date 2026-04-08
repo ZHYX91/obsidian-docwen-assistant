@@ -1,12 +1,13 @@
 // 构建并打包插件用于发布
-// 用法: node build-scripts/build-release.js
-// 或在插件目录下: node build-scripts/build-release.js
+// 用法:
+// - npm run release
+// - 或: node scripts/build.js
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// 切换到插件根目录（脚本在 build-scripts 子目录中）
+// 切换到插件根目录
 const pluginDir = path.join(__dirname, '..');
 process.chdir(pluginDir);
 
@@ -59,7 +60,6 @@ if (!fs.existsSync(releaseDir)) {
 
 // 读取版本号
 const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-const version = manifest.version;
 const pluginReleaseDir = path.join(releaseDir, manifest.id);
 
 if (fs.existsSync(pluginReleaseDir)) {

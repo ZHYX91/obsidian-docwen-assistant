@@ -11,7 +11,7 @@
 - ✅ 编译 TypeScript 代码为 JavaScript
 - ✅ 创建发布文件夹 `release/docwen-assistant/`
 - ✅ 复制必需文件（main.js, manifest.json）
-- ✅ 生成插件使用说明
+- ✅ 复制用户文档（`docs/plugin-readme/README*.md`，多语言）
 - ✅ 显示详细的构建进度和结果
 - ✅ 可选：构建完成后打开输出文件夹
 
@@ -46,7 +46,7 @@ obsidian-plugin/
     └── docwen-assistant/
         ├── main.js          # 编译后的插件代码
         ├── manifest.json    # 插件清单
-        └── README.md        # 使用说明
+        └── README*.md       # 使用说明（多语言）
 ```
 
 ## 📥 安装到 Obsidian
@@ -84,7 +84,7 @@ obsidian-plugin/
   └─ 如缺失则运行 npm install
 
 [2/6] 清理旧的构建文件
-  └─ 删除 main.js（如果存在）
+  └─ 删除 dist/ 与 release/（如果存在）
 
 [3/6] 编译 TypeScript
   └─ 运行 npm run build
@@ -98,8 +98,8 @@ obsidian-plugin/
   └─ 复制 manifest.json
   └─ 复制 styles.css（如果存在）
 
-[6/6] 生成使用说明
-  └─ 在输出目录创建 README.md
+[6/6] 复制用户文档
+  └─ 复制 docs/plugin-readme/README*.md 到输出目录
 ```
 
 ## ⚠️ 常见问题

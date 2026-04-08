@@ -82,6 +82,22 @@ export class SettingTab extends PluginSettingTab {
     return candidate;
   }
 
+  private getElectronDialog(): any | null {
+    try {
+      const electron = require("electron");
+      const dialog = electron?.remote?.dialog ?? electron?.dialog ?? null;
+      if (dialog) return dialog;
+    } catch {}
+
+    try {
+      const remote = require("@electron/remote");
+      const dialog = remote?.dialog ?? null;
+      if (dialog) return dialog;
+    } catch {}
+
+    return null;
+  }
+
   /**
    * Render the settings UI
    */
@@ -115,8 +131,11 @@ export class SettingTab extends PluginSettingTab {
           .setButtonText(t("settingsBrowse"))
           .setTooltip(t("settingsGuiPath"))
           .onClick(async () => {
-            // Use Electron's dialog module
-            const { dialog } = require("electron").remote || require("@electron/remote");
+            const dialog = this.getElectronDialog();
+            if (!dialog?.showOpenDialog) {
+              new Notice(t("noticeLaunchFailed", { error: "dialog_unavailable" }));
+              return;
+            }
             
             const result = await dialog.showOpenDialog({
               title: t("settingsGuiPath"),
@@ -179,7 +198,11 @@ export class SettingTab extends PluginSettingTab {
           .setButtonText(t("settingsBrowse"))
           .setTooltip(t("settingsCliPath"))
           .onClick(async () => {
-            const { dialog } = require("electron").remote || require("@electron/remote");
+            const dialog = this.getElectronDialog();
+            if (!dialog?.showOpenDialog) {
+              new Notice(t("noticeLaunchFailed", { error: "dialog_unavailable" }));
+              return;
+            }
 
             const result = await dialog.showOpenDialog({
               title: t("settingsCliPath"),
@@ -297,7 +320,7 @@ export class SettingTab extends PluginSettingTab {
       keep: t("settingsNumberingKeep"),
     };
 
-    const docToMdCleanSetting = new Setting(containerEl)
+    new Setting(containerEl)
       .setName(t("settingsCleanNumbering"))
       .setDesc(t("settingsCleanNumberingDesc"))
       .addDropdown((dropdown) => {

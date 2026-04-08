@@ -31,7 +31,7 @@ No test framework — no test commands.
 ### Two execution modes for DocWen
 
 - **GUI mode**: Spawns `DocWen.exe` as a detached child process. Single-instance detection uses a `status.json` PID file in `os.tmpdir()/docwen/`. IPC sends JSON command files to `os.tmpdir()/docwen/commands/`.
-- **CLI mode**: Spawns `DocWenCLI.exe` synchronously (via `runCliJson`) with `--json --quiet` flags. Parses stdout as JSON. Used for: `convert`, `templates list`, `optimizations list`, `numbering-schemes list`, `md-numbering`, `doctor`.
+- **CLI mode**: Spawns `DocWenCLI.exe` synchronously (via `runCliJson`) with `--json --quiet` flags. Parses stdout as JSON. Used for: `convert`, `templates list`, `list optimizations`, `numbering-schemes list`, `md-numbering`, `doctor`.
 
 Both executable paths are resolved with cross-correction (if user puts CLI path in GUI field or vice versa, plugin auto-detects the sibling exe).
 
