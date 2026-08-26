@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement to the Obsidian integration
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: Use the DocWen core repository for requests about conversion, OCR, proofreading, or CLI behavior outside Obsidian.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow
+      description: What Obsidian workflow is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the user-visible result rather than an internal implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional workarounds or related plugins.

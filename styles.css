@@ -1,0 +1,339 @@
+.docwen-settings-root {
+  min-width: 0;
+}
+
+.docwen-settings-tabs {
+  align-items: stretch;
+  border-block-end: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--size-2-1);
+  margin: 0;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  padding: 0;
+  scrollbar-width: thin;
+}
+
+.docwen-settings-tabs > button.docwen-settings-tab {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-block-end: 2px solid transparent !important;
+  border-radius: 0 !important;
+  box-sizing: border-box;
+  box-shadow: none !important;
+  color: var(--text-muted) !important;
+  cursor: pointer;
+  flex: 0 0 auto;
+  block-size: auto;
+  font-family: inherit !important;
+  font-size: var(--font-ui-small) !important;
+  font-weight: inherit;
+  margin: 0 0 -1px !important;
+  min-block-size: 34px;
+  padding: 7px 12px !important;
+  white-space: nowrap;
+}
+
+.docwen-settings-tabs > button.docwen-settings-tab:hover {
+  background: transparent !important;
+  color: var(--text-normal) !important;
+}
+
+.docwen-settings-tabs > button.docwen-settings-tab[aria-selected="true"] {
+  background: transparent !important;
+  border-block-end-color: var(--interactive-accent) !important;
+  color: var(--text-normal) !important;
+  font-weight: var(--font-semibold) !important;
+}
+
+.docwen-settings-tabs > button.docwen-settings-tab:focus-visible,
+.docwen-settings-action:focus-visible {
+  outline: 2px solid var(--interactive-accent) !important;
+  outline-offset: -2px;
+}
+
+.docwen-settings-panel {
+  margin-block-start: var(--size-4-5);
+  min-width: 0;
+}
+
+.docwen-settings-panel:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.docwen-settings-action[aria-disabled="false"] {
+  cursor: pointer;
+}
+
+.docwen-settings-action[aria-disabled="false"]:hover {
+  background: var(--background-modifier-hover);
+}
+
+.docwen-settings-action[aria-disabled="true"] {
+  opacity: var(--disabled-opacity);
+}
+
+.docwen-settings-help.setting-item {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  padding: var(--size-4-4);
+}
+
+.docwen-settings-help .setting-item-info,
+.docwen-settings-help .setting-item-description {
+  width: 100%;
+}
+
+.docwen-settings-help .setting-item-name {
+  display: none;
+}
+
+.docwen-settings-help .setting-item-description {
+  color: var(--text-normal);
+}
+
+.docwen-modal-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-3);
+  margin-top: var(--size-4-4);
+}
+
+.docwen-path-input {
+  flex: 1 1 260px;
+  width: min(520px, 100%);
+}
+
+.docwen-location-setting .setting-item-control {
+  flex-wrap: wrap;
+}
+
+.docwen-settings-status-valid {
+  color: var(--text-success);
+}
+
+.docwen-settings-status-warning {
+  color: var(--text-warning);
+}
+
+.docwen-settings-status-error {
+  color: var(--text-error);
+}
+
+.docwen-settings-status-loading {
+  color: var(--text-muted);
+}
+
+.docwen-settings-status-empty {
+  color: var(--text-muted);
+}
+
+.docwen-settings-help ul {
+  margin-top: 0;
+}
+
+.docwen-proofread-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.docwen-proofread-toolbar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.docwen-proofread-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.docwen-proofread-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.docwen-proofread-btn:focus-visible,
+.docwen-proofread-cancel:focus-visible,
+.docwen-operation-cancel:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.docwen-proofread-cancel,
+.docwen-operation-cancel {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--button-radius);
+  color: var(--text-normal);
+  cursor: pointer;
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 2px 8px;
+}
+
+.docwen-proofread-cancel:hover,
+.docwen-operation-cancel:hover {
+  background: var(--background-modifier-hover);
+}
+
+.docwen-proofread-cancel:disabled,
+.docwen-operation-cancel:disabled {
+  color: var(--text-muted);
+  cursor: wait;
+}
+
+.docwen-operation-status {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.docwen-operation-status:empty {
+  display: none;
+}
+
+.docwen-operation-status-label {
+  color: var(--text-muted);
+}
+
+@media (pointer: coarse) {
+  .docwen-settings-tabs > button.docwen-settings-tab {
+    min-block-size: 44px;
+  }
+
+  .docwen-proofread-cancel,
+  .docwen-operation-cancel {
+    min-height: 44px;
+  }
+
+  button.docwen-proofread-item {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .docwen-settings-tabs {
+    margin-inline: calc(var(--size-4-2) * -1);
+    padding-inline: var(--size-4-2);
+  }
+
+  .docwen-settings-tabs > button.docwen-settings-tab {
+    padding-inline: var(--size-4-2) !important;
+  }
+}
+
+.docwen-proofread-filename {
+  flex: 1 1 auto;
+  margin-left: auto;
+  min-width: 0;
+  font-size: 0.8em;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.docwen-proofread-status {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+.docwen-proofread-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+button.docwen-proofread-item {
+  display: block;
+  height: auto;
+  min-height: var(--input-height);
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  background: transparent;
+  border: 0;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.docwen-proofread-item:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.docwen-proofread-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.docwen-proofread-item-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 2px;
+  min-width: 0;
+}
+
+.docwen-proofread-line {
+  font-size: 0.75em;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.docwen-proofread-rule {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  background: var(--background-modifier-hover);
+  padding: 0 4px;
+  border-radius: 3px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.docwen-proofread-item-body {
+  font-size: 0.85em;
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.docwen-proofread-error {
+  color: var(--text-error);
+}
+
+.docwen-proofread-arrow {
+  color: var(--text-muted);
+}
+
+.docwen-proofread-suggestion {
+  color: var(--text-success);
+}
