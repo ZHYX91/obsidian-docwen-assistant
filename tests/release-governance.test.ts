@@ -362,7 +362,7 @@ describe("release governance", () => {
     expect(documentation).toContain("existing same-tag Release");
     expect(documentation).toContain("externally administered publication prerequisites");
     expect(documentation).toContain("Record evidence that both protections are enabled");
-    expect(documentation).toContain("post-publication `isImmutable` checks");
+    expect(documentation).toContain("post-publication REST `immutable: true` checks");
     expect(documentation).toContain("cannot make an unsafe publication attempt recoverable");
     expect(documentation).toContain("does not check out repository content, install dependencies, build, or execute checked-out repository code");
     expect(documentation).toContain("fixed dependency-free publication boundary");
@@ -427,7 +427,13 @@ describe("release governance", () => {
     expect(verifier.match(/allow_404=/gu)).toHaveLength(1);
     expect(verifier).toContain("allow_404=allow_missing");
     expect(verifier).toContain("for attempt in range(1, 11)");
-    expect(verifier).toContain("isImmutable");
+    expect(verifier).toContain('release.get("immutable") is not True');
+    expect(verifier).not.toContain("isImmutable");
+    expect(verifier).not.toContain("/graphql");
+    const standaloneVerifier = readFileSync("scripts/verify-release-state.mjs", "utf8");
+    expect(standaloneVerifier).toContain("releaseData?.immutable !== true");
+    expect(standaloneVerifier).not.toContain("isImmutable");
+    expect(standaloneVerifier).not.toContain("/graphql");
     expect(verifier).toContain("Remote Release asset bytes differ");
     expect(verifier).toContain("verify_source(identity, document)");
     expect(verifier).toContain("verify_baseline(identity, document)");

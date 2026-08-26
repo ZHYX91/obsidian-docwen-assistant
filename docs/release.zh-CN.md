@@ -37,7 +37,7 @@ Node 版本由 `.node-version` 单一声明，npm 版本由 `package.json#packag
 
 ## 外部门槛
 
-Immutable Releases 与所需 GitHub 权限是仓库源码之外的发布前提。仓库 ruleset 和 tag 保护只是可选的纵深防御，不是发布门槛。Community Plugins 审核和真实用户升级仍是独立外部证据；只有不可变托管状态与精确资产完成核验后，才能报告发布完成。
+Immutable Releases、禁止更新或删除数字版本 tag 的 ruleset，以及所需 GitHub 权限，都是仓库源码之外的发布前提。推送版本 tag 前必须记录这两项仓库保护已启用。Community Plugins 审核和真实用户升级仍是独立外部证据；只有不可变托管状态与精确资产完成核验后，才能报告发布完成。
 
 ## 故障与恢复
 

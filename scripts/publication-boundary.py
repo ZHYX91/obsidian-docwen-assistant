@@ -115,30 +115,6 @@ def request_json(path: str, *, allow_404: bool = False) -> Any:
         fail(f"GitHub API returned invalid JSON for {path}: {error}")
 
 
-def graphql(query: str, variables: dict[str, object]) -> Any:
-    body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
-    request = urllib.request.Request(
-        api_url("/graphql"),
-        data=body,
-        method="POST",
-        headers={
-            "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {required('GH_TOKEN')}",
-            "Content-Type": "application/json",
-            "User-Agent": "docwen-assistant-publication-boundary",
-            "X-GitHub-Api-Version": API_VERSION,
-        },
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            payload = json.loads(response.read())
-    except urllib.error.HTTPError as error:
-        fail(f"GitHub GraphQL request failed ({error.code})")
-    if payload.get("errors"):
-        fail(f"GitHub GraphQL returned errors: {payload['errors']!r}")
-    return payload.get("data")
-
-
 def write_output(name: str, value: str) -> None:
     output = required("GITHUB_OUTPUT")
     if "\n" in value or "\r" in value:
@@ -586,16 +562,6 @@ def verify_baseline(identity: dict[str, str], document: dict[str, Any]) -> None:
         verify_ancestor(identity["repository"], previous_commit, identity["source"], f"Previous Release {previous}")
 
 
-def verify_immutable(repository: str, tag: str) -> None:
-    owner, name = repository.split("/", 1)
-    data = graphql(
-        "query($owner:String!,$name:String!,$tag:String!){repository(owner:$owner,name:$name){release(tagName:$tag){isImmutable}}}",
-        {"owner": owner, "name": name, "tag": tag},
-    )
-    if (((data or {}).get("repository") or {}).get("release") or {}).get("isImmutable") is not True:
-        fail("Release exists but GraphQL isImmutable is not true")
-
-
 def verify_release_state(
     identity: dict[str, str], assets: dict[str, bytes], *, allow_missing: bool
 ) -> str:
@@ -615,7 +581,6 @@ def verify_release_state(
         or not release["published_at"]
     ):
         fail("Same-tag Release is not a published immutable Release")
-    verify_immutable(identity["repository"], identity["version"])
     remote_assets = release.get("assets")
     if not isinstance(remote_assets, list) or sorted(item.get("name") for item in remote_assets) != public_release_names(
         identity["version"]

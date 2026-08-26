@@ -66,7 +66,6 @@ async function verifyPublishedRelease(releaseData) {
   ) {
     throw new Error("Tagged Release is not a published immutable Release");
   }
-  await verifyImmutableRelease(repository, tag);
   await verifyRemoteAssets(releaseData);
 }
 
@@ -113,26 +112,6 @@ async function retryPublishedReleaseVerification() {
     }
   }
   throw new Error(`Published Release did not reach the immutable asset contract: ${lastError.message}`);
-}
-
-async function verifyImmutableRelease(repo, releaseTag) {
-  const [owner, name] = repo.split("/", 2);
-  const response = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: { ...headers, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: "query($owner:String!,$name:String!,$tag:String!){repository(owner:$owner,name:$name){release(tagName:$tag){isImmutable}}}",
-      variables: { owner, name, tag: releaseTag },
-    }),
-  });
-  if (!response.ok) throw new Error(`Release immutability query failed (${response.status})`);
-  const payload = await response.json();
-  if (payload.errors?.length) {
-    throw new Error(`Release immutability query failed: ${JSON.stringify(payload.errors)}`);
-  }
-  if (payload.data?.repository?.release?.isImmutable !== true) {
-    throw new Error("Release exists but isImmutable is not true");
-  }
 }
 
 async function api(path) {

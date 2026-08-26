@@ -38,7 +38,7 @@ With finite retries, the workflow reads back the final GitHub Release and requir
 
 ## External prerequisites
 
-Immutable Releases and the required GitHub permissions are publication prerequisites outside repository source. Repository rulesets and tag protection are optional defense-in-depth controls, not publication gates. Community Plugins review and real user upgrades remain separate external evidence; publication is complete only after the immutable hosted state and exact assets have been verified.
+Immutable Releases, a no-update/no-delete numeric-version tag ruleset, and the required GitHub permissions are publication prerequisites outside repository source. Record both repository protections before pushing a version tag. Community Plugins review and real user upgrades remain separate external evidence; publication is complete only after the immutable hosted state and exact assets have been verified.
 
 ## Failure and recovery
 

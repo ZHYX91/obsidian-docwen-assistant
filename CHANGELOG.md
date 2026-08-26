@@ -4,7 +4,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
-The repository manifests currently identify version `2.0.0`, but this checkout has no `2.0.0` tag. The entries below are source work awaiting the remaining candidate, host, and publication gates.
+### Fixed
+
+- Replaced the removed GraphQL `Release.isImmutable` readback with the GitHub REST `immutable: true` field and added a manual CI trigger for governance-only recovery checks.
+
+## [2.0.0] - 2026-08-26
 
 ### Changed
 
@@ -29,6 +33,7 @@ The repository manifests currently identify version `2.0.0`, but this checkout h
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...HEAD
+[2.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/2.0.0
 [v1.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/v1.2.0
 [1.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/1.0.0
