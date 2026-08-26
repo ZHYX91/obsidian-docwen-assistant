@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: DocWen core issues
+    url: https://github.com/ZHYX91/docwen/issues
+    about: Report conversion, OCR, proofreading, or DocWen CLI problems that also occur outside Obsidian.
+  - name: Security policy
+    url: https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy
+    about: Do not disclose a vulnerability or private document data in a public issue.

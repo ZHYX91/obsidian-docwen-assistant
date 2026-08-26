@@ -17,6 +17,7 @@
     "importHelpers": true,
     "isolatedModules": true,
     "strictNullChecks": true,
+    "skipLibCheck": true,
     "types": [
       "node"
     ],

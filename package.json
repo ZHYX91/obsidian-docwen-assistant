@@ -1,19 +1,32 @@
 {
   "name": "docwen-assistant",
-  "version": "1.2.0",
-  "description": "Obsidian plugin for launching DocWen converter with current file path",
+  "version": "2.0.0",
+  "description": "Connect Obsidian to local DocWen conversion, proofreading, and GUI control through DocWenCLI.",
   "main": "dist/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "check:runtime": "node scripts/check-runtime.mjs",
+    "format:check": "node scripts/check-format.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=json-summary",
+    "test:watch": "vitest",
     "dev": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --watch",
-    "build": "tsc --noEmit && esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote --minify",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote --minify && node scripts/sync-dist-assets.mjs",
     "build:quick": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "npm run lint -- --fix",
-    "clean": "if exist dist rmdir /s /q dist && if exist release rmdir /s /q release",
-    "prebuild": "if not exist dist mkdir dist",
-    "version": "node version-bump.js && git add manifest.json versions.json",
-    "release": "node scripts/build.js"
+    "check:readme-i18n": "node scripts/check-readme-i18n.mjs",
+    "check:docs-i18n": "node scripts/check-docs-i18n.mjs",
+    "artifact:check": "node scripts/check-artifacts.mjs",
+    "acceptance:docwen-package": "npm run check:runtime && node scripts/run-docwen-package-acceptance.mjs",
+    "audit:all": "node scripts/check-dependencies.mjs",
+    "check": "npm run check:runtime && npm run lint && npm run format:check && npm run check:readme-i18n && npm run check:docs-i18n && npm run test:coverage && npm run build && npm run artifact:check && npm run audit:all",
+    "clean": "node scripts/prepare-build.mjs clean",
+    "prebuild": "node scripts/prepare-build.mjs prepare",
+    "version:set": "node scripts/set-version.mjs",
+    "release": "npm run release:check && node scripts/package-release.mjs",
+    "release:version": "node scripts/check-release-version.mjs",
+    "release:check": "npm run check && npm run release:version"
   },
   "keywords": [
     "obsidian",
@@ -24,19 +37,28 @@
   ],
   "author": "ZhengYX",
   "license": "MIT",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "packageManager": "npm@11.17.0",
   "devDependencies": {
-    "@eslint/js": "^9.39.0",
-    "@types/node": "^24.9.1",
-    "@typescript-eslint/eslint-plugin": "^8.58.1",
-    "@typescript-eslint/parser": "^8.58.1",
-    "esbuild": "^0.25.11",
-    "eslint": "^9.36.0",
-    "obsidian": "^1.10.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.13.3",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "esbuild": "^0.25.12",
+    "eslint": "^10.8.0",
+    "obsidian": "^1.13.1",
     "tslib": "^2.8.1",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ZHYX91/docwen-obsidian.git"
+    "url": "https://github.com/ZHYX91/obsidian-docwen-assistant.git"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }

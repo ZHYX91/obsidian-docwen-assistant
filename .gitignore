@@ -6,6 +6,9 @@
 !.gitignore
 !.gitattributes
 !.editorconfig
+!.node-version
+!.github/
+!.github/**
 
 # 编译输出
 main.js
@@ -31,4 +34,4 @@ yarn-error.log*
 dist/
 build/
 release/
-
+coverage/
