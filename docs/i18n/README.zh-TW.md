@@ -73,7 +73,7 @@ Obsidian 1.12.7 以上使用五個可水平捲動的頂部頁籤：一般、轉�
 
 ## 隱私與安全性
 
-外掛會為目前編輯器內容（包括未儲存文字）或 Vault 檔案建立隔離快照，再交給本機 CLI。轉換會將通過驗證的首選輸出提交到使用者確認的目標，並以安全名稱將通過驗證的關聯資源提交到同一目錄。它不會上傳文件或替 DocWen 列舉整個 Vault。完整協定請參閱 [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+外掛會為目前編輯器內容（包括未儲存文字）或 Vault 檔案建立隔離快照，再交給本機 CLI。它只會為了執行使用者選取的 `DocWenCLI.exe`、管理隔離的暫存輸入與已驗證成品，以及寫入使用者明確選取的輸出路徑而存取 Vault 外部檔案；本機轉換與匯出需要這些存取。轉換會將通過驗證的首選輸出提交到使用者確認的目標，並以安全名稱將通過驗證的關聯資源提交到同一目錄。它不會上傳文件或替 DocWen 列舉整個 Vault。完整協定請參閱 [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
 ## 開發
 

@@ -40,7 +40,7 @@ export class ItemPickerModal extends SuggestModal<PickerItem> {
   }
 
   renderSuggestion(item: PickerItem, el: HTMLElement): void {
-    el.createEl("div", { text: item.label });
+    el.createDiv({ text: item.label });
     if (item.description) {
       el.createEl("small", { text: item.description, cls: "suggestion-note" });
     }

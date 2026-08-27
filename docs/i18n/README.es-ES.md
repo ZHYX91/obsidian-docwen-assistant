@@ -66,7 +66,7 @@ Obsidian 1.12.7 o posterior usa cinco pestañas superiores con desplazamiento ho
 
 ## Privacidad y seguridad
 
-El complemento entrega al proceso CLI local únicamente una instantánea aislada del editor actual o del archivo del Vault. La conversión guarda la salida preferida validada en el destino confirmado por el usuario y coloca a su lado los recursos relacionados validados con nombres seguros. No sube documentos ni enumera todo el Vault. Detalles: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+El complemento entrega al proceso CLI local únicamente una instantánea aislada del editor actual o del archivo del Vault. Solo accede a archivos fuera del Vault para ejecutar el `DocWenCLI.exe` elegido por el usuario, gestionar entradas temporales aisladas y artefactos validados, y escribir en una ruta de salida elegida expresamente; este acceso es necesario para la conversión y exportación locales. La conversión guarda la salida preferida validada en el destino confirmado por el usuario y coloca a su lado los recursos relacionados validados con nombres seguros. No sube documentos ni enumera todo el Vault. Detalles: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Desarrollo
 

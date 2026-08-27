@@ -1,5 +1,7 @@
 import { type App, Modal } from "obsidian";
 
+import { DOCWEN_PRODUCT_NAME } from "../docwen/links";
+
 export function confirmDetectedFormat(
   app: App,
   message: string,
@@ -21,7 +23,7 @@ class ConfirmationModal extends Modal {
   }
 
   override onOpen(): void {
-    this.titleEl.setText("DocWen");
+    this.titleEl.setText(DOCWEN_PRODUCT_NAME);
     this.contentEl.createEl("p", { text: this.message });
     const controls = this.contentEl.createDiv({ cls: "modal-button-container" });
     controls.createEl("button", { text: "Cancel", attr: { type: "button" } })

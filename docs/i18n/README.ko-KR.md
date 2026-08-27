@@ -66,7 +66,7 @@ Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 5개(일�
 
 ## 개인정보 보호 및 보안
 
-플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 로컬 CLI에 전달합니다. 변환은 검증된 기본 출력을 사용자가 확인한 대상에 저장하고 검증된 관련 리소스는 안전한 이름으로 같은 위치에 저장합니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 로컬 CLI에 전달합니다. Vault 외부 파일 접근은 사용자가 선택한 `DocWenCLI.exe` 실행, 격리된 임시 입력과 검증된 산출물 관리, 사용자가 명시적으로 선택한 출력 경로 쓰기에만 사용되며 로컬 변환과 내보내기에 필요합니다. 변환은 검증된 기본 출력을 사용자가 확인한 대상에 저장하고 검증된 관련 리소스는 안전한 이름으로 같은 위치에 저장합니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## 개발
 

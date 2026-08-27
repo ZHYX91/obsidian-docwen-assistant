@@ -66,7 +66,7 @@ O Obsidian 1.12.7 ou superior usa cinco abas superiores com rolagem horizontal: 
 
 ## Privacidade e segurança
 
-O plugin fornece ao processo CLI local apenas um instantâneo isolado do editor atual ou do arquivo do Vault. A conversão grava a saída preferencial validada no destino confirmado pelo usuário e coloca os recursos relacionados validados ao lado dela com nomes seguros. Ele não envia documentos nem enumera todo o Vault. Detalhes: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+O plugin fornece ao processo CLI local apenas um instantâneo isolado do editor atual ou do arquivo do Vault. Ele acessa arquivos fora do Vault somente para executar o `DocWenCLI.exe` escolhido pelo usuário, gerenciar entradas temporárias isoladas e artefatos validados e gravar em um destino de saída escolhido explicitamente; esse acesso é necessário para conversão e exportação locais. A conversão grava a saída preferencial validada no destino confirmado pelo usuário e coloca os recursos relacionados validados ao lado dela com nomes seguros. Ele não envia documentos nem enumera todo o Vault. Detalhes: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Desenvolvimento
 

@@ -211,7 +211,8 @@ describe("settings surface lifecycle", () => {
     const usage = settings.at(-1)!;
     expect(usage.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
     expect(usage.nameEl.textContent).toBe("");
-    expect(usage.descEl.innerHTML).toContain("<ul>");
+    expect(usage.descEl.children).toHaveLength(1);
+    expect(usage.descEl.children[0].children).toHaveLength(4);
   });
 
   it("runs the Doctor action by mouse or keyboard and ignores unrelated keys", async () => {

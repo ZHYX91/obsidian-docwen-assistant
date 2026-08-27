@@ -325,7 +325,7 @@ export class DocWenClient {
           cause: errorMessage(error),
         });
       }
-      const report = parseReport(reportValue, request.inputs[0]!.sha256);
+      const report = parseReport(reportValue, request.inputs[0].sha256);
       return report;
     });
   }
@@ -379,7 +379,7 @@ export class DocWenClient {
         signal,
       );
       const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite);
-      return { output: outputs[0]!, outputs, bundleId: result.bundle.bundle_id };
+      return { output: outputs[0], outputs, bundleId: result.bundle.bundle_id };
     });
   }
 
@@ -445,7 +445,7 @@ export async function atomicCommitBundle(
   const committed: Array<{ identity: FileIdentity; target: string }> = [];
   try {
     for (let index = 0; index < targets.length; index += 1) {
-      const { allowOverwrite, artifact, target } = targets[index]!;
+      const { allowOverwrite, artifact, target } = targets[index];
       const expectedTarget = await inspectCommitTarget(target, allowOverwrite);
       const temporary = path.join(destinationRoot, `.docwen-${transactionId}-${index}.new`);
       await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
@@ -463,7 +463,7 @@ export async function atomicCommitBundle(
       await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
     }
     for (let index = 0; index < prepared.length; index += 1) {
-      const item = prepared[index]!;
+      const item = prepared[index];
       await assertCommitTargetUnchanged(item.target, item.expectedTarget);
       if (item.expectedTarget) {
         item.backup = path.join(destinationRoot, `.docwen-${transactionId}-${index}.bak`);
@@ -614,9 +614,9 @@ async function taskRequest(
   const handles: MachineInputHandle[] = [];
   for (let index = 0; index < inputs.length; index += 1) {
     handles.push(await inputHandle(
-      inputs[index]!,
-      `input.${inputs[index]!.role}.${index + 1}`,
-      inspected[index]!,
+      inputs[index],
+      `input.${inputs[index].role}.${index + 1}`,
+      inspected[index],
       signal,
     ));
   }
@@ -724,7 +724,7 @@ function requiredSourceInput(inputs: readonly TaskInput[]): TaskInput {
   if (sources.length !== 1) {
     throw new LocalCliError("cli_input_invalid", "DocWen tasks require exactly one source input.");
   }
-  return sources[0]!;
+  return sources[0];
 }
 
 function assertInputKindAndRole(kind: TaskInput["kind"], role: TaskInput["role"]): void {
@@ -1124,9 +1124,9 @@ async function readValidatedArtifactText(
 ): Promise<string> {
   try {
     await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    const chunks: Buffer[] = [];
+    const chunks: Array<Buffer<ArrayBufferLike>> = [];
     let bytesRead = 0;
-    for await (const chunk of createReadStream(artifact.absolutePath)) {
+    for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
       const bytes = Buffer.from(chunk);
       bytesRead += bytes.length;
       if (bytesRead > artifact.size_bytes || bytesRead > limitBytes) {
@@ -1192,7 +1192,7 @@ async function sha256File(
   const hash = createHash("sha256");
   let bytesRead = 0;
   throwIfAborted(signal);
-  for await (const chunk of createReadStream(filePath)) {
+  for await (const chunk of createReadStream(filePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
     throwIfAborted(signal);
     bytesRead += chunk.length;
     if (bytesRead > expectedBytes) {
@@ -1225,8 +1225,10 @@ function isObject(value: unknown): value is JsonObject {
 }
 
 function stringArray(value: unknown): string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) throw invalidResponse("string array");
-  return [...value];
+  if (!Array.isArray(value)) throw invalidResponse("string array");
+  const items: unknown[] = value;
+  if (items.some((item) => typeof item !== "string")) throw invalidResponse("string array");
+  return items as string[];
 }
 
 function nonEmptyStringArray(value: unknown, field: string): string[] {

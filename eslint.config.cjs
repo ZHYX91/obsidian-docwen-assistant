@@ -1,37 +1,35 @@
-const js = require("@eslint/js");
-const tsParser = require("@typescript-eslint/parser");
-const tsPlugin = require("@typescript-eslint/eslint-plugin");
+const obsidianmd = require("eslint-plugin-obsidianmd").default;
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 module.exports = [
   {
-    ignores: ["dist/**", "release/**", "build/**", "node_modules/**", "main.js"],
+    ignores: [
+      "build/**",
+      "coverage/**",
+      "dist/**",
+      "main.js",
+      "node_modules/**",
+      "release/**",
+      "scripts/**",
+      "tests/**",
+    ],
   },
-  js.configs.recommended,
+  ...obsidianmd.configs.recommended,
   {
-    files: ["**/*.ts"],
+    files: ["src/**/*.ts"],
     languageOptions: {
-      parser: tsParser,
       parserOptions: {
-        sourceType: "module",
-        ecmaVersion: 2021,
+        projectService: true,
+        tsconfigRootDir: __dirname,
       },
     },
-    plugins: {
-      "@typescript-eslint": tsPlugin,
-    },
+  },
+  {
+    files: ["src/settings.ts"],
     rules: {
-      ...tsPlugin.configs["eslint-recommended"].overrides[0].rules,
-      ...tsPlugin.configs.recommended.rules,
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
-      "@typescript-eslint/ban-ts-comment": "off",
-      "no-empty": ["error", { "allowEmptyCatch": true }],
-      "no-prototype-builtins": "off",
-      "@typescript-eslint/no-empty-function": "off",
-      "@typescript-eslint/no-var-requires": "off",
-      "@typescript-eslint/no-require-imports": "off",
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Obsidian 1.13 deprecates display(), but non-empty declarative definitions
+      // bypass this plugin's intentional five-tab settings information architecture.
+      "@typescript-eslint/no-deprecated": "off",
     },
   },
 ];

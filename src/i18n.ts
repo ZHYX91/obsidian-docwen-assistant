@@ -94,7 +94,7 @@ export function t(key: keyof Translations, params?: Record<string, string>): str
   }
 
   // Replace placeholders like {filename} with actual values
-  return translation.replace(/\{(\w+)\}/g, (match, paramKey) => {
+  return translation.replace(/\{(\w+)\}/g, (match: string, paramKey: string) => {
     return params[paramKey] !== undefined ? params[paramKey] : match;
   });
 }

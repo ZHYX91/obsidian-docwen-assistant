@@ -40,6 +40,7 @@ import {
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   for (const root of temporaryRoots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 
@@ -217,6 +218,7 @@ class FakeChild extends EventEmitter {
 
 describe("DocWenMachineClient", () => {
   beforeEach(() => {
+    vi.stubGlobal("window", { setTimeout, clearTimeout });
     spawnMock.mockReset();
     serverState.cancelRequested = false;
     serverState.corruptHash = false;

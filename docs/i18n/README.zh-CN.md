@@ -86,7 +86,7 @@ DocWen Assistant 通过公开的 `DocWenCLI.exe` 协议，把 Obsidian 连接到
 
 ## 隐私与安全
 
-插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 CLI。转换会把经过验证的首选输出提交到用户确认的目标，并以安全名称把经过验证的关联资源提交到同一目录。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 CLI。它仅为运行用户选择的 `DocWenCLI.exe`、管理隔离的临时输入和已验证产物，以及写入用户明确选择的输出路径而访问 Vault 外部文件；本机转换和导出需要这些访问。转换会把经过验证的首选输出提交到用户确认的目标，并以安全名称把经过验证的关联资源提交到同一目录。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
 CLI 边界使用 JSON-RPC 2.0 和规范的 `Content-Length` framing。所有输入均固定大小与 SHA-256，所有 Artifact Bundle 在原子提交前都要校验图、路径、大小和哈希；调用具有超时、任务取消、输出上限和子进程清理。
 

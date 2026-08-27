@@ -66,7 +66,7 @@ Obsidian 1.12.7 ou ultérieur utilise cinq onglets supérieurs à défilement ho
 
 ## Confidentialité et sécurité
 
-Le plugin transmet uniquement un instantané isolé de l'éditeur courant ou du fichier du Vault au processus CLI local. La conversion enregistre la sortie préférée validée à la destination confirmée par l’utilisateur et place les ressources associées validées à côté, sous des noms sûrs. Il ne téléverse aucun document et ne parcourt pas tout le Vault. Détails : [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Le plugin transmet uniquement un instantané isolé de l'éditeur courant ou du fichier du Vault au processus CLI local. Il n’accède aux fichiers hors du Vault que pour exécuter le `DocWenCLI.exe` choisi par l’utilisateur, gérer des entrées temporaires isolées et des artefacts validés, puis écrire vers une destination explicitement choisie ; cet accès est nécessaire à la conversion et à l’export locaux. La conversion enregistre la sortie préférée validée à la destination confirmée par l’utilisateur et place les ressources associées validées à côté, sous des noms sûrs. Il ne téléverse aucun document et ne parcourt pas tout le Vault. Détails : [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Développement
 

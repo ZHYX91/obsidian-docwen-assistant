@@ -392,7 +392,7 @@ export default class DocWenPlugin extends Plugin {
    * Load plugin settings from storage
    */
   async loadSettings() {
-    const stored = await this.loadData();
+    const stored: unknown = await this.loadData();
     this.settings = normalizeSettings(stored);
     if (JSON.stringify(stored ?? {}) !== JSON.stringify(this.settings)) {
       void this.settingsSaves.save({ ...this.settings }).catch(() => undefined);

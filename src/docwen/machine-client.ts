@@ -501,13 +501,12 @@ export class DocWenMachineClient {
     let taskId: string | null = null;
     let timedOut = false;
     let abortHandled = false;
-    let cancellationTimer: ReturnType<typeof setTimeout> | null = null;
-    const timer = setTimeout(() => {
+    let cancellationTimer: number | null = null;
+    const timer = window.setTimeout(() => {
       timedOut = true;
       session.fail(new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs }));
       void session.terminate().catch(() => undefined);
     }, timeoutMs);
-    timer.unref?.();
     const onAbort = (): void => {
       if (abortHandled) return;
       abortHandled = true;
@@ -520,11 +519,10 @@ export class DocWenMachineClient {
           void session.terminate().catch(() => undefined);
           return;
         }
-        cancellationTimer = setTimeout(() => {
+        cancellationTimer = window.setTimeout(() => {
           session.fail(cancellation);
           void session.terminate().catch(() => undefined);
         }, CANCELLATION_GRACE_MS);
-        cancellationTimer.unref?.();
       } else {
         session.fail(cancellation);
         void session.terminate().catch(() => undefined);
@@ -557,8 +555,8 @@ export class DocWenMachineClient {
       }
       throw primary;
     } finally {
-      clearTimeout(timer);
-      if (cancellationTimer) clearTimeout(cancellationTimer);
+      window.clearTimeout(timer);
+      if (cancellationTimer) window.clearTimeout(cancellationTimer);
       signal?.removeEventListener("abort", onAbort);
       this.activeSessions.delete(session);
     }
@@ -587,7 +585,7 @@ export async function validateArtifactBundle(
   ) {
     throw integrityError("Artifact Bundle layout schema is invalid.");
   }
-  const validatedLayoutSchema = layoutSchema as "docwen.artifact_layout.v1" | "docwen.document_node.v1";
+  const validatedLayoutSchema = layoutSchema;
   const producer = requiredObject(bundle.producer, "bundle.producer");
   if (
     producer.name !== "DocWen"
@@ -735,7 +733,7 @@ export async function validateArtifactBundle(
     if (!["attachment_of", "fragment_of", "resource_of", "derived_from"].includes(type)) {
       throw integrityError("Bundle relation type is invalid.");
     }
-    if (!relationRoles[type]!.includes(role)) throw integrityError("Bundle relation role is invalid.");
+    if (!relationRoles[type].includes(role)) throw integrityError("Bundle relation role is invalid.");
     if (!artifactIds.has(sourceId) || !artifactIds.has(targetId) || sourceId === targetId) {
       throw integrityError("Bundle relation graph is invalid.");
     }
@@ -924,7 +922,7 @@ async function sha256File(
   const hash = createHash("sha256");
   let bytesRead = 0;
   assertActive?.();
-  for await (const chunk of createReadStream(filename)) {
+  for await (const chunk of createReadStream(filename) as AsyncIterable<Buffer<ArrayBufferLike>>) {
     assertActive?.();
     bytesRead += chunk.length;
     if (bytesRead > expectedBytes) throw integrityError("Artifact grew while it was being hashed.");
@@ -940,7 +938,11 @@ function remoteRpcError(error: JsonObject): RemoteMachineError {
   return new RemoteMachineError(
     "protocol",
     typeof data.code === "string" ? data.code : `rpc.${String(error.code)}`,
-    typeof data.message === "string" ? data.message : String(error.message || "DocWen request failed."),
+    typeof data.message === "string"
+      ? data.message
+      : typeof error.message === "string"
+        ? error.message
+        : "DocWen request failed.",
     false,
     data,
   );
@@ -962,10 +964,9 @@ function waitForExit(
   timeoutMs: number,
 ): Promise<number | null | typeof EXIT_WAIT_EXPIRED> {
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(EXIT_WAIT_EXPIRED), timeoutMs);
-    timer.unref?.();
+    const timer = window.setTimeout(() => resolve(EXIT_WAIT_EXPIRED), timeoutMs);
     void closed.then((code) => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       resolve(code);
     });
   });

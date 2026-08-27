@@ -1,6 +1,6 @@
 import { type App, Modal } from "obsidian";
 
-import { DOCWEN_RELEASES_URL } from "../docwen/links";
+import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL } from "../docwen/links";
 import { copyTextToClipboard } from "../host/clipboard";
 import { showNotice } from "../host/notices";
 import { t, type Translations } from "../i18n";
@@ -60,7 +60,7 @@ class DocWenSetupModal extends Modal {
     this.titleEl.setText(t("dialogDocWenSetupTitle"));
     this.contentEl.createEl("p", { text: t("settingsDownloadDocWenDesc") });
     this.contentEl.createEl("p", { text: t("settingsCliPathDesc") });
-    const actions = this.contentEl.createEl("div", { cls: "docwen-modal-actions" });
+    const actions = this.contentEl.createDiv({ cls: "docwen-modal-actions" });
     const settingsButton = actions.createEl("button", {
       text: t("dialogOpenSettings"),
       cls: "mod-cta",
@@ -91,7 +91,7 @@ class FailureDetailsModal extends Modal {
   }
 
   override onOpen(): void {
-    this.titleEl.setText("DocWen");
+    this.titleEl.setText(DOCWEN_PRODUCT_NAME);
     this.contentEl.createEl("p", { text: this.summary });
     this.contentEl.createEl("pre", { text: this.detailsText });
     const copy = this.contentEl.createEl("button", {

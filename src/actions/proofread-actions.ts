@@ -36,14 +36,14 @@ export class ProofreadActions {
     await this.runner.run(
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
-      async ({ signal, isCurrent }) => this.snapshots.run(file, signal, async (snapshot) => {
-        await this.capabilities.requireAction(snapshot.inputs[0]!, "validate", signal);
+      async (lease) => this.snapshots.run(file, lease.signal, async (snapshot) => {
+        await this.capabilities.requireAction(snapshot.inputs[0], "validate", lease.signal);
         const report = await this.docwen.validate(
-          snapshot.inputs[0]!,
+          snapshot.inputs[0],
           buildProofreadChecks(this.getSettings()),
-          signal,
+          lease.signal,
         );
-        if (!isCurrent()) return null;
+        if (!lease.isCurrent()) return null;
         view?.updateResults(report.issues, file.name, file.path);
         showNotice(t("noticeProofreadSuccess", { count: String(report.issues.length) }));
         return report;
@@ -60,7 +60,7 @@ export class ProofreadActions {
         await leaf.setViewState({ type: PROOFREAD_VIEW_TYPE, active: true });
       }
     }
-    if (leaf) this.app.workspace.revealLeaf(leaf);
+    if (leaf) await this.app.workspace.revealLeaf(leaf);
     const view = this.getView();
     if (!view) throw new Error("Proofread view is unavailable.");
     return view;

@@ -4,9 +4,15 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-08-27
+
 ### Fixed
 
 - Replaced the removed GraphQL `Release.isImmutable` readback with the GitHub REST `immutable: true` field and added a manual CI trigger for governance-only recovery checks.
+- Adopted the official Obsidian plugin lint rules, removed unsafe DOM HTML assignment, and type-checked the desktop Electron fallback boundary.
+- Made picker and workspace promises explicit so UI callbacks cannot leak rejected work.
+- Disclosed the exact Vault-external filesystem access required for local DocWen conversion and export in every public README language.
+- Refreshed directory screenshots to the Community listing's exact `1200x800` desktop size.
 
 ## [2.0.0] - 2026-08-26
 
@@ -33,7 +39,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...HEAD
+[2.0.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/2.0.0
 [v1.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/v1.2.0
 [1.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/1.0.0

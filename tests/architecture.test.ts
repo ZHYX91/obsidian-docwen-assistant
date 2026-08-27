@@ -54,6 +54,7 @@ describe("architecture boundaries", () => {
     const main = source("src/main.ts");
     const settings = source("src/settings.ts");
     const dialogs = source("src/host/electron-dialogs.ts");
+    const desktopModules = source("src/host/desktop-modules.ts");
     expect(client).toMatch(/async convert\(\s*request: ConvertRequest,\s*signal\?: AbortSignal,?\s*\)/u);
     expect(client).toContain('"convert.markdown.to_docx"');
     expect(machine).toContain('method: "task/cancel"');
@@ -69,7 +70,8 @@ describe("architecture boundaries", () => {
     expect(main).not.toContain("--output");
     expect(settings).not.toContain('require("electron")');
     expect(settings).not.toContain("new Notice(");
-    expect(dialogs).toContain('require("electron")');
+    expect(dialogs).toContain('requireDesktopModule("electron")');
+    expect(desktopModules).toContain("window.require");
     expect(source("src/host/notices.ts")).toContain("new Notice(");
     expect(source("src/host/file-system.ts")).toContain('from "node:fs"');
   });

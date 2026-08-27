@@ -66,7 +66,7 @@ Obsidian 1.12.7 以降では、横スクロール可能な 5 つの上部タブ�
 
 ## プライバシーとセキュリティ
 
-プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけをローカル CLI に渡します。変換では、検証済みの優先出力をユーザーが確認した保存先へ書き込み、検証済みの関連リソースを安全な名前で同じ場所に配置します。文書のアップロードや Vault 全体の列挙は行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけをローカル CLI に渡します。Vault 外のファイルへアクセスするのは、ユーザーが選択した `DocWenCLI.exe` の実行、隔離された一時入力と検証済み成果物の管理、明示的に選択された出力先への書き込みに限られ、ローカル変換とエクスポートに必要です。変換では、検証済みの優先出力をユーザーが確認した保存先へ書き込み、検証済みの関連リソースを安全な名前で同じ場所に配置します。文書のアップロードや Vault 全体の列挙は行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## 開発
 

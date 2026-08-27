@@ -1,3 +1,5 @@
+import { requireDesktopModule } from "./desktop-modules";
+
 export interface ElectronSaveDialog {
   showSaveDialog(options: {
     title: string;
@@ -15,22 +17,35 @@ export interface ElectronOpenDialog {
 }
 
 export function getElectronSaveDialog(): ElectronSaveDialog | null {
-  return getElectronDialog("showSaveDialog") as ElectronSaveDialog | null;
+  return getElectronDialogs().find(isElectronSaveDialog) ?? null;
 }
 
 export function getElectronOpenDialog(): ElectronOpenDialog | null {
-  return getElectronDialog("showOpenDialog") as ElectronOpenDialog | null;
+  return getElectronDialogs().find(isElectronOpenDialog) ?? null;
 }
 
-function getElectronDialog(method: "showSaveDialog" | "showOpenDialog"): unknown {
-  try {
-    const electron = require("electron");
-    const dialog = electron?.remote?.dialog ?? electron?.dialog ?? null;
-    if (typeof dialog?.[method] === "function") return dialog;
-  } catch {}
-  try {
-    const remote = require("@electron/remote");
-    if (typeof remote?.dialog?.[method] === "function") return remote.dialog;
-  } catch {}
-  return null;
+function getElectronDialogs(): unknown[] {
+  const dialogs: unknown[] = [];
+  const electron = requireDesktopModule("electron");
+  if (isRecord(electron)) {
+    const remoteDialog = isRecord(electron.remote) ? electron.remote.dialog : null;
+    if (isRecord(remoteDialog)) dialogs.push(remoteDialog);
+    if (isRecord(electron.dialog)) dialogs.push(electron.dialog);
+  }
+
+  const remote = requireDesktopModule("@electron/remote");
+  if (isRecord(remote) && isRecord(remote.dialog)) dialogs.push(remote.dialog);
+  return dialogs;
+}
+
+function isElectronSaveDialog(value: unknown): value is ElectronSaveDialog {
+  return isRecord(value) && typeof value.showSaveDialog === "function";
+}
+
+function isElectronOpenDialog(value: unknown): value is ElectronOpenDialog {
+  return isRecord(value) && typeof value.showOpenDialog === "function";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

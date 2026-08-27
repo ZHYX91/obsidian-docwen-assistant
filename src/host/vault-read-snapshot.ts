@@ -314,21 +314,21 @@ function scanAtxHeadings(source: string): ScannedHeading[] {
     const content = stripContainerPrefixes(line);
     if (fence !== null) {
       const closing = /^( {0,3})(`{3,}|~{3,})[ \t]*$/u.exec(content);
-      if (closing && closing[2]![0] === fence.character && closing[2]!.length >= fence.length) fence = null;
+      if (closing && closing[2][0] === fence.character && closing[2].length >= fence.length) fence = null;
     } else {
       const opening = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(content);
-      if (opening && !(opening[2]![0] === "`" && opening[3]!.includes("`"))) {
-        fence = { character: opening[2]![0] as "`" | "~", length: opening[2]!.length };
+      if (opening && !(opening[2][0] === "`" && opening[3].includes("`"))) {
+        fence = { character: opening[2][0] as "`" | "~", length: opening[2].length };
       } else {
         const match = /^( {0,3})(#{1,9})[ \t]+(.*?)[ \t]*$/u.exec(content);
         if (match) {
-          const body = match[3]!.replace(/[ \t]+#+[ \t]*$/u, "").trimEnd();
+          const body = match[3].replace(/[ \t]+#+[ \t]*$/u, "").trimEnd();
           const idMatch = /^(.*?)[ \t]+\^([A-Za-z0-9-]{1,128})[ \t]*$/u.exec(body);
           const visibleSource = (idMatch?.[1] ?? body).trimEnd();
           headings.push({
             jsStart: cursor,
             jsEnd: contentEnd,
-            level: match[2]!.length,
+            level: match[2].length,
             targetId: idMatch?.[2] ?? null,
             plainAuthoredText: hasInlineMarkup(visibleSource) ? null : visibleSource,
           });

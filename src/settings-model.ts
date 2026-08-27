@@ -1,5 +1,5 @@
 export type CleanNumberingMode = "default" | "remove" | "keep";
-export type AddNumberingMode = "default" | "none" | string;
+export type AddNumberingMode = string;
 export type PluginLanguage =
   | "auto"
   | "en"

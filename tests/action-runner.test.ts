@@ -21,6 +21,10 @@ class FakeElement {
     return child;
   }
 
+  createDiv(): FakeElement {
+    return this.createEl("div");
+  }
+
   addEventListener(name: string, listener: () => void): void {
     this.listeners.set(name, listener);
   }

@@ -22,7 +22,7 @@ export function locateOpenMarkdownTarget(
   }
   if (matches.length === 0) return { kind: "closed" };
   if (matches.length > 1) return { kind: "ambiguous" };
-  return { kind: "open", target: matches[0]! };
+  return { kind: "open", target: matches[0] };
 }
 
 export function isSameOpenMarkdownTarget(

@@ -66,7 +66,7 @@ Obsidian 1.12.7 oder neuer verwendet fünf horizontal scrollbare Registerkarten:
 
 ## Datenschutz und Sicherheit
 
-Das Plugin übergibt nur einen isolierten Snapshot des aktuellen Editors oder der Vault-Datei an den lokalen CLI-Prozess. Bei Konvertierungen wird die geprüfte bevorzugte Ausgabe am vom Benutzer bestätigten Ziel gespeichert; geprüfte zugehörige Ressourcen werden unter sicheren Namen daneben abgelegt. Es lädt keine Dokumente hoch und durchsucht nicht den gesamten Vault. Details: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Das Plugin übergibt nur einen isolierten Snapshot des aktuellen Editors oder der Vault-Datei an den lokalen CLI-Prozess. Es greift außerhalb des Vault nur auf Dateien zu, um die vom Benutzer ausgewählte `DocWenCLI.exe` auszuführen, isolierte temporäre Eingaben und geprüfte Artefakte zu verwalten und an einen ausdrücklich gewählten Ausgabeort zu schreiben; diese Zugriffe sind für lokale Konvertierung und Export erforderlich. Bei Konvertierungen wird die geprüfte bevorzugte Ausgabe am vom Benutzer bestätigten Ziel gespeichert; geprüfte zugehörige Ressourcen werden unter sicheren Namen daneben abgelegt. Es lädt keine Dokumente hoch und durchsucht nicht den gesamten Vault. Details: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Entwicklung
 

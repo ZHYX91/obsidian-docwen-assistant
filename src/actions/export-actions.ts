@@ -59,7 +59,7 @@ export class ExportActions {
       "noticeExportFailed",
       async ({ signal }) => {
         await this.snapshots.run(file, signal, async (snapshot) => {
-          const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0]!;
+          const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
           const route = this.capabilities.requireConversionRoute(capability, target);
           const requiresTemplate = route.options.includes("template_name");
@@ -69,8 +69,8 @@ export class ExportActions {
               showNotice(t("noticeNoTemplatesAvailable"));
               return;
             }
-            this.openPicker(templates, t("pickerTemplatePlaceholder"), async (template) => {
-              await this.execute(file, target, { template: template.id });
+            this.openPicker(templates, t("pickerTemplatePlaceholder"), (template) => {
+              void this.execute(file, target, { template: template.id });
             });
             return;
           }
@@ -96,11 +96,13 @@ export class ExportActions {
             this.app,
             items,
             t("pickerOptimizationPlaceholder"),
-            async (chosen) => this.execute(
-              file,
-              target,
-              { optimization: chosen.id === "__none__" ? undefined : chosen.id },
-            ),
+            (chosen) => {
+              void this.execute(
+                file,
+                target,
+                { optimization: chosen.id === "__none__" ? undefined : chosen.id },
+              );
+            },
           ).open();
         });
       },
@@ -110,7 +112,7 @@ export class ExportActions {
   private openPicker(
     items: Array<{ id: string; name: string; description?: string }>,
     placeholder: string,
-    select: (item: { id: string }) => Promise<void>,
+    select: (item: { id: string }) => void,
   ): void {
     new ItemPickerModal(
       this.app,
@@ -141,7 +143,7 @@ export class ExportActions {
       "noticeExportFailed",
       async ({ signal }) => {
         await this.snapshots.run(file, signal, async (snapshot) => {
-          const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0]!;
+          const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
           const route = this.capabilities.requireConversionRoute(capability, target);
           const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);

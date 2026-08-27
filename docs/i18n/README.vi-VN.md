@@ -66,7 +66,7 @@ Obsidian 1.12.7 trở lên dùng năm thẻ trên cùng có thể cuộn ngang: 
 
 ## Quyền riêng tư và bảo mật
 
-Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho tiến trình CLI cục bộ. Khi chuyển đổi, plugin ghi đầu ra ưu tiên đã xác thực vào đích người dùng xác nhận và đặt các tài nguyên liên quan đã xác thực bên cạnh với tên an toàn. Plugin không tải tài liệu lên hoặc liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho tiến trình CLI cục bộ. Plugin chỉ truy cập tệp bên ngoài Vault để chạy `DocWenCLI.exe` do người dùng chọn, quản lý đầu vào tạm thời cô lập và tạo phẩm đã xác thực, đồng thời ghi vào đường dẫn đầu ra được người dùng chọn rõ ràng; quyền truy cập này cần thiết cho việc chuyển đổi và xuất cục bộ. Khi chuyển đổi, plugin ghi đầu ra ưu tiên đã xác thực vào đích người dùng xác nhận và đặt các tài nguyên liên quan đã xác thực bên cạnh với tên an toàn. Plugin không tải tài liệu lên hoặc liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Phát triển
 

@@ -72,7 +72,7 @@ export class SettingTab extends PluginSettingTab {
       renderHelp: (setting) => {
         setting.setClass("docwen-settings-help");
         setting.nameEl.empty();
-        setting.descEl.innerHTML = t("settingsUsageList");
+        renderUsageList(setting.descEl, t("settingsUsageList"));
       },
       runDoctor: () => void this.plugin.runDoctorCheck(),
     });
@@ -284,6 +284,14 @@ export class SettingTab extends PluginSettingTab {
       && (this.containerEl.isConnected || hostSetting?.activeTab === this);
   }
 
+}
+
+function renderUsageList(containerEl: HTMLElement, markup: string): void {
+  const list = containerEl.createEl("ul");
+  for (const match of markup.matchAll(/<li>([\s\S]*?)<\/li>/gu)) {
+    const itemText = match[1]?.replace(/<[^>]*>/gu, "").trim();
+    if (itemText) list.createEl("li", { text: itemText });
+  }
 }
 
 function evaluate(value: boolean | (() => boolean) | undefined, fallback: boolean): boolean {

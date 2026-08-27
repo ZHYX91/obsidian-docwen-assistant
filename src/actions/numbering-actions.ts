@@ -32,9 +32,9 @@ export class NumberingActions {
     await this.runner.run(
       { key: "numbering-schemes", kind: "numbering" },
       "noticeNumberingFailed",
-      async ({ signal, isCurrent }) => {
-        const schemes = await this.docwen.numberingSchemes(signal);
-        if (!isCurrent()) return;
+      async (lease) => {
+        const schemes = await this.docwen.numberingSchemes(lease.signal);
+        if (!lease.isCurrent()) return;
         if (schemes.length === 0) {
           showNotice(t("settingsNumberingSchemeError"));
           return;
@@ -48,7 +48,9 @@ export class NumberingActions {
           this.app,
           items,
           t("pickerNumberingSchemePlaceholder"),
-          async (chosen) => this.execute(file, "add", chosen.id),
+          (chosen) => {
+            void this.execute(file, "add", chosen.id);
+          },
         ).open();
       },
     );
