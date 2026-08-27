@@ -282,8 +282,8 @@ function validateScreenshots(filePath, source) {
     }
     const width = png.readUInt32BE(16);
     const height = png.readUInt32BE(20);
-    if (width < 1200 || height < 700) {
-      errors.push(`${filePath} screenshot is too small: ${screenshot} (${width}x${height})`);
+    if (width !== 1200 || height !== 800) {
+      errors.push(`${filePath} screenshot must be exactly 1200x800: ${screenshot} (${width}x${height})`);
     }
   }
 }
