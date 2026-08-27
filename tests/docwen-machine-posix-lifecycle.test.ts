@@ -2,13 +2,18 @@ import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DocWenMachineClient } from "../src/docwen/machine-client";
 
 const roots: string[] = [];
 
+beforeEach(() => {
+  vi.stubGlobal("window", { setTimeout, clearTimeout });
+});
+
 afterEach(async () => {
+  vi.unstubAllGlobals();
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 
