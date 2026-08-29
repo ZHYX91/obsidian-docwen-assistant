@@ -1,9 +1,9 @@
 {
   "id": "docwen-assistant",
   "name": "DocWen Assistant",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "minAppVersion": "1.12.7",
-  "description": "Connect Obsidian to local DocWen for conversion, proofreading, numbering, and file opening.",
+  "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "author": "ZhengYX",
   "authorUrl": "https://github.com/ZHYX91",
   "isDesktopOnly": true

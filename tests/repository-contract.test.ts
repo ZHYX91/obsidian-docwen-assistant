@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 interface Manifest {
+  description: string;
   id: string;
   isDesktopOnly: boolean;
   minAppVersion: string;
@@ -10,6 +11,7 @@ interface Manifest {
 }
 
 interface PackageJson {
+  description: string;
   version: string;
   devDependencies: Record<string, string>;
 }
@@ -34,6 +36,16 @@ describe("repository contract", () => {
     const packageJson = readJson<PackageJson>("../package.json");
 
     expect(packageJson.version).toBe(manifest.version);
+  });
+
+  it("keeps the Community description concise, non-redundant, and synchronized", () => {
+    const manifest = readJson<Manifest>("../manifest.json");
+    const packageJson = readJson<PackageJson>("../package.json");
+
+    expect(manifest.description).not.toMatch(/\bObsidian\b/iu);
+    expect(manifest.description.length).toBeLessThanOrEqual(250);
+    expect(manifest.description).toMatch(/[.?!)]$/u);
+    expect(packageJson.description).toBe(manifest.description);
   });
 
   it("keeps the 1.12.7 runtime floor and custom tabbed settings boundary explicit", () => {

@@ -4,6 +4,13 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-08-30
+
+### Fixed
+
+- Updated the Community directory description to remove redundant host branding and added a
+  repository contract that keeps the public package and plugin descriptions synchronized.
+
 ## [2.1.0] - 2026-08-29
 
 ### Added
@@ -58,7 +65,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.1...HEAD
+[2.1.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/2.0.0
