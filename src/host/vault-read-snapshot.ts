@@ -27,12 +27,10 @@ export interface IsolatedSnapshot {
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
   readonly resolvedMarkdownInputs?: readonly [TaskInput, TaskInput];
-  readonly resolvedMarkdownSourcePath?: string;
 }
 
 interface ResolvedMarkdownSnapshot {
   readonly inputs: readonly [TaskInput, TaskInput];
-  readonly authoredSourcePath: string;
 }
 
 const RESOLVED_DOCUMENT_MEDIA_TYPE = "application/vnd.docwen.resolved-document+json";
@@ -95,7 +93,6 @@ export class VaultReadSnapshot {
         inputs: [sourceInput],
         ...(resolvedMarkdownSnapshot === undefined ? {} : {
           resolvedMarkdownInputs: resolvedMarkdownSnapshot.inputs,
-          resolvedMarkdownSourcePath: resolvedMarkdownSnapshot.authoredSourcePath,
         }),
       });
       throwIfAborted(signal);
@@ -253,14 +250,11 @@ export class VaultReadSnapshot {
     };
     const neutralPath = path.join(workspace, "resolved-document.json");
     const planPath = path.join(workspace, "numbering-export-plan.json");
-    const authoredSourcePath = path.join(workspace, "authored-source.md");
     await Promise.all([
       writeFile(neutralPath, JSON.stringify(neutralDocument), "utf8"),
       writeFile(planPath, JSON.stringify(numberingPlan), "utf8"),
-      writeFile(authoredSourcePath, authoredMarkdown, "utf8"),
     ]);
     return {
-      authoredSourcePath,
       inputs: [
         {
           path: neutralPath,

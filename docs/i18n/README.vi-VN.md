@@ -54,7 +54,7 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor. Xuất nền luôn yêu cầu chọn rõ tệp đầu ra.
 
-Khi xuất Markdown sang DOCX, một thư mục `<tài-liệu>.docwen` chứa dữ liệu khứ hồi đã xác thực cũng được tạo bên cạnh tài liệu. Hãy giữ thư mục này cùng với DOCX để khôi phục ảnh chụp Markdown đã xác thực khi tài liệu chưa thay đổi. Nếu thư mục bị thiếu hoặc không hợp lệ, DocWen sẽ dùng Markdown chuẩn hóa và thông báo việc hạ cấp.
+Khi xuất Markdown đã phân giải sang DOCX, DocWen cung cấp một tệp `<tài-liệu>.docwen` liền kề. Assistant xác thực và phát hành tệp này theo cặp nguyên tử với DOCX; nếu tệp bắt buộc bị thiếu, hỏng hoặc có quan hệ mơ hồ thì cả hai tệp đều không được phát hành. Hãy luôn di chuyển hoặc sao lưu chúng cùng nhau. Khi chuyển đổi ngược, tệp đi kèm bị thiếu hoặc không khớp chỉ tắt khôi phục nguyên văn; ngữ nghĩa Markdown chuẩn hóa đã xác thực vẫn khả dụng.
 
 Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không thêm các số đó vào Markdown.
 

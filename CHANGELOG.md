@@ -8,14 +8,15 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Added strict consumption of `number-suite.interop.v2`, including H1-H9 targets, nine counters,
   and the shared Number Suite/DocWen H7-H9 extension.
-- Added an authenticated adjacent DOCX round-trip sidecar while preserving foreign directories.
+- Added strict consumption and atomic adjacent publication of DocWen's single-file DOCX round-trip
+  sidecar resource.
 
 ### Fixed
 
 - Accepted ID-only caption declarations and rejected Number Suite Heading literals that DocWen
   cannot materialize safely.
-- Kept successful DOCX exports successful when only round-trip sidecar publication fails, with a
-  separate user-facing diagnostic.
+- Failed resolved DOCX export closed before publication when its required sidecar is missing,
+  damaged, extra, or ambiguously related.
 - Corrected Usage help so it no longer claims that merely opening a file sends its path to DocWen.
 
 ## [2.1.1] - 2026-08-30

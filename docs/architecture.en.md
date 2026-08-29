@@ -36,15 +36,17 @@ text is never used to guess a number.
 
 DocWen writes only to a request-owned staging directory. The Assistant accepts and validates only Artifact Bundle v2; every other Bundle schema fails closed. Validation covers Bundle identity, layout, logical paths, graph, roles, relations, physical paths, regular-file status, sizes, and hashes. The preferred artifact maps to the user-confirmed target and related resources use safe names. Commit uses exclusive creation, no-clobber links, backup, and rollback, while the CLI never receives a Vault target.
 
-After successfully committing a DOCX produced through the resolved-document route, the Assistant
-atomically publishes an owned adjacent `<document>.docwen` sidecar containing the authenticated
-authored source, neutral document, numbering plan, and hash manifest. It overwrites only a prior
-sidecar whose schema and exact inventory prove Assistant ownership; a foreign directory is preserved
-and refused. An unchanged DOCX can therefore recover the authenticated Markdown snapshot exactly. If
-sidecar publication alone fails after the DOCX commit, the export remains successful and reports a
-separate round-trip warning. When a Word edit makes
-the authenticated projection diverge, DocWen explicitly falls back to semantically equivalent,
-canonical Markdown.
+For the resolved-document route, DocWen's Machine Bundle must contain exactly one preferred DOCX and
+one `application/vnd.docwen.round-trip-sidecar+zip` resource. The resource must have the sole
+`resource_of(role=manifest, ordinal=0)` relation to that DOCX and the suggested name
+`<DOCX suggested name>.docwen`. DocWen owns and creates the single-file sidecar; the Assistant never
+reconstructs it from private inputs. The Assistant revalidates both staged files and commits them as
+one adjacent pair, mapping the sidecar to the user-selected DOCX path plus `.docwen`. A missing,
+damaged, additional, or ambiguously related sidecar fails before either output is published. When an
+existing DOCX replacement is explicitly confirmed, its regular-file sidecar may be replaced in the
+same rollback-safe transaction. During reverse conversion, missing or mismatched sidecar evidence
+disables exact-source restoration while authenticated semantic recovery continues as canonical
+Markdown.
 
 ## Vault writes
 

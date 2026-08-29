@@ -115,7 +115,6 @@ describe("VaultReadSnapshot", () => {
       async (snapshot) => ({
         sourceInput: snapshot.sourceInput,
         resolvedInputs: snapshot.resolvedMarkdownInputs,
-        authoredSource: await readFile(snapshot.resolvedMarkdownSourcePath!),
         neutral: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8")),
         plan: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![1].path, "utf8")),
       }),
@@ -129,7 +128,6 @@ describe("VaultReadSnapshot", () => {
       { kind: "resource", role: "numbering_export_plan", mediaType: "application/vnd.docwen.numbering-export-plan+json" },
     ]);
     expect(captured.neutral.document.authored_markdown).toBe(source);
-    expect(captured.authoredSource).toEqual(Buffer.from(captured.neutral.document.authored_markdown, "utf8"));
     expect(captured.neutral.document.resources).toHaveLength(1);
     expect(captured.neutral.document.resources[0]).toMatchObject({
       resource_id: "image-1",

@@ -54,7 +54,7 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 
 리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, doctor 실행을 할 수 있습니다. 백그라운드 내보내기는 항상 출력 파일을 명시적으로 선택해야 합니다.
 
-Markdown을 DOCX로 내보내면 인증된 왕복 변환 데이터가 담긴 `<문서>.docwen` 폴더도 문서 옆에 생성됩니다. 문서가 변경되지 않았을 때 인증된 Markdown 스냅샷을 복구할 수 있도록 DOCX와 함께 보관하세요. 폴더가 없거나 유효하지 않으면 DocWen은 정규화된 Markdown으로 전환하고 이를 알립니다.
+해석된 Markdown을 DOCX로 내보내면 DocWen이 인접한 `<문서>.docwen` 파일을 제공합니다. Assistant는 이를 검증하고 DOCX와 원자적으로 한 쌍으로 게시합니다. 필수 파일이 없거나 손상되었거나 관계가 모호하면 두 파일 모두 게시되지 않습니다. 항상 DOCX와 함께 이동하거나 백업하세요. 역변환에서는 동반 파일이 없거나 일치하지 않아도 정확한 원문 복원만 비활성화되고, 인증된 정규화 Markdown 의미는 계속 복원할 수 있습니다.
 
 호환되는 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite)를 활성화하면 Word 내보내기는 Markdown 노트에 번호를 추가하지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다.
 

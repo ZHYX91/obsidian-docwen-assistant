@@ -69,7 +69,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 后台导出始终要求选择输出文件；只有原生保存对话框确认目标后，才会覆盖已有输出。
 
-Markdown 转 DOCX 时还会在文档旁生成 `<文档>.docwen` 文件夹，保存经过认证的往返数据。请将它与 DOCX 放在一起，以便文档未修改时恢复经过认证的 Markdown 快照；文件夹缺失或失效时，DocWen 会退回规范化 Markdown 并给出提示。
+解析后的 Markdown 转 DOCX 时，DocWen 会提供一个相邻的 `<文档>.docwen` 文件。Assistant 会校验并把它与 DOCX 原子成对发布；必需文件缺失、损坏或关系有歧义时，两个文件都不会发布。请始终将它与 DOCX 一起移动或备份。反向转换时，伴随文件缺失或不匹配只会关闭逐字恢复，DocWen 仍可恢复经过认证的规范化 Markdown 语义。
 
 启用兼容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 后，Word 导出会保留它经过验证的虚拟标题、题注编号和同一笔记内的引用，不会把这些编号写入 Markdown 笔记。
 

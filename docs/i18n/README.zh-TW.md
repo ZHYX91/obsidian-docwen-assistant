@@ -60,7 +60,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。背景匯出一定會要求明確選擇輸出檔案。
 
-Markdown 轉 DOCX 時也會在文件旁建立 `<文件>.docwen` 資料夾，保存經過驗證的往返資料。請將它與 DOCX 放在一起，以便文件未修改時還原經過驗證的 Markdown 快照；資料夾遺失或無效時，DocWen 會退回規範化 Markdown 並顯示提示。
+解析後的 Markdown 轉 DOCX 時，DocWen 會提供一個相鄰的 `<文件>.docwen` 檔案。Assistant 會驗證並把它與 DOCX 原子成對發佈；必要檔案遺失、損壞或關係有歧義時，兩個檔案都不會發佈。請始終將它與 DOCX 一起移動或備份。反向轉換時，伴隨檔案遺失或不相符只會停用逐字還原，DocWen 仍可還原經過驗證的規範化 Markdown 語意。
 
 啟用相容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 後，Word 匯出會保留其經過驗證的虛擬標題、題注編號及同一筆記內的引用，不會把這些編號寫入 Markdown 筆記。
 

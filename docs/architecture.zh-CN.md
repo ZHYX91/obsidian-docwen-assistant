@@ -31,11 +31,14 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 DocWen 只写请求拥有的 staging 目录。Assistant 只接受并校验 Artifact Bundle v2，其他 Bundle schema 一律失败关闭；校验覆盖 Bundle 身份、布局、逻辑路径、图、角色、关系、物理路径、普通文件、大小和哈希。首选产物映射到用户确认的目标，相关资源使用安全名称；提交使用独占创建、无覆盖链接、备份与回滚，不让 CLI 直接接触 Vault 目标。
 
-成功提交由 resolved-document 路径生成的 DOCX 后，Assistant 在目标旁原子发布归属明确的
-`<document>.docwen` sidecar，包含认证原文、中性文档、编号计划和哈希清单。只覆盖自身 schema 与精确
-清单匹配的旧 sidecar，外来目录一律保留并拒绝覆盖。未修改 DOCX 可借此精确恢复经过认证的 Markdown
-快照；若 DOCX 提交后仅 sidecar 发布失败，导出仍视为成功并单独提示往返数据警告。Word 修改使认证投影
-失配时，DocWen 明确退回语义一致的规范化 Markdown。
+resolved-document 路径的 DocWen Machine Bundle 必须恰好包含一个首选 DOCX，以及一个
+`application/vnd.docwen.round-trip-sidecar+zip` 资源。该资源必须以唯一的
+`resource_of(role=manifest, ordinal=0)` 关系归属于 DOCX，建议名称为
+`<DOCX 建议名称>.docwen`。这个单文件 sidecar 由 DocWen 创建和拥有，Assistant 不再用私有输入重建。
+Assistant 会重新校验两个 staging 文件，并把 sidecar 映射到用户所选 DOCX 路径再加 `.docwen`，然后作为
+相邻文件对一次提交。sidecar 缺失、损坏、多余或关系有歧义时，在发布任何一个文件前失败关闭。用户明确
+确认替换现有 DOCX 时，可在同一个可回滚事务中替换其普通文件 sidecar。反向转换时，sidecar 缺失或与
+DOCX 不匹配只会关闭逐字源码恢复，经过认证的语义仍可恢复为规范化 Markdown。
 
 ## Vault 写入
 

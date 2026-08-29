@@ -14,10 +14,6 @@ import { confirmDetectedFormat } from "../host/confirm";
 import { getElectronSaveDialog } from "../host/electron-dialogs";
 import { pathExists } from "../host/file-system";
 import { showNotice } from "../host/notices";
-import {
-  assertRoundTripSidecarTargetAvailable,
-  publishRoundTripSidecar,
-} from "../host/round-trip-sidecar";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
 import { resolveAbsoluteFilePath } from "../host/vault-files";
 import { t } from "../i18n";
@@ -186,9 +182,6 @@ export class ExportActions {
             ? snapshot.resolvedMarkdownInputs
             : snapshot.inputs;
           this.capabilities.requireTaskInputs(route, taskInputs);
-          if (target === "docx" && snapshot.resolvedMarkdownInputs) {
-            await assertRoundTripSidecarTargetAvailable(outputPath);
-          }
 
           const outcome = await this.docwen.convert({
             ...options,
@@ -200,21 +193,6 @@ export class ExportActions {
           }, signal);
           const output = outcome.output;
           showNotice(t("noticeExportSuccess", { filename: portableBasename(output) }));
-          if (
-            target === "docx"
-            && snapshot.resolvedMarkdownInputs
-            && snapshot.resolvedMarkdownSourcePath
-          ) {
-            try {
-              await publishRoundTripSidecar(output, {
-                neutralDocumentPath: snapshot.resolvedMarkdownInputs[0].path,
-                numberingExportPlanPath: snapshot.resolvedMarkdownInputs[1].path,
-                authoredSourcePath: snapshot.resolvedMarkdownSourcePath,
-              });
-            } catch (error) {
-              this.runner.presentFailure("noticeRoundTripSidecarFailed", error);
-            }
-          }
         });
       },
     );

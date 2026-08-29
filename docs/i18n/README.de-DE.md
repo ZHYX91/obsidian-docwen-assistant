@@ -54,7 +54,7 @@ Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es e
 
 Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und doctor ausführen. Hintergrundexporte verlangen immer eine ausdrücklich gewählte Ausgabedatei.
 
-Beim Export von Markdown nach DOCX wird außerdem neben dem Dokument ein Ordner `<Dokument>.docwen` mit authentifizierten Roundtrip-Daten erstellt. Bewahren Sie ihn neben der DOCX-Datei auf, damit bei einem unveränderten Dokument der authentifizierte Markdown-Snapshot wiederhergestellt werden kann. Fehlt der Ordner oder ist er ungültig, verwendet DocWen kanonisches Markdown und meldet diese Herabstufung.
+Beim Export von aufgelöstem Markdown nach DOCX liefert DocWen eine benachbarte Datei `<Dokument>.docwen`. Der Assistant prüft sie und veröffentlicht sie atomar zusammen mit der DOCX-Datei; fehlt sie, ist sie beschädigt oder mehrdeutig zugeordnet, wird keine der beiden Dateien veröffentlicht. Verschieben oder sichern Sie beide Dateien stets gemeinsam. Bei der Rückkonvertierung deaktiviert eine fehlende oder nicht passende Begleitdatei nur die wortgetreue Wiederherstellung; authentifizierte kanonische Markdown-Semantik bleibt verfügbar.
 
 Mit einer kompatiblen Version von [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) übernimmt der Word-Export die geprüften virtuellen Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne diese Nummern in die Markdown-Notiz zu schreiben.
 

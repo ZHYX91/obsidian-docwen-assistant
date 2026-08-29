@@ -54,7 +54,7 @@ Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styl
 
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et d'exécuter doctor. L'export en arrière-plan exige toujours un fichier de sortie explicitement choisi.
 
-L'export Markdown vers DOCX crée également, à côté du document, un dossier `<document>.docwen` contenant des données d'aller-retour authentifiées. Conservez-le avec le DOCX afin de restaurer l'instantané Markdown authentifié si le document n'a pas changé. Si ce dossier est absent ou invalide, DocWen revient au Markdown canonique et signale cette dégradation.
+Lors de l'export du Markdown résolu vers DOCX, DocWen fournit un fichier adjacent `<document>.docwen`. Assistant le valide et le publie atomiquement avec le DOCX ; s'il manque, est endommagé ou lié de façon ambiguë, aucun des deux fichiers n'est publié. Déplacez-les ou sauvegardez-les toujours ensemble. Lors de la conversion inverse, un fichier compagnon absent ou non concordant désactive uniquement la restauration exacte ; la sémantique Markdown canonique authentifiée reste disponible.
 
 Avec une version compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite), l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans ajouter ces numéros à la note Markdown.
 
