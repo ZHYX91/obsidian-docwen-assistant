@@ -2,13 +2,13 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant 透過公開的 `DocWenCLI.exe` 協定，將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows、Obsidian 1.12.7 以上及 DocWen 0.9.x 穩定版。
+DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows、Obsidian 1.12.7 以上及 DocWen 0.9.x 穩定版。
 
-> **必須安裝 DocWen 本體。** 啟用外掛前，請先安裝並完整解壓縮相容的 [DocWen 0.9.x Windows 完整套件](https://github.com/ZHYX91/docwen/releases)。
+> **必須安裝 DocWen 本體。** 請從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容版本，或完整解壓縮 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 提供的 ZIP 可攜版。
 
 ## 螢幕截圖
 
-以下截圖展示打包後的外掛與 DocWen CLI 在桌面版 Obsidian 中執行的介面。
+以下截圖展示打包後的外掛與本機 DocWen 在桌面版 Obsidian 中執行的介面。
 
 ### 校對側邊欄
 
@@ -16,9 +16,9 @@ DocWen Assistant 透過公開的 `DocWenCLI.exe` 協定，將 Obsidian 連接到
 
 ![DocWen 校對側邊欄](../assets/docwen-assistant-proofread-en.png)
 
-### 頂部分頁設定與 CLI 能力
+### 頂部分頁設定與 DocWen 連線
 
-使用五個頂部分頁選擇正確的 DocWen 執行環境、調整轉換與校對，並驗證 Machine 能力。
+使用五個頂部分頁自動連線 Microsoft Store 安裝版、按需設定可攜版，並調整轉換與校對。
 
 ![DocWen Assistant 頂部分頁設定](../assets/docwen-assistant-settings-en.png)
 
@@ -34,24 +34,23 @@ DocWen Assistant 透過公開的 `DocWenCLI.exe` 協定，將 Obsidian 連接到
 - 匯出 Word、Excel、Markdown，並明確選擇輸出檔案；
 - 新增或移除 Markdown 標題編號；
 - 在 Obsidian 側邊欄校對 Markdown；
-- 執行 doctor 自我檢查及檔案右鍵選單命令。
+- 檢查 DocWen 連線及使用檔案右鍵選單命令。
 
 ## 使用要求與相容性
 
 - 需要 Windows 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- 需要完整解壓縮的 DocWen 0.9.x 穩定版 Windows 完整套件；外掛不會自動下載 DocWen；
+- 需要 Microsoft Store 安裝版或完整解壓縮的 ZIP 可攜版 DocWen 0.9.x；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v1` 與 `docwen.artifact_bundle.v2`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 
-使用者可選擇完整解壓縮的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`。外掛會嚴格解析為同目錄的 `DocWenCLI.exe`，只儲存並呼叫這一個經驗證的絕對路徑；不會把 GUI 當成 CLI 執行、遞迴搜尋程式、自動下載軟體或退回舊協定。
+預設的自動偵測使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。ZIP 可攜版使用者可切換到手動安裝並選擇解壓縮後的 DocWen 資料夾。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
 
 ## 安裝
 
 ### 安裝 DocWen 與外掛
 
-1. 先在 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 與 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) 確認相符的純數字版本都已發布；
-2. 下載並完整解壓縮 `DocWen-windows-x64.zip`，再下載相符的外掛套件；
-3. 將 `main.js`、`manifest.json` 和 `styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`，重新載入並啟用外掛；
-4. 在設定中選擇 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，外掛會自動執行 doctor。
+1. 從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝 DocWen，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 ZIP 可攜版；
+2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，將 `main.js`、`manifest.json` 和 `styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
+3. 重新載入並啟用外掛；自動偵測無須選擇檔案。使用可攜版時，在設定中選擇「手動安裝」和 DocWen 資料夾。
 
 ### 安裝安全界線
 
@@ -59,21 +58,21 @@ DocWen Assistant 透過公開的 `DocWenCLI.exe` 協定，將 Obsidian 連接到
 
 ## 使用
 
-可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及執行 doctor。背景匯出一定會要求明確選擇輸出檔案。
+可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。背景匯出一定會要求明確選擇輸出檔案。
 
 ## 設定
 
-Obsidian 1.12.7 以上使用五個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word、校對和使用方法。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一；介面、通知與資源查詢使用相同結果。
+Obsidian 1.12.7 以上使用五個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word、校對和使用方法。「連線方式」預設為「自動偵測」，只有手動安裝可攜版時才顯示資料夾選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
 
 ## 限制
 
 - 僅支援 Windows 桌面端，且本機必須安裝相容的 DocWen；
-- 只接受選定的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，不會遞迴搜尋任意目錄；
+- 自動模式只使用固定的 `docwen.exe` 已註冊別名；手動模式只接受選定的 DocWen 資料夾或程式，兩種模式都不會搜尋任意目錄；
 - 無法安全核驗 CLI 回應、來源快照、編輯器狀態或輸出目標時，操作會被拒絕。
 
 ## 隱私與安全性
 
-外掛會為目前編輯器內容（包括未儲存文字）或 Vault 檔案建立隔離快照，再交給本機 CLI。它只會為了執行使用者選取的 `DocWenCLI.exe`、管理隔離的暫存輸入與已驗證成品，以及寫入使用者明確選取的輸出路徑而存取 Vault 外部檔案；本機轉換與匯出需要這些存取。轉換會將通過驗證的首選輸出提交到使用者確認的目標，並以安全名稱將通過驗證的關聯資源提交到同一目錄。它不會上傳文件或替 DocWen 列舉整個 Vault。完整協定請參閱 [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+外掛會為目前編輯器內容（包括未儲存文字）或 Vault 檔案建立隔離快照，再交給本機 DocWen。它只會為了啟動已註冊的 DocWen 別名或手動選取的可攜版程式、管理暫存輸入與已驗證成品，以及寫入使用者明確選取的輸出路徑而存取 Vault 外部檔案；不會開啟或儲存帶版本的 Microsoft Store 套件路徑。它不會上傳文件或替 DocWen 列舉整個 Vault。完整協定請參閱 [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
 ## 開發
 

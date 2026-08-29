@@ -13,7 +13,7 @@ translation_status: source
 
 ## 源码自动测试
 
-Vitest 覆盖 framing、Machine 进程、取消、Bundle v2 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。
+Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、连接取消与去重、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v2 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。
 
 ## 仓库质量门
 
@@ -29,7 +29,7 @@ Vitest 覆盖 framing、Machine 进程、取消、Bundle v2 校验与其他 sche
 
 ## 人工兼容矩阵
 
-Windows 人工检查需要覆盖 DocWen GUI 激活、原生保存对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
+Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用、Store 升级、卸载恢复、便携版回退、DocWen GUI 激活、原生保存对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
 
 ## 安全夹具
 

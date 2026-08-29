@@ -4,6 +4,25 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-08-29
+
+### Added
+
+- Added automatic Microsoft Store discovery through the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias while retaining the portable ZIP installation as a manual fallback.
+- Added verified connection states for product identity, version, protocol compatibility, health, missing aliases, and manual-location failures.
+
+### Changed
+
+- Reworked first-run settings and recovery text around automatic detection, a conditional manual-installation picker, Microsoft Store and portable download choices, and a user-facing **Check DocWen connection** action.
+- Migrated existing saved paths to manual mode without discarding them, while new installations default to automatic discovery.
+- Updated all supported UI languages, public READMEs, and product/architecture/testing contracts for Microsoft Store installation and alias-safe upgrades.
+
+### Fixed
+
+- Reset connection checks, runtime capabilities, file caches, and pending preloads as one fail-closed unit whenever the DocWen target changes.
+- Prevented invalidated capability requests from restoring stale results, de-duplicated same-file preloads and connection checks, and kept failed discovery retryable.
+- Rejected relative automatic launch targets so a same-named program on `PATH` can never replace the registered Store alias.
+
 ## [2.0.1] - 2026-08-27
 
 ### Fixed
@@ -39,7 +58,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...2.0.1
 [2.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/2.0.0
 [v1.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/tree/v1.2.0

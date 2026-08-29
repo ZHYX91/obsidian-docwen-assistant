@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen) mediante el protocolo público `DocWenCLI.exe`. Requiere Windows, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.9.x.
+DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen). Requiere Windows, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.9.x.
 
-> **DocWen es obligatorio.** Antes de habilitar el complemento, instala y extrae por completo un [paquete completo de DocWen 0.9.x para Windows](https://github.com/ZHYX91/docwen/releases) compatible.
+> **DocWen es obligatorio.** Instala una versión compatible desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae por completo el ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Capturas de pantalla
 
@@ -38,13 +38,13 @@ El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida
 - Un paquete completo de una versión estable de DocWen 0.9.x para Windows, totalmente extraído; el complemento no descarga DocWen automáticamente.
 - El complemento requiere `docwen.machine.v1` y `docwen.artifact_bundle.v2`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
 
-Puedes seleccionar la carpeta de DocWen totalmente extraída, `DocWen.exe` o `DocWenCLI.exe`. El complemento resuelve la selección al `DocWenCLI.exe` de la misma carpeta y guarda y usa únicamente esa ruta absoluta validada. No ejecuta la interfaz como CLI, no busca de forma recursiva ni descarga software automáticamente.
+La detección automática usa de forma predeterminada el alias registrado `docwen.exe` y sigue funcionando tras las actualizaciones de Microsoft Store. Para el ZIP portátil, selecciona la instalación manual y la carpeta extraída de DocWen. El complemento no examina `WindowsApps` ni carpetas arbitrarias y no descarga software automáticamente.
 
 ## Instalación
 
 ### Instalar DocWen y el complemento
 
-Comprueba primero en [DocWen Releases](https://github.com/ZHYX91/docwen/releases) y [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) que se hayan publicado versiones numéricas coincidentes. Descarga después `DocWen-windows-x64.zip` y el paquete correspondiente. Copia `main.js`, `manifest.json` y `styles.css` en `<Vault>/.obsidian/plugins/docwen-assistant/`, habilita el complemento y elige la carpeta de DocWen, `DocWen.exe` o `DocWenCLI.exe`.
+Instala DocWen desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae el ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Instala DocWen Assistant desde Community Plugins o copia `main.js`, `manifest.json` y `styles.css` en `<Vault>/.obsidian/plugins/docwen-assistant/`. La detección automática no requiere elegir archivos; para el ZIP portátil, elige instalación manual y la carpeta de DocWen en los ajustes.
 
 ### Seguridad de la instalación
 
@@ -66,7 +66,7 @@ Obsidian 1.12.7 o posterior usa cinco pestañas superiores con desplazamiento ho
 
 ## Privacidad y seguridad
 
-El complemento entrega al proceso CLI local únicamente una instantánea aislada del editor actual o del archivo del Vault. Solo accede a archivos fuera del Vault para ejecutar el `DocWenCLI.exe` elegido por el usuario, gestionar entradas temporales aisladas y artefactos validados, y escribir en una ruta de salida elegida expresamente; este acceso es necesario para la conversión y exportación locales. La conversión guarda la salida preferida validada en el destino confirmado por el usuario y coloca a su lado los recursos relacionados validados con nombres seguros. No sube documentos ni enumera todo el Vault. Detalles: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+El complemento entrega a DocWen únicamente una instantánea aislada del editor actual o del archivo del Vault. Solo accede fuera del Vault para iniciar el alias registrado de DocWen o la aplicación portátil elegida manualmente, gestionar entradas temporales y artefactos validados y escribir en el destino elegido. No abre ni guarda la ruta versionada del paquete de Microsoft Store, no sube documentos ni enumera todo el Vault. Detalles: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Desarrollo
 

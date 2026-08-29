@@ -1,11 +1,13 @@
 # Machine integration contract
 
-DocWen Assistant consumes `docwen.machine.v1` and Artifact Bundle v2 from the configured `DocWenCLI.exe`. Other Bundle schemas and incompatible process envelopes fail closed.
+DocWen Assistant consumes `docwen.machine.v1` and Artifact Bundle v2 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
 
 ## Process boundary
 
-- The settings UI accepts an extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`, then resolves exactly one sibling `DocWenCLI.exe`.
-- Every operation spawns `DocWenCLI.exe serve --stdio` with `shell: false`, a hidden Windows console, a bounded environment, and canonical `Content-Length` framing.
+- Automatic mode is the default. It constructs and directly launches the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` application execution alias from a safe temporary working directory. It never resolves a bare command through `PATH` and never reads or stores the versioned `WindowsApps` package path.
+- Manual mode accepts an extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`, then resolves exactly one sibling `DocWenCLI.exe` and keeps the previous validated absolute-path behavior.
+- Every operation spawns the selected launch target with `serve --stdio`, `shell: false`, a hidden Windows console, a bounded environment, and canonical `Content-Length` framing. A missing automatic alias is a typed setup failure; no shell or recursive fallback is allowed.
+- Changing the connection mode or manual path cancels active work and atomically resets connection checks, the runtime capability projection, file capability caches, and pending preloads. Request generations and entry identity prevent invalidated work from restoring stale results.
 - The client initializes JSON-RPC 2.0 as `docwen.machine` major 1, requires `server.name` to be exactly `DocWen`, and accepts only a stable DocWen 0.9.x product version. Prereleases and 0.10-or-newer versions fail closed. Package acceptance additionally pins an exact product version. Every Artifact Bundle must repeat the exact product version returned by that session's initialize response; a mismatch fails closed.
 - Queries and tasks have timeouts. Cancellation sends `task/cancel` after task acceptance, then terminates the owned process tree if the server does not settle within two seconds; cancellation before acceptance and plugin unload also settle waiting callers and terminate every owned process tree. Stderr is capped at 256 KiB, protocol frames at 16 MiB, and queued/deferred messages at 64 each.
 - Every file handle contains an absolute local locator, immutable `kind`/`role`, a unique normalized relative-POSIX `logical_path`, media type, byte length, and SHA-256. Inputs are preflighted before hashing, limited to 256 files, 512 MiB per file and 1 GiB total, then hashed sequentially with identity revalidation. Capability `input_shape` declares role/kind/media-type slots and rejects undeclared roles; DocWen rechecks handles at plan and execute boundaries.
@@ -54,9 +56,10 @@ Proofreading reads the preferred JSON report resource and never commits it. Numb
 | `src/docwen/machine-client.ts` | Process lifecycle, JSON-RPC, cancellation, terminal state, and strict Bundle validation |
 | `src/docwen/client.ts` | Consumer-neutral option mapping, report parsing, and atomic output commit |
 | `src/docwen/capability-service.ts` | Inspection plus Machine capability projection for Assistant use cases |
-| `src/docwen/path.ts` | Deterministic executable selection and exact `DocWenCLI.exe` validation |
+| `src/docwen/path.ts` | Fixed execution-alias target plus deterministic manual `DocWenCLI.exe` validation |
+| `src/docwen/connection-monitor.ts` | Transient connection checking, product version, and typed status state |
 | `src/docwen/errors.ts` | Local boundary errors and remote Machine failures |
 | `src/host/vault-read-snapshot.ts` | Isolated source snapshots plus Obsidian-resolved neutral Markdown/resource ports |
 | `src/host/vault-write-transaction.ts` | Editor/Vault conflict-safe numbering commit |
 
-New DocWen operations require a versioned Machine capability, mocked process-boundary tests, Bundle/commit negative tests, and packaged `DocWenCLI.exe` verification before UI exposure.
+New DocWen operations require a versioned Machine capability, mocked process-boundary tests, Bundle/commit negative tests, and packaged CLI verification before UI exposure. Automatic-discovery changes additionally require a signed MSIX install/upgrade/alias-disable/uninstall matrix; the portable package remains a separate fallback claim.

@@ -1,7 +1,7 @@
 {
   "name": "docwen-assistant",
-  "version": "2.0.1",
-  "description": "Connect Obsidian to local DocWen conversion, proofreading, and GUI control through DocWenCLI.",
+  "version": "2.1.0",
+  "description": "Connect Obsidian to local DocWen for document conversion, proofreading, numbering, and file opening.",
   "main": "dist/main.js",
   "scripts": {
     "check:runtime": "node scripts/check-runtime.mjs",

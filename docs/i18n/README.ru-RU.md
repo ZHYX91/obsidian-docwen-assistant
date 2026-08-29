@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen) через публичный протокол `DocWenCLI.exe`. Требуются Windows, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.9.x.
+DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.9.x.
 
-> **Требуется DocWen.** Перед включением плагина установите и полностью распакуйте совместимый [полный пакет DocWen 0.9.x для Windows](https://github.com/ZHYX91/docwen/releases).
+> **Требуется DocWen.** Установите совместимую версию из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) либо полностью распакуйте переносимый ZIP со страницы [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Снимки экрана
 
@@ -38,13 +38,13 @@ DocWen Assistant связывает Obsidian с локальной устано�
 - Полностью распакованный пакет стабильной версии DocWen 0.9.x для Windows; плагин не загружает DocWen автоматически.
 - Плагину требуются `docwen.machine.v1` и `docwen.artifact_bundle.v2`; несовместимая версия DocWen отклоняется без перехода на другой протокол.
 
-Можно выбрать полностью распакованную папку DocWen, `DocWen.exe` или `DocWenCLI.exe`. Плагин преобразует выбор в путь к `DocWenCLI.exe` в той же папке и сохраняет и вызывает только этот проверенный абсолютный путь. Он не запускает GUI как CLI, не выполняет рекурсивный поиск и не загружает программы автоматически.
+По умолчанию автоматическое обнаружение использует зарегистрированный псевдоним `docwen.exe`, который сохраняется после обновлений Microsoft Store. Для переносимого ZIP выберите ручную установку и распакованную папку DocWen. Плагин не просматривает `WindowsApps` или произвольные папки и не загружает программы автоматически.
 
 ## Установка
 
 ### Установка DocWen и плагина
 
-Сначала убедитесь на страницах [DocWen Releases](https://github.com/ZHYX91/docwen/releases) и [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases), что опубликованы соответствующие числовые версии. Затем загрузите `DocWen-windows-x64.zip` и соответствующий пакет плагина. Скопируйте `main.js`, `manifest.json` и `styles.css` в `<Vault>/.obsidian/plugins/docwen-assistant/`, включите плагин и выберите папку DocWen, `DocWen.exe` или `DocWenCLI.exe`.
+Установите DocWen из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) или распакуйте переносимый ZIP из [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Установите DocWen Assistant через Community Plugins либо скопируйте `main.js`, `manifest.json` и `styles.css` в `<Vault>/.obsidian/plugins/docwen-assistant/`. При автоматическом обнаружении файл выбирать не нужно; для переносимой версии выберите в настройках ручную установку и папку DocWen.
 
 ### Безопасность установки
 
@@ -66,7 +66,7 @@ Obsidian 1.12.7 и новее использует пять верхних вк�
 
 ## Конфиденциальность и безопасность
 
-Плагин передаёт локальному процессу CLI только изолированный снимок текущего редактора или файла Vault. Доступ к файлам вне Vault используется только для запуска выбранного пользователем `DocWenCLI.exe`, управления изолированными временными входами и проверенными артефактами и записи в явно выбранное место вывода; такой доступ необходим для локальной конвертации и экспорта. При конвертации проверенный предпочтительный результат записывается в подтверждённое пользователем место, а проверенные связанные ресурсы — рядом под безопасными именами. Он не загружает документы и не перечисляет весь Vault. Подробнее: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Плагин передаёт DocWen только изолированный снимок текущего редактора или файла Vault. Доступ вне Vault используется лишь для запуска зарегистрированного псевдонима DocWen или вручную выбранной переносимой программы, управления временными входами и проверенными артефактами и записи в явно выбранное место. Версионированный путь пакета Microsoft Store не открывается и не сохраняется. Плагин не загружает документы и не перечисляет весь Vault. Подробнее: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Разработка
 

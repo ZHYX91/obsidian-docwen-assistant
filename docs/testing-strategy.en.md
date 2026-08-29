@@ -14,7 +14,7 @@ Tests are separated by the evidence they can support. Source unit tests, mocked 
 
 ## Automated source tests
 
-Vitest covers framing, Machine processes, cancellation, Bundle v2 validation and rejection of other schemas, capability projection, actions, Vault snapshots and transactions, settings, localization, runtime disposal, and release governance. Resource tests cover cross-folder short Wiki links, filenames with spaces, repeated-occurrence deduplication, UTF-16-to-Unicode-code-point coordinates, missing/unsupported/over-budget resources, and the exact `neutral_document + numbering_export_plan` pair. Negative cases prove failure before task planning or writes and verify resource cleanup afterward.
+Vitest covers the fixed LOCALAPPDATA execution alias, rejection of PATH-relative launch targets, manual-path launch targets, connection cancellation and de-duplication, stale capability suppression, preload de-duplication and retry, connection-state migration and presentation, framing, Machine processes, cancellation, Bundle v2 validation and rejection of other schemas, capability projection, actions, Vault snapshots and transactions, settings, localization, runtime disposal, and release governance. Resource tests cover cross-folder short Wiki links, filenames with spaces, repeated-occurrence deduplication, UTF-16-to-Unicode-code-point coordinates, missing/unsupported/over-budget resources, and the exact `neutral_document + numbering_export_plan` pair. Negative cases prove failure before task planning or writes and verify resource cleanup afterward.
 
 ## Repository quality gate
 
@@ -30,7 +30,7 @@ Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 h
 
 ## Manual compatibility matrix
 
-Windows manual checks cover DocWen GUI activation, native save dialogs, Word/Excel/Markdown outputs, numbering conflicts, and visible proofreading. When Office or real-document rendering matters, the application version, sample, candidate digest, and human conclusion are recorded separately.
+Windows manual checks cover Microsoft Store install, alias disable/enable, Store upgrade, uninstall recovery, portable fallback, DocWen GUI activation, native save dialogs, Word/Excel/Markdown outputs, numbering conflicts, and visible proofreading. When Office or real-document rendering matters, the application version, sample, candidate digest, and human conclusion are recorded separately.
 
 ## Safe fixtures
 

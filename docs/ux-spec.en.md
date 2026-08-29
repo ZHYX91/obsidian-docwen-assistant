@@ -22,11 +22,11 @@ Heading numbering runs against an isolated copy and rechecks the uniquely path-m
 
 ## States and recovery
 
-Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, path, conflict, and protocol failures show a stable summary with sanitizable details instead of appearing as a successful empty result.
+Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result.
 
 ## Settings surface
 
-The five top tabs are General, Export to Markdown, Export to Word, Proofreading, and Usage. The Obsidian 1.13 surface renders them from one shared page model. Building the top tabs must not access the filesystem or start the CLI.
+The five top tabs are General, Export to Markdown, Export to Word, Proofreading, and Usage. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered.
 
 ## Localization
 

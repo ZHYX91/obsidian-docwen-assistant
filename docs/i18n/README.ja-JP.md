@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant は公開 `DocWenCLI.exe` プロトコルを通じて、Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.9.x が必要です。
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.9.x が必要です。
 
-> **DocWen 本体が必要です。** プラグインを有効にする前に、互換性のある [DocWen 0.9.x Windows 完全版](https://github.com/ZHYX91/docwen/releases)をインストールし、完全に展開してください。
+> **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
 
 ## スクリーンショット
 
@@ -38,13 +38,13 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 - 完全に展開した安定版 DocWen 0.9.x の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v1` と `docwen.artifact_bundle.v2` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 
-完全に展開した DocWen フォルダー、`DocWen.exe`、または `DocWenCLI.exe` を選択できます。プラグインは同じフォルダーの `DocWenCLI.exe` に解決し、検証済みの絶対 CLI パスだけを保存して使用します。GUI を CLI として実行せず、再帰検索やソフトウェアの自動ダウンロードも行いません。
+既定の自動検出は登録済みの `docwen.exe` エイリアスを使用し、Microsoft Store の更新後も有効です。ポータブル ZIP では手動インストールに切り替え、展開した DocWen フォルダーを選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
 
 ## インストール
 
 ### DocWen とプラグインをインストール
 
-[DocWen Releases](https://github.com/ZHYX91/docwen/releases) と [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) で対応する数字のみの Release が公開済みであることを確認し、`DocWen-windows-x64.zip` と対応するプラグイン一式をダウンロードします。`main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーし、プラグインを有効にして DocWen フォルダー、`DocWen.exe`、または `DocWenCLI.exe` を選択してください。
+[Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から DocWen をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を展開します。DocWen Assistant は Community Plugins からインストールできます。手動の場合は `main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。自動検出ではファイル選択は不要です。ポータブル版だけ設定で手動インストールと DocWen フォルダーを選びます。
 
 ### インストール時の安全性
 
@@ -66,7 +66,7 @@ Obsidian 1.12.7 以降では、横スクロール可能な 5 つの上部タブ�
 
 ## プライバシーとセキュリティ
 
-プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけをローカル CLI に渡します。Vault 外のファイルへアクセスするのは、ユーザーが選択した `DocWenCLI.exe` の実行、隔離された一時入力と検証済み成果物の管理、明示的に選択された出力先への書き込みに限られ、ローカル変換とエクスポートに必要です。変換では、検証済みの優先出力をユーザーが確認した保存先へ書き込み、検証済みの関連リソースを安全な名前で同じ場所に配置します。文書のアップロードや Vault 全体の列挙は行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけを DocWen に渡します。Vault 外へアクセスするのは、登録済みの DocWen エイリアスまたは手動で選択したポータブルアプリの起動、一時入力と検証済み成果物の管理、明示的に選択した出力先への書き込みに限られます。バージョン付きの Microsoft Store パッケージパスは開いたり保存したりしません。文書のアップロードや Vault 全体の列挙も行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## 開発
 

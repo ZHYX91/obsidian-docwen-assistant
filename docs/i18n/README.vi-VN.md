@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ qua giao thức công khai `DocWenCLI.exe`. Yêu cầu Windows, Obsidian 1.12.7 trở lên và một bản DocWen 0.9.x ổn định.
+DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows, Obsidian 1.12.7 trở lên và một bản DocWen 0.9.x ổn định.
 
-> **Bắt buộc có DocWen.** Trước khi bật plugin, hãy cài đặt và giải nén hoàn toàn một [gói DocWen 0.9.x đầy đủ cho Windows](https://github.com/ZHYX91/docwen/releases) tương thích.
+> **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP di động trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Ảnh chụp màn hình
 
@@ -38,13 +38,13 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích �
 - Gói Windows đầy đủ của một bản DocWen 0.9.x ổn định đã được giải nén hoàn toàn; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v1` và `docwen.artifact_bundle.v2`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
 
-Bạn có thể chọn thư mục DocWen đã giải nén đầy đủ, `DocWen.exe` hoặc `DocWenCLI.exe`. Plugin phân giải lựa chọn thành `DocWenCLI.exe` trong cùng thư mục và chỉ lưu, gọi đường dẫn CLI tuyệt đối đã xác thực đó. Plugin không chạy GUI như CLI, không tìm kiếm đệ quy và không tự động tải phần mềm.
+Tự động phát hiện dùng bí danh `docwen.exe` đã đăng ký theo mặc định và vẫn hoạt động sau khi Microsoft Store cập nhật. Với ZIP di động, hãy chọn cài đặt thủ công và thư mục DocWen đã giải nén. Plugin không quét `WindowsApps` hay thư mục tùy ý và không tự động tải phần mềm.
 
 ## Cài đặt
 
 ### Cài DocWen và plugin
 
-Trước hết hãy xác nhận tại [DocWen Releases](https://github.com/ZHYX91/docwen/releases) và [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) rằng các phiên bản số tương ứng đã được phát hành. Sau đó tải `DocWen-windows-x64.zip` và gói plugin tương ứng. Sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`, bật plugin rồi chọn thư mục DocWen, `DocWen.exe` hoặc `DocWenCLI.exe`.
+Cài DocWen từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) hoặc giải nén ZIP di động từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Cài DocWen Assistant từ Community Plugins; nếu cài thủ công, sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`. Tự động phát hiện không cần chọn tệp; với bản di động, chọn cài đặt thủ công và thư mục DocWen trong phần cài đặt.
 
 ### An toàn khi cài đặt
 
@@ -66,7 +66,7 @@ Obsidian 1.12.7 trở lên dùng năm thẻ trên cùng có thể cuộn ngang: 
 
 ## Quyền riêng tư và bảo mật
 
-Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho tiến trình CLI cục bộ. Plugin chỉ truy cập tệp bên ngoài Vault để chạy `DocWenCLI.exe` do người dùng chọn, quản lý đầu vào tạm thời cô lập và tạo phẩm đã xác thực, đồng thời ghi vào đường dẫn đầu ra được người dùng chọn rõ ràng; quyền truy cập này cần thiết cho việc chuyển đổi và xuất cục bộ. Khi chuyển đổi, plugin ghi đầu ra ưu tiên đã xác thực vào đích người dùng xác nhận và đặt các tài nguyên liên quan đã xác thực bên cạnh với tên an toàn. Plugin không tải tài liệu lên hoặc liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc ứng dụng di động được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Phát triển
 

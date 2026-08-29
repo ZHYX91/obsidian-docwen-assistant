@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen) pelo protocolo público `DocWenCLI.exe`. Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.9.x.
+O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.9.x.
 
-> **O DocWen é obrigatório.** Antes de ativar o plugin, instale e extraia totalmente um [pacote completo compatível do DocWen 0.9.x para Windows](https://github.com/ZHYX91/docwen/releases).
+> **O DocWen é obrigatório.** Instale uma versão compatível pela [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extraia totalmente o ZIP portátil disponível em [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Capturas de tela
 
@@ -38,13 +38,13 @@ O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino es
 - Um pacote completo de uma versão estável do DocWen 0.9.x para Windows, totalmente extraído; o plugin não baixa o DocWen automaticamente.
 - O plugin exige `docwen.machine.v1` e `docwen.artifact_bundle.v2`; uma versão incompatível do DocWen é recusada em vez de usar outro protocolo.
 
-Você pode selecionar a pasta do DocWen totalmente extraída, `DocWen.exe` ou `DocWenCLI.exe`. O plugin resolve a escolha para o `DocWenCLI.exe` na mesma pasta e salva e chama somente esse caminho absoluto validado. Ele não executa a interface como CLI, não pesquisa recursivamente e não baixa software automaticamente.
+A detecção automática usa por padrão o alias registrado `docwen.exe` e continua válida após atualizações da Microsoft Store. Para o ZIP portátil, escolha a instalação manual e a pasta extraída do DocWen. O plugin não examina `WindowsApps` nem pastas arbitrárias e não baixa software automaticamente.
 
 ## Instalação
 
 ### Instalar o DocWen e o plugin
 
-Confirme primeiro em [DocWen Releases](https://github.com/ZHYX91/docwen/releases) e [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) que versões numéricas correspondentes foram publicadas. Baixe então `DocWen-windows-x64.zip` e o pacote correspondente. Copie `main.js`, `manifest.json` e `styles.css` para `<Vault>/.obsidian/plugins/docwen-assistant/`, ative o plugin e escolha a pasta do DocWen, `DocWen.exe` ou `DocWenCLI.exe`.
+Instale o DocWen pela [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extraia o ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Instale o DocWen Assistant pelos Community Plugins ou copie `main.js`, `manifest.json` e `styles.css` para `<Vault>/.obsidian/plugins/docwen-assistant/`. A detecção automática não exige escolher arquivo; no ZIP portátil, selecione instalação manual e a pasta do DocWen nas configurações.
 
 ### Segurança da instalação
 
@@ -66,7 +66,7 @@ O Obsidian 1.12.7 ou superior usa cinco abas superiores com rolagem horizontal: 
 
 ## Privacidade e segurança
 
-O plugin fornece ao processo CLI local apenas um instantâneo isolado do editor atual ou do arquivo do Vault. Ele acessa arquivos fora do Vault somente para executar o `DocWenCLI.exe` escolhido pelo usuário, gerenciar entradas temporárias isoladas e artefatos validados e gravar em um destino de saída escolhido explicitamente; esse acesso é necessário para conversão e exportação locais. A conversão grava a saída preferencial validada no destino confirmado pelo usuário e coloca os recursos relacionados validados ao lado dela com nomes seguros. Ele não envia documentos nem enumera todo o Vault. Detalhes: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+O plugin fornece ao DocWen apenas um instantâneo isolado do editor atual ou do arquivo do Vault. O acesso fora do Vault serve somente para iniciar o alias registrado do DocWen ou o aplicativo portátil escolhido manualmente, gerenciar entradas temporárias e artefatos validados e gravar no destino escolhido. Ele não abre nem salva o caminho versionado do pacote da Microsoft Store, não envia documentos e não enumera todo o Vault. Detalhes: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## Desenvolvimento
 

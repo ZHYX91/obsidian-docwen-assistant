@@ -9,11 +9,11 @@ translation_status: source
 
 ## 产品定位
 
-DocWen Assistant 是 Windows 桌面端 Obsidian 插件，通过本机 `DocWenCLI.exe` 将当前笔记或用户明确选择的 Vault 文件交给 DocWen。它面向希望在 Obsidian 中启动 DocWen、转换文档、管理单文件标题编号和查看校对建议的用户。
+DocWen Assistant 是 Windows 桌面端 Obsidian 插件，将当前笔记或用户明确选择的 Vault 文件连接到本机 DocWen。它面向希望在 Obsidian 中启动 DocWen、转换文档、管理单文件标题编号和查看校对建议的用户。
 
 ## 兼容性前提
 
-插件要求 Windows、Obsidian 1.12.7 或更高版本，以及完整解压的稳定 DocWen 0.9.x Windows 包。插件只接受 `docwen.machine.v1` 和 `docwen.artifact_bundle.v2`；其他 Bundle schema 与不兼容的进程信封均失败关闭。
+插件要求 Windows、Obsidian 1.12.7 或更高版本，以及 Microsoft Store 安装版或完整解压的 ZIP 便携版稳定 DocWen 0.9.x。插件只接受 `docwen.machine.v1` 和 `docwen.artifact_bundle.v2`；其他 Bundle schema 与不兼容的进程信封均失败关闭。
 
 ## 核心能力
 
@@ -21,7 +21,7 @@ DocWen Assistant 是 Windows 桌面端 Obsidian 插件，通过本机 `DocWenCLI
 - 根据文件检查和 Machine capability 提供 Word、Excel、Markdown 导出；
 - 为一个 Markdown 文件添加或删除标题编号；
 - 在只读侧栏展示 Markdown 校对结果；
-- 执行 doctor 诊断，并在能力不可用时给出失败状态。
+- 检查 DocWen 连接，并在安装、协议、健康状态或能力不可用时给出失败状态。
 
 ## 数据与写入边界
 
@@ -29,11 +29,11 @@ DocWen Assistant 是 Windows 桌面端 Obsidian 插件，通过本机 `DocWenCLI
 
 ## 失败语义
 
-无法验证 DocWen 位置、Machine 响应、输入快照、Artifact Bundle、编辑器状态或目标身份时，操作必须失败关闭。能力查询失败不能伪装成“支持能力为空”，已有输出不能在未经确认时静默覆盖。
+无法验证已注册的 DocWen 别名或手动位置、Machine 响应、输入快照、Artifact Bundle、编辑器状态或目标身份时，操作必须失败关闭。能力查询失败不能伪装成“支持能力为空”，已有输出不能在未经确认时静默覆盖。
 
 ## 非目标
 
-插件不自动下载 DocWen，不递归寻找可执行文件，不支持移动端，不提供其他进程协议，不把当前 Vault 当成批量扫描目录，也不定义跨文件组合编号。MD→DOCX 不提供源标题编号控制；需要修改源 Markdown 标题编号时使用独立编号动作。同一 Markdown 内没有开始、停止或重置编号的特殊语法；嵌入文件保留其自身真实编号；插件不增加编号或 OCR 专用 YAML 字段。
+插件不自动下载 DocWen，不检查带版本的 Microsoft Store 包路径，不递归寻找可执行文件，不支持移动端，不提供其他进程协议，不把当前 Vault 当成批量扫描目录，也不定义跨文件组合编号。MD→DOCX 不提供源标题编号控制；需要修改源 Markdown 标题编号时使用独立编号动作。同一 Markdown 内没有开始、停止或重置编号的特殊语法；嵌入文件保留其自身真实编号；插件不增加编号或 OCR 专用 YAML 字段。
 
 ## 验收边界
 

@@ -14,7 +14,7 @@ translation_status: synced
 
 ## DocWen process boundary
 
-After a user selects a DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`, path resolution accepts only the exact sibling `DocWenCLI.exe`. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v1, server identity, and a stable 0.9.x product version.
+Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v1, server identity, and a stable 0.9.x product version.
 
 ## Request data flow
 
@@ -32,7 +32,7 @@ Proofreading only reads a report. Numbering is generated in an isolated file, an
 
 ## Lifecycle and resources
 
-Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
+Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. Changing the DocWen target cancels active work and resets connection checks, capability projection, file caches, and pending preloads as one generation; invalidated requests cannot restore stale state. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
 
 ## Trust boundaries
 

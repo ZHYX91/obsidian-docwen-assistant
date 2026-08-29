@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant는 공개 `DocWenCLI.exe` 프로토콜을 통해 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows, Obsidian 1.12.7 이상, 안정적인 DocWen 0.9.x 버전이 필요합니다.
+DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows, Obsidian 1.12.7 이상, 안정적인 DocWen 0.9.x 버전이 필요합니다.
 
-> **DocWen 본체가 필요합니다.** 플러그인을 활성화하기 전에 호환되는 [DocWen 0.9.x Windows 전체 패키지](https://github.com/ZHYX91/docwen/releases)를 설치하고 완전히 압축 해제하세요.
+> **DocWen 본체가 필요합니다.** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환 버전을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 완전히 압축 해제하세요.
 
 ## 스크린샷
 
@@ -38,13 +38,13 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 - 완전히 압축 해제한 안정적인 DocWen 0.9.x Windows 전체 패키지. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v1`과 `docwen.artifact_bundle.v2`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 
-완전히 압축 해제한 DocWen 폴더, `DocWen.exe` 또는 `DocWenCLI.exe`를 선택할 수 있습니다. 플러그인은 같은 폴더의 `DocWenCLI.exe`로 확인한 뒤 검증된 절대 CLI 경로만 저장하고 사용합니다. GUI를 CLI로 실행하거나 재귀 검색 또는 소프트웨어 자동 다운로드를 하지 않습니다.
+기본 자동 감지는 등록된 `docwen.exe` 별칭을 사용하며 Microsoft Store 업데이트 후에도 유지됩니다. 휴대용 ZIP은 수동 설치로 전환해 압축을 푼 DocWen 폴더를 선택합니다. `WindowsApps`나 임의 폴더를 검색하지 않으며 소프트웨어를 자동 다운로드하지 않습니다.
 
 ## 설치
 
 ### DocWen과 플러그인 설치
 
-[DocWen Releases](https://github.com/ZHYX91/docwen/releases)와 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)에서 일치하는 숫자 버전이 공개되었는지 먼저 확인하고 `DocWen-windows-x64.zip`과 해당 플러그인 패키지를 다운로드하세요. `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사하고 플러그인을 활성화한 다음 DocWen 폴더, `DocWen.exe` 또는 `DocWenCLI.exe`를 선택하세요.
+[Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 DocWen을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 압축 해제하세요. DocWen Assistant는 Community Plugins에서 설치할 수 있습니다. 수동 설치 시 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사하세요. 자동 감지는 파일 선택이 필요 없으며 휴대용 버전만 설정에서 수동 설치와 DocWen 폴더를 선택합니다.
 
 ### 설치 안전성
 
@@ -66,7 +66,7 @@ Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 5개(일�
 
 ## 개인정보 보호 및 보안
 
-플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 로컬 CLI에 전달합니다. Vault 외부 파일 접근은 사용자가 선택한 `DocWenCLI.exe` 실행, 격리된 임시 입력과 검증된 산출물 관리, 사용자가 명시적으로 선택한 출력 경로 쓰기에만 사용되며 로컬 변환과 내보내기에 필요합니다. 변환은 검증된 기본 출력을 사용자가 확인한 대상에 저장하고 검증된 관련 리소스는 안전한 이름으로 같은 위치에 저장합니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 DocWen에 전달합니다. Vault 외부 접근은 등록된 DocWen 별칭이나 수동으로 선택한 휴대용 앱 실행, 임시 입력과 검증된 산출물 관리, 사용자가 선택한 출력 경로 쓰기에만 사용됩니다. 버전이 포함된 Microsoft Store 패키지 경로는 열거나 저장하지 않습니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
 
 ## 개발
 

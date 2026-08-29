@@ -10,11 +10,11 @@ translation_status: synced
 
 ## Product position
 
-DocWen Assistant is a Windows desktop Obsidian plugin that sends the current note or an explicitly selected Vault file to local `DocWenCLI.exe`. It serves users who want to launch DocWen, convert documents, manage heading numbering within one file, and review proofreading advice without leaving Obsidian.
+DocWen Assistant is a Windows desktop Obsidian plugin that connects the current note or an explicitly selected Vault file to local DocWen. It serves users who want to launch DocWen, convert documents, manage heading numbering within one file, and review proofreading advice without leaving Obsidian.
 
 ## Compatibility prerequisites
 
-The plugin requires Windows, Obsidian 1.12.7 or later, and a fully extracted stable DocWen 0.9.x Windows package. It accepts `docwen.machine.v1` and `docwen.artifact_bundle.v2`; other Bundle schemas and incompatible process envelopes fail closed.
+The plugin requires Windows, Obsidian 1.12.7 or later, and either a Microsoft Store installation or a fully extracted portable package of stable DocWen 0.9.x. It accepts `docwen.machine.v1` and `docwen.artifact_bundle.v2`; other Bundle schemas and incompatible process envelopes fail closed.
 
 ## Core capabilities
 
@@ -22,7 +22,7 @@ The plugin requires Windows, Obsidian 1.12.7 or later, and a fully extracted sta
 - Offer Word, Excel, and Markdown export according to file inspection and Machine capabilities.
 - Add or remove heading numbering within one Markdown file.
 - Show Markdown proofreading results in a read-only sidebar.
-- Run doctor diagnostics and expose a failure state when a capability is unavailable.
+- Check the DocWen connection and expose a failure state when the installation, protocol, health, or a capability is unavailable.
 
 ## Data and write boundaries
 
@@ -30,11 +30,11 @@ The plugin creates an isolated snapshot only for a user-selected file, using its
 
 ## Failure semantics
 
-An operation fails closed when the DocWen location, Machine response, input snapshot, Artifact Bundle, editor state, or target identity cannot be verified. Capability-query failures never masquerade as an empty supported set, and existing outputs are never silently replaced without confirmation.
+An operation fails closed when the registered DocWen alias or manual location, Machine response, input snapshot, Artifact Bundle, editor state, or target identity cannot be verified. Capability-query failures never masquerade as an empty supported set, and existing outputs are never silently replaced without confirmation.
 
 ## Non-goals
 
-The plugin does not download DocWen, recursively search for executables, support mobile, provide an alternate process protocol, or treat the Vault as a bulk-scan directory. It does not define cross-file composition numbering. Markdown-to-DOCX exposes no source heading-number controls; users use the separate numbering action when they need to change source Markdown heading numbers. There is no special Markdown syntax for starting, stopping, or resetting numbering within one file; embedded files retain their own real numbering; and the plugin adds no numbering- or OCR-specific YAML fields.
+The plugin does not download DocWen, inspect the versioned Microsoft Store package path, recursively search for executables, support mobile, provide an alternate process protocol, or treat the Vault as a bulk-scan directory. It does not define cross-file composition numbering. Markdown-to-DOCX exposes no source heading-number controls; users use the separate numbering action when they need to change source Markdown heading numbers. There is no special Markdown syntax for starting, stopping, or resetting numbering within one file; embedded files retain their own real numbering; and the plugin adds no numbering- or OCR-specific YAML fields.
 
 ## Acceptance boundary
 
