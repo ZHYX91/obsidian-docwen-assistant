@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   operationItems: [] as Array<{ generation: number; kind: string; state: string }>,
   cancelled: [] as number[],
   cancelAllCalls: 0,
+  capabilityResetCalls: 0,
+  monitorResetCalls: 0,
   throwFromRibbon: false,
 }));
 
@@ -92,9 +94,17 @@ vi.mock("../src/docwen", () => ({
     findConversionRoute(_capability: unknown, target: string): object | null {
       return target === "docx" ? {} : null;
     }
-    dispose(): void {
+    reset(): void {
+      state.capabilityResetCalls += 1;
       state.cleanup.push("capabilities");
     }
+  },
+}));
+vi.mock("../src/docwen/connection-monitor", () => ({
+  DocWenConnectionMonitor: class DocWenConnectionMonitor {
+    getStatus(): { state: "unchecked" } { return { state: "unchecked" }; }
+    check(): Promise<never> { return Promise.reject(new Error("not configured")); }
+    reset(): void { state.monitorResetCalls += 1; }
   },
 }));
 vi.mock("../src/runtime/operation-coordinator", () => ({
@@ -129,6 +139,8 @@ describe("DocWenPlugin lifecycle", () => {
     state.operationItems.length = 0;
     state.cancelled.length = 0;
     state.cancelAllCalls = 0;
+    state.capabilityResetCalls = 0;
+    state.monitorResetCalls = 0;
     state.throwFromRibbon = false;
     state.loadData = async () => ({});
   });
@@ -157,6 +169,19 @@ describe("DocWenPlugin lifecycle", () => {
     await loading;
 
     expect(state.cleanup).toEqual([]);
+  });
+
+  it("resets operations, connection state, and capability state through one runtime entry", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin();
+    await plugin.onload();
+
+    plugin.resetDocWenRuntime();
+
+    expect(state.cancelAllCalls).toBe(1);
+    expect(state.monitorResetCalls).toBe(1);
+    expect(state.capabilityResetCalls).toBe(1);
+    plugin.onunload();
   });
 
   it("uses completed Core capabilities for command availability", async () => {

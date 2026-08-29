@@ -136,6 +136,15 @@ describe("ActionRunner", () => {
     expect(button).toBeDefined();
     button?.listeners.get("click")?.();
     expect(openSettings).toHaveBeenCalledOnce();
+
+    state.modals.length = 0;
+    runner.presentFailure(
+      "noticeLaunchFailed",
+      new LocalCliError("cli_alias_not_found", "DocWen alias is unavailable."),
+    );
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("Microsoft Store");
+    expect(allText(state.modals[0].contentEl)).toContain("portable ZIP");
   });
 
   it("does not open a details modal for an empty details object", async () => {

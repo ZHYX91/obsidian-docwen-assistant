@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { lstat, realpath, stat } from "node:fs/promises";
 import * as path from "node:path";
+import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "node:timers";
 
 import { LocalCliError, RemoteMachineError } from "./errors";
 import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
@@ -10,7 +11,7 @@ import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject 
 export type { JsonObject } from "./machine-framing";
 
 const CLIENT_NAME = "DocWen Obsidian Assistant";
-const CLIENT_VERSION = "2.0.0";
+const CLIENT_VERSION = "2.0.2";
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
@@ -22,6 +23,12 @@ const FORCE_KILL_WAIT_MS = 2_000;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const SUPPORTED_DOCWEN_VERSION_PATTERN = /^0\.9\.(?:0|[1-9]\d*)$/u;
 const EXIT_WAIT_EXPIRED = Symbol("exit_wait_expired");
+
+export type DocWenLaunchTarget = {
+  executable: string;
+  cwd: string;
+  mode: "automatic" | "manual";
+};
 
 export const ARTIFACT_BUNDLE_LIMITS = Object.freeze({
   artifacts: 1_024,
@@ -178,10 +185,11 @@ class MachineSession {
   private readonly closed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
 
-  constructor(binaryPath: string) {
+  constructor(rawTarget: string | DocWenLaunchTarget) {
+    const target = normalizeLaunchTarget(rawTarget);
     try {
-      this.child = spawn(binaryPath, ["serve", "--stdio"], {
-        cwd: path.dirname(binaryPath),
+      this.child = spawn(target.executable, ["serve", "--stdio"], {
+        cwd: target.cwd,
         env: boundedEnvironment(),
         detached: process.platform !== "win32",
         shell: false,
@@ -196,8 +204,14 @@ class MachineSession {
     this.closed = new Promise((resolve) => {
       this.child.once("close", resolve);
       this.child.once("error", (error) => {
-        const failure = new LocalCliError("cli_spawn_failed", "DocWen Machine Protocol process failed.", {
+        const aliasMissing = target.mode === "automatic" && isErrno(error, "ENOENT");
+        const failure = new LocalCliError(
+          aliasMissing ? "cli_alias_not_found" : "cli_spawn_failed",
+          aliasMissing
+            ? "The DocWen application execution alias is unavailable."
+            : "DocWen Machine Protocol process failed.", {
           cause: error.message,
+          mode: target.mode,
         });
         this.queue.fail(failure);
         resolve(null);
@@ -421,7 +435,7 @@ export class DocWenMachineClient {
   private disposed = false;
 
   constructor(
-    private readonly resolveBinaryPath: () => string,
+    private readonly resolveBinaryPath: () => string | DocWenLaunchTarget,
     private readonly resolveLocale: () => string,
     private readonly expectedProductVersion?: string,
   ) {}
@@ -432,6 +446,18 @@ export class DocWenMachineClient {
 
   query(method: string, params: JsonObject, signal?: AbortSignal, timeoutMs = DEFAULT_QUERY_TIMEOUT_MS): Promise<JsonObject> {
     return this.withSession(signal, timeoutMs, async (session) => session.rpc(method, params));
+  }
+
+  queryWithProductVersion(
+    method: string,
+    params: JsonObject,
+    signal?: AbortSignal,
+    timeoutMs = DEFAULT_QUERY_TIMEOUT_MS,
+  ): Promise<{ result: JsonObject; productVersion: string }> {
+    return this.withSession(signal, timeoutMs, async (session, _setTaskId, productVersion) => ({
+      result: await session.rpc(method, params),
+      productVersion,
+    }));
   }
 
   runTask(request: MachineTaskRequest, signal?: AbortSignal, timeoutMs = 10 * 60_000): Promise<MachineTaskCompleted> {
@@ -501,8 +527,8 @@ export class DocWenMachineClient {
     let taskId: string | null = null;
     let timedOut = false;
     let abortHandled = false;
-    let cancellationTimer: number | null = null;
-    const timer = window.setTimeout(() => {
+    let cancellationTimer: ReturnType<typeof scheduleTimeout> | null = null;
+    const timer = scheduleTimeout(() => {
       timedOut = true;
       session.fail(new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs }));
       void session.terminate().catch(() => undefined);
@@ -519,7 +545,7 @@ export class DocWenMachineClient {
           void session.terminate().catch(() => undefined);
           return;
         }
-        cancellationTimer = window.setTimeout(() => {
+        cancellationTimer = scheduleTimeout(() => {
           session.fail(cancellation);
           void session.terminate().catch(() => undefined);
         }, CANCELLATION_GRACE_MS);
@@ -555,12 +581,30 @@ export class DocWenMachineClient {
       }
       throw primary;
     } finally {
-      window.clearTimeout(timer);
-      if (cancellationTimer) window.clearTimeout(cancellationTimer);
+      cancelTimeout(timer);
+      if (cancellationTimer) cancelTimeout(cancellationTimer);
       signal?.removeEventListener("abort", onAbort);
       this.activeSessions.delete(session);
     }
   }
+}
+
+function normalizeLaunchTarget(target: string | DocWenLaunchTarget): DocWenLaunchTarget {
+  const normalized = typeof target === "string"
+    ? {
+        executable: target,
+        cwd: path.win32.isAbsolute(target) ? path.win32.dirname(target) : path.dirname(target),
+        mode: "manual" as const,
+      }
+    : target;
+  if (!isAbsolutePlatformPath(normalized.executable) || !isAbsolutePlatformPath(normalized.cwd)) {
+    throw new LocalCliError(
+      "cli_spawn_failed",
+      "DocWen launch targets must use fixed absolute paths.",
+      { mode: normalized.mode },
+    );
+  }
+  return normalized;
 }
 
 export async function validateArtifactBundle(
@@ -964,9 +1008,9 @@ function waitForExit(
   timeoutMs: number,
 ): Promise<number | null | typeof EXIT_WAIT_EXPIRED> {
   return new Promise((resolve) => {
-    const timer = window.setTimeout(() => resolve(EXIT_WAIT_EXPIRED), timeoutMs);
+    const timer = scheduleTimeout(() => resolve(EXIT_WAIT_EXPIRED), timeoutMs);
     void closed.then((code) => {
-      window.clearTimeout(timer);
+      cancelTimeout(timer);
       resolve(code);
     });
   });
@@ -976,6 +1020,20 @@ function boundedEnvironment(): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {};
   for (const key of ["SystemRoot", "WINDIR", "COMSPEC", "PATH", "PATHEXT", "TEMP", "TMP", "LANG", "LC_ALL"]) {
     if (process.env[key]) environment[key] = process.env[key];
+  }
+  if (process.platform === "linux") {
+    for (const key of [
+      "HOME",
+      "XDG_RUNTIME_DIR",
+      "XDG_CONFIG_HOME",
+      "XDG_DATA_HOME",
+      "DISPLAY",
+      "WAYLAND_DISPLAY",
+      "XAUTHORITY",
+      "DBUS_SESSION_BUS_ADDRESS",
+    ]) {
+      if (process.env[key]) environment[key] = process.env[key];
+    }
   }
   environment.NO_COLOR = "1";
   environment.PYTHONIOENCODING = "utf-8";
@@ -989,6 +1047,10 @@ function errorMessage(error: unknown): string {
 
 function isErrno(error: unknown, code: string): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
+}
+
+function isAbsolutePlatformPath(value: string): boolean {
+  return path.isAbsolute(value) || path.win32.isAbsolute(value);
 }
 
 function sameFilesystemIdentity(

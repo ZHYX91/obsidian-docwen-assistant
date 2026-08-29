@@ -84,8 +84,10 @@ describe("architecture boundaries", () => {
     expect(location).toContain('["openDirectory"]');
     expect(links).toContain("https://github.com/ZHYX91/docwen/releases");
     expect(links).not.toContain("/releases/latest");
-    expect(pathResolver).toContain('path.join(selectedPath, "DocWenCLI.exe")');
-    expect(pathResolver).toContain('filename === "docwen.exe"');
+    expect(pathResolver).toContain('cli: "DocWenCLI.exe"');
+    expect(pathResolver).toContain('cli: "DocWenCLI"');
+    expect(pathResolver).toContain('gui: "DocWen.exe"');
+    expect(pathResolver).toContain('gui: "DocWen"');
     expect(pathResolver).not.toContain("readdir");
     const settings = source("src/settings.ts");
     expect(settings.indexOf("await this.plugin.saveSettings()"))

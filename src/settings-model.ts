@@ -1,5 +1,6 @@
 export type CleanNumberingMode = "default" | "remove" | "keep";
 export type AddNumberingMode = string;
+export type DocWenConnectionMode = "automatic" | "manual";
 export type PluginLanguage =
   | "auto"
   | "en"
@@ -16,6 +17,7 @@ export type PluginLanguage =
 
 export interface PluginSettings {
   language: PluginLanguage;
+  docwenConnectionMode: DocWenConnectionMode;
   docwenCliPath: string;
   extractImages: boolean;
   enableOcr: boolean;
@@ -41,6 +43,7 @@ export type SettingsControlKey = keyof PluginSettings;
 
 export const DEFAULT_SETTINGS: PluginSettings = {
   language: "auto",
+  docwenConnectionMode: "automatic",
   docwenCliPath: "",
   extractImages: true,
   enableOcr: false,
@@ -63,12 +66,18 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 };
 
 /** Keep only settings owned by the current schema; all unrecognized fields are ignored. */
-export function normalizeSettings(value: unknown): PluginSettings {
+export function normalizeSettings(
+  value: unknown,
+  platform: NodeJS.Platform = process.platform,
+): PluginSettings {
   const input =
     typeof value === "object" && value !== null && !Array.isArray(value)
       ? (value as Record<string, unknown>)
       : {};
-  const normalized = { ...DEFAULT_SETTINGS };
+  const normalized = {
+    ...DEFAULT_SETTINGS,
+    docwenConnectionMode: platform === "win32" ? "automatic" : "manual",
+  } satisfies PluginSettings;
   const output = normalized as unknown as Record<string, unknown>;
   for (const [key, defaultValue] of Object.entries(DEFAULT_SETTINGS)) {
     const candidate = input[key];
@@ -76,6 +85,17 @@ export function normalizeSettings(value: unknown): PluginSettings {
       output[key] = candidate;
     }
   }
+  // Settings written before automatic Store discovery existed contain only a
+  // path. Preserve that working configuration instead of silently switching
+  // an existing user to the execution alias.
+  if (
+    !["automatic", "manual"].includes(String(input.docwenConnectionMode))
+    && typeof input.docwenCliPath === "string"
+    && input.docwenCliPath.trim().length > 0
+  ) {
+    normalized.docwenConnectionMode = "manual";
+  }
+  if (platform !== "win32") normalized.docwenConnectionMode = "manual";
   return normalized;
 }
 
@@ -94,6 +114,8 @@ function isSettingValue(key: SettingsControlKey, value: unknown): boolean {
   if (typeof defaultValue === "boolean") return true;
   if (typeof value !== "string") return false;
   switch (key) {
+    case "docwenConnectionMode":
+      return ["automatic", "manual"].includes(value);
     case "language":
       return ["auto", "en", "zh-CN", "zh-TW", "de", "fr", "ru", "pt-BR", "ja", "ko", "es", "vi"].includes(value);
     case "ocrLanguage":

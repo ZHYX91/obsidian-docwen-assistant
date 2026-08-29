@@ -28,6 +28,7 @@ export interface SettingsPageContext {
 
 export function getSettingsPages(
   context: SettingsPageContext,
+  platform: NodeJS.Platform = process.platform,
 ): SettingsPageDefinition[] {
   return [
     {
@@ -35,9 +36,25 @@ export function getSettingsPages(
       name: t("settingsGeneralTitle"),
       items: [
         dropdown("language", t("settingsLanguage"), t("settingsLanguageDesc"), languageDropdownOptions(t("settingsLanguageAuto"))),
+        dropdown(
+          "docwenConnectionMode",
+          t("settingsConnectionMode"),
+          t("settingsConnectionModeDesc"),
+          platform === "win32"
+            ? {
+                automatic: t("settingsConnectionAutomatic"),
+                manual: t("settingsConnectionManual"),
+              }
+            : { manual: t("settingsConnectionManual") },
+        ),
         { name: t("settingsCliPathStatus"), render: context.renderCliStatus },
         { name: t("settingsDownloadDocWen"), desc: t("settingsDownloadDocWenDesc"), render: context.renderDocWenDownload },
-        { name: t("settingsCliPath"), desc: t("settingsCliPathDesc"), render: context.renderCliPath },
+        {
+          name: t("settingsCliPath"),
+          desc: t("settingsCliPathDesc"),
+          render: context.renderCliPath,
+          visible: () => context.settings.docwenConnectionMode === "manual",
+        },
         { name: t("commandDoctor"), desc: t("settingsDoctorDesc"), action: context.runDoctor },
         {
           name: t("settingsPersistence"),

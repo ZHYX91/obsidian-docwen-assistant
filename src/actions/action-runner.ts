@@ -1,6 +1,6 @@
 import { type App, Modal } from "obsidian";
 
-import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL } from "../docwen/links";
+import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../docwen/links";
 import { copyTextToClipboard } from "../host/clipboard";
 import { showNotice } from "../host/notices";
 import { t, type Translations } from "../i18n";
@@ -40,7 +40,15 @@ export class ActionRunner {
   }
 
   presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
-    if (getLocalErrorCode(error) === "cli_path_not_configured") {
+    if ([
+      "cli_path_not_configured",
+      "cli_alias_not_found",
+      "cli_platform_unsupported",
+      "cli_not_found",
+      "cli_not_file",
+      "cli_not_executable",
+      "cli_wrong_filename",
+    ].includes(getLocalErrorCode(error) ?? "")) {
       new DocWenSetupModal(this.app, this.openSettings).open();
       return;
     }
@@ -59,7 +67,7 @@ class DocWenSetupModal extends Modal {
   override onOpen(): void {
     this.titleEl.setText(t("dialogDocWenSetupTitle"));
     this.contentEl.createEl("p", { text: t("settingsDownloadDocWenDesc") });
-    this.contentEl.createEl("p", { text: t("settingsCliPathDesc") });
+    this.contentEl.createEl("p", { text: t("settingsConnectionModeDesc") });
     const actions = this.contentEl.createDiv({ cls: "docwen-modal-actions" });
     const settingsButton = actions.createEl("button", {
       text: t("dialogOpenSettings"),
@@ -70,7 +78,13 @@ class DocWenSetupModal extends Modal {
       this.close();
       this.openSettings?.();
     });
-    const releasesLink = actions.createEl("a", { text: t("settingsViewReleases") });
+    if (process.platform === "win32") {
+      const storeLink = actions.createEl("a", { text: t("settingsGetFromStore") });
+      storeLink.href = DOCWEN_STORE_URL;
+      storeLink.target = "_blank";
+      storeLink.rel = "noopener noreferrer";
+    }
+    const releasesLink = actions.createEl("a", { text: t("settingsDownloadPortable") });
     releasesLink.href = DOCWEN_RELEASES_URL;
     releasesLink.target = "_blank";
     releasesLink.rel = "noopener noreferrer";

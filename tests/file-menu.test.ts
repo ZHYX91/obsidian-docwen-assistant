@@ -46,6 +46,7 @@ describe("file menu capability failures", () => {
     let handler!: (menu: FakeMenu, file: unknown) => void;
     const failure = new Error("Core discovery unavailable");
     const present = vi.fn();
+    const preload = vi.fn().mockResolvedValue(undefined);
     const plugin = {
       app: {
         workspace: { on: (_event: string, callback: typeof handler) => {
@@ -61,7 +62,7 @@ describe("file menu capability failures", () => {
       gui: { open: vi.fn() } as never,
       numbering: {} as never,
       proofread: {} as never,
-      capabilities: { peek: () => failure, preload: vi.fn() } as never,
+      capabilities: { peek: () => failure, preload } as never,
       presentCapabilityFailure: present,
     });
     const menu = new FakeMenu();
@@ -70,6 +71,7 @@ describe("file menu capability failures", () => {
     const errorItem = menu.items[0].submenu?.items[0];
 
     expect(errorItem?.title).toBe("noticeCapabilityFailed:Core discovery unavailable");
+    expect(preload).toHaveBeenCalledWith("D:\\Vault\\note.md");
     errorItem?.click?.();
     expect(present).toHaveBeenCalledWith(failure);
   });

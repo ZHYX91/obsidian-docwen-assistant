@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { initI18n } from "../src/i18n";
 
 const lifecycle = vi.hoisted(() => [] as string[]);
+const hostState = vi.hoisted(() => ({
+  dialog: null as null | {
+    showOpenDialog: (options: unknown) => Promise<{ canceled: boolean; filePaths: string[] }>;
+  },
+  files: new Set<string>(),
+}));
 const buttons: FakeButton[] = [];
 const dropdowns: FakeDropdown[] = [];
 const settings: FakeSetting[] = [];
@@ -167,8 +176,12 @@ vi.mock("obsidian", () => ({
   Setting: FakeSetting,
 }));
 vi.mock("../src/main", () => ({ default: class DocWenPlugin {} }));
-vi.mock("../src/host/file-system", () => ({ isFile: () => false, pathExists: () => false }));
-vi.mock("../src/host/electron-dialogs", () => ({ getElectronOpenDialog: () => null }));
+vi.mock("../src/host/file-system", () => ({
+  isDirectory: () => false,
+  isFile: (candidate: string) => hostState.files.has(candidate),
+  pathExists: (candidate: string) => hostState.files.has(candidate),
+}));
+vi.mock("../src/host/electron-dialogs", () => ({ getElectronOpenDialog: () => hostState.dialog }));
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
 
 describe("settings surface lifecycle", () => {
@@ -178,6 +191,8 @@ describe("settings surface lifecycle", () => {
     dropdowns.length = 0;
     settings.length = 0;
     toggles.length = 0;
+    hostState.dialog = null;
+    hostState.files.clear();
   });
 
   it("uses the custom top-tab surface", async () => {
@@ -221,7 +236,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const doctor = settings.find((setting) => setting.nameEl.textContent === "DocWen doctor check")!;
+    const doctor = settings.find((setting) => setting.nameEl.textContent === "Check DocWen connection")!;
 
     doctor.settingEl.dispatch("keydown", "Escape");
     expect(plugin.runDoctorCheck).not.toHaveBeenCalled();
@@ -265,6 +280,46 @@ describe("settings surface lifecycle", () => {
     const tabButtons = tab.containerEl.children[0].children[0].children;
     expect(tabButtons[0].textContent).toBe("常规");
     expect(tabButtons[4].textContent).toBe("使用方法");
+  });
+
+  it("invalidates the verified connection before saving a connection-mode change", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+
+    await dropdowns[1].choose("manual");
+
+    expect(plugin.settings.docwenConnectionMode).toBe("manual");
+    expect(plugin.resetDocWenRuntime).toHaveBeenCalledOnce();
+  });
+
+  it("resets the full DocWen runtime after selecting a manual executable", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const root = mkdtempSync(path.join(tmpdir(), "docwen-settings-surface-"));
+    const cliPath = path.join(root, process.platform === "win32" ? "DocWenCLI.exe" : "DocWenCLI");
+    writeFileSync(cliPath, "fixture");
+    chmodSync(cliPath, 0o755);
+    try {
+      hostState.files.add(cliPath);
+      hostState.dialog = {
+        showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: [cliPath] }),
+      };
+      const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "manual" });
+      const tab = new SettingTab({} as never, plugin as never);
+
+      await (tab as unknown as {
+        selectDocWenLocation(kind: "program"): Promise<void>;
+      }).selectDocWenLocation("program");
+
+      expect(plugin.settings.docwenCliPath).toBe(cliPath);
+      expect(plugin.resetDocWenRuntime).toHaveBeenCalledOnce();
+      expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("lets the host hide the settings surface before clearing local element references", async () => {
@@ -354,7 +409,9 @@ describe("settings surface lifecycle", () => {
     internals.configurePathStatus(new FakeSetting(new FakeElement()));
     const statusElement = [...internals.pathStatusElements][0];
     const initialText = statusElement.textContent;
+    plugin.settings.docwenConnectionMode = "manual";
     plugin.settings.docwenCliPath = "C:\\not-docwen.exe";
+    plugin.resetDocWenRuntime();
 
     internals.refreshPathStatus();
 
@@ -477,12 +534,22 @@ describe("settings surface lifecycle", () => {
 });
 
 function settingsPlugin(defaults: Record<string, unknown>, saveSettings = vi.fn().mockResolvedValue(undefined)) {
+  let connectionStatus: Record<string, unknown> = { state: "unchecked" };
   return {
     settings: { ...defaults },
     fetchNumberingSchemes: vi.fn().mockResolvedValue([]),
     getSettingsSaveState: vi.fn(() => "saved"),
     retrySettingsSave: vi.fn().mockResolvedValue(undefined),
     runDoctorCheck: vi.fn().mockResolvedValue(undefined),
+    getDocWenConnectionStatus: vi.fn(() => connectionStatus),
+    resetDocWenRuntime: vi.fn(() => { connectionStatus = { state: "unchecked" }; }),
+    checkDocWenConnectionSilently: vi.fn(async () => {
+      connectionStatus = {
+        state: "connected",
+        mode: String(defaults.docwenConnectionMode ?? "automatic"),
+        productVersion: "0.9.0",
+      };
+    }),
     saveSettings,
   };
 }

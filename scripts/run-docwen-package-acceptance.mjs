@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { lstat, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { constants as fsConstants, createReadStream } from "node:fs";
+import { access, lstat, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,8 +30,9 @@ export async function validateDocWenPackageCandidate(environment) {
   if (!path.isAbsolute(candidate)) {
     throw new Error("DOCWEN_TEST_BINARY must be an absolute path.");
   }
-  if (path.basename(candidate) !== "DocWenCLI.exe") {
-    throw new Error("DOCWEN_TEST_BINARY must name DocWenCLI.exe exactly.");
+  const expectedFilename = packagedCliFilename();
+  if (path.basename(candidate) !== expectedFilename) {
+    throw new Error(`DOCWEN_TEST_BINARY must name ${expectedFilename} exactly.`);
   }
   if (!SHA256_PATTERN.test(expectedSha256)) {
     throw new Error("DOCWEN_TEST_SHA256 must be exactly 64 lowercase hexadecimal characters.");
@@ -68,6 +69,13 @@ export async function validateDocWenPackageCandidate(environment) {
   if (actualSha256 !== expectedSha256) {
     throw new Error(`DocWen candidate SHA-256 mismatch: expected ${expectedSha256}, got ${actualSha256}.`);
   }
+  if (process.platform === "linux") {
+    try {
+      await access(canonicalCandidate, fsConstants.X_OK);
+    } catch {
+      throw new Error("DOCWEN_TEST_BINARY must be executable on Linux.");
+    }
+  }
 
   return Object.freeze({
     binaryPath: canonicalCandidate,
@@ -75,6 +83,12 @@ export async function validateDocWenPackageCandidate(environment) {
     sha256: actualSha256,
     productVersion: expectedVersion,
   });
+}
+
+function packagedCliFilename() {
+  if (process.platform === "win32") return "DocWenCLI.exe";
+  if (process.platform === "linux") return "DocWenCLI";
+  throw new Error("Packaged DocWen release acceptance requires a recognized desktop host.");
 }
 
 export async function validateDocWenCandidateIdentity(expected) {

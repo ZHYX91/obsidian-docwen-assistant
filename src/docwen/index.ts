@@ -12,7 +12,9 @@ export { DocWenClient, mediaTypeForPath, normalizeLogicalPath } from "./client";
 export { DocWenCapabilityService } from "./capability-service";
 export type { FileCapability } from "./capability-service";
 export { LocalCliError, RemoteMachineError } from "./errors";
-export { resolveDocWenCliPath } from "./path";
+export type { DocWenConnectionStatus } from "./connection-status";
+export { DOCWEN_EXECUTION_ALIAS, resolveDocWenCliPath, resolveDocWenLaunchTarget } from "./path";
+export type { DocWenLaunchTarget } from "./machine-client";
 export type {
   ConversionOutcome,
   ConvertOptions,

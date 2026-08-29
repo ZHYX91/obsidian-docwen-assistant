@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
@@ -24,9 +24,9 @@ afterEach(async () => {
 async function fixture(): Promise<{ environment: Record<string, string>; binary: string }> {
   const root = await mkdtemp(path.join(tmpdir(), "assistant-package-gate-"));
   temporaryRoots.push(root);
-  const binary = path.join(root, "DocWenCLI.exe");
+  const binary = path.join(root, process.platform === "linux" ? "DocWenCLI" : "DocWenCLI.exe");
   const bytes = Buffer.from("fixed packaged candidate", "utf8");
-  await writeFile(binary, bytes);
+  await writeFile(binary, bytes, { mode: 0o755 });
   return {
     binary,
     environment: {
@@ -54,17 +54,18 @@ describe("packaged DocWen acceptance input gate", () => {
 
   it("rejects relative, missing, non-file, and wrongly named paths", async () => {
     const { environment, binary } = await fixture();
+    const expectedFilename = path.basename(binary);
 
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_BINARY: "DocWenCLI.exe",
+      DOCWEN_TEST_BINARY: expectedFilename,
     })).rejects.toThrow("must be an absolute path");
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_BINARY: path.join(path.dirname(binary), "missing", "DocWenCLI.exe"),
+      DOCWEN_TEST_BINARY: path.join(path.dirname(binary), "missing", expectedFilename),
     })).rejects.toThrow("cannot be inspected");
 
-    const directoryCandidate = path.join(path.dirname(binary), "directory", "DocWenCLI.exe");
+    const directoryCandidate = path.join(path.dirname(binary), "directory", expectedFilename);
     await mkdir(directoryCandidate, { recursive: true });
     await expect(validateDocWenPackageCandidate({
       ...environment,
@@ -73,7 +74,14 @@ describe("packaged DocWen acceptance input gate", () => {
     await expect(validateDocWenPackageCandidate({
       ...environment,
       DOCWEN_TEST_BINARY: path.join(path.dirname(binary), "docwencli.exe"),
-    })).rejects.toThrow("must name DocWenCLI.exe exactly");
+    })).rejects.toThrow(`must name ${expectedFilename} exactly`);
+  });
+
+  it.runIf(process.platform === "linux")("rejects a Linux candidate without execute permission", async () => {
+    const { environment, binary } = await fixture();
+    await chmod(binary, 0o644);
+
+    await expect(validateDocWenPackageCandidate(environment)).rejects.toThrow("must be executable on Linux");
   });
 
   it("rejects a mismatched size or SHA-256", async () => {
@@ -114,7 +122,7 @@ describe("packaged DocWen acceptance input gate", () => {
 
     const linkRoot = await mkdtemp(path.join(tmpdir(), "assistant-package-link-"));
     temporaryRoots.push(linkRoot);
-    const linkedCandidate = path.join(linkRoot, "DocWenCLI.exe");
+    const linkedCandidate = path.join(linkRoot, path.basename(binary));
     try {
       await symlink(binary, linkedCandidate, "file");
     } catch (error) {

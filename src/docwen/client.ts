@@ -173,6 +173,7 @@ export interface RuntimeCapabilityProjection {
 
 export interface HealthReport {
   allOk: boolean;
+  productVersion: string;
   checks: Array<{ id: string; status: string; message?: string }>;
 }
 
@@ -184,13 +185,13 @@ export class DocWenClient {
   }
 
   async doctor(signal?: AbortSignal): Promise<HealthReport> {
-    const result = await this.machine.query("health/check", {}, signal);
+    const { result, productVersion } = await this.machine.queryWithProductVersion("health/check", {}, signal);
     const checks = objectArray(result.checks, "health/check.checks").map((item) => ({
       id: stringValue(item.id) || "check",
       status: item.ok === true ? "ok" : "error",
       message: stringValue(item.message) || undefined,
     }));
-    return { allOk: result.all_ok === true, checks };
+    return { allOk: result.all_ok === true, productVersion, checks };
   }
 
   guiStatus(signal?: AbortSignal): Promise<JsonObject> {

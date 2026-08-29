@@ -16,9 +16,11 @@ import {
 import {
   configureDocWenDownloadSetting,
   configureDocWenLocationSetting,
+  getDocWenConnectionDisplay,
   getDocWenPathStatus,
   pickDocWenCliPath,
   type DocWenLocationKind,
+  type DocWenPathStatus,
 } from "./settings-docwen-location";
 import { configureNumberingSchemeSetting } from "./settings-numbering-scheme";
 import { SettingsTabs } from "./settings-tabs";
@@ -74,7 +76,7 @@ export class SettingTab extends PluginSettingTab {
         setting.nameEl.empty();
         renderUsageList(setting.descEl, t("settingsUsageList"));
       },
-      runDoctor: () => void this.plugin.runDoctorCheck(),
+      runDoctor: () => void this.runDoctorFromSettings(),
     });
   }
 
@@ -87,6 +89,7 @@ export class SettingTab extends PluginSettingTab {
     if (!(key in this.plugin.settings)) throw new Error(`Unsupported setting: ${key}`);
     const settingKey = key as SettingsControlKey;
     setSettingValue(this.plugin.settings, settingKey, value);
+    if (settingKey === "docwenConnectionMode") this.plugin.resetDocWenRuntime();
     const generation = this.surfaceGeneration;
     try {
       await this.plugin.saveSettings();
@@ -181,6 +184,8 @@ export class SettingTab extends PluginSettingTab {
     if (!this.containerEl.isConnected) return;
     if (key === "language") {
       this.display();
+    } else if (key === "docwenConnectionMode") {
+      this.tabs?.renderActivePage();
     } else if (key === "extractImages" || key === "enableOcr") {
       this.tabs?.renderActivePage();
     }
@@ -209,17 +214,31 @@ export class SettingTab extends PluginSettingTab {
   }
 
   private configurePathStatus(setting: Setting): void {
-    const status = getDocWenPathStatus(this.plugin.settings.docwenCliPath);
+    const status = this.currentConnectionDisplay();
     setting.setName(t("settingsCliPathStatus")).setDesc(status.message);
     setting.descEl.addClass("docwen-cli-path-status");
     setting.descEl.addClass(`docwen-settings-status-${status.state}`);
     setting.descEl.setAttribute("role", "status");
     setting.descEl.setAttribute("aria-live", "polite");
     this.pathStatusElements.add(setting.descEl);
+    if (
+      this.plugin.getDocWenConnectionStatus().state === "unchecked"
+      && (
+        this.plugin.settings.docwenConnectionMode === "automatic"
+        || getDocWenPathStatus(this.plugin.settings.docwenCliPath).state === "valid"
+      )
+    ) {
+      const generation = this.surfaceGeneration;
+      const pending = this.plugin.checkDocWenConnectionSilently();
+      this.refreshPathStatus();
+      void pending.finally(() => {
+        if (this.isCurrentSurface(generation)) this.refreshPathStatus();
+      });
+    }
   }
 
   private refreshPathStatus(): void {
-    const status = getDocWenPathStatus(this.plugin.settings.docwenCliPath);
+    const status = this.currentConnectionDisplay();
     for (const element of this.pathStatusElements) {
       if (!element.isConnected) {
         this.pathStatusElements.delete(element);
@@ -233,6 +252,14 @@ export class SettingTab extends PluginSettingTab {
       );
       element.classList.add(`docwen-settings-status-${status.state}`);
     }
+  }
+
+  private currentConnectionDisplay(): DocWenPathStatus {
+    return getDocWenConnectionDisplay(
+      this.plugin.settings.docwenConnectionMode,
+      this.plugin.settings.docwenCliPath,
+      this.plugin.getDocWenConnectionStatus(),
+    );
   }
 
   private refreshSettingsUi(): void {
@@ -262,6 +289,7 @@ export class SettingTab extends PluginSettingTab {
     const cliPath = await pickDocWenCliPath(kind);
     if (!cliPath) return;
     this.plugin.settings.docwenCliPath = cliPath;
+    this.plugin.resetDocWenRuntime();
     try {
       await this.plugin.saveSettings();
     } catch {
@@ -274,6 +302,13 @@ export class SettingTab extends PluginSettingTab {
     if (this.isCurrentSurface(generation)) this.refreshPathStatus();
     showNotice(t("noticePathUpdated"));
     await this.plugin.runDoctorCheck();
+    if (this.isCurrentSurface(generation)) this.refreshPathStatus();
+  }
+
+  private async runDoctorFromSettings(): Promise<void> {
+    const generation = this.surfaceGeneration;
+    await this.plugin.runDoctorCheck();
+    if (this.isCurrentSurface(generation)) this.refreshPathStatus();
   }
 
   private isCurrentSurface(generation: number): boolean {

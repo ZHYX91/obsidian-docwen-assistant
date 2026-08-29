@@ -23,18 +23,36 @@ export interface FileCapability {
   readonly machineCapabilities: readonly MachineCapability[];
 }
 
+type ProjectionRequest = {
+  readonly generation: number;
+  readonly promise: Promise<RuntimeCapabilityProjection>;
+};
+
+type PreloadRequest = {
+  readonly controller: AbortController;
+  readonly generation: number;
+  readonly promise: Promise<void>;
+};
+
 /** Consumer-owned projection of Machine capabilities for one inspected file. */
 export class DocWenCapabilityService {
-  private projectionPromise: Promise<RuntimeCapabilityProjection> | null = null;
+  private generation = 0;
+  private projectionController = new AbortController();
+  private projectionRequest: ProjectionRequest | null = null;
   private readonly fileCache = new Map<string, FileCapability | Error>();
+  private readonly preloadRequests = new Map<string, PreloadRequest>();
 
   constructor(private readonly client: DocWenClient) {}
 
   async forFile(input: TaskInput | string, signal?: AbortSignal): Promise<FileCapability> {
+    const generation = this.generation;
     const [inspection, projection] = await Promise.all([
       this.client.inspect(input, signal),
       this.projection(),
     ]);
+    if (generation !== this.generation) {
+      throw new LocalCliError("cli_cancelled", "DocWen capabilities changed during discovery.");
+    }
     const machineCapabilities = projection.capabilities.filter((capability) =>
       capabilitySupportsInspectedMediaType(capability, inspection.mediaType)
       && capability.availability !== "unavailable");
@@ -152,34 +170,77 @@ export class DocWenCapabilityService {
     return this.fileCache.get(filePath) ?? null;
   }
 
-  preload(filePath: string): void {
-    void this.forFile(filePath).then(
-      (capability) => this.fileCache.set(filePath, capability),
-      (error: unknown) => this.fileCache.set(
-        filePath,
-        error instanceof Error ? error : new Error(String(error)),
-      ),
-    );
+  preload(filePath: string): Promise<void> {
+    const existing = this.preloadRequests.get(filePath);
+    if (existing && this.isCurrentPreload(filePath, existing)) return existing.promise;
+
+    const controller = new AbortController();
+    const generation = this.generation;
+    let request!: PreloadRequest;
+    const promise = this.forFile(filePath, controller.signal).then(
+      (capability) => {
+        if (this.isCurrentPreload(filePath, request)) this.fileCache.set(filePath, capability);
+      },
+      (error: unknown) => {
+        if (this.isCurrentPreload(filePath, request)) {
+          this.fileCache.set(filePath, error instanceof Error ? error : new Error(String(error)));
+        }
+      },
+    ).finally(() => {
+      if (this.preloadRequests.get(filePath) === request) this.preloadRequests.delete(filePath);
+    });
+    request = { controller, generation, promise };
+    this.preloadRequests.set(filePath, request);
+    return promise;
   }
 
   invalidate(filePath?: string): void {
-    if (filePath) this.fileCache.delete(filePath);
-    else this.fileCache.clear();
+    if (filePath) {
+      const request = this.preloadRequests.get(filePath);
+      this.preloadRequests.delete(filePath);
+      this.fileCache.delete(filePath);
+      request?.controller.abort();
+      return;
+    }
+    const requests = [...this.preloadRequests.values()];
+    this.preloadRequests.clear();
+    this.fileCache.clear();
+    for (const request of requests) request.controller.abort();
+  }
+
+  reset(): void {
+    ++this.generation;
+    this.projectionController.abort();
+    this.projectionController = new AbortController();
+    this.projectionRequest = null;
+    this.invalidate();
   }
 
   dispose(): void {
-    this.projectionPromise = null;
-    this.fileCache.clear();
+    this.reset();
   }
 
   private projection(): Promise<RuntimeCapabilityProjection> {
-    if (!this.projectionPromise) {
-      this.projectionPromise = this.client.runtimeCapabilities().catch((error) => {
-        this.projectionPromise = null;
-        throw error;
-      });
-    }
-    return this.projectionPromise;
+    const current = this.projectionRequest;
+    if (current?.generation === this.generation) return current.promise;
+
+    const generation = this.generation;
+    let request!: ProjectionRequest;
+    const promise = this.client.runtimeCapabilities(this.projectionController.signal).catch((error) => {
+      if (this.projectionRequest === request) {
+        this.projectionRequest = null;
+      }
+      throw error;
+    });
+    request = { generation, promise };
+    this.projectionRequest = request;
+    return promise;
+  }
+
+  private isCurrentPreload(filePath: string, request: PreloadRequest): boolean {
+    return this.preloadRequests.get(filePath) === request
+      && request.generation === this.generation
+      && !request.controller.signal.aborted;
   }
 }
 

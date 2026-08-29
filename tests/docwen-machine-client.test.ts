@@ -40,6 +40,7 @@ import {
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   for (const root of temporaryRoots.splice(0)) await rm(root, { recursive: true, force: true });
 });
@@ -247,6 +248,76 @@ describe("DocWenMachineClient", () => {
       ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
+  });
+
+  it("launches the fixed automatic alias with an explicit safe working directory", async () => {
+    const aliasPath = "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe";
+    const client = new DocWenMachineClient(
+      () => ({ executable: aliasPath, cwd: "C:\\Temp", mode: "automatic" }),
+      () => "en_US",
+    );
+
+    await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+    expect(spawnMock).toHaveBeenCalledWith(
+      aliasPath,
+      ["serve", "--stdio"],
+      expect.objectContaining({ cwd: "C:\\Temp", shell: false }),
+    );
+  });
+
+  it("preserves only the Linux desktop session variables needed by Machine GUI control", async () => {
+    vi.stubEnv("HOME", "/home/tester");
+    vi.stubEnv("XDG_RUNTIME_DIR", "/run/user/1000");
+    vi.stubEnv("XDG_CONFIG_HOME", "/home/tester/.config");
+    vi.stubEnv("DISPLAY", ":0");
+    vi.stubEnv("WAYLAND_DISPLAY", "wayland-0");
+    vi.stubEnv("UNRELATED_SECRET", "must-not-cross-boundary");
+    const client = new DocWenMachineClient(() => "/opt/DocWen/DocWenCLI", () => "en_US");
+
+    await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+
+    const environment = spawnMock.mock.calls[0][2].env as NodeJS.ProcessEnv;
+    if (process.platform === "linux") {
+      expect(environment).toMatchObject({
+        HOME: "/home/tester",
+        XDG_RUNTIME_DIR: "/run/user/1000",
+        XDG_CONFIG_HOME: "/home/tester/.config",
+        DISPLAY: ":0",
+        WAYLAND_DISPLAY: "wayland-0",
+      });
+    } else {
+      expect(environment).not.toHaveProperty("XDG_RUNTIME_DIR");
+      expect(environment).not.toHaveProperty("WAYLAND_DISPLAY");
+    }
+    expect(environment).not.toHaveProperty("UNRELATED_SECRET");
+  });
+
+  it("rejects relative launch targets instead of resolving them through PATH", async () => {
+    const client = new DocWenMachineClient(
+      () => ({ executable: "docwen.exe", cwd: "C:\\Temp", mode: "automatic" }),
+      () => "en_US",
+    );
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_spawn_failed" });
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it("reports a missing automatic execution alias as a setup failure", async () => {
+    spawnMock.mockImplementationOnce(() => {
+      const child = new FakeChild();
+      queueMicrotask(() => child.emit("error", Object.assign(new Error("missing"), { code: "ENOENT" })));
+      return child;
+    });
+    const client = new DocWenMachineClient(
+      () => ({
+        executable: "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe",
+        cwd: "C:\\Temp",
+        mode: "automatic",
+      }),
+      () => "en_US",
+    );
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_alias_not_found" });
   });
 
   it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {

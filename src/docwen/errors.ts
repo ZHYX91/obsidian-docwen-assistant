@@ -1,7 +1,10 @@
 export type LocalCliErrorCode =
   | "cli_path_not_configured"
+  | "cli_alias_not_found"
+  | "cli_platform_unsupported"
   | "cli_not_found"
   | "cli_not_file"
+  | "cli_not_executable"
   | "cli_wrong_filename"
   | "cli_spawn_failed"
   | "cli_timeout"
@@ -13,6 +16,7 @@ export type LocalCliErrorCode =
   | "cli_protocol_error"
   | "cli_integrity_error"
   | "cli_input_invalid"
+  | "cli_health_failed"
   | "cli_commit_failed";
 
 export class LocalCliError extends Error {

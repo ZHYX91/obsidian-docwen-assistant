@@ -12,6 +12,7 @@
     "module": "ESNext",
     "target": "ES6",
     "allowJs": true,
+    "strict": true,
     "noImplicitAny": true,
     "moduleResolution": "bundler",
     "importHelpers": true,

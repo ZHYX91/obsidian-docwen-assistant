@@ -28,7 +28,7 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       if (!filePath) return;
 
       const cached = actions.capabilities.peek(filePath);
-      if (!cached) actions.capabilities.preload(filePath);
+      if (!cached || cached instanceof Error) void actions.capabilities.preload(filePath);
 
       menu.addItem((item) => {
         item.setTitle(t("contextMenuSubmenuTitle")).setIcon("file-text");

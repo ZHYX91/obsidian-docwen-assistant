@@ -27,7 +27,8 @@ import {
   DocWenMachineClient,
   DocWenCapabilityService,
   DocWenClient,
-  resolveDocWenCliPath,
+  resolveDocWenLaunchTarget,
+  type DocWenConnectionStatus,
   type FileCapability,
   type NumberingSchemeItem,
 } from "./docwen";
@@ -35,6 +36,7 @@ import { OperationCoordinator } from "./runtime/operation-coordinator";
 import { OperationStatus } from "./operation-status";
 import { RuntimeDisposer } from "./runtime/disposer";
 import { SettingsSaveCoordinator, type SettingsSaveState } from "./runtime/settings-save";
+import { DocWenConnectionMonitor } from "./docwen/connection-monitor";
 
 /**
  * DocWen Assistant Plugin
@@ -56,13 +58,17 @@ export default class DocWenPlugin extends Plugin {
   private ribbonIconEl: HTMLElement | null = null;
   private readonly localizedCommands: Array<{ command: Command; key: keyof Translations }> = [];
   private runtimeDisposer = new RuntimeDisposer();
+  private connectionMonitor!: DocWenConnectionMonitor;
 
   private getDocwenLangCode(): string {
     return getDocWenLanguage(this.settings.language);
   }
 
-  private resolveCliExecutablePath(): string {
-    return resolveDocWenCliPath(this.settings.docwenCliPath);
+  private resolveCliExecutable() {
+    return resolveDocWenLaunchTarget(
+      this.settings.docwenConnectionMode,
+      this.settings.docwenCliPath,
+    );
   }
   /** Public wrapper for settings.ts — delegates to adapter */
   public async fetchNumberingSchemes(signal?: AbortSignal): Promise<NumberingSchemeItem[] | null> {
@@ -103,19 +109,28 @@ export default class DocWenPlugin extends Plugin {
    */
   public async runDoctorCheck(): Promise<void> {
     await this.actionRunner.run({ key: "doctor", kind: "doctor" }, "noticeDoctorFailed", async ({ signal }) => {
-      const report = await this.docwen.doctor(signal);
-        const checks = report.checks;
-
-        const depStatus: string[] = [];
-        for (const c of checks) {
-          const key = c.id.replace(/^(module:|writable:|config:)/, "");
-          const icon = c.status === "ok" ? "✓" : "✗";
-          depStatus.push(`${key}:${icon}`);
-        }
-
-        const msg = `Doctor OK — ${depStatus.join(" ")}`;
-        showNotice(msg, 8000);
+      const report = await this.connectionMonitor.check(signal);
+      showNotice(t("noticeDoctorSuccess", { version: report.productVersion }), 8000);
     });
+  }
+
+  public getDocWenConnectionStatus(): DocWenConnectionStatus {
+    return this.connectionMonitor.getStatus();
+  }
+
+  public resetDocWenRuntime(): void {
+    this.operations?.cancelAll();
+    this.connectionMonitor.reset();
+    this.capabilities.reset();
+  }
+
+  public async checkDocWenConnectionSilently(): Promise<void> {
+    if (this.connectionMonitor.getStatus().state !== "unchecked") return;
+    try {
+      await this.connectionMonitor.check();
+    } catch {
+      // The settings status row presents the typed failure without a popup.
+    }
   }
 
   /**
@@ -134,13 +149,17 @@ export default class DocWenPlugin extends Plugin {
     // Create the single Machine v1 boundary used by control and business calls.
     this.docwen = new DocWenClient(
       new DocWenMachineClient(
-        () => this.resolveCliExecutablePath(),
+        () => this.resolveCliExecutable(),
         () => this.getDocwenLangCode(),
       ),
     );
+    this.connectionMonitor = new DocWenConnectionMonitor(
+      () => this.settings.docwenConnectionMode,
+      (signal) => this.docwen.doctor(signal),
+    );
     this.runtimeDisposer.add(() => this.docwen.dispose());
     this.capabilities = new DocWenCapabilityService(this.docwen);
-    this.runtimeDisposer.add(() => this.capabilities.dispose());
+    this.runtimeDisposer.add(() => this.resetDocWenRuntime());
     this.operations = new OperationCoordinator();
     this.runtimeDisposer.add(() => this.operations.dispose());
     this.actionRunner = new ActionRunner(
@@ -157,7 +176,7 @@ export default class DocWenPlugin extends Plugin {
     const preloadCapabilities = (file: TFile | null): void => {
       if (!file) return;
       const filePath = resolveAbsoluteFilePath(this.app.vault, file);
-      if (filePath) this.capabilities.preload(filePath);
+      if (filePath) void this.capabilities.preload(filePath);
     };
     this.registerEvent(this.app.workspace.on("file-open", preloadCapabilities));
     this.registerEvent(this.app.vault.on("modify", (file) => {

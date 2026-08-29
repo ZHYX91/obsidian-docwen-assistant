@@ -98,6 +98,16 @@ function projection() {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
 describe("DocWenCapabilityService", () => {
   it("joins Markdown inspection to the exact resolved-document Word capability", async () => {
     const client = {
@@ -188,7 +198,115 @@ describe("DocWenCapabilityService", () => {
     const controller = new AbortController();
 
     await service.forFile("D:\\note.md", controller.signal);
-    expect(client.runtimeCapabilities).toHaveBeenCalledWith();
+    const sharedSignal = vi.mocked(client.runtimeCapabilities).mock.calls[0]?.[0];
+    expect(sharedSignal).toBeInstanceOf(AbortSignal);
+    expect(sharedSignal).not.toBe(controller.signal);
+    expect(sharedSignal?.aborted).toBe(false);
+  });
+
+  it("de-duplicates a pending preload for the same path", async () => {
+    const pendingInspection = deferred<ReturnType<typeof inspection>>();
+    const client = {
+      inspect: vi.fn(() => pendingInspection.promise),
+      runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    const first = service.preload("D:\\note.md");
+    const second = service.preload("D:\\note.md");
+
+    expect(second).toBe(first);
+    expect(client.inspect).toHaveBeenCalledOnce();
+    pendingInspection.resolve(inspection());
+    await first;
+    expect(service.peek("D:\\note.md")).toMatchObject({ source: { id: "markdown" } });
+  });
+
+  it("retries a preload after a cached failure", async () => {
+    const failure = new Error("temporarily unavailable");
+    const client = {
+      inspect: vi.fn()
+        .mockRejectedValueOnce(failure)
+        .mockResolvedValueOnce(inspection()),
+      runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    await service.preload("D:\\note.md");
+    expect(service.peek("D:\\note.md")).toBe(failure);
+    await service.preload("D:\\note.md");
+
+    expect(client.inspect).toHaveBeenCalledTimes(2);
+    expect(service.peek("D:\\note.md")).toMatchObject({ source: { id: "markdown" } });
+  });
+
+  it("does not let a reset preload overwrite the replacement cache", async () => {
+    const oldInspection = deferred<ReturnType<typeof inspection>>();
+    const client = {
+      inspect: vi.fn()
+        .mockImplementationOnce(() => oldInspection.promise)
+        .mockResolvedValueOnce(inspection({ reasonCode: "replacement" })),
+      runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    const oldPreload = service.preload("D:\\note.md");
+    service.reset();
+    await service.preload("D:\\note.md");
+    oldInspection.resolve(inspection({ reasonCode: "stale" }));
+    await oldPreload;
+
+    expect(service.peek("D:\\note.md")).toMatchObject({
+      inspection: { reasonCode: "replacement" },
+    });
+  });
+
+  it("does not let an old projection rejection clear its replacement", async () => {
+    const oldProjection = deferred<ReturnType<typeof projection>>();
+    const replacementProjection = deferred<ReturnType<typeof projection>>();
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection()),
+      runtimeCapabilities: vi.fn()
+        .mockImplementationOnce(() => oldProjection.promise)
+        .mockImplementationOnce(() => replacementProjection.promise),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    const oldRequest = service.forFile("D:\\old.md");
+    const oldExpectation = expect(oldRequest).rejects.toThrow("stale projection");
+    service.reset();
+    const replacement = service.forFile("D:\\replacement.md");
+    oldProjection.reject(new Error("stale projection"));
+    await oldExpectation;
+    const sharedReplacement = service.forFile("D:\\shared.md");
+    replacementProjection.resolve(projection());
+    await Promise.all([replacement, sharedReplacement]);
+
+    expect(client.runtimeCapabilities).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidates only the selected preload", async () => {
+    const firstInspection = deferred<ReturnType<typeof inspection>>();
+    const secondInspection = deferred<ReturnType<typeof inspection>>();
+    const client = {
+      inspect: vi.fn((input: string) => input.endsWith("first.md")
+        ? firstInspection.promise
+        : secondInspection.promise),
+      runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    const first = service.preload("D:\\first.md");
+    const second = service.preload("D:\\second.md");
+    service.invalidate("D:\\first.md");
+    firstInspection.resolve(inspection({ filePath: "D:\\first.md" }));
+    secondInspection.resolve(inspection({ filePath: "D:\\second.md" }));
+    await Promise.all([first, second]);
+
+    expect(service.peek("D:\\first.md")).toBeNull();
+    expect(service.peek("D:\\second.md")).toMatchObject({
+      inspection: { filePath: "D:\\second.md" },
+    });
   });
 
   it("rejects an undeclared typed input role before task planning", async () => {

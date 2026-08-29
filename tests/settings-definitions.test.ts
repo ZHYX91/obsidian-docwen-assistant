@@ -27,6 +27,7 @@ describe("settings page definitions", () => {
     expect(new Set(pages.map((page) => page.name)).size).toBe(5);
     expect(collectControlKeys(pages.flatMap((page) => page.items))).toEqual(new Set([
       "language",
+      "docwenConnectionMode",
       "extractImages",
       "imageMode",
       "imageLinkStyle",
@@ -89,6 +90,30 @@ describe("settings page definitions", () => {
     expect(collectControlKeys(definitions[1].items ?? [])).not.toContain("mdToDocCleanNumbering");
     expect(collectControlKeys(definitions[2].items ?? [])).toEqual(new Set(["headingMergeMode"]));
     expect(collectControlKeys(definitions[2].items ?? [])).not.toContain("docToMdCleanNumbering");
+  });
+
+  it("offers only manual DocWen selection on Linux", () => {
+    const definitions = getSettingsPages({
+      settings: { ...DEFAULT_SETTINGS, docwenConnectionMode: "manual" },
+      renderCliPath: vi.fn(),
+      renderDocWenDownload: vi.fn(),
+      renderCliStatus: vi.fn(),
+      renderPersistenceStatus: vi.fn(),
+      isPersistencePending: () => false,
+      renderNumberingScheme: vi.fn(),
+      renderHelp: vi.fn(),
+      runDoctor: vi.fn(),
+    }, "linux");
+    const connection = definitions[0].items.find(
+      (item) => item.control?.key === "docwenConnectionMode",
+    );
+
+    expect(connection?.control).toMatchObject({
+      type: "dropdown",
+      options: { manual: expect.any(String) },
+    });
+    expect((connection?.control as { options?: Record<string, string> } | undefined)?.options)
+      .not.toHaveProperty("automatic");
   });
 });
 

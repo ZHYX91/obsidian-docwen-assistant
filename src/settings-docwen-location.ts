@@ -1,11 +1,13 @@
 import { Setting } from "obsidian";
 
 import { LocalCliError } from "./docwen/errors";
-import { DOCWEN_RELEASES_URL } from "./docwen/links";
+import type { DocWenConnectionStatus } from "./docwen/connection-status";
+import { DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "./docwen/links";
 import { resolveDocWenCliPath } from "./docwen/path";
 import { getElectronOpenDialog } from "./host/electron-dialogs";
 import { showNotice } from "./host/notices";
 import { t } from "./i18n";
+import type { DocWenConnectionMode } from "./settings-model";
 
 export type DocWenLocationKind = "program" | "directory";
 export type DocWenPathStatus = {
@@ -38,18 +40,79 @@ export function configureDocWenLocationSetting(
       .onClick(() => selectLocation("directory")));
 }
 
-export function configureDocWenDownloadSetting(setting: Setting): void {
+export function configureDocWenDownloadSetting(
+  setting: Setting,
+  platform: NodeJS.Platform = process.platform,
+): void {
   setting.setName(t("settingsDownloadDocWen")).setDesc(t("settingsDownloadDocWenDesc"));
   setting.descEl.createEl("br");
-  const link = setting.descEl.createEl("a", { text: t("settingsViewReleases") });
-  link.href = DOCWEN_RELEASES_URL;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
+  if (platform === "win32") {
+    const storeLink = setting.descEl.createEl("a", { text: t("settingsGetFromStore") });
+    storeLink.href = DOCWEN_STORE_URL;
+    storeLink.target = "_blank";
+    storeLink.rel = "noopener noreferrer";
+    setting.descEl.createSpan({ text: " · " });
+  }
+  const portableLink = setting.descEl.createEl("a", { text: t("settingsDownloadPortable") });
+  portableLink.href = DOCWEN_RELEASES_URL;
+  portableLink.target = "_blank";
+  portableLink.rel = "noopener noreferrer";
 }
 
-export function getDocWenPathStatus(value: string): DocWenPathStatus {
+export function getDocWenConnectionDisplay(
+  mode: DocWenConnectionMode,
+  manualPath: string,
+  connection: DocWenConnectionStatus,
+  platform: NodeJS.Platform = process.platform,
+): DocWenPathStatus {
+  if (connection.state === "checking") {
+    return { message: t("settingsConnectionChecking"), state: "empty" };
+  }
+  if (connection.state === "connected") {
+    const source = connection.mode === "automatic"
+      ? t("settingsConnectionAutomatic")
+      : t("settingsConnectionManual");
+    return {
+      message: t("settingsConnectionConnected", {
+        source,
+        version: connection.productVersion,
+      }),
+      state: "valid",
+    };
+  }
+  if (connection.state === "error") {
+    if (connection.code === "cli_alias_not_found") {
+      return { message: t("settingsConnectionStoreMissing"), state: "error" };
+    }
+    if (connection.code === "cli_platform_unsupported") {
+      return { message: t("settingsPlatformUnsupported"), state: "error" };
+    }
+    if (connection.code === "cli_incompatible_version") {
+      return { message: t("settingsConnectionIncompatible"), state: "error" };
+    }
+    if (connection.code === "cli_health_failed") {
+      return { message: t("settingsConnectionHealthFailed"), state: "error" };
+    }
+    if (mode === "manual") {
+      const manualStatus = getDocWenPathStatus(manualPath, platform);
+      if (manualStatus.state !== "valid") return manualStatus;
+    }
+    return { message: t("settingsConnectionFailed"), state: "error" };
+  }
+  if (mode === "automatic") {
+    return { message: t("settingsConnectionAutomaticReady"), state: "empty" };
+  }
+  const manualStatus = getDocWenPathStatus(manualPath, platform);
+  if (manualStatus.state !== "valid") return manualStatus;
+  return { message: t("settingsConnectionManualReady"), state: "empty" };
+}
+
+export function getDocWenPathStatus(
+  value: string,
+  platform: NodeJS.Platform = process.platform,
+): DocWenPathStatus {
   try {
-    const cliPath = resolveDocWenCliPath(value);
+    const cliPath = resolveDocWenCliPath(value, platform);
     return { message: `${t("settingsPathValid")}: ${cliPath}`, state: "valid" };
   } catch (error) {
     if (!(error instanceof LocalCliError)) {
@@ -61,6 +124,12 @@ export function getDocWenPathStatus(value: string): DocWenPathStatus {
     if (error.code === "cli_not_file") {
       return { message: t("settingsPathNotFile"), state: "error" };
     }
+    if (error.code === "cli_not_executable") {
+      return { message: t("settingsPathNotExecutable"), state: "error" };
+    }
+    if (error.code === "cli_platform_unsupported") {
+      return { message: t("settingsPlatformUnsupported"), state: "error" };
+    }
     if (error.code === "cli_wrong_filename") {
       return { message: t("settingsPathUnsupportedSelection"), state: "error" };
     }
@@ -68,28 +137,34 @@ export function getDocWenPathStatus(value: string): DocWenPathStatus {
   }
 }
 
-export async function pickDocWenCliPath(kind: DocWenLocationKind): Promise<string | null> {
+export async function pickDocWenCliPath(
+  kind: DocWenLocationKind,
+  platform: NodeJS.Platform = process.platform,
+): Promise<string | null> {
   const dialog = getElectronOpenDialog();
   if (!dialog) {
     showNotice(t("noticeLaunchFailed", { error: "dialog_unavailable" }));
     return null;
   }
-  const result = await dialog.showOpenDialog(kind === "program" ? {
+  const programOptions = {
     title: t("settingsSelectProgram"),
-    filters: [
-      { name: "DocWen", extensions: ["exe"] },
-      { name: "All Files", extensions: ["*"] },
-    ],
     properties: ["openFile"],
-  } : {
+    ...(platform === "win32" ? {
+      filters: [
+        { name: "DocWen", extensions: ["exe"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    } : {}),
+  };
+  const result = await dialog.showOpenDialog(kind === "program" ? programOptions : {
     title: t("settingsSelectFolder"),
     properties: ["openDirectory"],
   });
   if (result.canceled || result.filePaths.length === 0) return null;
-  const status = getDocWenPathStatus(result.filePaths[0]);
+  const status = getDocWenPathStatus(result.filePaths[0], platform);
   if (status.state !== "valid") {
     showNotice(status.message);
     return null;
   }
-  return resolveDocWenCliPath(result.filePaths[0]);
+  return resolveDocWenCliPath(result.filePaths[0], platform);
 }
