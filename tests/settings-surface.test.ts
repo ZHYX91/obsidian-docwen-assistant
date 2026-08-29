@@ -225,9 +225,12 @@ describe("settings surface lifecycle", () => {
 
     const usage = settings.at(-1)!;
     expect(usage.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
+    expect(usage.settingEl.attributes.get("role")).toBe("note");
+    expect(usage.settingEl.attributes.get("aria-label")).toBe("Usage");
     expect(usage.nameEl.textContent).toBe("");
     expect(usage.descEl.children).toHaveLength(1);
-    expect(usage.descEl.children[0].children).toHaveLength(4);
+    expect(usage.descEl.children[0].children).toHaveLength(6);
+    expect(usage.descEl.children[0].children[1].children[1].textContent).toBe("DocWen");
   });
 
   it("runs the Doctor action by mouse or keyboard and ignores unrelated keys", async () => {

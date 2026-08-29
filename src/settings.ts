@@ -73,6 +73,8 @@ export class SettingTab extends PluginSettingTab {
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
       renderHelp: (setting) => {
         setting.setClass("docwen-settings-help");
+        setting.settingEl.setAttribute("role", "note");
+        setting.settingEl.setAttribute("aria-label", t("settingsUsageTitle"));
         setting.nameEl.empty();
         renderUsageList(setting.descEl, t("settingsUsageList"));
       },
@@ -324,8 +326,19 @@ export class SettingTab extends PluginSettingTab {
 function renderUsageList(containerEl: HTMLElement, markup: string): void {
   const list = containerEl.createEl("ul");
   for (const match of markup.matchAll(/<li>([\s\S]*?)<\/li>/gu)) {
-    const itemText = match[1]?.replace(/<[^>]*>/gu, "").trim();
-    if (itemText) list.createEl("li", { text: itemText });
+    const itemMarkup = match[1]?.trim();
+    if (!itemMarkup) continue;
+    const item = list.createEl("li");
+    for (const fragment of itemMarkup.split(/(<b>[\s\S]*?<\/b>)/gu)) {
+      if (!fragment) continue;
+      const strong = /^<b>([\s\S]*?)<\/b>$/u.exec(fragment);
+      if (strong?.[1]) {
+        item.createEl("strong", { text: strong[1] });
+        continue;
+      }
+      const text = fragment.replace(/<[^>]*>/gu, "");
+      if (text) item.createSpan({ text });
+    }
   }
 }
 

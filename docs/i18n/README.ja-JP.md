@@ -54,6 +54,10 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 
 リボンアイコン、**DocWen** サブメニュー、コマンドパレットから、DocWen の起動、Word／Excel／Markdown の出力、見出し番号の変更、Markdown 校正、doctor を実行できます。バックグラウンド出力では必ず出力ファイルを明示的に選択します。
 
+Markdown から DOCX へ出力すると、認証済みの往復変換データを含む `<文書>.docwen` フォルダーも文書の隣に作成されます。文書が変更されていない場合に認証済み Markdown スナップショットを復元できるよう、DOCX と一緒に保管してください。フォルダーがない、または無効な場合、DocWen は正規化 Markdown にフォールバックして通知します。
+
+互換性のある [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照を Markdown ノートに番号を書き込まずに保持します。
+
 ## 設定
 
 Obsidian 1.12.7 以降では、横スクロール可能な 5 つの上部タブ（一般、Markdown へ、Word へ、校正、使用方法）を使用します。タブは RTL を含む矢印キー、Home/End、20 px の UI 文字、粗いポインター向けの大きな操作領域に対応します。言語は既定で Obsidian に従い、対応する 11 言語から明示的に選択できます。

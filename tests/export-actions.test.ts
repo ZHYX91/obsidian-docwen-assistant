@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   notices: [] as string[],
   pickerItems: [] as Array<{ id: string }>,
+  sidecarCalls: [] as Array<{ docxPath: string; inputs: Record<string, string> }>,
+  sidecarError: null as Error | null,
+  sidecarPreflightCalls: [] as string[],
+  sidecarPreflightError: null as Error | null,
 }));
 
 vi.mock("obsidian", () => ({ TFile: class TFile {} }));
@@ -16,6 +20,17 @@ vi.mock("../src/i18n", () => ({
 vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.notices.push(message) }));
 vi.mock("../src/host/file-system", () => ({ pathExists: () => false }));
 vi.mock("../src/host/vault-files", () => ({ resolveAbsoluteFilePath: () => "D:\\Vault\\note.bin" }));
+vi.mock("../src/host/round-trip-sidecar", () => ({
+  assertRoundTripSidecarTargetAvailable: async (docxPath: string) => {
+    state.sidecarPreflightCalls.push(docxPath);
+    if (state.sidecarPreflightError !== null) throw state.sidecarPreflightError;
+  },
+  publishRoundTripSidecar: async (docxPath: string, inputs: Record<string, string>) => {
+    state.sidecarCalls.push({ docxPath, inputs });
+    if (state.sidecarError !== null) throw state.sidecarError;
+    return `${docxPath}.docwen`;
+  },
+}));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: vi.fn().mockResolvedValue(true) }));
 vi.mock("../src/host/electron-dialogs", () => ({
   getElectronSaveDialog: () => ({
@@ -33,6 +48,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         sourceInput: unknown;
         inputs: unknown[];
         resolvedMarkdownInputs: unknown[];
+        resolvedMarkdownSourcePath: string;
       }) => Promise<T>,
     ): Promise<T> {
       const sourceInput = {
@@ -63,6 +79,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
             mediaType: "application/vnd.docwen.numbering-export-plan+json",
           },
         ],
+        resolvedMarkdownSourcePath: "D:\\Temp\\authored-source.md",
       });
     }
   },
@@ -78,8 +95,7 @@ vi.mock("../src/utils/suggest-modal", () => ({
 
 describe("ExportActions optimization discovery", () => {
   beforeEach(() => {
-    state.notices.length = 0;
-    state.pickerItems = [];
+    resetState();
   });
 
   it("does not query optimization resources when Core advertises no action route", async () => {
@@ -169,8 +185,7 @@ describe("ExportActions optimization discovery", () => {
 
 describe("ExportActions advisory proofreading", () => {
   beforeEach(() => {
-    state.notices.length = 0;
-    state.pickerItems = [];
+    resetState();
   });
 
   it("shows the proofreading result and converts without route-unsupported check options", async () => {
@@ -295,7 +310,102 @@ describe("ExportActions advisory proofreading", () => {
     expect(docwen.convert).not.toHaveBeenCalled();
     expect(runner.presentFailure).not.toHaveBeenCalled();
   });
+
+  it("publishes authenticated round-trip inputs after a successful DOCX export", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const signal = new AbortController().signal;
+    const runner = advisoryRunner(signal);
+    const capability = markdownCapability();
+    const capabilities = advisoryCapabilities(capability);
+    const docwen = {
+      optimizations: vi.fn(),
+      validate: vi.fn(),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+    };
+    const actions = new ExportActions(
+      {} as never,
+      docwen as never,
+      capabilities as never,
+      () => markdownSettings(false) as never,
+      runner as never,
+    );
+
+    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
+
+    expect(state.sidecarPreflightCalls).toEqual(["D:\\Vault\\note.docx"]);
+    expect(state.sidecarCalls).toEqual([{
+      docxPath: "D:\\Vault\\note.docx",
+      inputs: {
+        neutralDocumentPath: "D:\\Temp\\resolved-document.json",
+        numberingExportPlanPath: "D:\\Temp\\numbering-export-plan.json",
+        authoredSourcePath: "D:\\Temp\\authored-source.md",
+      },
+    }]);
+    expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
+  });
+
+  it("keeps a successful DOCX export successful when sidecar publication fails", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const signal = new AbortController().signal;
+    const runner = advisoryRunner(signal);
+    const capability = markdownCapability();
+    const capabilities = advisoryCapabilities(capability);
+    const sidecarError = new Error("sidecar unavailable");
+    state.sidecarError = sidecarError;
+    const docwen = {
+      optimizations: vi.fn(),
+      validate: vi.fn(),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+    };
+    const actions = new ExportActions(
+      {} as never,
+      docwen as never,
+      capabilities as never,
+      () => markdownSettings(false) as never,
+      runner as never,
+    );
+
+    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
+
+    expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
+    expect(runner.presentFailure).toHaveBeenCalledWith("noticeRoundTripSidecarFailed", sidecarError);
+  });
+
+  it("rejects a foreign sidecar target before starting the DOCX conversion", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const signal = new AbortController().signal;
+    const runner = advisoryRunner(signal);
+    const capability = markdownCapability();
+    const capabilities = advisoryCapabilities(capability);
+    state.sidecarPreflightError = new Error("foreign sidecar");
+    const docwen = {
+      optimizations: vi.fn(),
+      validate: vi.fn(),
+      convert: vi.fn(),
+    };
+    const actions = new ExportActions(
+      {} as never,
+      docwen as never,
+      capabilities as never,
+      () => markdownSettings(false) as never,
+      runner as never,
+    );
+
+    await expect(actions.toDocx({ path: "note.md", name: "note.md" } as never))
+      .rejects.toThrow("foreign sidecar");
+
+    expect(docwen.convert).not.toHaveBeenCalled();
+  });
 });
+
+function resetState(): void {
+  state.notices.length = 0;
+  state.pickerItems = [];
+  state.sidecarCalls.length = 0;
+  state.sidecarError = null;
+  state.sidecarPreflightCalls.length = 0;
+  state.sidecarPreflightError = null;
+}
 
 function advisoryRunner(signal: AbortSignal) {
   return {

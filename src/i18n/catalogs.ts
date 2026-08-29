@@ -61,7 +61,9 @@ export const translations: Record<string, Translations> = {
         <li>点击左侧栏的文档图标，启动 DocWen 或将当前文件发送给 DocWen</li>
         <li>在文件列表中右键文件，选择 <b>DocWen</b> 子菜单：转换格式、添加/清理序号、用 DocWen 打开</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b>，可使用启动、导出、序号、自检等命令</li>
-        <li>打开文件时，文件路径会自动传递给 DocWen</li>
+        <li>只有执行“启动或发送当前文件”等 DocWen 操作时，才会传递当前文件路径</li>
+        <li>Markdown 导出为 DOCX 时会生成相邻的 .docwen 文件夹；请将它与 DOCX 一起移动或备份</li>
+        <li>启用兼容版本的 Number Suite 后，Word 导出会保留已验证的虚拟标题、题注编号和同一笔记内的引用，不改写原笔记</li>
       </ul>
     `,
 
@@ -82,6 +84,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI 输出不是有效 JSON，请升级 CLI 或检查 --quiet/--json 支持。",
     noticeExportSuccess: "已导出：{filename}",
     noticeExportFailed: "导出失败：{error}",
+    noticeRoundTripSidecarFailed: "DOCX 已导出，但未能保存精确往返数据：{error}",
     noticeDoctorSuccess: "DocWen {version} 连接正常",
     noticeDoctorFailed: "DocWen 连接检查失败：{error}",
     noticeCapabilityFailed: "DocWen 能力查询失败：{error}",
@@ -246,7 +249,9 @@ export const translations: Record<string, Translations> = {
         <li>點擊左側欄的文件圖示，啟動 DocWen 或將當前檔案傳送給 DocWen</li>
         <li>在檔案列表中右鍵檔案，選擇 <b>DocWen</b> 子選單：轉換格式、添加/清理序號、用 DocWen 開啟</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b>，可使用啟動、匯出、序號、自檢等命令</li>
-        <li>開啟檔案時，檔案路徑會自動傳遞給 DocWen</li>
+        <li>只有執行「啟動或傳送目前檔案」等 DocWen 操作時，才會傳遞目前檔案路徑</li>
+        <li>Markdown 匯出為 DOCX 時會建立相鄰的 .docwen 資料夾；請將它與 DOCX 一起移動或備份</li>
+        <li>啟用相容版本的 Number Suite 後，Word 匯出會保留已驗證的虛擬標題、題注編號及同一筆記內的引用，不改寫原筆記</li>
       </ul>
     `,
 
@@ -267,6 +272,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI 輸出不是有效 JSON，請升級 CLI 或檢查 --quiet/--json 支援。",
     noticeExportSuccess: "已匯出：{filename}",
     noticeExportFailed: "匯出失敗：{error}",
+    noticeRoundTripSidecarFailed: "DOCX 已匯出，但無法儲存精確往返資料：{error}",
     noticeDoctorSuccess: "DocWen {version} 連線正常",
     noticeDoctorFailed: "DocWen 連線檢查失敗：{error}",
     noticeCapabilityFailed: "DocWen 能力查詢失敗：{error}",
@@ -431,7 +437,9 @@ export const translations: Record<string, Translations> = {
         <li>Click the document icon in the left sidebar to launch DocWen or send the current file</li>
         <li>Right-click a file in the file list and use the <b>DocWen</b> submenu: convert formats, manage numbering, or open in DocWen</li>
         <li>Use the command palette (Ctrl/Cmd + P) and search <b>DocWen</b> for launch, export, numbering, and connection commands</li>
-        <li>When a file is open, its path is automatically passed to DocWen</li>
+        <li>The current file path is passed only when you run a DocWen action such as launch or send current file</li>
+        <li>Markdown-to-DOCX export creates an adjacent .docwen folder; move or back it up together with the DOCX</li>
+        <li>With a compatible Number Suite version enabled, Word export preserves validated virtual heading and caption numbers plus same-note references without rewriting the note</li>
       </ul>
     `,
 
@@ -452,6 +460,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI output is not valid JSON. Please update CLI or verify --json/--quiet support.",
     noticeExportSuccess: "Exported: {filename}",
     noticeExportFailed: "Export failed: {error}",
+    noticeRoundTripSidecarFailed: "The DOCX was exported, but exact round-trip data could not be saved: {error}",
     noticeDoctorSuccess: "DocWen {version} is connected",
     noticeDoctorFailed: "DocWen connection check failed: {error}",
     noticeCapabilityFailed: "DocWen capability discovery failed: {error}",
@@ -616,7 +625,9 @@ export const translations: Record<string, Translations> = {
         <li>Klicken Sie auf das Dokumentsymbol in der linken Seitenleiste, um DocWen zu starten oder die aktuelle Datei zu senden</li>
         <li>Rechtsklicken Sie auf eine Datei in der Dateiliste und verwenden Sie das <b>DocWen</b>-Untermenü: Formate konvertieren, Nummerierung verwalten oder in DocWen öffnen</li>
         <li>Verwenden Sie die Befehlspalette (Strg/Cmd + P) und suchen Sie nach <b>DocWen</b> für alle verfügbaren Befehle</li>
-        <li>Wenn eine Datei geöffnet ist, wird ihr Pfad automatisch an DocWen übergeben</li>
+        <li>Der aktuelle Dateipfad wird nur übergeben, wenn Sie eine DocWen-Aktion wie Starten oder aktuelle Datei senden ausführen</li>
+        <li>Der Markdown-zu-DOCX-Export erstellt einen benachbarten .docwen-Ordner; verschieben oder sichern Sie ihn zusammen mit der DOCX-Datei</li>
+        <li>Mit einer kompatiblen Number-Suite-Version übernimmt der Word-Export geprüfte virtuelle Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne die Notiz umzuschreiben</li>
       </ul>
     `,
 
@@ -637,6 +648,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI-Ausgabe ist kein gültiges JSON. Bitte CLI aktualisieren oder --json/--quiet prüfen.",
     noticeExportSuccess: "Exportiert: {filename}",
     noticeExportFailed: "Export fehlgeschlagen: {error}",
+    noticeRoundTripSidecarFailed: "Die DOCX-Datei wurde exportiert, aber die Daten für die exakte Rückkonvertierung konnten nicht gespeichert werden: {error}",
     noticeDoctorSuccess: "Doctor-Prüfung bestanden",
     noticeDoctorFailed: "Doctor-Prüfung fehlgeschlagen: {error}",
     noticeCapabilityFailed: "DocWen-Fähigkeitsabfrage fehlgeschlagen: {error}",
@@ -801,7 +813,9 @@ export const translations: Record<string, Translations> = {
         <li>Cliquez sur l'icône de document dans la barre latérale gauche pour lancer DocWen ou envoyer le fichier actuel</li>
         <li>Faites un clic droit sur un fichier dans la liste et utilisez le sous-menu <b>DocWen</b> : convertir, numéroter ou ouvrir dans DocWen</li>
         <li>Utilisez la palette de commandes (Ctrl/Cmd + P) et recherchez <b>DocWen</b> pour toutes les commandes disponibles</li>
-        <li>Si un fichier est ouvert, son chemin sera automatiquement transmis à DocWen</li>
+        <li>Le chemin du fichier actuel est transmis uniquement lorsque vous lancez une action DocWen, comme démarrer ou envoyer le fichier actuel</li>
+        <li>L'export Markdown vers DOCX crée un dossier .docwen adjacent ; déplacez-le ou sauvegardez-le avec le DOCX</li>
+        <li>Avec une version compatible de Number Suite, l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans réécrire la note</li>
       </ul>
     `,
 
@@ -822,6 +836,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "La sortie de DocWenCLI n'est pas un JSON valide. Mettez à jour la CLI ou vérifiez --json/--quiet.",
     noticeExportSuccess: "Exporté : {filename}",
     noticeExportFailed: "Échec de l'export : {error}",
+    noticeRoundTripSidecarFailed: "Le DOCX a été exporté, mais les données de conversion aller-retour exacte n'ont pas pu être enregistrées : {error}",
     noticeDoctorSuccess: "Vérification doctor réussie",
     noticeDoctorFailed: "Vérification doctor échouée : {error}",
     noticeCapabilityFailed: "Échec de la détection des capacités DocWen : {error}",
@@ -986,7 +1001,9 @@ export const translations: Record<string, Translations> = {
         <li>Нажмите на значок документа на левой боковой панели, чтобы запустить DocWen или отправить текущий файл</li>
         <li>Щёлкните правой кнопкой мыши по файлу в списке и используйте подменю <b>DocWen</b>: конвертировать, нумеровать или открыть в DocWen</li>
         <li>Используйте палитру команд (Ctrl/Cmd + P) и найдите <b>DocWen</b> для всех доступных команд</li>
-        <li>Если файл открыт, его путь будет автоматически передан в DocWen</li>
+        <li>Путь к текущему файлу передаётся только при выполнении действия DocWen, например запуска или отправки текущего файла</li>
+        <li>Экспорт Markdown в DOCX создаёт соседнюю папку .docwen; перемещайте или сохраняйте её вместе с DOCX</li>
+        <li>При включённой совместимой версии Number Suite экспорт в Word сохраняет проверенные виртуальные номера заголовков и подписей, а также ссылки внутри заметки, не переписывая её</li>
       </ul>
     `,
 
@@ -1007,6 +1024,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "Вывод DocWenCLI не является корректным JSON. Обновите CLI или проверьте --json/--quiet.",
     noticeExportSuccess: "Экспортировано: {filename}",
     noticeExportFailed: "Ошибка экспорта: {error}",
+    noticeRoundTripSidecarFailed: "DOCX экспортирован, но не удалось сохранить данные для точного обратного преобразования: {error}",
     noticeDoctorSuccess: "Проверка doctor пройдена",
     noticeDoctorFailed: "Проверка doctor не пройдена: {error}",
     noticeCapabilityFailed: "Не удалось определить возможности DocWen: {error}",
@@ -1171,7 +1189,9 @@ export const translations: Record<string, Translations> = {
         <li>Clique no ícone de documento na barra lateral esquerda para iniciar o DocWen ou enviar o arquivo atual</li>
         <li>Clique com o botão direito em um arquivo na lista e use o submenu <b>DocWen</b>: converter formatos, gerenciar numeração ou abrir no DocWen</li>
         <li>Use a paleta de comandos (Ctrl/Cmd + P) e pesquise <b>DocWen</b> para todos os comandos disponíveis</li>
-        <li>Se um arquivo estiver aberto, seu caminho será automaticamente passado para o DocWen</li>
+        <li>O caminho do arquivo atual só é enviado quando você executa uma ação do DocWen, como iniciar ou enviar o arquivo atual</li>
+        <li>A exportação de Markdown para DOCX cria uma pasta .docwen adjacente; mova-a ou faça backup junto com o DOCX</li>
+        <li>Com uma versão compatível do Number Suite ativada, a exportação para Word preserva números virtuais validados de títulos e legendas e referências da mesma nota sem reescrevê-la</li>
       </ul>
     `,
 
@@ -1192,6 +1212,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "A saída do DocWenCLI não é um JSON válido. Atualize o CLI ou verifique --json/--quiet.",
     noticeExportSuccess: "Exportado: {filename}",
     noticeExportFailed: "Falha ao exportar: {error}",
+    noticeRoundTripSidecarFailed: "O DOCX foi exportado, mas não foi possível salvar os dados de ida e volta exata: {error}",
     noticeDoctorSuccess: "Verificação doctor aprovada",
     noticeDoctorFailed: "Verificação doctor falhou: {error}",
     noticeCapabilityFailed: "Falha ao consultar recursos do DocWen: {error}",
@@ -1356,7 +1377,9 @@ export const translations: Record<string, Translations> = {
         <li>左サイドバーのドキュメントアイコンをクリックして DocWen を起動、または現在のファイルを送信</li>
         <li>ファイルリストでファイルを右クリックし、<b>DocWen</b> サブメニューを使用：形式変換、番号管理、DocWen で開く</li>
         <li>コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索し、すべてのコマンドを利用</li>
-        <li>ファイルが開いている場合、そのパスは自動的に DocWen に渡されます</li>
+        <li>現在のファイルパスは、DocWen の起動や現在のファイルの送信などの操作を実行した場合にのみ渡されます</li>
+        <li>Markdown から DOCX への出力では隣に .docwen フォルダーが作成されます。DOCX と一緒に移動またはバックアップしてください</li>
+        <li>互換性のある Number Suite を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照をノートを書き換えずに保持します</li>
       </ul>
     `,
 
@@ -1377,6 +1400,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI の出力が有効な JSON ではありません。CLI を更新するか --json/--quiet を確認してください。",
     noticeExportSuccess: "書き出しました：{filename}",
     noticeExportFailed: "書き出しに失敗しました：{error}",
+    noticeRoundTripSidecarFailed: "DOCX は書き出されましたが、完全な往復変換データを保存できませんでした：{error}",
     noticeDoctorSuccess: "doctor チェックに合格しました",
     noticeDoctorFailed: "doctor チェックに失敗しました：{error}",
     noticeCapabilityFailed: "DocWen 機能の照会に失敗しました：{error}",
@@ -1540,7 +1564,9 @@ export const translations: Record<string, Translations> = {
         <li>왼쪽 사이드바의 문서 아이콘을 클릭하여 DocWen을 실행하거나 현재 파일을 전송</li>
         <li>파일 목록에서 파일을 우클릭하고 <b>DocWen</b> 하위 메뉴 사용: 형식 변환, 번호 관리, DocWen에서 열기</li>
         <li>명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하여 모든 명령 사용</li>
-        <li>열려 있는 파일이 있으면 해당 경로가 자동으로 DocWen에 전달됩니다</li>
+        <li>현재 파일 경로는 DocWen 실행 또는 현재 파일 전송 같은 작업을 실행할 때만 전달됩니다</li>
+        <li>Markdown을 DOCX로 내보내면 옆에 .docwen 폴더가 생성됩니다. DOCX와 함께 이동하거나 백업하세요</li>
+        <li>호환되는 Number Suite를 활성화하면 Word 내보내기는 노트를 다시 쓰지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다</li>
       </ul>
     `,
 
@@ -1561,6 +1587,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "DocWenCLI 출력이 유효한 JSON이 아닙니다. CLI를 업데이트하거나 --json/--quiet 지원을 확인하세요.",
     noticeExportSuccess: "내보냄: {filename}",
     noticeExportFailed: "내보내기 실패: {error}",
+    noticeRoundTripSidecarFailed: "DOCX를 내보냈지만 정확한 왕복 변환 데이터를 저장하지 못했습니다: {error}",
     noticeDoctorSuccess: "doctor 검사 통과",
     noticeDoctorFailed: "doctor 검사 실패: {error}",
     noticeCapabilityFailed: "DocWen 기능 조회 실패: {error}",
@@ -1724,7 +1751,9 @@ export const translations: Record<string, Translations> = {
         <li>Haz clic en el icono de documento en la barra lateral izquierda para iniciar DocWen o enviar el archivo actual</li>
         <li>Haz clic derecho en un archivo de la lista y usa el submenú <b>DocWen</b>: convertir formatos, gestionar numeración o abrir en DocWen</li>
         <li>Usa la paleta de comandos (Ctrl/Cmd + P) y busca <b>DocWen</b> para todos los comandos disponibles</li>
-        <li>Si hay un archivo abierto, su ruta se pasará automáticamente a DocWen</li>
+        <li>La ruta del archivo actual solo se envía al ejecutar una acción de DocWen, como iniciar o enviar el archivo actual</li>
+        <li>La exportación de Markdown a DOCX crea una carpeta .docwen adyacente; muévela o haz una copia de seguridad junto con el DOCX</li>
+        <li>Con una versión compatible de Number Suite activada, la exportación a Word conserva los números virtuales validados de títulos y leyendas y las referencias de la misma nota sin reescribirla</li>
       </ul>
     `,
 
@@ -1745,6 +1774,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "La salida de DocWenCLI no es un JSON válido. Actualiza la CLI o verifica --json/--quiet.",
     noticeExportSuccess: "Exportado: {filename}",
     noticeExportFailed: "Error de exportación: {error}",
+    noticeRoundTripSidecarFailed: "El DOCX se exportó, pero no se pudieron guardar los datos de ida y vuelta exacta: {error}",
     noticeDoctorSuccess: "Comprobación doctor aprobada",
     noticeDoctorFailed: "Comprobación doctor fallida: {error}",
     noticeCapabilityFailed: "Error al consultar las capacidades de DocWen: {error}",
@@ -1908,7 +1938,9 @@ export const translations: Record<string, Translations> = {
         <li>Nhấn biểu tượng tài liệu ở thanh bên trái để khởi chạy DocWen hoặc gửi tệp hiện tại</li>
         <li>Nhấp chuột phải vào tệp trong danh sách và dùng menu con <b>DocWen</b>: chuyển đổi định dạng, đánh số hoặc mở trong DocWen</li>
         <li>Dùng bảng lệnh (Ctrl/Cmd + P) và tìm <b>DocWen</b> để xem tất cả lệnh có sẵn</li>
-        <li>Nếu đang mở một tệp, đường dẫn của nó sẽ được gửi tự động tới DocWen</li>
+        <li>Đường dẫn tệp hiện tại chỉ được gửi khi bạn chạy một thao tác DocWen như khởi chạy hoặc gửi tệp hiện tại</li>
+        <li>Xuất Markdown sang DOCX sẽ tạo thư mục .docwen liền kề; hãy di chuyển hoặc sao lưu thư mục này cùng với DOCX</li>
+        <li>Khi bật phiên bản Number Suite tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không ghi lại ghi chú</li>
       </ul>
     `,
 
@@ -1929,6 +1961,7 @@ export const translations: Record<string, Translations> = {
     noticeCliInvalidJson: "Đầu ra DocWenCLI không phải JSON hợp lệ. Hãy cập nhật CLI hoặc kiểm tra hỗ trợ --json/--quiet.",
     noticeExportSuccess: "Đã xuất: {filename}",
     noticeExportFailed: "Xuất thất bại: {error}",
+    noticeRoundTripSidecarFailed: "DOCX đã được xuất, nhưng không thể lưu dữ liệu khứ hồi chính xác: {error}",
     noticeDoctorSuccess: "doctor kiểm tra đạt",
     noticeDoctorFailed: "doctor kiểm tra thất bại: {error}",
     noticeCapabilityFailed: "Không thể truy vấn khả năng DocWen: {error}",

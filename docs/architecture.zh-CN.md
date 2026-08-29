@@ -21,9 +21,21 @@ translation_status: source
 
 Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。Assistant 通过 Obsidian metadata cache 解析该笔记明确写出的图片嵌入，支持 PNG、JPEG、GIF、BMP 与 WebP；短 Wiki 链接、跨目录链接和带空格文件名都遵循 Obsidian 自己的解析结果。Assistant 不枚举 Vault，也不扫描同名文件。它把每个出现位置、原始 token、媒体类型、字节、大小和 SHA-256 封装进 `resolved_document`。同时，它认证 DocWen 的完整 1 至 9 级标题清单，并在中性的 `numbering_export_plan` 中把这些标题显式标为未启用编号；这不会猜测或增加编号。DocWen 不读取 Vault，也不二次寻找图片。
 
+若运行时已加载 Number Suite 且提供 `number-suite.interop.v2`，Assistant 会验证其纯数据快照的 schema、
+范围、目标、引用和计数一致性。v2 合同携带 H1-H9 目标、精确九个计数器值与 H1-H9 显示片段，
+包括共享的 Number Suite/DocWen H7-H9 扩展；随后再把实际启用的标题与题注编号以及同文件引用降级为 DocWen 的
+`resolved_document` 与 exact-two `numbering_export_plan`。构建时不依赖兄弟仓库。插件缺失时沿用明确的
+未编号计划；API 畸形、事实与源码冲突或编号无法安全表达时失败关闭，不从可见文字猜测编号。
+
 ## 产物与提交
 
 DocWen 只写请求拥有的 staging 目录。Assistant 只接受并校验 Artifact Bundle v2，其他 Bundle schema 一律失败关闭；校验覆盖 Bundle 身份、布局、逻辑路径、图、角色、关系、物理路径、普通文件、大小和哈希。首选产物映射到用户确认的目标，相关资源使用安全名称；提交使用独占创建、无覆盖链接、备份与回滚，不让 CLI 直接接触 Vault 目标。
+
+成功提交由 resolved-document 路径生成的 DOCX 后，Assistant 在目标旁原子发布归属明确的
+`<document>.docwen` sidecar，包含认证原文、中性文档、编号计划和哈希清单。只覆盖自身 schema 与精确
+清单匹配的旧 sidecar，外来目录一律保留并拒绝覆盖。未修改 DOCX 可借此精确恢复经过认证的 Markdown
+快照；若 DOCX 提交后仅 sidecar 发布失败，导出仍视为成功并单独提示往返数据警告。Word 修改使认证投影
+失配时，DocWen 明确退回语义一致的规范化 Markdown。
 
 ## Vault 写入
 

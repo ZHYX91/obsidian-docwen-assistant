@@ -22,9 +22,29 @@ An action first captures an isolated snapshot from the uniquely path-matched ope
 
 For Markdown-to-DOCX, the original snapshot is used only for inspection, proofreading, and conflict validation. The Assistant resolves images explicitly embedded by that note through Obsidian's metadata cache and supports PNG, JPEG, GIF, BMP, and WebP. Short Wiki links, cross-folder links, and filenames containing spaces follow Obsidian's own resolution result. The Assistant neither enumerates the Vault nor scans for same-named files. It packages each occurrence, authored token, media type, bytes, size, and SHA-256 into a `resolved_document`. It also authenticates DocWen's complete heading inventory, levels 1 through 9, and marks those headings explicitly unnumbered in the consumer-neutral `numbering_export_plan`; it neither guesses nor adds numbering. DocWen does not read the Vault or search for the image again.
 
+When Number Suite is loaded at runtime and exposes `number-suite.interop.v2`, the Assistant validates
+the plain-data snapshot's schema, ranges, targets, references, and counter consistency. The v2
+contract carries H1-H9 targets, exactly nine counter values, and H1-H9 display segments, including
+the shared Number Suite/DocWen H7-H9 extension. The Assistant then lowers
+its effective enabled heading and caption numbers plus same-file references into DocWen's
+`resolved_document` and exact-two `numbering_export_plan`. There is no build-time sibling-repository
+dependency. If the plugin is absent, the explicit unnumbered plan remains the fallback. A malformed
+API, source-conflicting facts, or numbering that cannot be represented safely fails closed; visible
+text is never used to guess a number.
+
 ## Artifacts and commit
 
 DocWen writes only to a request-owned staging directory. The Assistant accepts and validates only Artifact Bundle v2; every other Bundle schema fails closed. Validation covers Bundle identity, layout, logical paths, graph, roles, relations, physical paths, regular-file status, sizes, and hashes. The preferred artifact maps to the user-confirmed target and related resources use safe names. Commit uses exclusive creation, no-clobber links, backup, and rollback, while the CLI never receives a Vault target.
+
+After successfully committing a DOCX produced through the resolved-document route, the Assistant
+atomically publishes an owned adjacent `<document>.docwen` sidecar containing the authenticated
+authored source, neutral document, numbering plan, and hash manifest. It overwrites only a prior
+sidecar whose schema and exact inventory prove Assistant ownership; a foreign directory is preserved
+and refused. An unchanged DOCX can therefore recover the authenticated Markdown snapshot exactly. If
+sidecar publication alone fails after the DOCX commit, the export remains successful and reports a
+separate round-trip warning. When a Word edit makes
+the authenticated projection diverge, DocWen explicitly falls back to semantically equivalent,
+canonical Markdown.
 
 ## Vault writes
 

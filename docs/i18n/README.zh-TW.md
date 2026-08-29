@@ -60,6 +60,10 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。背景匯出一定會要求明確選擇輸出檔案。
 
+Markdown 轉 DOCX 時也會在文件旁建立 `<文件>.docwen` 資料夾，保存經過驗證的往返資料。請將它與 DOCX 放在一起，以便文件未修改時還原經過驗證的 Markdown 快照；資料夾遺失或無效時，DocWen 會退回規範化 Markdown 並顯示提示。
+
+啟用相容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 後，Word 匯出會保留其經過驗證的虛擬標題、題注編號及同一筆記內的引用，不會把這些編號寫入 Markdown 筆記。
+
 ## 設定
 
 Obsidian 1.12.7 以上使用五個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word、校對和使用方法。「連線方式」預設為「自動偵測」，只有手動安裝可攜版時才顯示資料夾選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。

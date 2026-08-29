@@ -74,6 +74,10 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 
 Background export always asks for an output file. Existing output is overwritten only after the native save dialog confirms the target.
 
+Markdown-to-DOCX also creates an adjacent `<document>.docwen` folder with authenticated round-trip data. Keep it beside the DOCX to recover the authenticated Markdown snapshot when the document is unchanged. If the folder is missing or invalid, DocWen falls back to canonical Markdown and reports the downgrade.
+
+With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) version enabled, Word export preserves its validated virtual heading and caption numbers plus same-note references without adding those numbers to the Markdown note.
+
 ## Settings
 
 - Obsidian 1.12.7 or later uses five horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, **Proofreading**, and **Usage**.

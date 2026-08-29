@@ -54,6 +54,10 @@ Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styl
 
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et d'exécuter doctor. L'export en arrière-plan exige toujours un fichier de sortie explicitement choisi.
 
+L'export Markdown vers DOCX crée également, à côté du document, un dossier `<document>.docwen` contenant des données d'aller-retour authentifiées. Conservez-le avec le DOCX afin de restaurer l'instantané Markdown authentifié si le document n'a pas changé. Si ce dossier est absent ou invalide, DocWen revient au Markdown canonique et signale cette dégradation.
+
+Avec une version compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite), l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans ajouter ces numéros à la note Markdown.
+
 ## Paramètres
 
 Obsidian 1.12.7 ou ultérieur utilise cinq onglets supérieurs à défilement horizontal : Général, Exporter en Markdown, Exporter vers Word, Relecture et Utilisation. Les onglets prennent en charge les flèches, y compris RTL, Début/Fin, le texte d'interface à 20 px et de grandes cibles tactiles. La langue suit Obsidian par défaut et peut être remplacée par l'une des 11 langues prises en charge.

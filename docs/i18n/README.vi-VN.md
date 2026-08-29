@@ -54,6 +54,10 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor. Xuất nền luôn yêu cầu chọn rõ tệp đầu ra.
 
+Khi xuất Markdown sang DOCX, một thư mục `<tài-liệu>.docwen` chứa dữ liệu khứ hồi đã xác thực cũng được tạo bên cạnh tài liệu. Hãy giữ thư mục này cùng với DOCX để khôi phục ảnh chụp Markdown đã xác thực khi tài liệu chưa thay đổi. Nếu thư mục bị thiếu hoặc không hợp lệ, DocWen sẽ dùng Markdown chuẩn hóa và thông báo việc hạ cấp.
+
+Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không thêm các số đó vào Markdown.
+
 ## Cài đặt plugin
 
 Obsidian 1.12.7 trở lên dùng năm thẻ trên cùng có thể cuộn ngang: Chung, Xuất sang Markdown, Xuất sang Word, Hiệu đính và Cách dùng. Các thẻ hỗ trợ phím mũi tên kể cả RTL, Home/End, chữ giao diện 20 px và vùng bấm lớn cho con trỏ thô. Ngôn ngữ mặc định theo Obsidian và có thể đổi sang một trong 11 ngôn ngữ được hỗ trợ.

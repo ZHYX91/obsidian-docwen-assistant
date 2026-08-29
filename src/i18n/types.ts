@@ -75,6 +75,7 @@ export interface Translations {
   noticeCliInvalidJson: string;
   noticeExportSuccess: string;
   noticeExportFailed: string;
+  noticeRoundTripSidecarFailed: string;
   noticeDoctorSuccess: string;
   noticeDoctorFailed: string;
   noticeCapabilityFailed: string;
