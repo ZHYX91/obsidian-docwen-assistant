@@ -109,7 +109,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       outputPath: docx,
       target: "docx",
       capabilityId: "convert.markdown.to_docx",
-    })).resolves.toMatchObject({ output: docx, outputs: [docx] });
+    })).resolves.toMatchObject({ output: docx, outputs: [docx, `${docx}.docwen`] });
+    expect((await readFile(`${docx}.docwen`)).byteLength).toBeGreaterThan(0);
     expect(await readFile(source, "utf8")).toBe(authored);
 
     const docxArchive = readStrictZip(await readFile(docx));
