@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { MAIN_BUNDLE_BUDGET_BYTES, PRODUCTION_ASSETS } from "./release-assets.mjs";
+import { MAIN_BUNDLE_BUDGET_BYTES, PRODUCTION_ASSETS } from "./product-assets.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "dist");

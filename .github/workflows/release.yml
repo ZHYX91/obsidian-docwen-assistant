@@ -1,15 +1,53 @@
 name: Release
+run-name: release ${{ inputs.release_run_id }}
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: Stable x.y.z version to preflight before creating its tag
+      release_run_id:
+        description: Stable workspace release-run UUID
         required: true
         type: string
-  push:
-    tags:
-      - "[0-9]*.[0-9]*.[0-9]*"
+      mode:
+        description: Explicit release operation
+        required: true
+        default: verify
+        type: choice
+        options:
+          - verify
+          - publish
+      candidate_commit:
+        description: Exact accepted candidate commit
+        required: true
+        type: string
+      candidate_digest:
+        description: SHA-256 of the exact core candidate.json
+        required: true
+        type: string
+      candidate_envelope_digest:
+        description: SHA-256 of the workspace candidate envelope
+        required: true
+        type: string
+      acceptance_closure_digest:
+        description: SHA-256 of the decoded acceptance-closure bytes
+        required: true
+        type: string
+      acceptance_closure_b64:
+        description: Base64 of the portable acceptance-closure JSON bytes
+        required: true
+        type: string
+      release_authorization:
+        description: Exact core publication authorization phrase
+        required: true
+        type: string
+      authorization_b64:
+        description: Base64 of the exact publication-authorization JSON bytes
+        required: true
+        type: string
+      authorization_digest:
+        description: SHA-256 of the decoded publication-authorization bytes
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -18,28 +56,58 @@ concurrency:
   group: release-${{ github.repository }}
   cancel-in-progress: false
 
-env:
-  RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
-  PUBLICATION_ARTIFACT_NAME: docwen-assistant-publication-${{ github.run_id }}-${{ github.run_attempt }}
-
 jobs:
-  build-release:
-    name: Clean release build ${{ matrix.replica }}
+  verify:
+    name: Verify exact candidate
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        replica: [a, b]
-
+    outputs:
+      candidate_artifact_id: ${{ steps.handoff.outputs.artifact-id }}
+      candidate_artifact_digest: ${{ steps.handoff.outputs.artifact-digest }}
     steps:
-      - name: Check out exact source into a clean runner
+      - name: Validate dispatch identifiers
+        shell: bash
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          CANDIDATE_DIGEST: ${{ inputs.candidate_digest }}
+          CANDIDATE_ENVELOPE_DIGEST: ${{ inputs.candidate_envelope_digest }}
+          ACCEPTANCE_CLOSURE_DIGEST: ${{ inputs.acceptance_closure_digest }}
+          AUTHORIZATION_DIGEST: ${{ inputs.authorization_digest }}
+        run: |
+          set -euo pipefail
+          [[ "$MODE" == "verify" || "$MODE" == "publish" ]]
+          [[ "$RELEASE_RUN_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]
+          [[ "$CANDIDATE_COMMIT" =~ ^[0-9a-f]{40}$|^[0-9a-f]{64}$ ]]
+          [[ "$CANDIDATE_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$CANDIDATE_ENVELOPE_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$ACCEPTANCE_CLOSURE_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$AUTHORIZATION_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          test "$CANDIDATE_COMMIT" = "$GITHUB_SHA"
+          [[ "$GITHUB_REF_TYPE" == "tag" ]]
+          [[ "$GITHUB_REF_NAME" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+
+      - name: Check out the exact candidate without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: ${{ inputs.candidate_commit }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify tagged source identity
+        shell: bash
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --verify HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse --verify "refs/tags/$GITHUB_REF_NAME^{commit}")" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
 
       - name: Set up exact Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -51,299 +119,402 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          NPM_PACKAGE_MANAGER="$(
-            node --input-type=module <<'NODE'
-          import { readFileSync } from "node:fs";
-          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-          const packageManager = packageJson.packageManager;
-          if (typeof packageManager !== "string" || !/^npm@\d+\.\d+\.\d+$/u.test(packageManager)) {
-            throw new Error("package.json packageManager must use exact npm@x.y.z format");
-          }
-          process.stdout.write(packageManager);
-          NODE
-          )"
-          npm install --global "$NPM_PACKAGE_MANAGER"
-          test "$(npm --version)" = "${NPM_PACKAGE_MANAGER#npm@}"
+          npm install --global npm@11.17.0 --no-audit --no-fund
+          test "$(npm --version)" = "11.17.0"
 
-      - name: Verify version and source identity
-        env:
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        shell: bash
-        run: |
-          npm run release:version -- "$RELEASE_VERSION"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            node scripts/verify-release-source.mjs preflight "$RELEASE_VERSION"
-          else
-            node scripts/verify-release-source.mjs release "$RELEASE_VERSION"
-          fi
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Install the exact lockfile and run the single full gate
-        run: |
-          npm ci
-          npm run release:check
+      - name: Run complete repository release gates
+        run: npm run release:check
 
-      - name: Build and strictly verify deterministic release assets
-        run: |
-          node scripts/package-release.mjs
-          node scripts/verify-release-assets.mjs release "$RELEASE_VERSION"
-
-      - name: Upload clean-build evidence for comparison
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: docwen-assistant-build-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.replica }}
-          path: release/
-          compression-level: 0
-          if-no-files-found: error
-          overwrite: false
-          retention-days: 1
-
-  verify-release:
-    needs: build-release
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      actions: read
-      contents: read
-    outputs:
-      artifact_id: ${{ steps.publication_artifact.outputs.artifact-id }}
-      artifact_digest: ${{ steps.publication_artifact.outputs.artifact-digest }}
-      artifact_name: ${{ env.PUBLICATION_ARTIFACT_NAME }}
-      handoff_sha256: ${{ steps.handoff.outputs.handoff_sha256 }}
-      handoff_size: ${{ steps.handoff.outputs.handoff_size }}
-
-    steps:
-      - name: Check out exact source for read-only governance
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up exact Node.js for dependency-free governance scripts
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version-file: .node-version
-
-      - name: Install exact npm for read-only verification
-        shell: bash
-        run: |
-          set -euo pipefail
-          NPM_PACKAGE_MANAGER="$(
-            node --input-type=module <<'NODE'
-          import { readFileSync } from "node:fs";
-          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-          const packageManager = packageJson.packageManager;
-          if (typeof packageManager !== "string" || !/^npm@\d+\.\d+\.\d+$/u.test(packageManager)) {
-            throw new Error("package.json packageManager must use exact npm@x.y.z format");
-          }
-          process.stdout.write(packageManager);
-          NODE
-          )"
-          npm install --global "$NPM_PACKAGE_MANAGER"
-          test "$(npm --version)" = "${NPM_PACKAGE_MANAGER#npm@}"
-
-      - name: Run canonical release gates with read-only permissions
-        run: |
-          npm ci
-          npm run release:check
-
-      - name: Re-verify version and source identity
-        env:
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        shell: bash
-        run: |
-          node scripts/check-release-version.mjs "$RELEASE_VERSION"
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            node scripts/verify-release-source.mjs preflight "$RELEASE_VERSION"
-          else
-            node scripts/verify-release-source.mjs release "$RELEASE_VERSION"
-          fi
-
-      - name: Download both exact current-attempt clean builds
+      - name: Verify immutable public DocWen package compatibility
         env:
           GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p builds/a builds/b
-          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name "docwen-assistant-build-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-a" --dir builds/a
-          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name "docwen-assistant-build-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-b" --dir builds/b
+        run: npm run release:docwen-compatibility
 
-      - name: Verify independent clean builds byte for byte
-        run: node scripts/verify-reproducible-release.mjs builds/a builds/b "$RELEASE_VERSION"
-
-      - name: Verify canonical public immutable DocWen Core dependency
-        id: docwen_core
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/github-release-contract.mjs docwen-core
-
-      - name: Resolve monotonic previous stable Release baseline
-        id: release_notes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node scripts/github-release-contract.mjs baseline "$GITHUB_REPOSITORY" "$RELEASE_VERSION"
-
-      - name: Verify previous stable Release is a source ancestor
-        env:
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          PREVIOUS_RELEASE_TAG: ${{ steps.release_notes.outputs.start_tag }}
-        run: node scripts/verify-release-source.mjs previous-ancestor "$RELEASE_VERSION" "$PREVIOUS_RELEASE_TAG"
-
-      - name: Create exact deterministic publication handoff
-        if: github.event_name == 'push'
-        id: handoff
-        env:
-          DOCWEN_ASSET_DIGEST: ${{ steps.docwen_core.outputs.docwen_asset_digest }}
-          DOCWEN_TAG: ${{ steps.docwen_core.outputs.docwen_tag }}
-          DOCWEN_VERSION: ${{ steps.docwen_core.outputs.docwen_version }}
-          GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          PREVIOUS_RELEASE_TAG: ${{ steps.release_notes.outputs.start_tag }}
+      - name: Build deterministic candidate handoff
         run: >-
-          node scripts/package-publication-handoff.mjs
-          builds/a
-          publication/docwen-assistant-publication-handoff.zip
+          node scripts/release.mjs candidate
+          --version "$GITHUB_REF_NAME"
+          --output "$RUNNER_TEMP/release-candidate"
 
-      - name: Upload the sole current-run publication artifact
-        if: github.event_name == 'push'
-        id: publication_artifact
+      - name: Verify candidate identity and handoff
+        shell: bash
+        env:
+          CANDIDATE_DIGEST: ${{ inputs.candidate_digest }}
+        run: |
+          set -euo pipefail
+          test "$(sha256sum "$RUNNER_TEMP/release-candidate/candidate.json" | cut -d ' ' -f 1)" = "$CANDIDATE_DIGEST"
+          node scripts/release.mjs verify-handoff --candidate-dir "$RUNNER_TEMP/release-candidate"
+
+      - name: Upload fixed candidate handoff
+        id: handoff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ${{ env.PUBLICATION_ARTIFACT_NAME }}
-          path: publication/docwen-assistant-publication-handoff.zip
-          compression-level: 0
+          name: release-candidate-${{ inputs.release_run_id }}
+          path: ${{ runner.temp }}/release-candidate/
           if-no-files-found: error
+          compression-level: 0
           overwrite: false
           retention-days: 1
-
-      - name: Record verified publication inputs
-        shell: bash
-        run: |
-          {
-            echo "### Verified publication inputs"
-            echo "- Source: ${GITHUB_SHA}"
-            echo "- Run/attempt: ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
-            echo "- Previous stable Release: ${{ steps.release_notes.outputs.start_tag || '(initial exception)' }}"
-            echo "- DocWen Core: ${{ steps.docwen_core.outputs.docwen_tag }}"
-            echo "- Two clean builds: byte-identical"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Preflight completed without publishing
-        if: github.event_name == 'workflow_dispatch'
-        run: echo "Release preflight passed for ${RELEASE_VERSION}; no tag or Release was created."
 
   publish:
-    if: github.event_name == 'push'
-    needs: verify-release
+    name: Publish explicitly authorized candidate
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'publish'
+    needs: verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
+    environment: release
     permissions:
       actions: read
       attestations: write
       contents: write
       id-token: write
-
     steps:
-      - name: Materialize the fixed no-checkout publication boundary
-        id: handoff
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_ARTIFACT_ID: ${{ needs.verify-release.outputs.artifact_id }}
-          EXPECTED_ARTIFACT_NAME: ${{ needs.verify-release.outputs.artifact_name }}
-          EXPECTED_ARTIFACT_DIGEST: ${{ needs.verify-release.outputs.artifact_digest }}
-          EXPECTED_HANDOFF_SHA256: ${{ needs.verify-release.outputs.handoff_sha256 }}
-          EXPECTED_HANDOFF_SIZE: ${{ needs.verify-release.outputs.handoff_size }}
-          PUBLICATION_BOUNDARY_B64: IiIiRGVwZW5kZW5jeS1mcmVlIEdpdEh1YiBwdWJsaWNhdGlvbiBib3VuZGFyeSB1c2VkIHdpdGhvdXQgYSByZXBvc2l0b3J5IGNoZWNrb3V0LiIiIgoKZnJvbSBfX2Z1dHVyZV9fIGltcG9ydCBhbm5vdGF0aW9ucwoKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KaW1wb3J0IG9zCmltcG9ydCByZQppbXBvcnQgc3RhdAppbXBvcnQgc3lzCmltcG9ydCB0aW1lCmltcG9ydCB1cmxsaWIuZXJyb3IKaW1wb3J0IHVybGxpYi5wYXJzZQppbXBvcnQgdXJsbGliLnJlcXVlc3QKaW1wb3J0IHppcGZpbGUKZnJvbSBkYXRldGltZSBpbXBvcnQgZGF0ZXRpbWUKZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmZyb20gdHlwaW5nIGltcG9ydCBBbnksIE5vUmV0dXJuCgpBUElfVkVSU0lPTiA9ICIyMDI2LTAzLTEwIgpIQU5ET0ZGX05BTUUgPSAiZG9jd2VuLWFzc2lzdGFudC1wdWJsaWNhdGlvbi1oYW5kb2ZmLnppcCIKQlVORExFX0JVREdFVCA9IDFfMDAwXzAwMApWRVJTSU9OX1JFID0gcmUuY29tcGlsZShyIl4oMHxbMS05XVxkKilcLigwfFsxLTldXGQqKVwuKDB8WzEtOV1cZCopJCIpCkhJU1RPUklDQUxfVkVSU0lPTl9SRSA9IHJlLmNvbXBpbGUociJedj8oMHxbMS05XVxkKilcLigwfFsxLTldXGQqKVwuKDB8WzEtOV1cZCopJCIpCkNPTU1JVF9SRSA9IHJlLmNvbXBpbGUociJeWzAtOWEtZl17NDB9JCIpCkRJR0VTVF9SRSA9IHJlLmNvbXBpbGUociJeKD86c2hhMjU2Oik/KFswLTlhLWZdezY0fSkkIikKUkVQT1NJVE9SWV9SRSA9IHJlLmNvbXBpbGUociJeW0EtWmEtejAtOV8uLV0rL1tBLVphLXowLTlfLi1dKyQiKQpSVU5fUkUgPSByZS5jb21waWxlKHIiXlsxLTldXGQqJCIpClBVQkxJU0hFRF9BVF9SRSA9IHJlLmNvbXBpbGUoCiAgICByIl4oXGR7NH0pLShcZHsyfSktKFxkezJ9KVQoXGR7Mn0pOihcZHsyfSk6KFxkezJ9KSg/OlwuXGQrKT9aJCIKKQoKCmNsYXNzIEJvdW5kYXJ5RXJyb3IoUnVudGltZUVycm9yKToKICAgIHBhc3MKCgpjbGFzcyBTYWZlUmVkaXJlY3RIYW5kbGVyKHVybGxpYi5yZXF1ZXN0LkhUVFBSZWRpcmVjdEhhbmRsZXIpOgogICAgZGVmIHJlZGlyZWN0X3JlcXVlc3Qoc2VsZiwgcmVxLCBmcCwgY29kZSwgbXNnLCBoZWFkZXJzLCBuZXd1cmwpOgogICAgICAgIHJlZGlyZWN0ZWQgPSBzdXBlcigpLnJlZGlyZWN0X3JlcXVlc3QocmVxLCBmcCwgY29kZSwgbXNnLCBoZWFkZXJzLCBuZXd1cmwpCiAgICAgICAgaWYgcmVkaXJlY3RlZCBpcyBOb25lOgogICAgICAgICAgICByZXR1cm4gTm9uZQogICAgICAgIHBhcnNlZCA9IHVybGxpYi5wYXJzZS51cmxzcGxpdChyZWRpcmVjdGVkLmZ1bGxfdXJsKQogICAgICAgIGlmICgKICAgICAgICAgICAgcGFyc2VkLnNjaGVtZSAhPSAiaHR0cHMiCiAgICAgICAgICAgIG9yIG5vdCBwYXJzZWQuaG9zdG5hbWUKICAgICAgICAgICAgb3IgcGFyc2VkLnVzZXJuYW1lIGlzIG5vdCBOb25lCiAgICAgICAgICAgIG9yIHBhcnNlZC5wYXNzd29yZCBpcyBub3QgTm9uZQogICAgICAgICk6CiAgICAgICAgICAgIGZhaWwoIkFydGlmYWN0IG9yIFJlbGVhc2UgYXNzZXQgcmVkaXJlY3QgbXVzdCB1c2UgYSBjcmVkZW50aWFsLWZyZWUgSFRUUFMgVVJMIikKICAgICAgICByZXR1cm4gdXJsbGliLnJlcXVlc3QuUmVxdWVzdCgKICAgICAgICAgICAgcmVkaXJlY3RlZC5mdWxsX3VybCwKICAgICAgICAgICAgaGVhZGVycz17IlVzZXItQWdlbnQiOiAiZG9jd2VuLWFzc2lzdGFudC1wdWJsaWNhdGlvbi1ib3VuZGFyeSJ9LAogICAgICAgICAgICBtZXRob2Q9IkdFVCIsCiAgICAgICAgICAgIG9yaWdpbl9yZXFfaG9zdD1yZXEub3JpZ2luX3JlcV9ob3N0LAogICAgICAgICAgICB1bnZlcmlmaWFibGU9VHJ1ZSwKICAgICAgICApCgoKZGVmIGZhaWwobWVzc2FnZTogc3RyKSAtPiBOb1JldHVybjoKICAgIHJhaXNlIEJvdW5kYXJ5RXJyb3IobWVzc2FnZSkKCgpkZWYgcmVxdWlyZWQobmFtZTogc3RyKSAtPiBzdHI6CiAgICB2YWx1ZSA9IG9zLmVudmlyb24uZ2V0KG5hbWUsICIiKQogICAgaWYgbm90IHZhbHVlOgogICAgICAgIGZhaWwoZiJ7bmFtZX0gaXMgcmVxdWlyZWQiKQogICAgcmV0dXJuIHZhbHVlCgoKZGVmIHNoYTI1NihkYXRhOiBieXRlcykgLT4gc3RyOgogICAgcmV0dXJuIGhhc2hsaWIuc2hhMjU2KGRhdGEpLmhleGRpZ2VzdCgpCgoKZGVmIG5vcm1hbGl6ZWRfZGlnZXN0KHZhbHVlOiBvYmplY3QpIC0+IHN0cjoKICAgIG1hdGNoID0gRElHRVNUX1JFLmZ1bGxtYXRjaChzdHIodmFsdWUgb3IgIiIpKQogICAgaWYgbm90IG1hdGNoOgogICAgICAgIGZhaWwoZiJJbnZhbGlkIFNIQS0yNTYgZGlnZXN0OiB7dmFsdWUhcn0iKQogICAgcmV0dXJuIGYic2hhMjU2OnttYXRjaC5ncm91cCgxKX0iCgoKZGVmIGFwaV91cmwocGF0aDogc3RyKSAtPiBzdHI6CiAgICByb290ID0gcmVxdWlyZWQoIkdJVEhVQl9BUElfVVJMIikucnN0cmlwKCIvIikKICAgIGlmIG5vdCByb290LnN0YXJ0c3dpdGgoImh0dHBzOi8vIik6CiAgICAgICAgZmFpbCgiR0lUSFVCX0FQSV9VUkwgbXVzdCB1c2UgSFRUUFMiKQogICAgcmV0dXJuIGYie3Jvb3R9e3BhdGh9IgoKCmRlZiByZXF1ZXN0X2J5dGVzKHBhdGhfb3JfdXJsOiBzdHIsICosIGFjY2VwdDogc3RyID0gImFwcGxpY2F0aW9uL3ZuZC5naXRodWIranNvbiIpIC0+IGJ5dGVzOgogICAgdXJsID0gcGF0aF9vcl91cmwgaWYgcGF0aF9vcl91cmwuc3RhcnRzd2l0aCgiaHR0cHM6Ly8iKSBlbHNlIGFwaV91cmwocGF0aF9vcl91cmwpCiAgICByZXF1ZXN0ID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdCgKICAgICAgICB1cmwsCiAgICAgICAgaGVhZGVycz17CiAgICAgICAgICAgICJBY2NlcHQiOiBhY2NlcHQsCiAgICAgICAgICAgICJBdXRob3JpemF0aW9uIjogZiJCZWFyZXIge3JlcXVpcmVkKCdHSF9UT0tFTicpfSIsCiAgICAgICAgICAgICJVc2VyLUFnZW50IjogImRvY3dlbi1hc3Npc3RhbnQtcHVibGljYXRpb24tYm91bmRhcnkiLAogICAgICAgICAgICAiWC1HaXRIdWItQXBpLVZlcnNpb24iOiBBUElfVkVSU0lPTiwKICAgICAgICB9LAogICAgKQogICAgb3BlbmVyID0gdXJsbGliLnJlcXVlc3QuYnVpbGRfb3BlbmVyKFNhZmVSZWRpcmVjdEhhbmRsZXIoKSkKICAgIHdpdGggb3BlbmVyLm9wZW4ocmVxdWVzdCwgdGltZW91dD02MCkgYXMgcmVzcG9uc2U6CiAgICAgICAgcmV0dXJuIHJlc3BvbnNlLnJlYWQoKQoKCmRlZiByZXF1ZXN0X2pzb24ocGF0aDogc3RyLCAqLCBhbGxvd180MDQ6IGJvb2wgPSBGYWxzZSkgLT4gQW55OgogICAgdHJ5OgogICAgICAgIHJhdyA9IHJlcXVlc3RfYnl0ZXMocGF0aCkKICAgIGV4Y2VwdCB1cmxsaWIuZXJyb3IuSFRUUEVycm9yIGFzIGVycm9yOgogICAgICAgIGlmIGFsbG93XzQwNCBhbmQgZXJyb3IuY29kZSA9PSA0MDQ6CiAgICAgICAgICAgIHJldHVybiBOb25lCiAgICAgICAgZmFpbChmIkdpdEh1YiBBUEkgcmVxdWVzdCBmYWlsZWQgKHtlcnJvci5jb2RlfSk6IHtwYXRofSIpCiAgICB0cnk6CiAgICAgICAgcmV0dXJuIGpzb24ubG9hZHMocmF3KQogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlcnJvcjoKICAgICAgICBmYWlsKGYiR2l0SHViIEFQSSByZXR1cm5lZCBpbnZhbGlkIEpTT04gZm9yIHtwYXRofToge2Vycm9yfSIpCgoKZGVmIHdyaXRlX291dHB1dChuYW1lOiBzdHIsIHZhbHVlOiBzdHIpIC0+IE5vbmU6CiAgICBvdXRwdXQgPSByZXF1aXJlZCgiR0lUSFVCX09VVFBVVCIpCiAgICBpZiAiXG4iIGluIHZhbHVlIG9yICJcciIgaW4gdmFsdWU6CiAgICAgICAgZmFpbChmIkludmFsaWQgbXVsdGlsaW5lIG91dHB1dDoge25hbWV9IikKICAgIHdpdGggb3BlbihvdXRwdXQsICJhIiwgZW5jb2Rpbmc9InV0Zi04IiwgbmV3bGluZT0iXG4iKSBhcyBoYW5kbGU6CiAgICAgICAgaGFuZGxlLndyaXRlKGYie25hbWV9PXt2YWx1ZX1cbiIpCgoKZGVmIHBhcnNlX3ZlcnNpb24odmFsdWU6IHN0cikgLT4gdHVwbGVbaW50LCBpbnQsIGludF06CiAgICBtYXRjaCA9IFZFUlNJT05fUkUuZnVsbG1hdGNoKHZhbHVlKQogICAgaWYgbm90IG1hdGNoOgogICAgICAgIGZhaWwoZiJJbnZhbGlkIHN0YWJsZSB2ZXJzaW9uIHRhZzoge3ZhbHVlIXJ9IikKICAgIHJldHVybiB0dXBsZShpbnQocGFydCkgZm9yIHBhcnQgaW4gbWF0Y2guZ3JvdXBzKCkpCgoKZGVmIHBhcnNlX2hpc3RvcmljYWxfdmVyc2lvbih2YWx1ZTogc3RyKSAtPiB0dXBsZVtpbnQsIGludCwgaW50XToKICAgIG1hdGNoID0gSElTVE9SSUNBTF9WRVJTSU9OX1JFLmZ1bGxtYXRjaCh2YWx1ZSkKICAgIGlmIG5vdCBtYXRjaDoKICAgICAgICBmYWlsKGYiSW52YWxpZCBwcmV2aW91cyBzdGFibGUgUmVsZWFzZSB0YWc6IHt2YWx1ZSFyfSIpCiAgICByZXR1cm4gdHVwbGUoaW50KHBhcnQpIGZvciBwYXJ0IGluIG1hdGNoLmdyb3VwcygpKQoKCmRlZiB2YWxpZF9wdWJsaXNoZWRfYXQodmFsdWU6IG9iamVjdCkgLT4gYm9vbDoKICAgIGlmIG5vdCBpc2luc3RhbmNlKHZhbHVlLCBzdHIpOgogICAgICAgIHJldHVybiBGYWxzZQogICAgbWF0Y2ggPSBQVUJMSVNIRURfQVRfUkUuZnVsbG1hdGNoKHZhbHVlKQogICAgaWYgbm90IG1hdGNoOgogICAgICAgIHJldHVybiBGYWxzZQogICAgdHJ5OgogICAgICAgIGRhdGV0aW1lKCooaW50KHBhcnQpIGZvciBwYXJ0IGluIG1hdGNoLmdyb3VwcygpKSkKICAgIGV4Y2VwdCBWYWx1ZUVycm9yOgogICAgICAgIHJldHVybiBGYWxzZQogICAgcmV0dXJuIFRydWUKCgpkZWYgdmFsaWRhdGVfcmVsZWFzZV9yZWNvcmQocmVsZWFzZTogb2JqZWN0KSAtPiBkaWN0W3N0ciwgQW55XToKICAgIGlmIHR5cGUocmVsZWFzZSkgaXMgbm90IGRpY3Q6CiAgICAgICAgZmFpbCgiR2l0SHViIFJlbGVhc2UgcmVjb3JkIG11c3QgYmUgYSBwbGFpbiBvYmplY3QiKQogICAgdGFnID0gcmVsZWFzZS5nZXQoInRhZ19uYW1lIikKICAgIGlmIG5vdCBpc2luc3RhbmNlKHRhZywgc3RyKSBvciBub3QgdGFnLnN0cmlwKCk6CiAgICAgICAgZmFpbCgiR2l0SHViIFJlbGVhc2UgdGFnX25hbWUgbXVzdCBiZSBhIG5vbi1lbXB0eSBzdHJpbmciKQogICAgaWYgdHlwZShyZWxlYXNlLmdldCgiZHJhZnQiKSkgaXMgbm90IGJvb2w6CiAgICAgICAgZmFpbChmIkdpdEh1YiBSZWxlYXNlIHt0YWd9IGRyYWZ0IG11c3QgYmUgYm9vbGVhbiIpCiAgICBpZiB0eXBlKHJlbGVhc2UuZ2V0KCJwcmVyZWxlYXNlIikpIGlzIG5vdCBib29sOgogICAgICAgIGZhaWwoZiJHaXRIdWIgUmVsZWFzZSB7dGFnfSBwcmVyZWxlYXNlIG11c3QgYmUgYm9vbGVhbiIpCiAgICBpZiAicHVibGlzaGVkX2F0IiBub3QgaW4gcmVsZWFzZToKICAgICAgICBmYWlsKGYiR2l0SHViIFJlbGVhc2Uge3RhZ30gaXMgbWlzc2luZyBwdWJsaXNoZWRfYXQiKQogICAgcHVibGlzaGVkX2F0ID0gcmVsZWFzZVsicHVibGlzaGVkX2F0Il0KICAgIGlmIHB1Ymxpc2hlZF9hdCBpcyBub3QgTm9uZSBhbmQgbm90IHZhbGlkX3B1Ymxpc2hlZF9hdChwdWJsaXNoZWRfYXQpOgogICAgICAgIGZhaWwoZiJHaXRIdWIgUmVsZWFzZSB7dGFnfSBoYXMgYW4gaW52YWxpZCBwdWJsaXNoZWRfYXQiKQogICAgaWYgcmVsZWFzZVsiZHJhZnQiXSBpcyBGYWxzZSBhbmQgcmVsZWFzZVsicHJlcmVsZWFzZSJdIGlzIEZhbHNlIGFuZCBwdWJsaXNoZWRfYXQgaXMgTm9uZToKICAgICAgICBmYWlsKGYiUHVibGlzaGVkIHN0YWJsZSBHaXRIdWIgUmVsZWFzZSB7dGFnfSBoYXMgbm8gcHVibGlzaGVkX2F0IikKICAgIHJldHVybiByZWxlYXNlCgoKZGVmIHJlbGVhc2VfbmFtZXModmVyc2lvbjogc3RyKSAtPiBsaXN0W3N0cl06CiAgICBwYXJzZV92ZXJzaW9uKHZlcnNpb24pCiAgICByZXR1cm4gWwogICAgICAgICJTSEEyNTZTVU1TIiwKICAgICAgICBmImRvY3dlbi1hc3Npc3RhbnQte3ZlcnNpb259LnppcCIsCiAgICAgICAgIm1haW4uanMiLAogICAgICAgICJtYW5pZmVzdC5qc29uIiwKICAgICAgICAic3R5bGVzLmNzcyIsCiAgICBdCgoKZGVmIHB1YmxpY19yZWxlYXNlX25hbWVzKHZlcnNpb246IHN0cikgLT4gbGlzdFtzdHJdOgogICAgcGFyc2VfdmVyc2lvbih2ZXJzaW9uKQogICAgcmV0dXJuIFsKICAgICAgICBmImRvY3dlbi1hc3Npc3RhbnQte3ZlcnNpb259LnppcCIsCiAgICAgICAgIm1haW4uanMiLAogICAgICAgICJtYW5pZmVzdC5qc29uIiwKICAgICAgICAic3R5bGVzLmNzcyIsCiAgICBdCgoKZGVmIGNhbm9uaWNhbF9qc29uX2J5dGVzKHZhbHVlOiBvYmplY3QpIC0+IGJ5dGVzOgogICAgcmV0dXJuIChqc29uLmR1bXBzKHZhbHVlLCBlbnN1cmVfYXNjaWk9RmFsc2UsIHNvcnRfa2V5cz1UcnVlLCBpbmRlbnQ9MikgKyAiXG4iKS5lbmNvZGUoInV0Zi04IikKCgpkZWYgemlwX21vZGUoaW5mbzogemlwZmlsZS5aaXBJbmZvKSAtPiBpbnQ6CiAgICByZXR1cm4gKGluZm8uZXh0ZXJuYWxfYXR0ciA+PiAxNikgJiAweEZGRkYKCgpkZWYgdmVyaWZ5X3NhZmVfemlwX25hbWUobmFtZTogc3RyKSAtPiBOb25lOgogICAgcGFydHMgPSBuYW1lLnJlcGxhY2UoIlxcIiwgIi8iKS5zcGxpdCgiLyIpCiAgICBpZiAoCiAgICAgICAgbm90IG5hbWUKICAgICAgICBvciBuYW1lLnN0YXJ0c3dpdGgoKCIvIiwgIlxcIikpCiAgICAgICAgb3IgcmUubWF0Y2gociJeW0EtWmEtel06IiwgbmFtZSkKICAgICAgICBvciAiXHgwMCIgaW4gbmFtZQogICAgICAgIG9yIGFueShwYXJ0IGluIHsiIiwgIi4iLCAiLi4ifSBmb3IgcGFydCBpbiBwYXJ0cykKICAgICk6CiAgICAgICAgZmFpbChmIlVuc2FmZSBaSVAgcGF0aDoge25hbWUhcn0iKQoKCmRlZiByZWFkX3N0cmljdF96aXAoZGF0YTogYnl0ZXMsIGV4cGVjdGVkX25hbWVzOiBsaXN0W3N0cl0pIC0+IGRpY3Rbc3RyLCBieXRlc106CiAgICB0cnk6CiAgICAgICAgYXJjaGl2ZSA9IHppcGZpbGUuWmlwRmlsZShpb19ieXRlcyhkYXRhKSwgInIiKQogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlcnJvcjoKICAgICAgICBmYWlsKGYiSW52YWxpZCBkZXRlcm1pbmlzdGljIFpJUDoge2Vycm9yfSIpCiAgICB3aXRoIGFyY2hpdmU6CiAgICAgICAgaW5mb3MgPSBhcmNoaXZlLmluZm9saXN0KCkKICAgICAgICBuYW1lcyA9IFtpbmZvLmZpbGVuYW1lIGZvciBpbmZvIGluIGluZm9zXQogICAgICAgIGlmIG5hbWVzICE9IGV4cGVjdGVkX25hbWVzIG9yIGxlbihzZXQobmFtZXMpKSAhPSBsZW4obmFtZXMpOgogICAgICAgICAgICBmYWlsKGYiRGV0ZXJtaW5pc3RpYyBaSVAgaW52ZW50b3J5L29yZGVyIG1pc21hdGNoOiB7bmFtZXMhcn0iKQogICAgICAgIHJlc3VsdDogZGljdFtzdHIsIGJ5dGVzXSA9IHt9CiAgICAgICAgZm9yIGluZm8gaW4gaW5mb3M6CiAgICAgICAgICAgIHZlcmlmeV9zYWZlX3ppcF9uYW1lKGluZm8uZmlsZW5hbWUpCiAgICAgICAgICAgIGlmICgKICAgICAgICAgICAgICAgIGluZm8uY29tcHJlc3NfdHlwZSAhPSB6aXBmaWxlLlpJUF9TVE9SRUQKICAgICAgICAgICAgICAgIG9yIGluZm8uZGF0ZV90aW1lICE9ICgxOTgwLCAxLCAxLCAwLCAwLCAwKQogICAgICAgICAgICAgICAgb3IgaW5mby5mbGFnX2JpdHMgIT0gMHg4MDAKICAgICAgICAgICAgICAgIG9yIGluZm8uZXh0cmEgIT0gYiIiCiAgICAgICAgICAgICAgICBvciBpbmZvLmNvbW1lbnQgIT0gYiIiCiAgICAgICAgICAgICAgICBvciBpbmZvLmNyZWF0ZV9zeXN0ZW0gIT0gMwogICAgICAgICAgICAgICAgb3IgemlwX21vZGUoaW5mbykgIT0gMG8xMDA2NDQKICAgICAgICAgICAgICAgIG9yIGluZm8uaXNfZGlyKCkKICAgICAgICAgICAgKToKICAgICAgICAgICAgICAgIGZhaWwoZiJEZXRlcm1pbmlzdGljIFpJUCBtZXRhZGF0YSBtaXNtYXRjaDoge2luZm8uZmlsZW5hbWV9IikKICAgICAgICAgICAgcmVzdWx0W2luZm8uZmlsZW5hbWVdID0gYXJjaGl2ZS5yZWFkKGluZm8pCiAgICAgICAgaWYgYXJjaGl2ZS5jb21tZW50ICE9IGIiIjoKICAgICAgICAgICAgZmFpbCgiWklQIGFyY2hpdmUgY29tbWVudCBpcyBmb3JiaWRkZW4iKQogICAgICAgIHJldHVybiByZXN1bHQKCgpkZWYgaW9fYnl0ZXMoZGF0YTogYnl0ZXMpOgogICAgaW1wb3J0IGlvCgogICAgcmV0dXJuIGlvLkJ5dGVzSU8oZGF0YSkKCgpkZWYgdmFsaWRhdGVfaWRlbnRpdHlfZW52aXJvbm1lbnQoKSAtPiBkaWN0W3N0ciwgc3RyXToKICAgIGlkZW50aXR5ID0gewogICAgICAgICJyZXBvc2l0b3J5IjogcmVxdWlyZWQoIkdJVEhVQl9SRVBPU0lUT1JZIiksCiAgICAgICAgInJ1bl9pZCI6IHJlcXVpcmVkKCJHSVRIVUJfUlVOX0lEIiksCiAgICAgICAgInJ1bl9hdHRlbXB0IjogcmVxdWlyZWQoIkdJVEhVQl9SVU5fQVRURU1QVCIpLAogICAgICAgICJzb3VyY2UiOiByZXF1aXJlZCgiR0lUSFVCX1NIQSIpLAogICAgICAgICJzb3VyY2VfcmVmIjogcmVxdWlyZWQoIkdJVEhVQl9SRUYiKSwKICAgICAgICAidmVyc2lvbiI6IHJlcXVpcmVkKCJSRUxFQVNFX1ZFUlNJT04iKSwKICAgIH0KICAgIGlmIG5vdCBSRVBPU0lUT1JZX1JFLmZ1bGxtYXRjaChpZGVudGl0eVsicmVwb3NpdG9yeSJdKToKICAgICAgICBmYWlsKCJJbnZhbGlkIEdJVEhVQl9SRVBPU0lUT1JZIikKICAgIGlmIG5vdCBSVU5fUkUuZnVsbG1hdGNoKGlkZW50aXR5WyJydW5faWQiXSkgb3Igbm90IFJVTl9SRS5mdWxsbWF0Y2goaWRlbnRpdHlbInJ1bl9hdHRlbXB0Il0pOgogICAgICAgIGZhaWwoIkludmFsaWQgR2l0SHViIHJ1biBpZGVudGl0eSIpCiAgICBpZiBub3QgQ09NTUlUX1JFLmZ1bGxtYXRjaChpZGVudGl0eVsic291cmNlIl0pOgogICAgICAgIGZhaWwoIkludmFsaWQgR0lUSFVCX1NIQSIpCiAgICBwYXJzZV92ZXJzaW9uKGlkZW50aXR5WyJ2ZXJzaW9uIl0pCiAgICBpZiBpZGVudGl0eVsic291cmNlX3JlZiJdICE9IGYicmVmcy90YWdzL3tpZGVudGl0eVsndmVyc2lvbiddfSI6CiAgICAgICAgZmFpbCgiUHVibGljYXRpb24gbXVzdCBydW4gZnJvbSB0aGUgZXhhY3QgbnVtZXJpYyB2ZXJzaW9uIHRhZyIpCiAgICByZXR1cm4gaWRlbnRpdHkKCgpkZWYgY29tbWFuZF9oYW5kb2ZmKCkgLT4gTm9uZToKICAgIGlkZW50aXR5ID0gdmFsaWRhdGVfaWRlbnRpdHlfZW52aXJvbm1lbnQoKQogICAgYXJ0aWZhY3RfaWQgPSByZXF1aXJlZCgiRVhQRUNURURfQVJUSUZBQ1RfSUQiKQogICAgaWYgbm90IFJVTl9SRS5mdWxsbWF0Y2goYXJ0aWZhY3RfaWQpOgogICAgICAgIGZhaWwoIkludmFsaWQgcHVibGljYXRpb24gYXJ0aWZhY3QgSUQiKQogICAgYXJ0aWZhY3RfbmFtZSA9IHJlcXVpcmVkKCJFWFBFQ1RFRF9BUlRJRkFDVF9OQU1FIikKICAgIGV4cGVjdGVkX25hbWUgPSBmImRvY3dlbi1hc3Npc3RhbnQtcHVibGljYXRpb24te2lkZW50aXR5WydydW5faWQnXX0te2lkZW50aXR5WydydW5fYXR0ZW1wdCddfSIKICAgIGlmIGFydGlmYWN0X25hbWUgIT0gZXhwZWN0ZWRfbmFtZToKICAgICAgICBmYWlsKCJQdWJsaWNhdGlvbiBhcnRpZmFjdCBuYW1lIGlzIG5vdCBib3VuZCB0byBydW5faWQgKyBydW5fYXR0ZW1wdCIpCiAgICBleHBlY3RlZF9kaWdlc3QgPSBub3JtYWxpemVkX2RpZ2VzdChyZXF1aXJlZCgiRVhQRUNURURfQVJUSUZBQ1RfRElHRVNUIikpCiAgICBleHBlY3RlZF9oYW5kb2ZmX2RpZ2VzdCA9IG5vcm1hbGl6ZWRfZGlnZXN0KHJlcXVpcmVkKCJFWFBFQ1RFRF9IQU5ET0ZGX1NIQTI1NiIpKQogICAgZXhwZWN0ZWRfaGFuZG9mZl9zaXplID0gaW50KHJlcXVpcmVkKCJFWFBFQ1RFRF9IQU5ET0ZGX1NJWkUiKSkKICAgIGlmIGV4cGVjdGVkX2hhbmRvZmZfc2l6ZSA8PSAwOgogICAgICAgIGZhaWwoIkludmFsaWQgaGFuZG9mZiBzaXplIikKCiAgICByZXBvc2l0b3J5ID0gcmVxdWVzdF9qc29uKGYiL3JlcG9zL3tpZGVudGl0eVsncmVwb3NpdG9yeSddfSIpCiAgICBhcnRpZmFjdCA9IHJlcXVlc3RfanNvbihmIi9yZXBvcy97aWRlbnRpdHlbJ3JlcG9zaXRvcnknXX0vYWN0aW9ucy9hcnRpZmFjdHMve2FydGlmYWN0X2lkfSIpCiAgICB3b3JrZmxvd19ydW4gPSBhcnRpZmFjdC5nZXQoIndvcmtmbG93X3J1biIpIG9yIHt9CiAgICBpZiAoCiAgICAgICAgc3RyKGFydGlmYWN0LmdldCgiaWQiKSkgIT0gYXJ0aWZhY3RfaWQKICAgICAgICBvciBhcnRpZmFjdC5nZXQoIm5hbWUiKSAhPSBhcnRpZmFjdF9uYW1lCiAgICAgICAgb3IgYXJ0aWZhY3QuZ2V0KCJleHBpcmVkIikgaXMgbm90IEZhbHNlCiAgICAgICAgb3Igbm9ybWFsaXplZF9kaWdlc3QoYXJ0aWZhY3QuZ2V0KCJkaWdlc3QiKSkgIT0gZXhwZWN0ZWRfZGlnZXN0CiAgICAgICAgb3Igc3RyKHdvcmtmbG93X3J1bi5nZXQoImlkIikpICE9IGlkZW50aXR5WyJydW5faWQiXQogICAgICAgIG9yIHdvcmtmbG93X3J1bi5nZXQoImhlYWRfc2hhIikgIT0gaWRlbnRpdHlbInNvdXJjZSJdCiAgICAgICAgb3Igd29ya2Zsb3dfcnVuLmdldCgicmVwb3NpdG9yeV9pZCIpICE9IHJlcG9zaXRvcnkuZ2V0KCJpZCIpCiAgICAgICAgb3Igd29ya2Zsb3dfcnVuLmdldCgiaGVhZF9yZXBvc2l0b3J5X2lkIikgIT0gcmVwb3NpdG9yeS5nZXQoImlkIikKICAgICk6CiAgICAgICAgZmFpbCgiR2l0SHViIGFydGlmYWN0IG93bmVyL3J1bi9zb3VyY2UvZGlnZXN0IGlkZW50aXR5IG1pc21hdGNoIikKICAgIGF0dGVtcHQgPSByZXF1ZXN0X2pzb24oCiAgICAgICAgZiIvcmVwb3Mve2lkZW50aXR5WydyZXBvc2l0b3J5J119L2FjdGlvbnMvcnVucy97aWRlbnRpdHlbJ3J1bl9pZCddfS9hdHRlbXB0cy97aWRlbnRpdHlbJ3J1bl9hdHRlbXB0J119IgogICAgKQogICAgaWYgKAogICAgICAgIHN0cihhdHRlbXB0LmdldCgiaWQiKSkgIT0gaWRlbnRpdHlbInJ1bl9pZCJdCiAgICAgICAgb3Igc3RyKGF0dGVtcHQuZ2V0KCJydW5fYXR0ZW1wdCIpKSAhPSBpZGVudGl0eVsicnVuX2F0dGVtcHQiXQogICAgICAgIG9yIGF0dGVtcHQuZ2V0KCJldmVudCIpICE9ICJwdXNoIgogICAgICAgIG9yIGF0dGVtcHQuZ2V0KCJoZWFkX3NoYSIpICE9IGlkZW50aXR5WyJzb3VyY2UiXQogICAgICAgIG9yIChhdHRlbXB0LmdldCgiaGVhZF9yZXBvc2l0b3J5Iikgb3Ige30pLmdldCgiZnVsbF9uYW1lIikgIT0gaWRlbnRpdHlbInJlcG9zaXRvcnkiXQogICAgKToKICAgICAgICBmYWlsKCJHaXRIdWIgd29ya2Zsb3cgYXR0ZW1wdCBpZGVudGl0eSBtaXNtYXRjaCIpCiAgICBhcmNoaXZlX3VybCA9IGFydGlmYWN0LmdldCgiYXJjaGl2ZV9kb3dubG9hZF91cmwiKQogICAgZXhwZWN0ZWRfcHJlZml4ID0gZiJ7cmVxdWlyZWQoJ0dJVEhVQl9BUElfVVJMJykucnN0cmlwKCcvJyl9L3JlcG9zL3tpZGVudGl0eVsncmVwb3NpdG9yeSddfS9hY3Rpb25zL2FydGlmYWN0cy8iCiAgICBpZiBub3QgaXNpbnN0YW5jZShhcmNoaXZlX3VybCwgc3RyKSBvciBub3QgYXJjaGl2ZV91cmwuc3RhcnRzd2l0aChleHBlY3RlZF9wcmVmaXgpOgogICAgICAgIGZhaWwoIkFydGlmYWN0IGFyY2hpdmUgVVJMIGlzIG91dHNpZGUgdGhlIGN1cnJlbnQgcmVwb3NpdG9yeSIpCiAgICBzZXJ2aWNlX3ppcCA9IHJlcXVlc3RfYnl0ZXMoYXJjaGl2ZV91cmwpCiAgICBpZiBub3JtYWxpemVkX2RpZ2VzdChzaGEyNTYoc2VydmljZV96aXApKSAhPSBleHBlY3RlZF9kaWdlc3Q6CiAgICAgICAgZmFpbCgiRG93bmxvYWRlZCBHaXRIdWIgYXJ0aWZhY3QgZG9lcyBub3QgbWF0Y2ggdGhlIHNlcnZlciBkaWdlc3QiKQogICAgd2l0aCB6aXBmaWxlLlppcEZpbGUoaW9fYnl0ZXMoc2VydmljZV96aXApLCAiciIpIGFzIGFyY2hpdmU6CiAgICAgICAgaW5mb3MgPSBhcmNoaXZlLmluZm9saXN0KCkKICAgICAgICBpZiBbaXRlbS5maWxlbmFtZSBmb3IgaXRlbSBpbiBpbmZvc10gIT0gW0hBTkRPRkZfTkFNRV06CiAgICAgICAgICAgIGZhaWwoIkdpdEh1YiBhcnRpZmFjdCBtdXN0IGNvbnRhaW4gZXhhY3RseSBvbmUgcHVibGljYXRpb24gaGFuZG9mZiBaSVAiKQogICAgICAgIGluZm8gPSBpbmZvc1swXQogICAgICAgIG1vZGUgPSB6aXBfbW9kZShpbmZvKQogICAgICAgIGlmIGluZm8uaXNfZGlyKCkgb3Igc3RhdC5TX0lTTE5LKG1vZGUpIG9yIChtb2RlIGFuZCBub3Qgc3RhdC5TX0lTUkVHKG1vZGUpKToKICAgICAgICAgICAgZmFpbCgiR2l0SHViIGFydGlmYWN0IGhhbmRvZmYgZW50cnkgaXMgbm90IGEgcmVndWxhciBmaWxlIikKICAgICAgICBoYW5kb2ZmID0gYXJjaGl2ZS5yZWFkKGluZm8pCiAgICBpZiBsZW4oaGFuZG9mZikgIT0gZXhwZWN0ZWRfaGFuZG9mZl9zaXplIG9yIG5vcm1hbGl6ZWRfZGlnZXN0KHNoYTI1NihoYW5kb2ZmKSkgIT0gZXhwZWN0ZWRfaGFuZG9mZl9kaWdlc3Q6CiAgICAgICAgZmFpbCgiUHVibGljYXRpb24gaGFuZG9mZiBzaXplIG9yIFNIQS0yNTYgZGlmZmVycyBmcm9tIHRoZSB2ZXJpZmllZCBqb2Igb3V0cHV0IikKCiAgICB2ZXJzaW9uID0gaWRlbnRpdHlbInZlcnNpb24iXQogICAgZXhwZWN0ZWRfaGFuZG9mZl9uYW1lcyA9IFsKICAgICAgICAiaGFuZG9mZi5qc29uIiwKICAgICAgICBmInJlbGVhc2UvZG9jd2VuLWFzc2lzdGFudC17dmVyc2lvbn0uemlwIiwKICAgICAgICAicmVsZWFzZS9tYWluLmpzIiwKICAgICAgICAicmVsZWFzZS9tYW5pZmVzdC5qc29uIiwKICAgICAgICAicmVsZWFzZS9TSEEyNTZTVU1TIiwKICAgICAgICAicmVsZWFzZS9zdHlsZXMuY3NzIiwKICAgIF0KICAgIGVudHJpZXMgPSByZWFkX3N0cmljdF96aXAoaGFuZG9mZiwgZXhwZWN0ZWRfaGFuZG9mZl9uYW1lcykKICAgIHRyeToKICAgICAgICBkb2N1bWVudCA9IGpzb24ubG9hZHMoZW50cmllc1siaGFuZG9mZi5qc29uIl0uZGVjb2RlKCJ1dGYtOCIsIGVycm9ycz0ic3RyaWN0IikpCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGVycm9yOgogICAgICAgIGZhaWwoZiJJbnZhbGlkIHB1YmxpY2F0aW9uIGhhbmRvZmYgSlNPTjoge2Vycm9yfSIpCiAgICBpZiBlbnRyaWVzWyJoYW5kb2ZmLmpzb24iXSAhPSBjYW5vbmljYWxfanNvbl9ieXRlcyhkb2N1bWVudCk6CiAgICAgICAgZmFpbCgiUHVibGljYXRpb24gaGFuZG9mZiBKU09OIGlzIG5vdCBjYW5vbmljYWwiKQogICAgdmFsaWRhdGVfaGFuZG9mZl9kb2N1bWVudChkb2N1bWVudCwgaWRlbnRpdHksIGFydGlmYWN0X25hbWUpCgogICAgcm9vdCA9IFBhdGgocmVxdWlyZWQoIlJVTk5FUl9URU1QIikpIC8gImRvY3dlbi1hc3Npc3RhbnQtcHVibGljYXRpb24iCiAgICBpZiByb290LmV4aXN0cygpOgogICAgICAgIGZhaWwoZiJQdWJsaWNhdGlvbiBkaXJlY3RvcnkgYWxyZWFkeSBleGlzdHM6IHtyb290fSIpCiAgICByZWxlYXNlX2RpciA9IHJvb3QgLyAicmVsZWFzZSIKICAgIHJlbGVhc2VfZGlyLm1rZGlyKHBhcmVudHM9VHJ1ZSkKICAgIHJlY29yZHMgPSB7aXRlbVsibmFtZSJdOiBpdGVtIGZvciBpdGVtIGluIGRvY3VtZW50WyJyZWxlYXNlQXNzZXRzIl19CiAgICBsb2NhbF9hc3NldHM6IGRpY3Rbc3RyLCBieXRlc10gPSB7fQogICAgZm9yIG5hbWUgaW4gcmVsZWFzZV9uYW1lcyh2ZXJzaW9uKToKICAgICAgICBkYXRhID0gZW50cmllc1tmInJlbGVhc2Uve25hbWV9Il0KICAgICAgICByZWNvcmQgPSByZWNvcmRzW25hbWVdCiAgICAgICAgaWYgbGVuKGRhdGEpICE9IHJlY29yZFsic2l6ZSJdIG9yIHNoYTI1NihkYXRhKSAhPSByZWNvcmRbInNoYTI1NiJdOgogICAgICAgICAgICBmYWlsKGYiSGFuZG9mZiBhc3NldCBkaWZmZXJzIGZyb20gaXRzIHNpZ25lZCBpbnZlbnRvcnk6IHtuYW1lfSIpCiAgICAgICAgdGFyZ2V0ID0gcmVsZWFzZV9kaXIgLyBuYW1lCiAgICAgICAgdGFyZ2V0LndyaXRlX2J5dGVzKGRhdGEpCiAgICAgICAgdGFyZ2V0LmNobW9kKDBvNjAwKQogICAgICAgIGxvY2FsX2Fzc2V0c1tuYW1lXSA9IGRhdGEKICAgIHZlcmlmeV9yZWxlYXNlX2Fzc2V0cyhsb2NhbF9hc3NldHMsIHZlcnNpb24pCiAgICBtZXRhZGF0YV9wYXRoID0gcm9vdCAvICJoYW5kb2ZmLmpzb24iCiAgICBtZXRhZGF0YV9wYXRoLndyaXRlX2J5dGVzKGVudHJpZXNbImhhbmRvZmYuanNvbiJdKQogICAgd3JpdGVfb3V0cHV0KCJyZWxlYXNlX2RpciIsIHN0cihyZWxlYXNlX2RpcikpCiAgICB3cml0ZV9vdXRwdXQoIm1ldGFkYXRhX3BhdGgiLCBzdHIobWV0YWRhdGFfcGF0aCkpCgoKZGVmIHZhbGlkYXRlX2hhbmRvZmZfZG9jdW1lbnQoZG9jdW1lbnQ6IG9iamVjdCwgaWRlbnRpdHk6IGRpY3Rbc3RyLCBzdHJdLCBhcnRpZmFjdF9uYW1lOiBzdHIpIC0+IE5vbmU6CiAgICBpZiBub3QgaXNpbnN0YW5jZShkb2N1bWVudCwgZGljdCk6CiAgICAgICAgZmFpbCgiUHVibGljYXRpb24gaGFuZG9mZiBkb2N1bWVudCBtdXN0IGJlIGFuIG9iamVjdCIpCiAgICBleHBlY3RlZF9rZXlzID0gewogICAgICAgICJkZWZhdWx0QnJhbmNoIiwKICAgICAgICAiZG9jd2VuQ29yZSIsCiAgICAgICAgIm1haW5CdW5kbGVCdWRnZXRCeXRlcyIsCiAgICAgICAgInByZXZpb3VzUmVsZWFzZVRhZyIsCiAgICAgICAgInB1YmxpY2F0aW9uQXJ0aWZhY3ROYW1lIiwKICAgICAgICAicmVsZWFzZUFzc2V0cyIsCiAgICAgICAgInJlcG9zaXRvcnkiLAogICAgICAgICJydW5BdHRlbXB0IiwKICAgICAgICAicnVuSWQiLAogICAgICAgICJzY2hlbWFWZXJzaW9uIiwKICAgICAgICAic2lnbmVyV29ya2Zsb3ciLAogICAgICAgICJzb3VyY2VDb21taXQiLAogICAgICAgICJzb3VyY2VSZWYiLAogICAgICAgICJ2ZXJzaW9uIiwKICAgIH0KICAgIGlmIHNldChkb2N1bWVudCkgIT0gZXhwZWN0ZWRfa2V5czoKICAgICAgICBmYWlsKCJQdWJsaWNhdGlvbiBoYW5kb2ZmIGZpZWxkcyBkaWZmZXIgZnJvbSB0aGUgYWxsb3dsaXN0IikKICAgIHByZXZpb3VzID0gZG9jdW1lbnQuZ2V0KCJwcmV2aW91c1JlbGVhc2VUYWciKQogICAgaWYgcHJldmlvdXMgIT0gIiIgYW5kIChub3QgaXNpbnN0YW5jZShwcmV2aW91cywgc3RyKSBvciBub3QgSElTVE9SSUNBTF9WRVJTSU9OX1JFLmZ1bGxtYXRjaChwcmV2aW91cykpOgogICAgICAgIGZhaWwoIkludmFsaWQgcHJldmlvdXMgc3RhYmxlIFJlbGVhc2UgdGFnIGluIGhhbmRvZmYiKQogICAgaWYgKAogICAgICAgIGRvY3VtZW50LmdldCgic2NoZW1hVmVyc2lvbiIpICE9IDEKICAgICAgICBvciBkb2N1bWVudC5nZXQoInJlcG9zaXRvcnkiKSAhPSBpZGVudGl0eVsicmVwb3NpdG9yeSJdCiAgICAgICAgb3IgZG9jdW1lbnQuZ2V0KCJzb3VyY2VDb21taXQiKSAhPSBpZGVudGl0eVsic291cmNlIl0KICAgICAgICBvciBkb2N1bWVudC5nZXQoInNvdXJjZVJlZiIpICE9IGlkZW50aXR5WyJzb3VyY2VfcmVmIl0KICAgICAgICBvciBkb2N1bWVudC5nZXQoInJ1bklkIikgIT0gaWRlbnRpdHlbInJ1bl9pZCJdCiAgICAgICAgb3IgZG9jdW1lbnQuZ2V0KCJydW5BdHRlbXB0IikgIT0gaWRlbnRpdHlbInJ1bl9hdHRlbXB0Il0KICAgICAgICBvciBkb2N1bWVudC5nZXQoInZlcnNpb24iKSAhPSBpZGVudGl0eVsidmVyc2lvbiJdCiAgICAgICAgb3IgZG9jdW1lbnQuZ2V0KCJwdWJsaWNhdGlvbkFydGlmYWN0TmFtZSIpICE9IGFydGlmYWN0X25hbWUKICAgICAgICBvciBkb2N1bWVudC5nZXQoInNpZ25lcldvcmtmbG93IikgIT0gZiJ7aWRlbnRpdHlbJ3JlcG9zaXRvcnknXX0vLmdpdGh1Yi93b3JrZmxvd3MvcmVsZWFzZS55bWwiCiAgICAgICAgb3IgZG9jdW1lbnQuZ2V0KCJtYWluQnVuZGxlQnVkZ2V0Qnl0ZXMiKSAhPSBCVU5ETEVfQlVER0VUCiAgICAgICAgb3Igbm90IHJlLmZ1bGxtYXRjaChyIltBLVphLXowLTkuXy8tXSsiLCBzdHIoZG9jdW1lbnQuZ2V0KCJkZWZhdWx0QnJhbmNoIikgb3IgIiIpKQogICAgKToKICAgICAgICBmYWlsKCJQdWJsaWNhdGlvbiBoYW5kb2ZmIGlkZW50aXR5IGRvZXMgbm90IG1hdGNoIHRoZSBjdXJyZW50IHdvcmtmbG93IikKICAgIGNvcmUgPSBkb2N1bWVudC5nZXQoImRvY3dlbkNvcmUiKQogICAgaWYgbm90IGlzaW5zdGFuY2UoY29yZSwgZGljdCkgb3Igc2V0KGNvcmUpICE9IHsiYXNzZXREaWdlc3QiLCAidGFnIiwgInZlcnNpb24ifToKICAgICAgICBmYWlsKCJEb2NXZW4gQ29yZSBkZXBlbmRlbmN5IGlkZW50aXR5IGlzIG1hbGZvcm1lZCIpCiAgICBwYXJzZV92ZXJzaW9uKHN0cihjb3JlLmdldCgidGFnIikgb3IgIiIpKQogICAgcGFyc2VfdmVyc2lvbihzdHIoY29yZS5nZXQoInZlcnNpb24iKSBvciAiIikpCiAgICBub3JtYWxpemVkX2RpZ2VzdChjb3JlLmdldCgiYXNzZXREaWdlc3QiKSkKICAgIHJlY29yZHMgPSBkb2N1bWVudC5nZXQoInJlbGVhc2VBc3NldHMiKQogICAgZXhwZWN0ZWRfbmFtZXMgPSByZWxlYXNlX25hbWVzKGlkZW50aXR5WyJ2ZXJzaW9uIl0pCiAgICBpZiBub3QgaXNpbnN0YW5jZShyZWNvcmRzLCBsaXN0KSBvciBbaXRlbS5nZXQoIm5hbWUiKSBmb3IgaXRlbSBpbiByZWNvcmRzIGlmIGlzaW5zdGFuY2UoaXRlbSwgZGljdCldICE9IGV4cGVjdGVkX25hbWVzOgogICAgICAgIGZhaWwoIkhhbmRvZmYgcmVsZWFzZSBhc3NldCBpbnZlbnRvcnkvb3JkZXIgZGlmZmVycyBmcm9tIHRoZSBmaXZlLWFzc2V0IGNvbnRyYWN0IikKICAgIGZvciByZWNvcmQgaW4gcmVjb3JkczoKICAgICAgICBpZiAoCiAgICAgICAgICAgIG5vdCBpc2luc3RhbmNlKHJlY29yZCwgZGljdCkKICAgICAgICAgICAgb3Igc2V0KHJlY29yZCkgIT0geyJuYW1lIiwgInNoYTI1NiIsICJzaXplIn0KICAgICAgICAgICAgb3Igbm90IERJR0VTVF9SRS5mdWxsbWF0Y2goc3RyKHJlY29yZC5nZXQoInNoYTI1NiIpIG9yICIiKSkKICAgICAgICAgICAgb3Igbm90IGlzaW5zdGFuY2UocmVjb3JkLmdldCgic2l6ZSIpLCBpbnQpCiAgICAgICAgICAgIG9yIHJlY29yZFsic2l6ZSJdIDw9IDAKICAgICAgICApOgogICAgICAgICAgICBmYWlsKCJIYW5kb2ZmIHJlbGVhc2UgYXNzZXQgcmVjb3JkIGlzIG1hbGZvcm1lZCIpCgoKZGVmIHZlcmlmeV9yZWxlYXNlX2Fzc2V0cyhhc3NldHM6IGRpY3Rbc3RyLCBieXRlc10sIHZlcnNpb246IHN0cikgLT4gTm9uZToKICAgIGV4cGVjdGVkX25hbWVzID0gcmVsZWFzZV9uYW1lcyh2ZXJzaW9uKQogICAgaWYgbGlzdChzb3J0ZWQoYXNzZXRzKSkgIT0gZXhwZWN0ZWRfbmFtZXM6CiAgICAgICAgZmFpbCgiTG9jYWwgcmVsZWFzZSBhc3NldCBzZXQgZGlmZmVycyBmcm9tIHRoZSBmaXZlLWFzc2V0IGNvbnRyYWN0IikKICAgIGFyY2hpdmVfbmFtZSA9IGYiZG9jd2VuLWFzc2lzdGFudC17dmVyc2lvbn0uemlwIgogICAgaGFzaGVkX25hbWVzID0gW2FyY2hpdmVfbmFtZSwgIm1haW4uanMiLCAibWFuaWZlc3QuanNvbiIsICJzdHlsZXMuY3NzIl0KICAgIGV4cGVjdGVkX3N1bXMgPSAiIi5qb2luKGYie3NoYTI1Nihhc3NldHNbbmFtZV0pfSAge25hbWV9XG4iIGZvciBuYW1lIGluIGhhc2hlZF9uYW1lcykuZW5jb2RlKCJ1dGYtOCIpCiAgICBpZiBhc3NldHNbIlNIQTI1NlNVTVMiXSAhPSBleHBlY3RlZF9zdW1zOgogICAgICAgIGZhaWwoIlNIQTI1NlNVTVMgZG9lcyBub3QgZXhhY3RseSBtYXRjaCB0aGUgZm91ciBwYXlsb2FkIGFzc2V0cyIpCiAgICBpbnN0YWxsX25hbWVzID0gWwogICAgICAgICJkb2N3ZW4tYXNzaXN0YW50L21haW4uanMiLAogICAgICAgICJkb2N3ZW4tYXNzaXN0YW50L21hbmlmZXN0Lmpzb24iLAogICAgICAgICJkb2N3ZW4tYXNzaXN0YW50L3N0eWxlcy5jc3MiLAogICAgXQogICAgaW5zdGFsbGVkID0gcmVhZF9zdHJpY3RfemlwKGFzc2V0c1thcmNoaXZlX25hbWVdLCBpbnN0YWxsX25hbWVzKQogICAgZm9yIGVudHJ5X25hbWUgaW4gaW5zdGFsbF9uYW1lczoKICAgICAgICBsb29zZV9uYW1lID0gZW50cnlfbmFtZS5zcGxpdCgiLyIsIDEpWzFdCiAgICAgICAgaWYgaW5zdGFsbGVkW2VudHJ5X25hbWVdICE9IGFzc2V0c1tsb29zZV9uYW1lXToKICAgICAgICAgICAgZmFpbChmIkluc3RhbGxhdGlvbiBaSVAgZGlmZmVycyBmcm9tIGxvb3NlIGFzc2V0OiB7bG9vc2VfbmFtZX0iKQogICAgdHJ5OgogICAgICAgIG1hbmlmZXN0ID0ganNvbi5sb2Fkcyhhc3NldHNbIm1hbmlmZXN0Lmpzb24iXS5kZWNvZGUoInV0Zi04IiwgZXJyb3JzPSJzdHJpY3QiKSkKICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZXJyb3I6CiAgICAgICAgZmFpbChmIkludmFsaWQgbWFuaWZlc3QuanNvbjoge2Vycm9yfSIpCiAgICBpZiAoCiAgICAgICAgbWFuaWZlc3QuZ2V0KCJpZCIpICE9ICJkb2N3ZW4tYXNzaXN0YW50IgogICAgICAgIG9yIG1hbmlmZXN0LmdldCgidmVyc2lvbiIpICE9IHZlcnNpb24KICAgICAgICBvciBtYW5pZmVzdC5nZXQoIm1pbkFwcFZlcnNpb24iKSAhPSAiMS4xMi43IgogICAgICAgIG9yIG1hbmlmZXN0LmdldCgiaXNEZXNrdG9wT25seSIpIGlzIG5vdCBUcnVlCiAgICApOgogICAgICAgIGZhaWwoIlBsdWdpbiBtYW5pZmVzdCBpZGVudGl0eS92ZXJzaW9uL2hvc3QgYm91bmRhcnkgY2hhbmdlZCIpCiAgICBpZiBsZW4oYXNzZXRzWyJtYWluLmpzIl0pID4gQlVORExFX0JVREdFVDoKICAgICAgICBmYWlsKCJtYWluLmpzIGV4Y2VlZHMgdGhlIGF1ZGl0ZWQgYnVuZGxlIGJ1ZGdldCIpCgoKZGVmIGxvYWRfY29udGV4dCgpIC0+IHR1cGxlW2RpY3Rbc3RyLCBzdHJdLCBkaWN0W3N0ciwgQW55XSwgUGF0aCwgZGljdFtzdHIsIGJ5dGVzXV06CiAgICBpZGVudGl0eSA9IHZhbGlkYXRlX2lkZW50aXR5X2Vudmlyb25tZW50KCkKICAgIG1ldGFkYXRhX3BhdGggPSBQYXRoKHJlcXVpcmVkKCJIQU5ET0ZGX01FVEFEQVRBX1BBVEgiKSkKICAgIHJlbGVhc2VfZGlyID0gUGF0aChyZXF1aXJlZCgiUkVMRUFTRV9ESVIiKSkKICAgIGRvY3VtZW50ID0ganNvbi5sb2FkcyhtZXRhZGF0YV9wYXRoLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKSkKICAgIHZhbGlkYXRlX2hhbmRvZmZfZG9jdW1lbnQoZG9jdW1lbnQsIGlkZW50aXR5LCByZXF1aXJlZCgiRVhQRUNURURfQVJUSUZBQ1RfTkFNRSIpKQogICAgYXNzZXRzID0ge25hbWU6IChyZWxlYXNlX2RpciAvIG5hbWUpLnJlYWRfYnl0ZXMoKSBmb3IgbmFtZSBpbiByZWxlYXNlX25hbWVzKGlkZW50aXR5WyJ2ZXJzaW9uIl0pfQogICAgdmVyaWZ5X3JlbGVhc2VfYXNzZXRzKGFzc2V0cywgaWRlbnRpdHlbInZlcnNpb24iXSkKICAgIHJldHVybiBpZGVudGl0eSwgZG9jdW1lbnQsIHJlbGVhc2VfZGlyLCBhc3NldHMKCgpkZWYgcmVzb2x2ZV90YWdfY29tbWl0KHJlcG9zaXRvcnk6IHN0ciwgdGFnOiBzdHIpIC0+IHN0cjoKICAgIHJlZmVyZW5jZSA9IHJlcXVlc3RfanNvbihmIi9yZXBvcy97cmVwb3NpdG9yeX0vZ2l0L3JlZi90YWdzL3t1cmxsaWIucGFyc2UucXVvdGUodGFnLCBzYWZlPScnKX0iKQogICAgdGFyZ2V0ID0gcmVmZXJlbmNlLmdldCgib2JqZWN0Iikgb3Ige30KICAgIGZvciBfIGluIHJhbmdlKDQpOgogICAgICAgIG9iamVjdF90eXBlID0gdGFyZ2V0LmdldCgidHlwZSIpCiAgICAgICAgb2JqZWN0X3NoYSA9IHRhcmdldC5nZXQoInNoYSIpCiAgICAgICAgaWYgbm90IENPTU1JVF9SRS5mdWxsbWF0Y2goc3RyKG9iamVjdF9zaGEgb3IgIiIpKToKICAgICAgICAgICAgZmFpbChmIlRhZyB7dGFnfSBoYXMgYW4gaW52YWxpZCBHaXQgb2JqZWN0IGlkZW50aXR5IikKICAgICAgICBpZiBvYmplY3RfdHlwZSA9PSAiY29tbWl0IjoKICAgICAgICAgICAgcmV0dXJuIG9iamVjdF9zaGEKICAgICAgICBpZiBvYmplY3RfdHlwZSAhPSAidGFnIjoKICAgICAgICAgICAgZmFpbChmIlRhZyB7dGFnfSBkb2VzIG5vdCByZXNvbHZlIHRvIGEgY29tbWl0IikKICAgICAgICBhbm5vdGF0ZWQgPSByZXF1ZXN0X2pzb24oZiIvcmVwb3Mve3JlcG9zaXRvcnl9L2dpdC90YWdzL3tvYmplY3Rfc2hhfSIpCiAgICAgICAgdGFyZ2V0ID0gYW5ub3RhdGVkLmdldCgib2JqZWN0Iikgb3Ige30KICAgIGZhaWwoZiJUYWcge3RhZ30gYW5ub3RhdGlvbiBkZXB0aCBleGNlZWRzIHRoZSBmYWlsLWNsb3NlZCBsaW1pdCIpCgoKZGVmIHZlcmlmeV9hbmNlc3RvcihyZXBvc2l0b3J5OiBzdHIsIGJhc2U6IHN0ciwgaGVhZDogc3RyLCBsYWJlbDogc3RyKSAtPiBOb25lOgogICAgY29tcGFyaXNvbiA9IHJlcXVlc3RfanNvbihmIi9yZXBvcy97cmVwb3NpdG9yeX0vY29tcGFyZS97YmFzZX0uLi57aGVhZH0iKQogICAgaWYgKGNvbXBhcmlzb24uZ2V0KCJtZXJnZV9iYXNlX2NvbW1pdCIpIG9yIHt9KS5nZXQoInNoYSIpICE9IGJhc2U6CiAgICAgICAgZmFpbChmIntsYWJlbH0gaXMgbm90IGFuIGFuY2VzdG9yIG9mIHRoZSByZWxlYXNlIHNvdXJjZSIpCgoKZGVmIHZlcmlmeV9zb3VyY2UoaWRlbnRpdHk6IGRpY3Rbc3RyLCBzdHJdLCBkb2N1bWVudDogZGljdFtzdHIsIEFueV0pIC0+IE5vbmU6CiAgICByZXBvc2l0b3J5ID0gcmVxdWVzdF9qc29uKGYiL3JlcG9zL3tpZGVudGl0eVsncmVwb3NpdG9yeSddfSIpCiAgICBpZiByZXBvc2l0b3J5LmdldCgicHJpdmF0ZSIpIGlzIG5vdCBGYWxzZSBvciByZXBvc2l0b3J5LmdldCgiZnVsbF9uYW1lIikgIT0gaWRlbnRpdHlbInJlcG9zaXRvcnkiXToKICAgICAgICBmYWlsKCJQdWJsaWNhdGlvbiByZXBvc2l0b3J5IGlkZW50aXR5IG9yIHZpc2liaWxpdHkgY2hhbmdlZCIpCiAgICBpZiByZXBvc2l0b3J5LmdldCgiZGVmYXVsdF9icmFuY2giKSAhPSBkb2N1bWVudFsiZGVmYXVsdEJyYW5jaCJdOgogICAgICAgIGZhaWwoIlJlcG9zaXRvcnkgZGVmYXVsdCBicmFuY2ggY2hhbmdlZCBhZnRlciByZWFkLW9ubHkgdmVyaWZpY2F0aW9uIikKICAgIHRhZ19jb21taXQgPSByZXNvbHZlX3RhZ19jb21taXQoaWRlbnRpdHlbInJlcG9zaXRvcnkiXSwgaWRlbnRpdHlbInZlcnNpb24iXSkKICAgIGlmIHRhZ19jb21taXQgIT0gaWRlbnRpdHlbInNvdXJjZSJdOgogICAgICAgIGZhaWwoIk51bWVyaWMgcmVsZWFzZSB0YWcgbm8gbG9uZ2VyIHJlc29sdmVzIHRvIHRoZSB3b3JrZmxvdyBzb3VyY2UgY29tbWl0IikKICAgIGJyYW5jaCA9IHJlcXVlc3RfanNvbigKICAgICAgICBmIi9yZXBvcy97aWRlbnRpdHlbJ3JlcG9zaXRvcnknXX0vYnJhbmNoZXMve3VybGxpYi5wYXJzZS5xdW90ZShkb2N1bWVudFsnZGVmYXVsdEJyYW5jaCddLCBzYWZlPScnKX0iCiAgICApCiAgICBkZWZhdWx0X2NvbW1pdCA9IChicmFuY2guZ2V0KCJjb21taXQiKSBvciB7fSkuZ2V0KCJzaGEiKQogICAgaWYgbm90IENPTU1JVF9SRS5mdWxsbWF0Y2goc3RyKGRlZmF1bHRfY29tbWl0IG9yICIiKSk6CiAgICAgICAgZmFpbCgiRGVmYXVsdCBicmFuY2ggaGVhZCBpcyB1bmF2YWlsYWJsZSIpCiAgICB2ZXJpZnlfYW5jZXN0b3IoaWRlbnRpdHlbInJlcG9zaXRvcnkiXSwgaWRlbnRpdHlbInNvdXJjZSJdLCBkZWZhdWx0X2NvbW1pdCwgIlJlbGVhc2Ugc291cmNlIikKCgpkZWYgZmV0Y2hfc3RhYmxlX3JlbGVhc2VzKHJlcG9zaXRvcnk6IHN0cikgLT4gbGlzdFt0dXBsZVt0dXBsZVtpbnQsIGludCwgaW50XSwgZGljdFtzdHIsIEFueV1dXToKICAgIHN0YWJsZTogbGlzdFt0dXBsZVt0dXBsZVtpbnQsIGludCwgaW50XSwgZGljdFtzdHIsIEFueV1dXSA9IFtdCiAgICB0YWdzX2J5X3ZlcnNpb246IGRpY3RbdHVwbGVbaW50LCBpbnQsIGludF0sIHN0cl0gPSB7fQogICAgZm9yIHBhZ2UgaW4gcmFuZ2UoMSwgMTAxKToKICAgICAgICBiYXRjaCA9IHJlcXVlc3RfanNvbihmIi9yZXBvcy97cmVwb3NpdG9yeX0vcmVsZWFzZXM/cGVyX3BhZ2U9MTAwJnBhZ2U9e3BhZ2V9IikKICAgICAgICBpZiBub3QgaXNpbnN0YW5jZShiYXRjaCwgbGlzdCk6CiAgICAgICAgICAgIGZhaWwoIkdpdEh1YiBSZWxlYXNlcyByZXNwb25zZSBpcyBub3QgYW4gYXJyYXkiKQogICAgICAgIGZvciByZWxlYXNlIGluIGJhdGNoOgogICAgICAgICAgICByZWxlYXNlID0gdmFsaWRhdGVfcmVsZWFzZV9yZWNvcmQocmVsZWFzZSkKICAgICAgICAgICAgdGFnID0gcmVsZWFzZVsidGFnX25hbWUiXQogICAgICAgICAgICBpZiAoCiAgICAgICAgICAgICAgICBISVNUT1JJQ0FMX1ZFUlNJT05fUkUuZnVsbG1hdGNoKHRhZykKICAgICAgICAgICAgICAgIGFuZCByZWxlYXNlLmdldCgiZHJhZnQiKSBpcyBGYWxzZQogICAgICAgICAgICAgICAgYW5kIHJlbGVhc2UuZ2V0KCJwcmVyZWxlYXNlIikgaXMgRmFsc2UKICAgICAgICAgICAgKToKICAgICAgICAgICAgICAgIHZlcnNpb24gPSBwYXJzZV9oaXN0b3JpY2FsX3ZlcnNpb24odGFnKQogICAgICAgICAgICAgICAgcHJldmlvdXNfdGFnID0gdGFnc19ieV92ZXJzaW9uLmdldCh2ZXJzaW9uKQogICAgICAgICAgICAgICAgaWYgcHJldmlvdXNfdGFnIGlzIG5vdCBOb25lOgogICAgICAgICAgICAgICAgICAgIGZhaWwoCiAgICAgICAgICAgICAgICAgICAgICAgIGYiUHVibGlzaGVkIHN0YWJsZSBSZWxlYXNlcyBoYXZlIGFtYmlndW91cyB0YWdzIGZvciAiCiAgICAgICAgICAgICAgICAgICAgICAgIGYieycuJy5qb2luKHN0cihwYXJ0KSBmb3IgcGFydCBpbiB2ZXJzaW9uKX06ICIKICAgICAgICAgICAgICAgICAgICAgICAgZiJ7JywgJy5qb2luKHNvcnRlZChbcHJldmlvdXNfdGFnLCB0YWddKSl9IgogICAgICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgIHRhZ3NfYnlfdmVyc2lvblt2ZXJzaW9uXSA9IHRhZwogICAgICAgICAgICAgICAgc3RhYmxlLmFwcGVuZCgodmVyc2lvbiwgcmVsZWFzZSkpCiAgICAgICAgaWYgbGVuKGJhdGNoKSA8IDEwMDoKICAgICAgICAgICAgcmV0dXJuIHN0YWJsZQogICAgZmFpbCgiR2l0SHViIFJlbGVhc2VzIHBhZ2luYXRpb24gZXhjZWVkcyB0aGUgZmFpbC1jbG9zZWQgbGltaXQiKQoKCmRlZiB2ZXJpZnlfYmFzZWxpbmUoaWRlbnRpdHk6IGRpY3Rbc3RyLCBzdHJdLCBkb2N1bWVudDogZGljdFtzdHIsIEFueV0pIC0+IE5vbmU6CiAgICBjYW5kaWRhdGUgPSBwYXJzZV92ZXJzaW9uKGlkZW50aXR5WyJ2ZXJzaW9uIl0pCiAgICByZWxlYXNlcyA9IGZldGNoX3N0YWJsZV9yZWxlYXNlcyhpZGVudGl0eVsicmVwb3NpdG9yeSJdKQogICAgb2xkZXI6IGxpc3RbdHVwbGVbdHVwbGVbaW50LCBpbnQsIGludF0sIGRpY3Rbc3RyLCBBbnldXV0gPSBbXQogICAgZm9yIHZlcnNpb24sIHJlbGVhc2UgaW4gcmVsZWFzZXM6CiAgICAgICAgdGFnID0gcmVsZWFzZVsidGFnX25hbWUiXQogICAgICAgIGlmIHZlcnNpb24gPiBjYW5kaWRhdGUgb3IgKHZlcnNpb24gPT0gY2FuZGlkYXRlIGFuZCB0YWcgIT0gaWRlbnRpdHlbInZlcnNpb24iXSk6CiAgICAgICAgICAgIGZhaWwoZiJQdWJsaXNoZWQgc3RhYmxlIFJlbGVhc2UgaXMgbm90IG9sZGVyIHRoYW4ge2lkZW50aXR5Wyd2ZXJzaW9uJ119OiB7dGFnfSIpCiAgICAgICAgaWYgdmVyc2lvbiA8IGNhbmRpZGF0ZToKICAgICAgICAgICAgb2xkZXIuYXBwZW5kKCh2ZXJzaW9uLCByZWxlYXNlKSkKICAgIG9sZGVyLnNvcnQoa2V5PWxhbWJkYSBpdGVtOiBpdGVtWzBdLCByZXZlcnNlPVRydWUpCiAgICBwcmV2aW91cyA9IG9sZGVyWzBdWzFdWyJ0YWdfbmFtZSJdIGlmIG9sZGVyIGVsc2UgIiIKICAgIGlmIHByZXZpb3VzICE9IGRvY3VtZW50WyJwcmV2aW91c1JlbGVhc2VUYWciXToKICAgICAgICBmYWlsKCJQcmV2aW91cyBzdGFibGUgUmVsZWFzZSBiYXNlbGluZSBjaGFuZ2VkIGFmdGVyIHJlYWQtb25seSB2ZXJpZmljYXRpb24iKQogICAgaWYgcHJldmlvdXM6CiAgICAgICAgcHJldmlvdXNfY29tbWl0ID0gcmVzb2x2ZV90YWdfY29tbWl0KGlkZW50aXR5WyJyZXBvc2l0b3J5Il0sIHByZXZpb3VzKQogICAgICAgIHZlcmlmeV9hbmNlc3RvcihpZGVudGl0eVsicmVwb3NpdG9yeSJdLCBwcmV2aW91c19jb21taXQsIGlkZW50aXR5WyJzb3VyY2UiXSwgZiJQcmV2aW91cyBSZWxlYXNlIHtwcmV2aW91c30iKQoKCmRlZiB2ZXJpZnlfcmVsZWFzZV9zdGF0ZSgKICAgIGlkZW50aXR5OiBkaWN0W3N0ciwgc3RyXSwgYXNzZXRzOiBkaWN0W3N0ciwgYnl0ZXNdLCAqLCBhbGxvd19taXNzaW5nOiBib29sCikgLT4gc3RyOgogICAgdGFnX3BhdGggPSB1cmxsaWIucGFyc2UucXVvdGUoaWRlbnRpdHlbInZlcnNpb24iXSwgc2FmZT0iIikKICAgIHJlbGVhc2UgPSByZXF1ZXN0X2pzb24oCiAgICAgICAgZiIvcmVwb3Mve2lkZW50aXR5WydyZXBvc2l0b3J5J119L3JlbGVhc2VzL3RhZ3Mve3RhZ19wYXRofSIsIGFsbG93XzQwND1hbGxvd19taXNzaW5nCiAgICApCiAgICBpZiByZWxlYXNlIGlzIE5vbmU6CiAgICAgICAgcmV0dXJuICJjcmVhdGUiCiAgICByZWxlYXNlID0gdmFsaWRhdGVfcmVsZWFzZV9yZWNvcmQocmVsZWFzZSkKICAgIGlmICgKICAgICAgICByZWxlYXNlLmdldCgidGFnX25hbWUiKSAhPSBpZGVudGl0eVsidmVyc2lvbiJdCiAgICAgICAgb3IgcmVsZWFzZS5nZXQoImRyYWZ0IikgaXMgbm90IEZhbHNlCiAgICAgICAgb3IgcmVsZWFzZS5nZXQoInByZXJlbGVhc2UiKSBpcyBub3QgRmFsc2UKICAgICAgICBvciByZWxlYXNlLmdldCgiaW1tdXRhYmxlIikgaXMgbm90IFRydWUKICAgICAgICBvciBub3QgaXNpbnN0YW5jZShyZWxlYXNlLmdldCgicHVibGlzaGVkX2F0IiksIHN0cikKICAgICAgICBvciBub3QgcmVsZWFzZVsicHVibGlzaGVkX2F0Il0KICAgICk6CiAgICAgICAgZmFpbCgiU2FtZS10YWcgUmVsZWFzZSBpcyBub3QgYSBwdWJsaXNoZWQgaW1tdXRhYmxlIFJlbGVhc2UiKQogICAgcmVtb3RlX2Fzc2V0cyA9IHJlbGVhc2UuZ2V0KCJhc3NldHMiKQogICAgaWYgbm90IGlzaW5zdGFuY2UocmVtb3RlX2Fzc2V0cywgbGlzdCkgb3Igc29ydGVkKGl0ZW0uZ2V0KCJuYW1lIikgZm9yIGl0ZW0gaW4gcmVtb3RlX2Fzc2V0cykgIT0gcHVibGljX3JlbGVhc2VfbmFtZXMoCiAgICAgICAgaWRlbnRpdHlbInZlcnNpb24iXQogICAgKToKICAgICAgICBmYWlsKCJSZW1vdGUgUmVsZWFzZSBhc3NldCBpbnZlbnRvcnkgZGlmZmVycyBmcm9tIHRoZSBmb3VyLXB1YmxpYy1hc3NldCBjb250cmFjdCIpCiAgICBleHBlY3RlZF91cmxfcHJlZml4ID0gZiJ7cmVxdWlyZWQoJ0dJVEhVQl9BUElfVVJMJykucnN0cmlwKCcvJyl9L3JlcG9zL3tpZGVudGl0eVsncmVwb3NpdG9yeSddfS9yZWxlYXNlcy9hc3NldHMvIgogICAgZXhwZWN0ZWRfZG93bmxvYWRfcHJlZml4ID0gKAogICAgICAgIGYiaHR0cHM6Ly9naXRodWIuY29tL3tpZGVudGl0eVsncmVwb3NpdG9yeSddfS9yZWxlYXNlcy9kb3dubG9hZC97aWRlbnRpdHlbJ3ZlcnNpb24nXX0vIgogICAgKQogICAgZm9yIGl0ZW0gaW4gcmVtb3RlX2Fzc2V0czoKICAgICAgICBuYW1lID0gaXRlbVsibmFtZSJdCiAgICAgICAgbG9jYWwgPSBhc3NldHNbbmFtZV0KICAgICAgICBpZiAoCiAgICAgICAgICAgIGl0ZW0uZ2V0KCJzdGF0ZSIpICE9ICJ1cGxvYWRlZCIKICAgICAgICAgICAgb3IgaXRlbS5nZXQoInNpemUiKSAhPSBsZW4obG9jYWwpCiAgICAgICAgICAgIG9yIG5vcm1hbGl6ZWRfZGlnZXN0KGl0ZW0uZ2V0KCJkaWdlc3QiKSkgIT0gbm9ybWFsaXplZF9kaWdlc3Qoc2hhMjU2KGxvY2FsKSkKICAgICAgICAgICAgb3Igbm90IHN0cihpdGVtLmdldCgidXJsIikgb3IgIiIpLnN0YXJ0c3dpdGgoZXhwZWN0ZWRfdXJsX3ByZWZpeCkKICAgICAgICAgICAgb3IgaXRlbS5nZXQoImJyb3dzZXJfZG93bmxvYWRfdXJsIikgIT0gZXhwZWN0ZWRfZG93bmxvYWRfcHJlZml4ICsgdXJsbGliLnBhcnNlLnF1b3RlKG5hbWUpCiAgICAgICAgKToKICAgICAgICAgICAgZmFpbChmIlJlbW90ZSBSZWxlYXNlIGFzc2V0IG1ldGFkYXRhIG1pc21hdGNoOiB7bmFtZX0iKQogICAgICAgIHJlbW90ZSA9IHJlcXVlc3RfYnl0ZXMoaXRlbVsidXJsIl0sIGFjY2VwdD0iYXBwbGljYXRpb24vb2N0ZXQtc3RyZWFtIikKICAgICAgICBpZiByZW1vdGUgIT0gbG9jYWw6CiAgICAgICAgICAgIGZhaWwoZiJSZW1vdGUgUmVsZWFzZSBhc3NldCBieXRlcyBkaWZmZXI6IHtuYW1lfSIpCiAgICByZXR1cm4gIm5vb3AiCgoKZGVmIGNvbW1hbmRfYmVmb3JlKCkgLT4gTm9uZToKICAgIGlkZW50aXR5LCBkb2N1bWVudCwgX3JlbGVhc2VfZGlyLCBhc3NldHMgPSBsb2FkX2NvbnRleHQoKQogICAgdmVyaWZ5X3NvdXJjZShpZGVudGl0eSwgZG9jdW1lbnQpCiAgICB2ZXJpZnlfYmFzZWxpbmUoaWRlbnRpdHksIGRvY3VtZW50KQogICAgZGVjaXNpb24gPSB2ZXJpZnlfcmVsZWFzZV9zdGF0ZShpZGVudGl0eSwgYXNzZXRzLCBhbGxvd19taXNzaW5nPVRydWUpCiAgICB3cml0ZV9vdXRwdXQoImRlY2lzaW9uIiwgZGVjaXNpb24pCiAgICB3cml0ZV9vdXRwdXQoInByZXZpb3VzX3JlbGVhc2VfdGFnIiwgZG9jdW1lbnRbInByZXZpb3VzUmVsZWFzZVRhZyJdKQogICAgcHJpbnQoZiJQdWJsaWNhdGlvbiBib3VuZGFyeSBkZWNpc2lvbjoge2RlY2lzaW9ufSIpCgoKZGVmIGNvbW1hbmRfc291cmNlKCkgLT4gTm9uZToKICAgIGlkZW50aXR5LCBkb2N1bWVudCwgX3JlbGVhc2VfZGlyLCBfYXNzZXRzID0gbG9hZF9jb250ZXh0KCkKICAgIHZlcmlmeV9zb3VyY2UoaWRlbnRpdHksIGRvY3VtZW50KQogICAgdmVyaWZ5X2Jhc2VsaW5lKGlkZW50aXR5LCBkb2N1bWVudCkKICAgIHByaW50KCJSZWxlYXNlIHNvdXJjZSBhbmQgcHJldmlvdXMtUmVsZWFzZSBhbmNlc3RyeSByZS12ZXJpZmllZCIpCgoKZGVmIGNvbW1hbmRfYWZ0ZXIoKSAtPiBOb25lOgogICAgaWRlbnRpdHksIGRvY3VtZW50LCBfcmVsZWFzZV9kaXIsIGFzc2V0cyA9IGxvYWRfY29udGV4dCgpCiAgICBsYXN0X2Vycm9yOiBFeGNlcHRpb24gfCBOb25lID0gTm9uZQogICAgZm9yIGF0dGVtcHQgaW4gcmFuZ2UoMSwgMTEpOgogICAgICAgIHRyeToKICAgICAgICAgICAgdmVyaWZ5X3NvdXJjZShpZGVudGl0eSwgZG9jdW1lbnQpCiAgICAgICAgICAgIHZlcmlmeV9iYXNlbGluZShpZGVudGl0eSwgZG9jdW1lbnQpCiAgICAgICAgICAgIGlmIHZlcmlmeV9yZWxlYXNlX3N0YXRlKGlkZW50aXR5LCBhc3NldHMsIGFsbG93X21pc3Npbmc9RmFsc2UpICE9ICJub29wIjoKICAgICAgICAgICAgICAgIGZhaWwoIlB1Ymxpc2hlZCBSZWxlYXNlIHVuZXhwZWN0ZWRseSBkaXNhcHBlYXJlZCIpCiAgICAgICAgICAgIHByaW50KCJGaW5hbCBpbW11dGFibGUgUmVsZWFzZSBzdGF0ZSBhbmQgYnl0ZXMgdmVyaWZpZWQiKQogICAgICAgICAgICByZXR1cm4KICAgICAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGVycm9yOiAgIyBmaW5pdGUgZXZlbnR1YWwtY29uc2lzdGVuY3kgcmV0cnkKICAgICAgICAgICAgbGFzdF9lcnJvciA9IGVycm9yCiAgICAgICAgICAgIGlmIGF0dGVtcHQgPT0gMTA6CiAgICAgICAgICAgICAgICBicmVhawogICAgICAgICAgICBwcmludChmIkZpbmFsIFJlbGVhc2Ugbm90IHlldCB2ZXJpZmlhYmxlICh7YXR0ZW1wdH0vMTApOiB7ZXJyb3J9IikKICAgICAgICAgICAgdGltZS5zbGVlcCgzKQogICAgZmFpbChmIkZpbmFsIFJlbGVhc2UgdmVyaWZpY2F0aW9uIGV4aGF1c3RlZCByZXRyaWVzOiB7bGFzdF9lcnJvcn0iKQoKCmRlZiBtYWluKCkgLT4gTm9uZToKICAgIGlmIGxlbihzeXMuYXJndikgIT0gMiBvciBzeXMuYXJndlsxXSBub3QgaW4geyJoYW5kb2ZmIiwgImJlZm9yZSIsICJzb3VyY2UiLCAiYWZ0ZXIifToKICAgICAgICBmYWlsKCJVc2FnZTogcHVibGljYXRpb24tYm91bmRhcnkucHkgPGhhbmRvZmZ8YmVmb3JlfHNvdXJjZXxhZnRlcj4iKQogICAgY29tbWFuZCA9IHN5cy5hcmd2WzFdCiAgICBpZiBjb21tYW5kID09ICJoYW5kb2ZmIjoKICAgICAgICBjb21tYW5kX2hhbmRvZmYoKQogICAgZWxpZiBjb21tYW5kID09ICJiZWZvcmUiOgogICAgICAgIGNvbW1hbmRfYmVmb3JlKCkKICAgIGVsaWYgY29tbWFuZCA9PSAic291cmNlIjoKICAgICAgICBjb21tYW5kX3NvdXJjZSgpCiAgICBlbHNlOgogICAgICAgIGNvbW1hbmRfYWZ0ZXIoKQoKCmlmIF9fbmFtZV9fID09ICJfX21haW5fXyI6CiAgICB0cnk6CiAgICAgICAgbWFpbigpCiAgICBleGNlcHQgQm91bmRhcnlFcnJvciBhcyBlcnJvcjoKICAgICAgICBwcmludChmInB1YmxpY2F0aW9uIGJvdW5kYXJ5IGZhaWxlZDoge2Vycm9yfSIsIGZpbGU9c3lzLnN0ZGVycikKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KDEpIGZyb20gZXJyb3IK
-          PUBLICATION_BOUNDARY_SHA256: bd42450dc0a592ad91a20b64a238992f66f8e663604275c4f6c3028b8e2bc9da
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')" = "3.12"
-          boundary="$RUNNER_TEMP/docwen-publication-boundary.py"
-          printf '%s' "$PUBLICATION_BOUNDARY_B64" | base64 --decode > "$boundary"
-          printf '%s  %s\n' "$PUBLICATION_BOUNDARY_SHA256" "$boundary" | sha256sum --check --strict
-          python3 "$boundary" handoff
-
-      - name: Verify source, ancestry, assets, and same-tag state before mutation
-        id: release_state
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_ARTIFACT_NAME: ${{ needs.verify-release.outputs.artifact_name }}
-          HANDOFF_METADATA_PATH: ${{ steps.handoff.outputs.metadata_path }}
-          RELEASE_DIR: ${{ steps.handoff.outputs.release_dir }}
-        run: python3 "$RUNNER_TEMP/docwen-publication-boundary.py" before
-
-      - name: Attest exact assets for a new Release
-        if: steps.release_state.outputs.decision == 'create'
-        uses: actions/attest@36051bcae73b7c2a8a6945a48cbf80953c6baa35 # v4
+      - name: Check out the exact candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          subject-path: |
-            ${{ steps.handoff.outputs.release_dir }}/main.js
-            ${{ steps.handoff.outputs.release_dir }}/manifest.json
-            ${{ steps.handoff.outputs.release_dir }}/styles.css
-            ${{ steps.handoff.outputs.release_dir }}/docwen-assistant-${{ env.RELEASE_VERSION }}.zip
+          ref: ${{ inputs.candidate_commit }}
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Re-verify source and previous Release immediately before creation
-        if: steps.release_state.outputs.decision == 'create'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_ARTIFACT_NAME: ${{ needs.verify-release.outputs.artifact_name }}
-          HANDOFF_METADATA_PATH: ${{ steps.handoff.outputs.metadata_path }}
-          RELEASE_DIR: ${{ steps.handoff.outputs.release_dir }}
-        run: python3 "$RUNNER_TEMP/docwen-publication-boundary.py" source
+      - name: Set up exact Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
 
-      - name: Create the immutable GitHub Release without checkout
-        if: steps.release_state.outputs.decision == 'create'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PREVIOUS_RELEASE_TAG: ${{ steps.release_state.outputs.previous_release_tag }}
-          RELEASE_DIR: ${{ steps.handoff.outputs.release_dir }}
+      - name: Download fixed candidate handoff by artifact ID
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.verify.outputs.candidate_artifact_id }}
+          path: ${{ runner.temp }}/release-candidate
+          digest-mismatch: error
+
+      - name: Verify transported acceptance and authorization evidence
         shell: bash
+        env:
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+          CANDIDATE_COMMIT: ${{ inputs.candidate_commit }}
+          CANDIDATE_DIGEST: ${{ inputs.candidate_digest }}
+          CANDIDATE_ENVELOPE_DIGEST: ${{ inputs.candidate_envelope_digest }}
+          ACCEPTANCE_CLOSURE_B64: ${{ inputs.acceptance_closure_b64 }}
+          ACCEPTANCE_CLOSURE_DIGEST: ${{ inputs.acceptance_closure_digest }}
+          AUTHORIZATION_B64: ${{ inputs.authorization_b64 }}
+          RELEASE_AUTHORIZATION: ${{ inputs.release_authorization }}
+          AUTHORIZATION_DIGEST: ${{ inputs.authorization_digest }}
+          CANDIDATE_DIRECTORY: ${{ runner.temp }}/release-candidate
+          EVIDENCE_DIRECTORY: ${{ runner.temp }}/release-evidence
         run: |
           set -euo pipefail
-          assets=(
-            "$RELEASE_DIR/main.js"
-            "$RELEASE_DIR/manifest.json"
-            "$RELEASE_DIR/styles.css"
-            "$RELEASE_DIR/docwen-assistant-${RELEASE_VERSION}.zip"
-          )
-          notes=(--generate-notes)
-          if [[ -n "$PREVIOUS_RELEASE_TAG" ]]; then
-            notes+=(--notes-start-tag "$PREVIOUS_RELEASE_TAG")
-          fi
-          gh release create "$RELEASE_VERSION" "${assets[@]}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --verify-tag \
-            --title "$RELEASE_VERSION" \
-            "${notes[@]}"
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { createHash } from "node:crypto";
+          import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+          import path from "node:path";
 
-      - name: Final immutable Release and byte readback with finite retry
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_ARTIFACT_NAME: ${{ needs.verify-release.outputs.artifact_name }}
-          HANDOFF_METADATA_PATH: ${{ steps.handoff.outputs.metadata_path }}
-          RELEASE_DIR: ${{ steps.handoff.outputs.release_dir }}
-        run: python3 "$RUNNER_TEMP/docwen-publication-boundary.py" after
+          const SHA256 = /^[0-9a-f]{64}$/u;
+          const GIT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u;
+          const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+          const exactKeys = (value, keys, label) => {
+            assert.ok(value !== null && typeof value === "object" && !Array.isArray(value), label);
+            assert.deepEqual(Object.keys(value).sort(), [...keys].sort(), `${label} fields`);
+          };
+          const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
+          const decode = (encoded, maximumCharacters, maximumBytes, label) => {
+            assert.ok(typeof encoded === "string" && encoded.length > 0, `${label} missing`);
+            assert.ok(encoded.length <= maximumCharacters, `${label} exceeds input limit`);
+            assert.match(encoded, /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u);
+            const bytes = Buffer.from(encoded, "base64");
+            assert.ok(bytes.length > 0 && bytes.length <= maximumBytes, `${label} decoded size`);
+            assert.equal(bytes.toString("base64"), encoded, `${label} must be canonical base64`);
+            return bytes;
+          };
+          const assertPortable = (value) => {
+            if (typeof value === "string") {
+              assert.ok(!/^(?:[A-Za-z]:[\\/]|\\\\|\/)/u.test(value), "portable evidence contains an absolute path");
+              return;
+            }
+            if (Array.isArray(value)) {
+              for (const item of value) assertPortable(item);
+              return;
+            }
+            if (value !== null && typeof value === "object") {
+              for (const item of Object.values(value)) assertPortable(item);
+            }
+          };
 
-      - name: Verify exact signer, repository, tag, commit, and hosted provenance
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_DIR: ${{ steps.handoff.outputs.release_dir }}
+          const runId = process.env.RELEASE_RUN_ID ?? "";
+          const candidateCommit = process.env.CANDIDATE_COMMIT ?? "";
+          const candidateDigest = process.env.CANDIDATE_DIGEST ?? "";
+          const candidateEnvelopeDigest = process.env.CANDIDATE_ENVELOPE_DIGEST ?? "";
+          const closureDigest = process.env.ACCEPTANCE_CLOSURE_DIGEST ?? "";
+          const authorizationDigest = process.env.AUTHORIZATION_DIGEST ?? "";
+          assert.match(runId, UUID);
+          assert.match(candidateCommit, GIT_ID);
+          assert.match(candidateDigest, SHA256);
+          assert.match(candidateEnvelopeDigest, SHA256);
+          assert.match(closureDigest, SHA256);
+          assert.match(authorizationDigest, SHA256);
+
+          const closureBytes = decode(
+            process.env.ACCEPTANCE_CLOSURE_B64,
+            60_000,
+            45_000,
+            "acceptance closure",
+          );
+          const authorizationBytes = decode(
+            process.env.AUTHORIZATION_B64,
+            16_000,
+            12_000,
+            "publication authorization",
+          );
+          assert.equal(digest(closureBytes), closureDigest, "acceptance closure digest");
+          assert.equal(digest(authorizationBytes), authorizationDigest, "authorization digest");
+
+          const candidateBytes = readFileSync(
+            path.join(process.env.CANDIDATE_DIRECTORY, "candidate.json"),
+          );
+          assert.equal(digest(candidateBytes), candidateDigest, "candidate digest");
+          const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+
+          const closure = JSON.parse(closureBytes.toString("utf8"));
+          exactKeys(closure, [
+            "authorizesPublication",
+            "candidate",
+            "candidateEnvelopeSha256",
+            "closedAt",
+            "evidence",
+            "gatePassed",
+            "kind",
+            "policy",
+            "receipt",
+            "releaseCandidate",
+            "runId",
+            "schemaVersion",
+            "status",
+            "surfaces",
+          ], "acceptance closure");
+          assert.equal(closure.schemaVersion, 1);
+          assert.equal(closure.kind, "obsidian-plugin-workspace/release-acceptance-closure-v1");
+          assert.equal(closure.runId, runId);
+          assert.equal(closure.status, "passed");
+          assert.equal(closure.gatePassed, true);
+          assert.equal(closure.authorizesPublication, false);
+          assert.equal(closure.candidateEnvelopeSha256, candidateEnvelopeDigest);
+          exactKeys(closure.receipt, ["sha256", "size"], "acceptance closure receipt");
+          assert.match(closure.receipt.sha256, SHA256);
+          assert.notEqual(closure.receipt.sha256, candidateDigest);
+          assert.ok(Number.isSafeInteger(closure.receipt.size) && closure.receipt.size > 0);
+          exactKeys(
+            closure.releaseCandidate,
+            ["candidateJsonSha256", "candidateJsonSize"],
+            "acceptance closure release candidate",
+          );
+          assert.equal(closure.releaseCandidate.candidateJsonSha256, candidateDigest);
+          assert.equal(closure.releaseCandidate.candidateJsonSize, candidateBytes.length);
+          assert.ok(Array.isArray(closure.evidence) && closure.evidence.length > 0);
+          exactKeys(closure.candidate, [
+            "assets",
+            "commit",
+            "identitySha256",
+            "pluginId",
+            "projectId",
+            "tree",
+            "version",
+          ], "acceptance closure candidate");
+          assert.equal(closure.candidate.pluginId, manifest.id);
+          assert.equal(closure.candidate.version, manifest.version);
+          assert.equal(closure.candidate.version, process.env.GITHUB_REF_NAME);
+          assert.equal(closure.candidate.commit, candidateCommit);
+          assert.match(closure.candidate.tree, GIT_ID);
+          assert.match(closure.candidate.identitySha256, SHA256);
+          assertPortable(closure);
+
+          const authorization = JSON.parse(authorizationBytes.toString("utf8"));
+          exactKeys(authorization, [
+            "authorizedAt",
+            "authorizesPublication",
+            "bindings",
+            "confirmation",
+            "kind",
+            "runId",
+            "schemaVersion",
+            "singleCandidate",
+          ], "publication authorization");
+          exactKeys(authorization.bindings, [
+            "candidateEnvelopeSha256",
+            "candidateSha256",
+            "closureSha256",
+            "planSha256",
+          ], "publication authorization bindings");
+          assert.equal(authorization.schemaVersion, 1);
+          assert.equal(authorization.kind, "obsidian-plugin-workspace/release-authorization-v1");
+          assert.equal(authorization.runId, runId);
+          assert.equal(authorization.singleCandidate, true);
+          assert.equal(authorization.authorizesPublication, true);
+          assert.match(authorization.bindings.planSha256, SHA256);
+          assert.equal(authorization.bindings.candidateEnvelopeSha256, candidateEnvelopeDigest);
+          assert.equal(authorization.bindings.candidateSha256, candidateDigest);
+          assert.equal(authorization.bindings.closureSha256, closureDigest);
+
+          const expectedPhrase = `publish ${process.env.GITHUB_REPOSITORY}@${process.env.GITHUB_REF_NAME} commit=${candidateCommit} candidate=${candidateDigest} acceptance=${closureDigest}`;
+          assert.equal(process.env.RELEASE_AUTHORIZATION, expectedPhrase);
+          assert.equal(authorization.confirmation, expectedPhrase);
+          assertPortable(authorization);
+
+          mkdirSync(process.env.EVIDENCE_DIRECTORY, { recursive: false });
+          writeFileSync(path.join(process.env.EVIDENCE_DIRECTORY, "acceptance-closure.json"), closureBytes, { flag: "wx", mode: 0o600 });
+          writeFileSync(path.join(process.env.EVIDENCE_DIRECTORY, "authorization.json"), authorizationBytes, { flag: "wx", mode: 0o600 });
+          NODE
+
+      - name: Verify fixed handoff before publication
         shell: bash
+        env:
+          ARTIFACT_DIGEST: ${{ needs.verify.outputs.candidate_artifact_digest }}
         run: |
           set -euo pipefail
-          assets=(
-            "$RELEASE_DIR/docwen-assistant-${RELEASE_VERSION}.zip"
-            "$RELEASE_DIR/main.js"
-            "$RELEASE_DIR/manifest.json"
-            "$RELEASE_DIR/styles.css"
-          )
-          for asset in "${assets[@]}"; do
-            gh attestation verify "$asset" \
-              --repo "$GITHUB_REPOSITORY" \
-              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
-              --source-ref "$GITHUB_REF" \
-              --source-digest "$GITHUB_SHA" \
-              --deny-self-hosted-runners
-          done
+          [[ "$ARTIFACT_DIGEST" =~ ^[0-9a-f]{64}$ ]]
+          node scripts/release.mjs verify-handoff --candidate-dir "$RUNNER_TEMP/release-candidate"
+
+      - name: Verify publication boundary before attestation
+        env:
+          RELEASE_PUBLISH_AUTHORIZATION: ${{ inputs.release_authorization }}
+        run: >-
+          node scripts/release.mjs publication-boundary
+          --candidate-dir "$RUNNER_TEMP/release-candidate"
+          --candidate-digest "${{ inputs.candidate_digest }}"
+          --acceptance-closure "$RUNNER_TEMP/release-evidence/acceptance-closure.json"
+          --acceptance-closure-digest "${{ inputs.acceptance_closure_digest }}"
+
+      - name: Preflight immutable GitHub Release
+        id: publication_preflight
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PUBLISH_AUTHORIZATION: ${{ inputs.release_authorization }}
+        run: |
+          set -euo pipefail
+          result_path="$RUNNER_TEMP/publication-preflight.json"
+          test ! -e "$result_path"
+          node scripts/release.mjs publication-preflight \
+            --candidate-dir "$RUNNER_TEMP/release-candidate" \
+            --candidate-digest "${{ inputs.candidate_digest }}" \
+            --acceptance-closure "$RUNNER_TEMP/release-evidence/acceptance-closure.json" \
+            --acceptance-closure-digest "${{ inputs.acceptance_closure_digest }}" \
+            > "$result_path"
+          status="$(
+            node --input-type=module - "$result_path" <<'NODE'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+
+          const result = JSON.parse(readFileSync(process.argv[2], "utf8"));
+          assert.ok(result !== null && typeof result === "object" && !Array.isArray(result));
+          assert.ok(result.status === "missing" || result.status === "exact");
+          process.stdout.write(result.status);
+          NODE
+          )"
+          printf 'status=%s\n' "$status" >> "$GITHUB_OUTPUT"
+
+      - name: Stage exact public asset inventory for attestation
+        if: steps.publication_preflight.outputs.status == 'missing'
+        env:
+          CANDIDATE_DIRECTORY: ${{ runner.temp }}/release-candidate
+          PUBLIC_ASSET_DIRECTORY: ${{ runner.temp }}/release-public-assets
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+          import { constants, copyFileSync, lstatSync, mkdirSync, readFileSync } from "node:fs";
+          import path from "node:path";
+
+          const candidate = JSON.parse(readFileSync(
+            path.join(process.env.CANDIDATE_DIRECTORY, "candidate.json"),
+            "utf8",
+          ));
+          assert.ok(Array.isArray(candidate.productionAssets));
+          const names = [
+            ...candidate.productionAssets.map((record) => record.name),
+            candidate.archive?.name,
+          ];
+          assert.ok(names.length >= 3);
+          assert.equal(new Set(names).size, names.length);
+          mkdirSync(process.env.PUBLIC_ASSET_DIRECTORY, { recursive: false });
+          for (const name of names) {
+            assert.ok(
+              typeof name === "string" &&
+              name.length > 0 &&
+              path.posix.basename(name) === name &&
+              !name.includes("\\"),
+            );
+            const source = path.join(process.env.CANDIDATE_DIRECTORY, name);
+            const status = lstatSync(source);
+            assert.ok(status.isFile() && !status.isSymbolicLink());
+            copyFileSync(
+              source,
+              path.join(process.env.PUBLIC_ASSET_DIRECTORY, name),
+              constants.COPYFILE_EXCL,
+            );
+          }
+          NODE
+
+      - name: Attest public release assets
+        if: steps.publication_preflight.outputs.status == 'missing'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/release-public-assets/*
+
+      - name: Create or prove the exact GitHub Release
+        if: steps.publication_preflight.outputs.status == 'missing'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_PUBLISH_AUTHORIZATION: ${{ inputs.release_authorization }}
+        run: >-
+          node scripts/release.mjs publish-github
+          --candidate-dir "$RUNNER_TEMP/release-candidate"
+          --candidate-digest "${{ inputs.candidate_digest }}"
+          --acceptance-closure "$RUNNER_TEMP/release-evidence/acceptance-closure.json"
+          --acceptance-closure-digest "${{ inputs.acceptance_closure_digest }}"
+
+  post_verify:
+    name: Verify hosted release state
+    if: always() && github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'publish'
+    needs:
+      - verify
+      - publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+    steps:
+      - name: Check out the exact candidate without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.candidate_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+
+      - name: Download the same fixed candidate handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.verify.outputs.candidate_artifact_id }}
+          path: ${{ runner.temp }}/release-candidate
+          digest-mismatch: error
+
+      - name: Reverify fixed handoff
+        run: >-
+          node scripts/release.mjs verify-handoff
+          --candidate-dir "$RUNNER_TEMP/release-candidate"
+
+      - name: Verify immutable hosted bytes and provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/release.mjs post-verify
+          --candidate-dir "$RUNNER_TEMP/release-candidate"

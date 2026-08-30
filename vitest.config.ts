@@ -7,7 +7,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/**/*.ts", "scripts/deterministic-zip.mjs"],
+      include: ["src/**/*.ts"],
       exclude: ["src/i18n/catalogs.ts", "src/i18n/types.ts"],
       reporter: ["text", "json-summary"],
       thresholds: {

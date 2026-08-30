@@ -9,7 +9,6 @@ const INCLUDED_EXTENSIONS = new Set([
   ".json",
   ".md",
   ".mjs",
-  ".py",
   ".ts",
   ".yaml",
   ".yml",

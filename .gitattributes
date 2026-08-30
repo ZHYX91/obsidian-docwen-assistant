@@ -1,8 +1,7 @@
 * text=auto
 
 # Release inputs and all build-relevant source text must have identical bytes
-# on Windows and Linux.  In particular, the workflow embeds the reviewed
-# publication-boundary.py bytes and verifies their SHA-256 before execution.
+# on Windows and Linux.
 *.css text eol=lf
 *.cjs text eol=lf
 *.html text eol=lf
@@ -10,7 +9,6 @@
 *.json text eol=lf
 *.md text eol=lf
 *.mjs text eol=lf
-*.py text eol=lf
 *.ts text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf

@@ -38,4 +38,4 @@ Tests use synthetic files, temporary directories, and dedicated Vaults only. An 
 
 ## Release evidence
 
-Two clean builds, the candidate ZIP, SHA256SUMS, attestations, tag identity, an immutable GitHub Release, and remote byte readback are release evidence. Workflow source or governance mock tests prove only that the contract exists, not that GitHub executed it successfully for the revision or that Community Plugins accepted it.
+The exact `candidate.json` digest, isolated deterministic rebuilds, candidate ZIP, SHA256SUMS, portable acceptance closure, explicit authorization, tag binding, attestations, immutable GitHub Release, and remote byte readback are separate release evidence. A tag alone is never an execution or publication signal. Adapter, workflow-source, and failure-path tests prove only that the contract exists; they do not prove that GitHub executed it for the revision or that Community Plugins accepted it.
