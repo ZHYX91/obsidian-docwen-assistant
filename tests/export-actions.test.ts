@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -324,7 +325,7 @@ describe("ExportActions advisory proofreading", () => {
         expect.objectContaining({ role: "neutral_document" }),
         expect.objectContaining({ role: "numbering_export_plan" }),
       ],
-      outputPath: "D:\\Vault\\note.docx",
+      outputPath: resolve("D:\\Vault\\note.docx"),
     }), signal);
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
     expect(runner.presentFailure).not.toHaveBeenCalled();
