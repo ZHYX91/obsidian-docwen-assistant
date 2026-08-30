@@ -50,7 +50,7 @@ DOCX 不匹配只会关闭逐字源码恢复，经过认证的语义仍可恢复
 
 ## 信任边界
 
-Obsidian 文档、用户路径、Machine 消息、staging 文件和 GitHub 发布资产都属于需验证输入。产品不信任扩展名、相对路径、软链接、现有目标、未经绑定的诊断或仅在 UI 中显示的版本文本。
+Obsidian 文档、用户路径、Machine 消息、staging 文件和 GitHub 发布资产都属于需验证输入。产品不信任扩展名、相对路径、软链接、现有目标、未经绑定的诊断或仅在 UI 中显示的版本文本。候选构建与发布位于产品 runtime 之外：仓库 thin adapter 以精确版本和 SHA-256 锁定自包含 vendored core，验收与人工授权仍属于外部证据。公开仓库绝不导入父 workspace 或 sibling 路径。
 
 ## 从属协议合同
 

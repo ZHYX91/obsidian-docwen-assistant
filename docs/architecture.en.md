@@ -58,7 +58,7 @@ Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit
 
 ## Trust boundaries
 
-Obsidian documents, user paths, Machine messages, staging files, and GitHub release assets are all untrusted inputs. The product does not trust extensions, relative paths, symlinks, existing targets, unbound diagnostics, or a version string shown only in the UI.
+Obsidian documents, user paths, Machine messages, staging files, and GitHub release assets are all untrusted inputs. The product does not trust extensions, relative paths, symlinks, existing targets, unbound diagnostics, or a version string shown only in the UI. Release construction and publication are outside the product runtime: a thin repository adapter pins a self-contained vendored core by exact version and SHA-256, while acceptance and manual authorization remain external evidence. The public repository never imports its parent workspace or a sibling path.
 
 ## Subordinate protocol contract
 

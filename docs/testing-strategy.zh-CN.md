@@ -37,4 +37,4 @@ Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用�
 
 ## 发布证据
 
-双 clean build、候选 ZIP、SHA256SUMS、attestation、tag 身份、不可变 GitHub Release 与远端字节回读属于发布证据。工作流源码或 governance mock 测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。
+精确 `candidate.json` 摘要、隔离确定性重建、候选 ZIP、SHA256SUMS、可移植 acceptance closure、显式 authorization、tag 绑定、attestation、不可变 GitHub Release 与远端字节回读是彼此分离的发布证据；tag 本身绝不是执行或发布信号。adapter、工作流源码与失败路径测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。

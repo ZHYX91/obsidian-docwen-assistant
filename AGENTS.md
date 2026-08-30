@@ -41,8 +41,8 @@ the current contract and repeatable process rather than past executions.
 - `npm run test:watch`: run Vitest in watch mode.
 - `npm run lint`: lint TypeScript source files.
 - `npm run check`: run runtime, lint, format, README/document localization, coverage, type-check/build, artifact, and audit checks.
-- `npm run release:check`: run the complete source gate plus read-only release-version validation.
-- `npm run release`: run the full local gate and create the deterministic release directory from the three production assets.
+- `npm run release:check`: run the complete source gate plus exact current-tag validation.
+- `npm run release`: run the full local gate and create the canonical deterministic candidate handoff.
 
 ## Coding Style & Naming Conventions
 
