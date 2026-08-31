@@ -4,7 +4,6 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-// @ts-expect-error The format checker is an executable JavaScript module.
 import { checkFormatting } from "../scripts/check-format.mjs";
 
 const temporaryDirectories: string[] = [];

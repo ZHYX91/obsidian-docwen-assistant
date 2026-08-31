@@ -34,7 +34,7 @@ describe("desktop module adapters", () => {
   it("accepts only Electron dialog objects with the requested method", () => {
     const saveDialog = { showSaveDialog: vi.fn() };
     const openDialog = { showOpenDialog: vi.fn() };
-    const moduleLoader = vi.fn((moduleId: string) => moduleId === "electron"
+    const moduleLoader = vi.fn((moduleId: string): unknown => moduleId === "electron"
       ? { remote: { dialog: saveDialog } }
       : { dialog: openDialog });
     vi.stubGlobal("window", { require: moduleLoader });

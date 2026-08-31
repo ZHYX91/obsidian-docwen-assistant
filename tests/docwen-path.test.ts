@@ -88,7 +88,7 @@ describe("DocWen location resolution", () => {
     const root = workspace();
     const cli = touch(root, "DocWenCLI.exe");
 
-    expect(resolveDocWenCliPath(`  \"${cli}\"  `, "win32")).toBe(path.normalize(cli));
+    expect(resolveDocWenCliPath(`  "${cli}"  `, "win32")).toBe(path.normalize(cli));
   });
 
   it("resolves DocWen.exe to the exact sibling CLI", () => {

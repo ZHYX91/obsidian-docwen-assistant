@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-// @ts-expect-error The documentation checker is an executable JavaScript module.
 import { checkDocsI18n } from "../scripts/check-docs-i18n.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

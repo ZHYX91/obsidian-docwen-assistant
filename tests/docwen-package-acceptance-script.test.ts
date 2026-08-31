@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 // The production gate is a directly executable Node.js module; Vitest exercises
 // its exported fail-closed validator without adding a second implementation.
-// @ts-expect-error The repository intentionally keeps production scripts as native ESM.
 import {
   createPackageAcceptanceReceipt,
   loadPackageAcceptanceReceipt,

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-// @ts-expect-error The runtime contract is implemented in JavaScript.
 import { assertRuntimeContract, parseNpmVersion } from "../scripts/runtime-contract.mjs";
 
 const packageJson = {

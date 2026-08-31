@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { DocWenConnectionMonitor } from "../src/docwen/connection-monitor";
+import type { HealthReport } from "../src/docwen/client";
 import { LocalCliError } from "../src/docwen/errors";
 
 describe("DocWen connection monitor", () => {
@@ -55,8 +56,8 @@ describe("DocWen connection monitor", () => {
   });
 
   it("de-duplicates concurrent checks", async () => {
-    let release!: (value: { allOk: true; productVersion: string; checks: [] }) => void;
-    const checkHealth = vi.fn(() => new Promise((resolve) => { release = resolve; }));
+    let release!: (value: HealthReport) => void;
+    const checkHealth = vi.fn(() => new Promise<HealthReport>((resolve) => { release = resolve; }));
     const monitor = new DocWenConnectionMonitor(() => "automatic", checkHealth);
 
     const first = monitor.check();

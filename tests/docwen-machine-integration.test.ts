@@ -7,7 +7,6 @@ import { inflateRawSync } from "node:zlib";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { DocWenCapabilityService, DocWenClient, DocWenMachineClient, type TaskInput } from "../src/docwen";
-// @ts-expect-error The acceptance wrapper is intentionally a native ESM production script.
 import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acceptance.mjs";
 
 const packageBinding = await loadPackageAcceptanceReceipt(process.env);

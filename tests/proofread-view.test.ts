@@ -41,9 +41,11 @@ describe("ProofreadView", () => {
     const exportLease = operations.begin({ key: "export", kind: "export" });
     const view = new ProofreadView({} as never, async () => undefined, operations);
     await view.onOpen();
-    expect((view.containerEl.children[1] as FakeElement).classes).toContain("docwen-proofread-root");
+    expect((view.containerEl.children[1] as unknown as FakeElement).classes)
+      .toContain("docwen-proofread-root");
     await view.onClose();
-    expect((view.containerEl.children[1] as FakeElement).classes).not.toContain("docwen-proofread-root");
+    expect((view.containerEl.children[1] as unknown as FakeElement).classes)
+      .not.toContain("docwen-proofread-root");
     expect(proofread.signal.aborted).toBe(true);
     expect(exportLease.signal.aborted).toBe(false);
   });
@@ -56,20 +58,23 @@ describe("ProofreadView", () => {
     await view.onOpen();
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
 
-    let content = view.containerEl.children[1] as FakeElement;
+    let content = view.containerEl.children[1] as unknown as FakeElement;
     let cancel = findByClass(content, "docwen-proofread-cancel");
     expect(cancel?.tag).toBe("button");
     expect(cancel?.options).toMatchObject({ attr: { type: "button" } });
     cancel?.element.listeners.get("click")?.();
 
     expect(lease.signal.aborted).toBe(true);
-    content = view.containerEl.children[1] as FakeElement;
+    content = view.containerEl.children[1] as unknown as FakeElement;
     cancel = findByClass(content, "docwen-proofread-cancel");
     expect(cancel?.options).toMatchObject({ attr: { type: "button", disabled: "" } });
     expect(operations.getSnapshot().operations[0].state).toBe("cancelling");
 
     lease.finish();
-    expect(findByClass(view.containerEl.children[1] as FakeElement, "docwen-proofread-cancel")).toBeUndefined();
+    expect(findByClass(
+      view.containerEl.children[1] as unknown as FakeElement,
+      "docwen-proofread-cancel",
+    )).toBeUndefined();
   });
 
   it("renders issues as native keyboard-operable buttons", async () => {
@@ -89,7 +94,7 @@ describe("ProofreadView", () => {
       source: "fixture",
       }], "Proofread.md", "Proofread.md");
 
-    const content = (view.containerEl.children[1] as FakeElement);
+    const content = (view.containerEl.children[1] as unknown as FakeElement);
     const list = content.children.find(({ options }) => options.cls === "docwen-proofread-list")?.element;
     const issue = list?.children[0];
     expect(issue?.tag).toBe("button");
