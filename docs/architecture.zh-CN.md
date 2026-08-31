@@ -9,7 +9,7 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。本地化使用一个共享模型。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。
 
 ## DocWen 进程边界
 

@@ -22,6 +22,12 @@ be treated as a defect or a reason to remove the archive. The deterministic ZIP 
 `docwen-assistant/` directory with `main.js`, `manifest.json`, and `styles.css`, byte-identical to
 the three loose release assets. Release checks must preserve and verify all four public assets.
 
+## Release acceptance scope
+
+This plugin is desktop-only. An exact release candidate requires current desktop acceptance;
+Android emulators, Android physical devices, and iOS are out of scope. Keep source,
+packaged-candidate, real-host, publication, and production-Vault claims separate.
+
 ## Public documentation
 
 `CHANGELOG.md` is the only public document that records release history. README and user help

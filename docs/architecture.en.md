@@ -10,7 +10,7 @@ translation_status: synced
 
 ## Layers
 
-`src/main.ts` owns only plugin composition and lifecycle. `src/actions/` orchestrates user operations; `src/docwen/` owns path, Machine protocol, and Artifact Bundle boundaries; `src/host/` adapts Obsidian, Electron, and the filesystem; `src/runtime/` manages concurrency and disposal. The top-tab settings surface uses one shared page model without depending on sibling repositories. Localization uses one shared model.
+`src/main.ts` owns only plugin composition and lifecycle. `src/actions/` orchestrates user operations; `src/docwen/` owns path, Machine protocol, and Artifact Bundle boundaries; `src/host/` adapts Obsidian, Electron, and the filesystem; `src/runtime/` manages concurrency and disposal. The top-tab settings surface uses one shared page model without depending on sibling repositories. Settings persistence uses schema v1: unversioned data is normalized once into an owned snapshot, while an invalid or newer explicit schema is opened read-only and is never rewritten. Localization uses one shared model.
 
 ## DocWen process boundary
 

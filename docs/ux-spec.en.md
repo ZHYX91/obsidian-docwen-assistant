@@ -26,7 +26,7 @@ Long-running actions expose running and cancellation states. A settings-save fai
 
 ## Settings surface
 
-The five top tabs are General, Export to Markdown, Export to Word, Proofreading, and Usage. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered.
+The five top tabs are General, Export to Markdown, Export to Word, Proofreading, and Usage. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered. When persisted settings declare an invalid or newer schema, a prominent incompatibility notice identifies the stored and supported versions, every settings control is disabled, and no retry or save path may rewrite the data.
 
 ## Localization
 
