@@ -4,6 +4,13 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-08-31
+
+### Fixed
+
+- Protected settings that use an invalid or newer schema from being overwritten, presented them as
+  read-only, and kept failed settings saves visible and retryable.
+
 ## [2.2.0] - 2026-08-30
 
 ### Added
@@ -82,7 +89,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.1...HEAD
+[2.2.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...2.1.0
