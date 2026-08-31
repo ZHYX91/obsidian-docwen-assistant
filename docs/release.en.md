@@ -8,38 +8,54 @@ translation_status: synced
 
 [简体中文源文](release.zh-CN.md)
 
-## Version identity
+This document defines the repeatable DocWen Assistant release process. Source checks, the
+Candidate Bundle, real Obsidian acceptance, GitHub publication, and production-Vault deployment are
+separate boundaries.
 
-`manifest.json`, `package.json`, `package-lock.json`, and `versions.json` agree on one canonical `x.y.z` version and minimum Obsidian version. The tag has no `v` prefix, points to the exact accepted commit, and is reachable from the default branch. A tag is one identity binding; it neither triggers nor authorizes publication.
+## Boundaries
 
-## Toolchain and source gate
+An ordinary tag push does not trigger publication. Commit, push, tag, workflow dispatch, GitHub
+Release, and production-Vault deployment require separate authorization; local gates make no
+remote write.
 
-`.node-version` is the single declaration of Node, and `package.json#packageManager` is the single declaration of npm. After `npm ci`, `npm run check` runs the full offline source gate and canonical validation without enforcing local tag presence. `npm run release:check` adds the absent-or-exact tag policy for a real candidate. Release documentation does not copy the npm pin into a second authority.
+## Version and source
 
-## Candidate construction
+`manifest.json`, `package.json`, `package-lock.json`, and `versions.json` bind one canonical `x.y.z`
+version, the Obsidian `1.12.7` minimum, and the exact commit/tree. A clean worktree must pass
+`npm run release:check`, including the DocWen 0.9.x package compatibility gate.
 
-The pinned, vendored release core creates one deterministic, path- and timestamp-free candidate bound to the exact commit, tree, plugin identity, version, core version and runtime hash. The handoff contains the four public assets (`main.js`, `manifest.json`, `styles.css`, and the versioned ZIP), sorted `SHA256SUMS`, and `candidate.json`. Isolated rebuilds must produce the same candidate digest. The checksum and candidate metadata are not public Release assets. The installation ZIP contains only the first three runtime files; documentation and `data.json` never enter the release package.
+## Candidate Bundle v3
 
-## Installation boundary
+The vendored release-core `2.0.0` and thin adapter create the sole Candidate Bundle v3. It contains
+`main.js`, `manifest.json`, `styles.css`, `docwen-assistant-x.y.z.zip`, `SHA256SUMS`, and
+`candidate-bundle.json`, and binds source, toolchain, core/config/workflow, product payload,
+scenario contract, and fixture hashes. The ZIP contains neither documentation nor `data.json`.
 
-Installation replaces only `main.js`, `manifest.json`, and `styles.css`. Release archives never contain, replace, or delete `data.json`. The `manifest.id` is `docwen-assistant`, which fixes the installed-plugin identity and settings-file location.
+## Product acceptance
 
-## Read-only preflight
+DocWen Assistant is desktop-only. The same Bundle requires desktop acceptance covering all five
+imperative settings tabs, capability discovery, proofread, conversion, validation, numbering,
+cancellation, unsaved-buffer conflicts, and concurrent-target conflicts. External DocWen package
+acceptance and plugin-host acceptance are recorded separately and cannot substitute for each other.
 
-Manual workflow dispatch defaults to `verify`. Its read-only job checks the exact tagged commit, complete repository gate, canonical candidate digest, and the immutable public DocWen 0.9.x package compatibility hook without creating a Release. It uploads one fixed candidate artifact and records both its artifact ID and service digest.
+## Standalone workflow
 
-## Publication boundary
+The generated, checked-in standalone workflow accepts only explicit `workflow_dispatch`. Its
+read-only verify job performs one independent install and one complete `release:check` at the exact
+commit, rebuilds the Bundle, and source-verifies it. The publish job downloads the fixed artifact
+and performs transport verification without restoring `dist`.
 
-Only a dispatch whose mode explicitly says `publish` reaches jobs with write permissions. The job checks out the already accepted commit without persisted credentials, downloads the fixed artifact ID, decodes the portable acceptance closure and authorization, verifies their exact SHA-256 digests and cross-bindings, and runs the read-only core publication boundary. Before any remote write, `publication-preflight` reads GitHub state: a missing Release permits staging, attestation, and creation; an exact existing Release whose bytes and provenance pass every check is a zero-write safe rerun; any conflict fails before those writes. `publish-github` repeats the boundary and existing-state check before creating the exact immutable Release with `--verify-tag`; manual authorization is never inferred from a tag or passing acceptance.
+## Publication and verification
 
-## Post-publication verification
+The acceptance closure does not authorize publication; separate authorization binds the same
+Bundle and closure. Before the first write, the workflow deeply validates both records, applies the
+equivalent of `--verify-tag`, and performs a read-only preflight. The public Release contains
+exactly the three loose assets and versioned ZIP; `SHA256SUMS` and `candidate-bundle.json` remain in
+the private Bundle. Post-verification reads back hosted bytes and provenance.
 
-A separate read-only job uses the same fixed candidate to read back the final GitHub Release and requires stable, non-draft, non-prerelease, immutable state and the exact asset inventory. Downloaded bytes match the candidate, and every attestation binds the same repository, workflow, ref, commit, and GitHub-hosted runner policy.
+## Failure, rollback, and deployment
 
-## External prerequisites
-
-Immutable Releases, a no-update/no-delete numeric-version tag ruleset, the protected `release` environment, and the required GitHub permissions are publication prerequisites outside repository source. Community Plugins review and real user upgrades remain separate external evidence; publication is complete only after the immutable hosted state and exact assets have been verified.
-
-## Failure and recovery
-
-The workflow stops when candidate, closure, authorization, tag, DocWen dependency, artifact identity, or hosted state differs. It never clobbers, edits, or reuploads same-tag assets. A release failure does not authorize deleting user `data.json` or modifying a Vault.
+An existing same-tag Release is a zero-write no-op only when metadata, all four asset bytes, and
+provenance are exact. Any difference fails and a fix requires a new version. Production-Vault
+deployment needs separate authorization for the exact Vault, preserves `data.json`, and never
+collapses package, host, or Community Plugins state into one verdict.

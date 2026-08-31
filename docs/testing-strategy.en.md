@@ -22,7 +22,7 @@ Under the pinned toolchain, `npm run check` runs runtime verification, lint, for
 
 ## Fixed DocWen package
 
-`npm run acceptance:docwen-package` accepts only a full DocWen Windows package bound to a version, candidate identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, the `docwen.document_node.v1` manifest, and Bundle v2 write boundaries. Without an exact receipt it skips or fails closed and cannot be reported as source-suite success.
+`npm run acceptance:docwen-package` accepts only a full DocWen Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, the `docwen.document_node.v1` manifest, and DocWen Bundle v2 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.
 
 ## Obsidian host
 
@@ -38,4 +38,4 @@ Tests use synthetic files, temporary directories, and dedicated Vaults only. An 
 
 ## Release evidence
 
-The exact `candidate.json` digest, isolated deterministic rebuilds, candidate ZIP, SHA256SUMS, portable acceptance closure, explicit authorization, tag binding, attestations, immutable GitHub Release, and remote byte readback are separate release evidence. A tag alone is never an execution or publication signal. Adapter, workflow-source, and failure-path tests prove only that the contract exists; they do not prove that GitHub executed it for the revision or that Community Plugins accepted it.
+The exact Candidate Bundle v3 digest, one isolated deterministic CI rebuild, candidate ZIP, `SHA256SUMS`, portable acceptance closure, explicit authorization, tag binding, attestations, immutable GitHub Release, and remote byte readback are separate release evidence. A tag alone is never an execution or publication signal. Source verification binds source and `dist`; transport verification after download binds only Bundle bytes. Adapter, workflow-source, and failure-path tests prove only that the contract exists; they do not prove that GitHub executed it for the revision or that Community Plugins accepted it.

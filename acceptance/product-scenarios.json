@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "kind": "obsidian-plugin/product-scenarios-v1",
+  "pluginId": "docwen-assistant",
+  "materializer": {
+    "kind": "copy-v1",
+    "roots": [
+      {
+        "source": "acceptance/fixtures",
+        "target": ""
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "desktop-docwen-operations",
+      "title": "Desktop DocWen operations and Vault-safe commits",
+      "surfaces": [
+        "desktop"
+      ],
+      "steps": [
+        "Exercise the five imperative settings tabs and capability discovery",
+        "Run proofread, conversion, validation, and numbering against the deterministic notes",
+        "Inject unsaved-buffer and concurrent-target conflicts before output commit"
+      ],
+      "expected": [
+        "Typed capability failures remain visible and successful empty results remain empty",
+        "Only a confirmed staged result may replace an allowed target",
+        "Cancellation, conflict, and unload leave no child process or transaction residue"
+      ]
+    }
+  ]
+}

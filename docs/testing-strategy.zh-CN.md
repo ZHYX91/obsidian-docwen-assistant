@@ -21,7 +21,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## 固定 DocWen 包
 
-`npm run acceptance:docwen-package` 只接受绑定版本、候选身份和哈希的完整 DocWen Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、`docwen.document_node.v1` 清单与 Bundle v2 写入边界；没有精确 receipt 时应跳过或失败关闭，不能转称为源码通过。
+`npm run acceptance:docwen-package` 只接受绑定版本、Candidate Bundle v3 身份和哈希的完整 DocWen Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、`docwen.document_node.v1` 清单与 DocWen Bundle v2 写入边界；没有精确候选身份时应跳过或失败关闭，不能转称为源码通过。
 
 ## Obsidian 宿主
 
@@ -37,4 +37,4 @@ Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用�
 
 ## 发布证据
 
-精确 `candidate.json` 摘要、隔离确定性重建、候选 ZIP、SHA256SUMS、可移植 acceptance closure、显式 authorization、tag 绑定、attestation、不可变 GitHub Release 与远端字节回读是彼此分离的发布证据；tag 本身绝不是执行或发布信号。adapter、工作流源码与失败路径测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。
+精确 Candidate Bundle v3 摘要、一次隔离确定性 CI 重建、候选 ZIP、`SHA256SUMS`、可移植 acceptance closure、显式 authorization、tag 绑定、attestation、不可变 GitHub Release 与远端字节回读是彼此分离的发布证据；tag 本身绝不是执行或发布信号。source verification 绑定源码与 `dist`，下载后的 transport verification 只绑定 Bundle 字节。adapter、工作流源码与失败路径测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。

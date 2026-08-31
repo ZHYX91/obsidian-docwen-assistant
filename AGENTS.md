@@ -48,7 +48,7 @@ the current contract and repeatable process rather than past executions.
 - `npm run lint`: lint TypeScript source files.
 - `npm run check`: run runtime, lint, format, README/document localization, coverage, type-check/build, artifact, and audit checks.
 - `npm run release:check`: run the complete source gate plus exact current-tag validation.
-- `npm run release`: run the full local gate and create the canonical deterministic candidate handoff.
+- `npm run release`: run the full local gate and create the canonical Candidate Bundle v3.
 
 ## Coding Style & Naming Conventions
 

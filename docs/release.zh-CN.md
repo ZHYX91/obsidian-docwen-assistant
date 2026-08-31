@@ -7,38 +7,48 @@ translation_status: source
 
 [English synced translation](release.en.md)
 
-## 版本身份
+本文定义 DocWen Assistant 的可重复发布流程。源码检查、Candidate Bundle、真实 Obsidian
+验收、GitHub 发布和正式 Vault 部署是独立边界。
 
-`manifest.json`、`package.json`、`package-lock.json` 和 `versions.json` 必须对同一规范 `x.y.z` 版本与最低 Obsidian 版本达成一致。tag 不带 `v` 前缀，指向精确的已验收提交，并可从默认分支到达。tag 只是身份绑定之一，既不触发也不授权发布。
+## 边界
 
-## 工具链与源门
+普通 tag push 不触发发布。commit、push、tag、workflow dispatch、GitHub Release 和正式 Vault
+部署必须分别授权；本地门禁不会产生远端写入。
 
-Node 版本由 `.node-version` 单一声明，npm 版本由 `package.json#packageManager` 单一声明。`npm ci` 后，`npm run check` 执行完整离线源码门与规范验证，但不要求本地 tag 存在；`npm run release:check` 再为真实候选增加 absent-or-exact tag 策略。发布文档不复制 npm pin，避免第二权威。
+## 版本与源码
 
-## 候选构建
+`manifest.json`、`package.json`、`package-lock.json` 和 `versions.json` 必须绑定同一规范
+`x.y.z` 版本、Obsidian `1.12.7` 最低版本与精确 commit/tree。干净工作树必须通过
+`npm run release:check`，其中包含 DocWen 0.9.x package compatibility 门禁。
 
-锁定并 vendored 的 release core 生成确定性、无路径且无时间戳的候选，并绑定精确 commit、tree、插件身份、版本、core 版本与运行时哈希。handoff 包含四个公共资产（`main.js`、`manifest.json`、`styles.css` 和版本化 ZIP）、排序后的 `SHA256SUMS` 与 `candidate.json`；隔离重建必须得到同一候选摘要。校验清单与候选 metadata 不作为公共 Release 资产。安装 ZIP 只含前三个运行时文件，文档与 `data.json` 不进入发布包。
+## Candidate Bundle v3
 
-## 安装边界
+vendored release-core `2.0.0` 和薄 adapter 创建唯一 Candidate Bundle v3。Bundle 包含
+`main.js`、`manifest.json`、`styles.css`、`docwen-assistant-x.y.z.zip`、`SHA256SUMS` 与
+`candidate-bundle.json`，并绑定源码、工具链、core/config/workflow、产品 payload、场景合同与
+fixture 哈希。ZIP 不包含文档或 `data.json`。
 
-安装时只替换 `main.js`、`manifest.json` 与 `styles.css`。发布包绝不包含、覆盖或删除 `data.json`。`manifest.id` 固定为 `docwen-assistant`，由此固定已安装插件身份与设置文件位置。
+## 产品验收
 
-## 只读预检
+DocWen Assistant 是 desktop-only；同一 Bundle 必须完成桌面验收，覆盖五个 imperative settings
+tab、能力发现、校对、转换、校验、编号、取消、未保存缓冲区与并发目标冲突。外部 DocWen
+package 验收与插件宿主验收分别记录，不能互相替代。
 
-手动 workflow dispatch 默认使用 `verify`。只读 job 验证精确 tagged commit、完整仓库门、规范候选摘要与不可变的公开 DocWen 0.9.x 包兼容性 hook，不创建 Release；随后上传一个固定候选 artifact，并记录其 artifact ID 与服务端摘要。
+## 独立工作流
 
-## 发布边界
+生成并签入的 standalone workflow 只接受显式 `workflow_dispatch`。只读 verify job 在精确
+commit 上执行一次独立安装与一次完整 `release:check`，重建并 source-verify Bundle；publish
+job 下载固定 artifact 后只做 transport verification，不恢复 `dist`。
 
-只有 mode 明确为 `publish` 的 dispatch 才能进入具备写权限的 job。该 job 不持久化 checkout 凭据，下载固定 artifact ID，解码可移植 acceptance closure 与 authorization，验证两者的精确 SHA-256 与交叉绑定，并运行只读 core publication boundary。任何远端写入前，`publication-preflight` 先读取 GitHub 状态：Release 不存在才允许暂存、签发 provenance 和创建；既有 Release 只有字节与 provenance 全部精确通过时才作为零写入安全重跑；任何冲突都在这些写入前失败。`publish-github` 在以 `--verify-tag` 创建精确不可变 Release 前重复边界和既有状态检查；不得从 tag 或验收通过推断人工授权。
+## 发布与核验
 
-## 发布后验证
+acceptance closure 不授权发布；单独 authorization 必须绑定同一 Bundle 与 closure。首次写入
+前 workflow 深度校验两份记录、执行 `--verify-tag` 等价门禁和只读 preflight。公共 Release
+恰好包含三个 loose assets 与版本 ZIP；`SHA256SUMS` 和 `candidate-bundle.json` 仅在私有
+Bundle 中。发布后回读托管字节与 provenance。
 
-独立的只读 job 使用同一固定候选回读最终 GitHub Release，要求稳定、非 draft、非 prerelease、不可变状态和精确资产集合。远端下载字节必须与候选一致，每个资产的 attestation 必须绑定同一仓库、workflow、ref、commit 与 GitHub-hosted runner 策略。
+## 失败、回退与部署
 
-## 外部门槛
-
-Immutable Releases、禁止更新或删除数字版本 tag 的 ruleset、受保护的 `release` environment，以及所需 GitHub 权限，都是仓库源码之外的发布前提。Community Plugins 审核和真实用户升级仍是独立外部证据；只有不可变托管状态与精确资产完成核验后，才能报告发布完成。
-
-## 故障与恢复
-
-候选、closure、authorization、tag、DocWen 依赖、artifact 身份或托管状态任一不一致时必须停止，不得 clobber、edit 或重新上传同 tag 资产。发布失败不会授权删除用户 `data.json` 或修改 Vault。
+既有同 tag Release 只有在元数据、四个资产字节与 provenance 完全一致时才是零写 no-op；
+任何差异都失败，修复必须使用新版本。正式 Vault 部署需要对精确 Vault 单独授权，保留
+`data.json`，并且不得把 package、宿主或 Community Plugins 状态混成一个结论。
