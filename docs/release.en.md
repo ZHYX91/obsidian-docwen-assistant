@@ -22,7 +22,8 @@ remote write.
 
 `manifest.json`, `package.json`, `package-lock.json`, and `versions.json` bind one canonical `x.y.z`
 version, the Obsidian `1.12.7` minimum, and the exact commit/tree. A clean worktree must pass
-`npm run release:check`, including the DocWen 0.9.x package compatibility gate.
+the deterministic offline `npm run release:check`. The read-only DocWen 0.9.x package
+compatibility preflight remains a separate external-state gate that is rerun near publication.
 
 ## Candidate Bundle v3
 

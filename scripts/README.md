@@ -11,8 +11,8 @@ npm run release:check
 
 The source gate verifies pinned Node/npm declarations, lint, formatting, bilingual documentation,
 coverage, type checking, production build, exact three-file `dist/`, dependencies, and release
-source contracts. `release:check` additionally runs DocWen compatibility and absent-or-exact tag
-gates.
+source contracts. `release:check` additionally runs the absent-or-exact tag gate while remaining
+deterministic and offline.
 
 ## Release adapter and core
 

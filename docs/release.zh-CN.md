@@ -19,7 +19,8 @@ translation_status: source
 
 `manifest.json`、`package.json`、`package-lock.json` 和 `versions.json` 必须绑定同一规范
 `x.y.z` 版本、Obsidian `1.12.7` 最低版本与精确 commit/tree。干净工作树必须通过
-`npm run release:check`，其中包含 DocWen 0.9.x package compatibility 门禁。
+确定性、离线的 `npm run release:check`。只读 DocWen 0.9.x package compatibility preflight
+保留为独立外部状态门禁，并在临近发布时重新执行。
 
 ## Candidate Bundle v3
 

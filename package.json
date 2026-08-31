@@ -35,7 +35,7 @@
     "release:publish-github": "node scripts/release.mjs publish-github",
     "release:post-verify": "node scripts/release.mjs post-verify",
     "release:docwen-compatibility": "node scripts/check-docwen-compatibility.mjs",
-    "release:check": "npm run check && npm run release:docwen-compatibility && npm run release:validate-tag"
+    "release:check": "npm run check && npm run release:validate-tag"
   },
   "keywords": [
     "obsidian",

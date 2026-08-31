@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,6 +9,16 @@ import {
 } from "../scripts/check-docwen-compatibility.mjs";
 
 describe("public DocWen compatibility preflight", () => {
+  it("stays separate from the deterministic offline candidate gate", () => {
+    const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
+      scripts: Record<string, string>;
+    };
+    expect(packageJson.scripts["release:check"])
+      .toBe("npm run check && npm run release:validate-tag");
+    expect(packageJson.scripts["release:docwen-compatibility"])
+      .toBe("node scripts/check-docwen-compatibility.mjs");
+  });
+
   it("selects the highest compatible immutable stable 0.9.x package", () => {
     const selected = selectPublicDocWenRelease([
       release("0.9.7"),
