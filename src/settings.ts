@@ -1,7 +1,3 @@
-/**
- * Settings UI and persisted settings for DocWen Assistant.
- */
-
 import { App, PluginSettingTab, Setting, type SettingDefinition, type SettingDefinitionItem } from "obsidian";
 import { t } from "./i18n";
 import { showNotice } from "./host/notices";
@@ -23,7 +19,14 @@ import {
   type DocWenPathStatus,
 } from "./settings-docwen-location";
 import { configureNumberingSchemeSetting } from "./settings-numbering-scheme";
+import {
+  assertSettingsWritable,
+  describeSettingsSchemaCompatibility,
+  isSettingsReadOnly,
+  renderSettingsSchemaCompatibility,
+} from "./settings-schema-compatibility";
 import { SettingsTabs } from "./settings-tabs";
+import { renderUsageList } from "./settings-usage";
 
 export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
@@ -48,6 +51,7 @@ export class SettingTab extends PluginSettingTab {
     this.activePageId = this.tabs?.activePageId ?? this.activePageId;
     this.destroyPageSurface();
     this.containerEl.empty();
+    renderSettingsSchemaCompatibility(this.containerEl, this.plugin.getSettingsCompatibility());
     const pages = this.getSettingsPages();
     this.tabs = new SettingsTabs({
       ariaLabel: t("settingsTitle"),
@@ -65,11 +69,12 @@ export class SettingTab extends PluginSettingTab {
         setting,
         this.plugin.settings.docwenCliPath,
         (kind) => void this.selectDocWenLocation(kind),
+        isSettingsReadOnly(this.plugin.getSettingsCompatibility()),
       ),
       renderDocWenDownload: configureDocWenDownloadSetting,
       renderCliStatus: (setting) => this.configurePathStatus(setting),
       renderPersistenceStatus: (setting) => this.configurePersistenceStatus(setting),
-      isPersistencePending: () => this.plugin.getSettingsSaveState() === "pending",
+      isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
       renderHelp: (setting) => {
         setting.setClass("docwen-settings-help");
@@ -89,6 +94,7 @@ export class SettingTab extends PluginSettingTab {
 
   override async setControlValue(key: string, value: unknown): Promise<void> {
     if (!(key in this.plugin.settings)) throw new Error(`Unsupported setting: ${key}`);
+    assertSettingsWritable(this.plugin.getSettingsCompatibility());
     const settingKey = key as SettingsControlKey;
     setSettingValue(this.plugin.settings, settingKey, value);
     if (settingKey === "docwenConnectionMode") this.plugin.resetDocWenRuntime();
@@ -129,12 +135,18 @@ export class SettingTab extends PluginSettingTab {
       return;
     }
     if ("action" in item && item.action) {
-      this.configureAction(setting, item.action, index, evaluate(item.disabled, false));
+      this.configureAction(
+        setting,
+        item.action,
+        index,
+        isSettingsReadOnly(this.plugin.getSettingsCompatibility()) || evaluate(item.disabled, false),
+      );
       return;
     }
     if ("control" in item && item.control) {
       const { control } = item;
-      const disabled = evaluate(control.disabled, false);
+      const disabled = isSettingsReadOnly(this.plugin.getSettingsCompatibility())
+        || evaluate(control.disabled, false);
       const value = this.getControlValue(control.key) ?? control.defaultValue;
       if (control.type === "toggle") {
         setting.addToggle((toggle) => toggle
@@ -202,7 +214,11 @@ export class SettingTab extends PluginSettingTab {
   private configurePersistenceStatus(setting: Setting): void {
     const state = this.plugin.getSettingsSaveState();
     setting.setName(t("settingsPersistence"));
-    setting.setDesc(state === "pending" ? t("settingsChangesPending") : t("settingsChangesSaved"));
+    setting.setDesc(state === "blocked"
+      ? describeSettingsSchemaCompatibility(this.plugin.getSettingsCompatibility())
+      : state === "pending"
+        ? t("settingsChangesPending")
+        : t("settingsChangesSaved"));
     if (state === "pending") {
       setting.addButton((button) => button
         .setButtonText(t("settingsRetry"))
@@ -283,10 +299,12 @@ export class SettingTab extends PluginSettingTab {
       isCurrent: () => this.isCurrentSurface(generation),
       loadSchemes: (signal) => this.plugin.fetchNumberingSchemes(signal),
       setValue: (value) => this.setControlValue(key, value),
+      readOnly: isSettingsReadOnly(this.plugin.getSettingsCompatibility()),
     });
   }
 
   private async selectDocWenLocation(kind: DocWenLocationKind): Promise<void> {
+    assertSettingsWritable(this.plugin.getSettingsCompatibility());
     const generation = this.surfaceGeneration;
     const cliPath = await pickDocWenCliPath(kind);
     if (!cliPath) return;
@@ -321,25 +339,6 @@ export class SettingTab extends PluginSettingTab {
       && (this.containerEl.isConnected || hostSetting?.activeTab === this);
   }
 
-}
-
-function renderUsageList(containerEl: HTMLElement, markup: string): void {
-  const list = containerEl.createEl("ul");
-  for (const match of markup.matchAll(/<li>([\s\S]*?)<\/li>/gu)) {
-    const itemMarkup = match[1]?.trim();
-    if (!itemMarkup) continue;
-    const item = list.createEl("li");
-    for (const fragment of itemMarkup.split(/(<b>[\s\S]*?<\/b>)/gu)) {
-      if (!fragment) continue;
-      const strong = /^<b>([\s\S]*?)<\/b>$/u.exec(fragment);
-      if (strong?.[1]) {
-        item.createEl("strong", { text: strong[1] });
-        continue;
-      }
-      const text = fragment.replace(/<[^>]*>/gu, "");
-      if (text) item.createSpan({ text });
-    }
-  }
 }
 
 function evaluate(value: boolean | (() => boolean) | undefined, fallback: boolean): boolean {

@@ -19,6 +19,7 @@ export function configureDocWenLocationSetting(
   setting: Setting,
   value: string,
   selectLocation: (kind: DocWenLocationKind) => void,
+  readOnly = false,
 ): void {
   setting.settingEl.addClass("docwen-location-setting");
   setting
@@ -33,11 +34,14 @@ export function configureDocWenLocationSetting(
     .addButton((button) => button
       .setButtonText(t("settingsSelectProgram"))
       .setTooltip(t("settingsSelectProgram"))
+      .setDisabled(readOnly)
       .onClick(() => selectLocation("program")))
     .addButton((button) => button
       .setButtonText(t("settingsSelectFolder"))
       .setTooltip(t("settingsSelectFolder"))
+      .setDisabled(readOnly)
       .onClick(() => selectLocation("directory")));
+  if (readOnly) setting.settingEl.setAttribute("aria-disabled", "true");
 }
 
 export function configureDocWenDownloadSetting(

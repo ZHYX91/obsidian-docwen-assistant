@@ -203,7 +203,7 @@ describe("settings surface lifecycle", () => {
     expect(tab.getSettingDefinitions()).toEqual([]);
     tab.display();
 
-    const root = tab.containerEl.children[0];
+    const root = (tab.containerEl as unknown as FakeElement).children[0];
     const tabList = root.children[0];
     const panel = root.children[1];
     expect(tabList.attributes.get("role")).toBe("tablist");
@@ -214,12 +214,51 @@ describe("settings surface lifecycle", () => {
     expect(settings.some((setting) => setting.nameEl.textContent === "General")).toBe(false);
   });
 
+  it("shows future-schema settings as explicitly incompatible and read-only", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const save = vi.fn().mockResolvedValue(undefined);
+    const plugin = settingsPlugin({
+      ...DEFAULT_SETTINGS,
+      docwenConnectionMode: "manual",
+      docwenCliPath: "D:\\DocWen\\DocWenCLI.exe",
+    }, save, {
+      status: "incompatible",
+      currentSchemaVersion: 1,
+      storedSchemaVersion: 2,
+      reason: "future-schema",
+    });
+    const tab = new SettingTab({} as never, plugin as never);
+
+    tab.display();
+
+    const warning = settings.find((setting) => setting.nameEl.textContent === "Settings are read-only")!;
+    expect(warning.settingEl.attributes.get("role")).toBe("alert");
+    expect(warning.settingEl.attributes.get("aria-live")).toBe("assertive");
+    expect(warning.descEl.textContent).toContain("unsupported schema 2");
+    expect(warning.descEl.textContent).toContain("supports schema 1");
+    expect(warning.descEl.textContent).toContain("was not rewritten");
+
+    const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings persistence")!;
+    expect(persistence.descEl.textContent).toContain("unsupported schema 2");
+    expect(buttons.every((button) => button.disabled)).toBe(true);
+    expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
+
+    const tabRoot = (tab.containerEl as unknown as FakeElement).children[1];
+    expect(tabRoot.children[0].children).toHaveLength(5);
+    await expect(tab.setControlValue("extractImages", false)).rejects.toMatchObject({
+      code: "settings_schema_incompatible",
+    });
+    expect(plugin.settings.extractImages).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it("renders Usage as one help card without repeating the tab title", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
     tab.display();
-    const tabButtons = tab.containerEl.children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
 
     tabButtons[4].dispatch("click");
 
@@ -258,7 +297,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const tabButtons = tab.containerEl.children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
     tabButtons[1].dispatch("click");
     const extractImages = toggles[0];
 
@@ -280,7 +319,7 @@ describe("settings surface lifecycle", () => {
     await dropdowns[0].choose("zh-CN");
     await vi.waitFor(() => expect(plugin.settings.language).toBe("zh-CN"));
 
-    const tabButtons = tab.containerEl.children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
     expect(tabButtons[0].textContent).toBe("常规");
     expect(tabButtons[4].textContent).toBe("使用方法");
   });
@@ -396,7 +435,7 @@ describe("settings surface lifecycle", () => {
     await expect(tab.setControlValue("extractImages", false)).rejects.toThrow("disk full");
 
     expect(lifecycle).not.toContain("base-update");
-    expect(tab.containerEl.children).not.toHaveLength(0);
+    expect((tab.containerEl as unknown as FakeElement).children).not.toHaveLength(0);
   });
 
   it("updates a connected path status row without replacing the current page", async () => {
@@ -426,7 +465,7 @@ describe("settings surface lifecycle", () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
-    tab.containerEl.isConnected = false;
+    (tab.containerEl as unknown as FakeElement).isConnected = false;
     const internals = tab as unknown as {
       setting: { activeTab: unknown };
       isCurrentSurface(generation: number): boolean;
@@ -536,12 +575,21 @@ describe("settings surface lifecycle", () => {
   });
 });
 
-function settingsPlugin(defaults: Record<string, unknown>, saveSettings = vi.fn().mockResolvedValue(undefined)) {
+function settingsPlugin(
+  defaults: Record<string, unknown>,
+  saveSettings = vi.fn().mockResolvedValue(undefined),
+  compatibility: Record<string, unknown> = {
+    status: "compatible",
+    currentSchemaVersion: 1,
+    storedSchemaVersion: 1,
+  },
+) {
   let connectionStatus: Record<string, unknown> = { state: "unchecked" };
   return {
     settings: { ...defaults },
     fetchNumberingSchemes: vi.fn().mockResolvedValue([]),
-    getSettingsSaveState: vi.fn(() => "saved"),
+    getSettingsSaveState: vi.fn(() => compatibility.status === "incompatible" ? "blocked" : "saved"),
+    getSettingsCompatibility: vi.fn(() => compatibility),
     retrySettingsSave: vi.fn().mockResolvedValue(undefined),
     runDoctorCheck: vi.fn().mockResolvedValue(undefined),
     getDocWenConnectionStatus: vi.fn(() => connectionStatus),

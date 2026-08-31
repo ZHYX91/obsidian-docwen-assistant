@@ -41,7 +41,41 @@ export interface PluginSettings {
 
 export type SettingsControlKey = keyof PluginSettings;
 
-export const DEFAULT_SETTINGS: PluginSettings = {
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 1 as const;
+
+export interface PersistedPluginSettings extends PluginSettings {
+  schemaVersion: typeof CURRENT_SETTINGS_SCHEMA_VERSION;
+}
+
+export type SettingsCompatibility =
+  | {
+      readonly status: "compatible";
+      readonly currentSchemaVersion: typeof CURRENT_SETTINGS_SCHEMA_VERSION;
+      readonly storedSchemaVersion: 0 | typeof CURRENT_SETTINGS_SCHEMA_VERSION;
+    }
+  | {
+      readonly status: "incompatible";
+      readonly currentSchemaVersion: typeof CURRENT_SETTINGS_SCHEMA_VERSION;
+      readonly storedSchemaVersion: number | null;
+      readonly reason: "future-schema" | "invalid-schema";
+    };
+
+export interface SettingsLoadResult {
+  readonly settings: PluginSettings;
+  readonly compatibility: SettingsCompatibility;
+  readonly migration: PersistedPluginSettings | null;
+}
+
+export class SettingsSchemaIncompatibleError extends Error {
+  readonly code = "settings_schema_incompatible";
+
+  constructor(readonly compatibility: Extract<SettingsCompatibility, { status: "incompatible" }>) {
+    super("The stored settings schema is incompatible and read-only.");
+    this.name = "SettingsSchemaIncompatibleError";
+  }
+}
+
+export const DEFAULT_SETTINGS: Readonly<PluginSettings> = Object.freeze({
   language: "auto",
   docwenConnectionMode: "automatic",
   docwenCliPath: "",
@@ -63,9 +97,13 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   proofreadSymbol: true,
   proofreadPunct: true,
   proofreadSensitive: true,
-};
+});
 
-/** Keep only settings owned by the current schema; all unrecognized fields are ignored. */
+/**
+ * Normalize current-schema values without mutating the input. This function is
+ * intentionally schema-agnostic so future data can be presented read-only
+ * without ever being rewritten by the current plugin.
+ */
 export function normalizeSettings(
   value: unknown,
   platform: NodeJS.Platform = process.platform,
@@ -74,10 +112,8 @@ export function normalizeSettings(
     typeof value === "object" && value !== null && !Array.isArray(value)
       ? (value as Record<string, unknown>)
       : {};
-  const normalized = {
-    ...DEFAULT_SETTINGS,
-    docwenConnectionMode: platform === "win32" ? "automatic" : "manual",
-  } satisfies PluginSettings;
+  const normalized = cloneDefaultSettings();
+  normalized.docwenConnectionMode = platform === "win32" ? "automatic" : "manual";
   const output = normalized as unknown as Record<string, unknown>;
   for (const [key, defaultValue] of Object.entries(DEFAULT_SETTINGS)) {
     const candidate = input[key];
@@ -97,6 +133,69 @@ export function normalizeSettings(
   }
   if (platform !== "win32") normalized.docwenConnectionMode = "manual";
   return normalized;
+}
+
+/** Resolve persisted data into a runtime view and an optional safe migration. */
+export function loadSettingsData(
+  value: unknown,
+  platform: NodeJS.Platform = process.platform,
+): SettingsLoadResult {
+  const input = asRecord(value);
+  const hasSchemaVersion = input !== null
+    && Object.prototype.hasOwnProperty.call(input, "schemaVersion");
+  const storedSchemaVersion = hasSchemaVersion ? input.schemaVersion : undefined;
+  const settings = normalizeSettings(input ?? {}, platform);
+
+  if (hasSchemaVersion && !isValidSchemaVersion(storedSchemaVersion)) {
+    return {
+      settings,
+      compatibility: {
+        status: "incompatible",
+        currentSchemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
+        storedSchemaVersion: typeof storedSchemaVersion === "number" && Number.isFinite(storedSchemaVersion)
+          ? storedSchemaVersion
+          : null,
+        reason: "invalid-schema",
+      },
+      migration: null,
+    };
+  }
+
+  if (
+    typeof storedSchemaVersion === "number"
+    && storedSchemaVersion > CURRENT_SETTINGS_SCHEMA_VERSION
+  ) {
+    return {
+      settings,
+      compatibility: {
+        status: "incompatible",
+        currentSchemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
+        storedSchemaVersion,
+        reason: "future-schema",
+      },
+      migration: null,
+    };
+  }
+
+  const snapshot = createSettingsSnapshot(settings);
+  const canonical = input !== null && JSON.stringify(input) === JSON.stringify(snapshot);
+  return {
+    settings,
+    compatibility: {
+      status: "compatible",
+      currentSchemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
+      storedSchemaVersion: hasSchemaVersion ? CURRENT_SETTINGS_SCHEMA_VERSION : 0,
+    },
+    migration: canonical ? null : snapshot,
+  };
+}
+
+/** Create an owned deep copy suitable for persistence. */
+export function createSettingsSnapshot(settings: PluginSettings): PersistedPluginSettings {
+  return {
+    schemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
+    ...structuredClone(settings),
+  };
 }
 
 export function setSettingValue(
@@ -138,4 +237,18 @@ function isSettingValue(key: SettingsControlKey, value: unknown): boolean {
     default:
       return true;
   }
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function cloneDefaultSettings(): PluginSettings {
+  return structuredClone(DEFAULT_SETTINGS);
+}
+
+function isValidSchemaVersion(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 1;
 }

@@ -12,6 +12,7 @@ interface NumberingSchemeSettingOptions {
   readonly isCurrent: () => boolean;
   readonly loadSchemes: (signal: AbortSignal) => Promise<readonly NumberingScheme[] | null | undefined>;
   readonly setValue: (value: string) => Promise<void>;
+  readonly readOnly?: boolean;
 }
 
 export function configureNumberingSchemeSetting(
@@ -63,10 +64,10 @@ export function configureNumberingSchemeSetting(
     );
     if (loading) setting.descEl.classList.add("docwen-settings-status-loading");
     if (failed) setting.descEl.classList.add("docwen-settings-status-error");
-    dropdown?.setDisabled(loading);
+    dropdown?.setDisabled(loading || options.readOnly === true);
     if (retryButton) {
       retryButton.buttonEl.hidden = !failed;
-      retryButton.setDisabled(!failed);
+      retryButton.setDisabled(!failed || options.readOnly === true);
     }
   };
 
@@ -104,6 +105,7 @@ export function configureNumberingSchemeSetting(
         .onClick(loadSchemes);
       button.buttonEl.hidden = true;
     });
+  if (options.readOnly) setting.settingEl.setAttribute("aria-disabled", "true");
   loadSchemes();
 
   return () => {

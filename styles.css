@@ -100,6 +100,23 @@
   color: var(--text-normal);
 }
 
+.docwen-settings-schema-warning.setting-item {
+  background: var(--background-secondary);
+  border: 1px solid var(--text-error);
+  border-radius: var(--radius-m);
+  margin-block-end: var(--size-4-4);
+  padding: var(--size-4-3);
+}
+
+.docwen-settings-schema-warning .setting-item-name {
+  color: var(--text-error);
+  font-weight: var(--font-semibold);
+}
+
+.docwen-settings-schema-warning .setting-item-description {
+  color: var(--text-normal);
+}
+
 .docwen-modal-actions {
   align-items: center;
   display: flex;

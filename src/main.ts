@@ -7,7 +7,15 @@
 
 import { Plugin, TFile, type Command } from "obsidian";
 import { SettingTab } from "./settings";
-import { normalizeSettings, type PluginSettings } from "./settings-model";
+import {
+  CURRENT_SETTINGS_SCHEMA_VERSION,
+  createSettingsSnapshot,
+  loadSettingsData,
+  SettingsSchemaIncompatibleError,
+  type PersistedPluginSettings,
+  type PluginSettings,
+  type SettingsCompatibility,
+} from "./settings-model";
 import { t, type Translations } from "./i18n";
 import { ActionRunner } from "./actions/action-runner";
 import { ExportActions } from "./actions/export-actions";
@@ -54,7 +62,12 @@ export default class DocWenPlugin extends Plugin {
   private actionRunner!: ActionRunner;
   private operationStatus: OperationStatus | null = null;
   private runtimeEpoch = 0;
-  private settingsSaves!: SettingsSaveCoordinator<PluginSettings>;
+  private settingsSaves!: SettingsSaveCoordinator<PersistedPluginSettings>;
+  private settingsCompatibility: SettingsCompatibility = {
+    status: "compatible",
+    currentSchemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
+    storedSchemaVersion: 0,
+  };
   private ribbonIconEl: HTMLElement | null = null;
   private readonly localizedCommands: Array<{ command: Command; key: keyof Translations }> = [];
   private runtimeDisposer = new RuntimeDisposer();
@@ -412,9 +425,11 @@ export default class DocWenPlugin extends Plugin {
    */
   async loadSettings() {
     const stored: unknown = await this.loadData();
-    this.settings = normalizeSettings(stored);
-    if (JSON.stringify(stored ?? {}) !== JSON.stringify(this.settings)) {
-      void this.settingsSaves.save({ ...this.settings }).catch(() => undefined);
+    const loaded = loadSettingsData(stored);
+    this.settings = loaded.settings;
+    this.settingsCompatibility = loaded.compatibility;
+    if (loaded.migration !== null) {
+      void this.settingsSaves.save(loaded.migration).catch(() => undefined);
     }
   }
 
@@ -422,9 +437,12 @@ export default class DocWenPlugin extends Plugin {
    * Save plugin settings to storage
    */
   async saveSettings() {
+    if (this.settingsCompatibility.status === "incompatible") {
+      throw new SettingsSchemaIncompatibleError(this.settingsCompatibility);
+    }
     initializePluginI18n(this.settings.language);
     this.refreshLocalizedChrome();
-    await this.settingsSaves.save({ ...this.settings });
+    await this.settingsSaves.save(createSettingsSnapshot(this.settings));
   }
 
   private addLocalizedCommand(
@@ -446,7 +464,12 @@ export default class DocWenPlugin extends Plugin {
   }
 
   getSettingsSaveState(): SettingsSaveState {
+    if (this.settingsCompatibility.status === "incompatible") return "blocked";
     return this.settingsSaves.getState();
+  }
+
+  getSettingsCompatibility(): SettingsCompatibility {
+    return this.settingsCompatibility;
   }
 
   retrySettingsSave(): Promise<void> {

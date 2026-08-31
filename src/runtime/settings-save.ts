@@ -1,4 +1,4 @@
-export type SettingsSaveState = "saved" | "saving" | "pending";
+export type SettingsSaveState = "saved" | "saving" | "pending" | "blocked";
 
 /** Serializes immutable settings snapshots and retains the latest failed one. */
 export class SettingsSaveCoordinator<T> {

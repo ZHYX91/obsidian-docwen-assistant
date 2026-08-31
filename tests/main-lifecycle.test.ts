@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createSettingsSnapshot, normalizeSettings } from "../src/settings-model";
 
 const state = vi.hoisted(() => ({
   activeFile: null as null | { path: string },
@@ -11,6 +12,7 @@ const state = vi.hoisted(() => ({
   cancelAllCalls: 0,
   capabilityResetCalls: 0,
   monitorResetCalls: 0,
+  savedData: [] as unknown[],
   throwFromRibbon: false,
 }));
 
@@ -32,7 +34,7 @@ vi.mock("obsidian", () => ({
       },
     };
     loadData = () => state.loadData();
-    saveData = async () => undefined;
+    saveData = async (value: unknown) => { state.savedData.push(structuredClone(value)); };
     registerEvent(): void {}
     addRibbonIcon(): FakeElement {
       if (state.throwFromRibbon) throw new Error("ribbon failed");
@@ -50,9 +52,6 @@ vi.mock("obsidian", () => ({
 }));
 
 vi.mock("../src/settings", () => ({ SettingTab: class SettingTab {} }));
-vi.mock("../src/settings-model", () => ({
-  normalizeSettings: () => ({ language: "system", docwenCliPath: "DocWenCLI.exe" }),
-}));
 vi.mock("../src/i18n", () => ({ t: (key: string) => key }));
 vi.mock("../src/host-language", () => ({
   getDocWenLanguage: () => "en-US",
@@ -74,7 +73,7 @@ vi.mock("../src/actions/gui-actions", () => ({ GuiActions: class GuiActions {} }
 vi.mock("../src/actions/numbering-actions", () => ({ NumberingActions: class NumberingActions {} }));
 vi.mock("../src/actions/proofread-actions", () => ({ ProofreadActions: class ProofreadActions {} }));
 vi.mock("../src/docwen", () => ({
-  resolveDocWenCliPath: (value: string) => value,
+  resolveDocWenLaunchTarget: (_mode: string, value: string) => value,
   DocWenMachineClient: class DocWenMachineClient {
     dispose(): void {
       state.cleanup.push("client");
@@ -141,13 +140,14 @@ describe("DocWenPlugin lifecycle", () => {
     state.cancelAllCalls = 0;
     state.capabilityResetCalls = 0;
     state.monitorResetCalls = 0;
+    state.savedData.length = 0;
     state.throwFromRibbon = false;
-    state.loadData = async () => ({});
+    state.loadData = async () => createSettingsSnapshot(normalizeSettings(null));
   });
 
   it("rolls back partially initialized resources in reverse order", async () => {
     const { default: DocWenPlugin } = await import("../src/main");
-    const plugin = new DocWenPlugin();
+    const plugin = new DocWenPlugin({} as never, {} as never);
     state.throwFromRibbon = true;
 
     await expect(plugin.onload()).rejects.toThrow("ribbon failed");
@@ -161,7 +161,7 @@ describe("DocWenPlugin lifecycle", () => {
       resolveLoad = resolve;
     });
     const { default: DocWenPlugin } = await import("../src/main");
-    const plugin = new DocWenPlugin();
+    const plugin = new DocWenPlugin({} as never, {} as never);
 
     const loading = plugin.onload();
     plugin.onunload();
@@ -173,7 +173,7 @@ describe("DocWenPlugin lifecycle", () => {
 
   it("resets operations, connection state, and capability state through one runtime entry", async () => {
     const { default: DocWenPlugin } = await import("../src/main");
-    const plugin = new DocWenPlugin();
+    const plugin = new DocWenPlugin({} as never, {} as never);
     await plugin.onload();
 
     plugin.resetDocWenRuntime();
@@ -188,7 +188,7 @@ describe("DocWenPlugin lifecycle", () => {
     state.activeFile = { path: "note.md" };
     state.cachedCapability = { inspection: { supportedActions: ["validate"] } };
     const { default: DocWenPlugin } = await import("../src/main");
-    const plugin = new DocWenPlugin();
+    const plugin = new DocWenPlugin({} as never, {} as never);
 
     await plugin.onload();
 
@@ -203,7 +203,7 @@ describe("DocWenPlugin lifecycle", () => {
 
   it("registers keyboard cancellation for one or all active operations", async () => {
     const { default: DocWenPlugin } = await import("../src/main");
-    const plugin = new DocWenPlugin();
+    const plugin = new DocWenPlugin({} as never, {} as never);
     await plugin.onload();
     const check = (id: string) => state.commands.find((command) => command.id === id)?.checkCallback as
       ((checking: boolean) => boolean);
@@ -218,6 +218,60 @@ describe("DocWenPlugin lifecycle", () => {
     expect(state.cancelled).toEqual([9]);
     expect(check("cancel-all-operations")(false)).toBe(true);
     expect(state.cancelAllCalls).toBe(1);
+    plugin.onunload();
+  });
+
+  it("migrates legacy unversioned settings through the serialized persistence boundary", async () => {
+    state.loadData = async () => ({
+      docwenCliPath: "D:\\DocWen\\DocWenCLI.exe",
+      extractImages: false,
+    });
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+
+    await plugin.onload();
+    await vi.waitFor(() => expect(state.savedData).toHaveLength(1));
+
+    expect(state.savedData[0]).toMatchObject({
+      schemaVersion: 1,
+      docwenConnectionMode: "manual",
+      docwenCliPath: "D:\\DocWen\\DocWenCLI.exe",
+      extractImages: false,
+    });
+    expect(plugin.getSettingsSaveState()).toBe("saved");
+    plugin.onunload();
+  });
+
+  it("does not rewrite or save settings from a future schema", async () => {
+    const future = {
+      schemaVersion: 2,
+      language: "en",
+      extractImages: false,
+      futureField: { preserve: "exactly" },
+    };
+    const before = structuredClone(future);
+    state.loadData = async () => future;
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+
+    await plugin.onload();
+    await Promise.resolve();
+
+    expect(state.savedData).toEqual([]);
+    expect(future).toEqual(before);
+    expect(plugin.getSettingsSaveState()).toBe("blocked");
+    expect(plugin.getSettingsCompatibility()).toMatchObject({
+      status: "incompatible",
+      storedSchemaVersion: 2,
+      reason: "future-schema",
+    });
+
+    plugin.settings.extractImages = true;
+    await expect(plugin.saveSettings()).rejects.toMatchObject({
+      code: "settings_schema_incompatible",
+    });
+    expect(state.savedData).toEqual([]);
+    expect(future).toEqual(before);
     plugin.onunload();
   });
 });

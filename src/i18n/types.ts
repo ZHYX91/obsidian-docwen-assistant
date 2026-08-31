@@ -60,6 +60,8 @@ export interface Translations {
   settingsChangesSaved: string;
   settingsChangesPending: string;
   settingsRetry: string;
+  settingsSchemaReadOnlyTitle: string;
+  settingsSchemaReadOnlyDesc: string;
   settingsDoctorDesc: string;
   dialogDocWenSetupTitle: string;
   dialogOpenSettings: string;
