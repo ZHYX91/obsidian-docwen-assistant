@@ -14,7 +14,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-// @ts-expect-error The JavaScript release adapter is exercised directly.
 import {
   releaseConfig,
   verifyReleaseCorePin,

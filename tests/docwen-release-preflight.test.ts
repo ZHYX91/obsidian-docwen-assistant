@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-// @ts-expect-error The product preflight is a directly exercised JavaScript module.
 import {
   PUBLIC_DOCWEN_ASSET,
   PUBLIC_DOCWEN_REPOSITORY,
