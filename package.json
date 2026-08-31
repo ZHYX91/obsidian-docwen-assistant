@@ -1,6 +1,6 @@
 {
   "name": "docwen-assistant",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "main": "dist/main.js",
   "scripts": {

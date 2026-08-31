@@ -4,6 +4,15 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-09-01
+
+### Changed
+
+- Migrated release handoff to the single Candidate Bundle v3 contract backed by release-core 2.0,
+  with source-candidate and transport-candidate verification kept as separate claims.
+- Kept candidate verification offline and added a repository-owned product scenario contract for
+  independently reproducible desktop acceptance.
+
 ## [2.2.2] - 2026-08-31
 
 ### Fixed
@@ -97,7 +106,9 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.1...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.3...HEAD
+[2.2.3]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.2...2.2.3
+[2.2.2]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...2.1.1
