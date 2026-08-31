@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-30
+
 ### Added
 
 - Added strict consumption of `number-suite.interop.v2`, including H1-H9 targets, nine counters,
@@ -80,7 +82,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.1...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.0...HEAD
+[2.2.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.1...2.2.0
 [2.1.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.1...2.1.0
 [2.0.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.0.0...2.0.1
