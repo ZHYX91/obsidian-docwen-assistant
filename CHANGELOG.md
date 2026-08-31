@@ -4,6 +4,14 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-08-31
+
+### Fixed
+
+- Restored the exact production assets from the fixed candidate handoff before detached GitHub
+  publication and post-verification jobs validate it, keeping those jobs independent from
+  untracked build output.
+
 ## [2.2.1] - 2026-08-31
 
 ### Fixed

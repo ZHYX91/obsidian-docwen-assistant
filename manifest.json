@@ -1,7 +1,7 @@
 {
   "id": "docwen-assistant",
   "name": "DocWen Assistant",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "minAppVersion": "1.12.7",
   "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "author": "ZhengYX",

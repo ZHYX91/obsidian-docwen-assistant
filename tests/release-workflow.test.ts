@@ -93,6 +93,29 @@ describe("release workflow boundary", () => {
     expect(publish).not.toContain("console.log");
   });
 
+  it("restores exact production assets before detached handoff verification", () => {
+    const restoreName = "Restore exact production assets from fixed handoff";
+    const expectedCopies = [
+      'cp "$RUNNER_TEMP/release-candidate/main.js" dist/main.js',
+      'cp "$RUNNER_TEMP/release-candidate/manifest.json" dist/manifest.json',
+      'cp "$RUNNER_TEMP/release-candidate/styles.css" dist/styles.css',
+    ];
+    const publishRestore = workflowStep(publish, restoreName);
+    const postVerifyRestore = workflowStep(postVerify, restoreName);
+
+    for (const step of [publishRestore, postVerifyRestore]) {
+      expect(step).toContain("test ! -e dist");
+      expect(step).toContain("mkdir dist");
+      for (const copy of expectedCopies) expect(step).toContain(copy);
+    }
+    expect(publish.indexOf(restoreName)).toBeLessThan(
+      publish.indexOf("Verify fixed handoff before publication"),
+    );
+    expect(postVerify.indexOf(restoreName)).toBeLessThan(
+      postVerify.indexOf("Reverify fixed handoff"),
+    );
+  });
+
   it("orders the offline boundary, read-only preflight, writes, and post-verification", () => {
     const boundaryIndex = publish.indexOf("node scripts/release.mjs publication-boundary");
     const preflightIndex = publish.indexOf("node scripts/release.mjs publication-preflight");

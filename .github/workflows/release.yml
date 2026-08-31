@@ -191,6 +191,16 @@ jobs:
           path: ${{ runner.temp }}/release-candidate
           digest-mismatch: error
 
+      - name: Restore exact production assets from fixed handoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e dist
+          mkdir dist
+          cp "$RUNNER_TEMP/release-candidate/main.js" dist/main.js
+          cp "$RUNNER_TEMP/release-candidate/manifest.json" dist/manifest.json
+          cp "$RUNNER_TEMP/release-candidate/styles.css" dist/styles.css
+
       - name: Verify transported acceptance and authorization evidence
         shell: bash
         env:
@@ -506,6 +516,16 @@ jobs:
           artifact-ids: ${{ needs.verify.outputs.candidate_artifact_id }}
           path: ${{ runner.temp }}/release-candidate
           digest-mismatch: error
+
+      - name: Restore exact production assets from fixed handoff
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e dist
+          mkdir dist
+          cp "$RUNNER_TEMP/release-candidate/main.js" dist/main.js
+          cp "$RUNNER_TEMP/release-candidate/manifest.json" dist/manifest.json
+          cp "$RUNNER_TEMP/release-candidate/styles.css" dist/styles.css
 
       - name: Reverify fixed handoff
         run: >-
