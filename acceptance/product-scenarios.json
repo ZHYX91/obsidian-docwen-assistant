@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "kind": "obsidian-plugin/product-scenarios-v1",
+  "schemaVersion": 2,
+  "kind": "obsidian-plugin/product-scenarios-v2",
   "pluginId": "docwen-assistant",
   "materializer": {
     "kind": "copy-v1",
@@ -18,6 +18,9 @@
       "surfaces": [
         "desktop"
       ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
       "steps": [
         "Exercise the five imperative settings tabs and capability discovery",
         "Run proofread, conversion, validation, and numbering against the deterministic notes",
