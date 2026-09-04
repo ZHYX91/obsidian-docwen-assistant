@@ -7,7 +7,7 @@ This repository contains the TypeScript DocWen Assistant plugin for Obsidian. Th
 ## Settings Surface Policy
 
 Declarative settings are intentionally disabled because non-empty definitions bypass DocWen
-Assistant's five-tab `PluginSettingTab.display()` layout on Obsidian 1.13 and degrade the user
+Assistant's four-tab `PluginSettingTab.display()` layout on Obsidian 1.13 and degrade the user
 experience. Keep `getSettingDefinitions()` returning an empty array. Dormant definition helpers may
 remain, but must not become active accidentally. Do not flag the `display()` deprecation, empty
 definitions, or missing settings search, and do not propose a declarative migration unless the user

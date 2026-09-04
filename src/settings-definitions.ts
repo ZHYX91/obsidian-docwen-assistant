@@ -5,7 +5,7 @@ import type { PluginSettings, SettingsControlKey } from "./settings-model";
 export type { SettingsControlKey } from "./settings-model";
 type NumberingAddKey = "docToMdAddNumbering" | "mdToDocAddNumbering";
 
-export type SettingsPageId = "general" | "markdown" | "word" | "proofread" | "usage";
+export type SettingsPageId = "general" | "markdown" | "word" | "proofread";
 
 /** Shared page model consumed by the current top-tab settings surface. */
 export interface SettingsPageDefinition {
@@ -22,7 +22,7 @@ export interface SettingsPageContext {
   readonly renderPersistenceStatus: (setting: Setting) => void;
   readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
-  readonly renderHelp: (setting: Setting) => void;
+  readonly renderGuide: (setting: Setting, title: string, body: string) => void;
   readonly runDoctor: () => void;
 }
 
@@ -35,6 +35,7 @@ export function getSettingsPages(
       id: "general",
       name: t("settingsGeneralTitle"),
       items: [
+        guide(context, t("settingsGeneralGuideTitle"), t("settingsGeneralGuideDesc")),
         dropdown("language", t("settingsLanguage"), t("settingsLanguageDesc"), languageDropdownOptions(t("settingsLanguageAuto"))),
         dropdown(
           "docwenConnectionMode",
@@ -67,6 +68,7 @@ export function getSettingsPages(
       id: "markdown",
       name: t("settingsExportMdTitle"),
       items: [
+        guide(context, t("settingsMarkdownGuideTitle"), t("settingsMarkdownGuideDesc")),
         toggle("extractImages", t("settingsExtractImages"), t("settingsExtractImagesDesc")),
         dropdown("imageMode", t("settingsImageMode"), t("settingsImageModeDesc"), {
           file: t("settingsImageModeFile"),
@@ -95,11 +97,11 @@ export function getSettingsPages(
           image_md: t("settingsOcrPlacementImageMd"),
           main_md: t("settingsOcrPlacementMainMd"),
         }, () => !context.settings.enableOcr),
+        number("renderDpi", t("settingsRenderDpi"), t("settingsRenderDpiDesc"), 72, 600),
         dropdown("tableMergeStrategy", t("settingsTableMergeStrategy"), t("settingsTableMergeStrategyDesc"), {
           fill: t("settingsTableMergeStrategyFill"),
           empty: t("settingsTableMergeStrategyEmpty"),
           marker: t("settingsTableMergeStrategyMarker"),
-          replicate: t("settingsTableMergeStrategyReplicate"),
         }),
         cleanNumbering("docToMdCleanNumbering"),
         numberingScheme(context, "docToMdAddNumbering"),
@@ -109,6 +111,7 @@ export function getSettingsPages(
       id: "word",
       name: t("settingsExportDocTitle"),
       items: [
+        guide(context, t("settingsWordGuideTitle"), t("settingsWordGuideDesc")),
         dropdown("headingMergeMode", t("settingsHeadingMergeMode"), t("settingsHeadingMergeModeDesc"), {
           punct_required: t("settingsHeadingMergeModePunctRequired"),
           always: t("settingsHeadingMergeModeAlways"),
@@ -120,17 +123,13 @@ export function getSettingsPages(
       id: "proofread",
       name: t("settingsProofreadTitle"),
       items: [
+        guide(context, t("settingsProofreadGuideTitle"), t("settingsProofreadGuideDesc")),
         toggle("proofreadOnConvert", t("settingsProofreadOnConvert"), t("settingsProofreadOnConvertDesc")),
         toggle("proofreadTypo", t("settingsProofreadTypo"), t("settingsProofreadTypoDesc")),
         toggle("proofreadSymbol", t("settingsProofreadSymbol"), t("settingsProofreadSymbolDesc")),
         toggle("proofreadPunct", t("settingsProofreadPunct"), t("settingsProofreadPunctDesc")),
         toggle("proofreadSensitive", t("settingsProofreadSensitive"), t("settingsProofreadSensitiveDesc")),
       ],
-    },
-    {
-      id: "usage",
-      name: t("settingsUsageTitle"),
-      items: [{ name: t("settingsUsageTitle"), render: context.renderHelp }],
     },
   ];
 }
@@ -151,6 +150,27 @@ function dropdown(
   disabled?: () => boolean,
 ): SettingDefinition<SettingsControlKey> {
   return { name, desc, control: { type: "dropdown", key, options, disabled } };
+}
+
+function number(
+  key: SettingsControlKey,
+  name: string,
+  desc: string,
+  min: number,
+  max: number,
+): SettingDefinition<SettingsControlKey> {
+  return { name, desc, control: { type: "number", key, min, max, step: 1 } };
+}
+
+function guide(
+  context: SettingsPageContext,
+  title: string,
+  body: string,
+): SettingDefinition<SettingsControlKey> {
+  return {
+    name: title,
+    render: (setting) => context.renderGuide(setting, title, body),
+  };
 }
 
 function cleanNumbering(

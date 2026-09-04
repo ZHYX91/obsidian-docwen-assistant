@@ -11,6 +11,7 @@ export function buildMarkdownExportOptions(settings: PluginSettings): ConvertOpt
     enableOcr: settings.enableOcr,
     ocrLanguage: settings.ocrLanguage,
     ocrPlacement: settings.ocrPlacement,
+    renderDpi: settings.renderDpi,
   };
 }
 

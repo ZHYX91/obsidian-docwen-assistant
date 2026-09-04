@@ -74,6 +74,31 @@ describe("settings model", () => {
     expect(reloaded.compatibility.status).toBe("compatible");
   });
 
+  it("migrates schema 1 settings, adds render DPI, and normalizes the retired table alias", () => {
+    const loaded = loadSettingsData({
+      schemaVersion: 1,
+      tableMergeStrategy: "replicate",
+      proofreadPunct: false,
+    }, "win32");
+
+    expect(loaded.compatibility).toEqual({
+      status: "compatible",
+      currentSchemaVersion: 2,
+      storedSchemaVersion: 1,
+    });
+    expect(loaded.settings.tableMergeStrategy).toBe("fill");
+    expect(loaded.settings.renderDpi).toBe(200);
+    expect(loaded.settings.proofreadPunct).toBe(false);
+    expect(loaded.migration).toEqual(createSettingsSnapshot(loaded.settings));
+  });
+
+  it("accepts only integer render DPI values from 72 through 600", () => {
+    expect(normalizeSettings({ renderDpi: 72 }).renderDpi).toBe(72);
+    expect(normalizeSettings({ renderDpi: 600 }).renderDpi).toBe(600);
+    expect(normalizeSettings({ renderDpi: 71 }).renderDpi).toBe(200);
+    expect(normalizeSettings({ renderDpi: 200.5 }).renderDpi).toBe(200);
+  });
+
   it("fails closed for future schemas without removing unknown fields", () => {
     const future = {
       schemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION + 1,

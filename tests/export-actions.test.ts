@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SETTINGS } from "../src/settings-model";
 
 const state = vi.hoisted(() => ({
   notices: [] as string[],
@@ -164,6 +165,66 @@ describe("ExportActions optimization discovery", () => {
       "md",
     );
     expect(state.pickerItems.map((item) => item.id)).toEqual(["__none__", "gongwen"]);
+  });
+
+  it("carries the exact route option set into Markdown conversion", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const signal = new AbortController().signal;
+    const runner = advisoryRunner(signal);
+    const capability = {
+      inspection: { decision: "allow" },
+      source: { id: "docx", category: "document", routes: [] },
+    };
+    const supportedOptions = [
+      "recognize_text",
+      "preserve_resources",
+      "render_dpi",
+      "remove_numbering",
+      "add_numbering",
+      "numbering_scheme",
+    ];
+    const capabilities = {
+      requireAction: vi.fn().mockResolvedValue(capability),
+      requireConversionRoute: vi.fn().mockReturnValue({
+        capabilityId: "convert.docx.to_markdown",
+        options: supportedOptions,
+        inputShape: { slots: [], undeclared_roles: "reject" },
+      }),
+      requireTaskInputs: vi.fn(),
+      optimizationActionIds: vi.fn().mockReturnValue([]),
+      findApplicableOptimizations: vi.fn().mockReturnValue([]),
+      requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
+    };
+    const docwen = {
+      optimizations: vi.fn(),
+      convert: vi.fn().mockResolvedValue({
+        output: "D:\\Vault\\note.md",
+        outputs: [],
+        bundleId: "bundle.1",
+      }),
+    };
+    const actions = new ExportActions(
+      {} as never,
+      docwen as never,
+      capabilities as never,
+      () => ({
+        ...DEFAULT_SETTINGS,
+        renderDpi: 300,
+        docToMdCleanNumbering: "remove",
+        docToMdAddNumbering: "legal",
+      }),
+      runner as never,
+    );
+
+    await actions.toMarkdown({ path: "note.docx", name: "note.docx" } as never);
+
+    expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({
+      capabilityId: "convert.docx.to_markdown",
+      supportedOptions,
+      renderDpi: 300,
+      cleanNumbering: "remove",
+      addNumbering: "legal",
+    }), signal);
   });
 });
 

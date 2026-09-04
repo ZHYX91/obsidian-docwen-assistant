@@ -4,7 +4,7 @@ import { getSettingsPages } from "../src/settings-definitions";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 
 describe("settings page definitions", () => {
-  it("builds five shared pages without filesystem or CLI work", () => {
+  it("builds four shared pages with contextual guides and no filesystem or CLI work", () => {
     const renderCliPath = vi.fn();
     const renderDocWenDownload = vi.fn();
     const renderCliStatus = vi.fn();
@@ -19,12 +19,12 @@ describe("settings page definitions", () => {
       renderPersistenceStatus,
       isPersistencePending: () => false,
       renderNumberingScheme,
-      renderHelp: vi.fn(),
+      renderGuide: vi.fn(),
       runDoctor,
     });
-    expect(pages).toHaveLength(5);
-    expect(pages.map((page) => page.id)).toEqual(["general", "markdown", "word", "proofread", "usage"]);
-    expect(new Set(pages.map((page) => page.name)).size).toBe(5);
+    expect(pages).toHaveLength(4);
+    expect(pages.map((page) => page.id)).toEqual(["general", "markdown", "word", "proofread"]);
+    expect(new Set(pages.map((page) => page.name)).size).toBe(4);
     expect(collectControlKeys(pages.flatMap((page) => page.items))).toEqual(new Set([
       "language",
       "docwenConnectionMode",
@@ -34,6 +34,7 @@ describe("settings page definitions", () => {
       "enableOcr",
       "ocrLanguage",
       "ocrPlacement",
+      "renderDpi",
       "tableMergeStrategy",
       "docToMdCleanNumbering",
       "headingMergeMode",
@@ -61,7 +62,7 @@ describe("settings page definitions", () => {
       renderPersistenceStatus: vi.fn(),
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
-      renderHelp: vi.fn(),
+      renderGuide: vi.fn(),
       runDoctor: vi.fn(),
     });
     const controls = collectControls(pages.flatMap((page) => page.items));
@@ -82,7 +83,7 @@ describe("settings page definitions", () => {
       renderPersistenceStatus: vi.fn(),
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
-      renderHelp: vi.fn(),
+      renderGuide: vi.fn(),
       runDoctor: vi.fn(),
     });
 
@@ -101,7 +102,7 @@ describe("settings page definitions", () => {
       renderPersistenceStatus: vi.fn(),
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
-      renderHelp: vi.fn(),
+      renderGuide: vi.fn(),
       runDoctor: vi.fn(),
     }, "linux");
     const connection = definitions[0].items.find(
@@ -114,6 +115,24 @@ describe("settings page definitions", () => {
     });
     expect((connection?.control as { options?: Record<string, string> } | undefined)?.options)
       .not.toHaveProperty("automatic");
+  });
+
+  it("does not expose the retired table merge alias", () => {
+    const definitions = getSettingsPages({
+      settings: { ...DEFAULT_SETTINGS },
+      renderCliPath: vi.fn(),
+      renderDocWenDownload: vi.fn(),
+      renderCliStatus: vi.fn(),
+      renderPersistenceStatus: vi.fn(),
+      isPersistencePending: () => false,
+      renderNumberingScheme: vi.fn(),
+      renderGuide: vi.fn(),
+      runDoctor: vi.fn(),
+    });
+    const tableMerge = collectControls(definitions.flatMap((page) => page.items))
+      .get("tableMergeStrategy") as { options?: Record<string, string> } | undefined;
+
+    expect(tableMerge?.options).not.toHaveProperty("replicate");
   });
 });
 

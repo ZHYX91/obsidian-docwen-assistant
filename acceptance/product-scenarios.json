@@ -22,7 +22,7 @@
         "desktop": []
       },
       "steps": [
-        "Exercise the five imperative settings tabs and capability discovery",
+        "Exercise the four imperative settings tabs, contextual help cards, and capability discovery",
         "Run proofread, conversion, validation, and numbering against the deterministic notes",
         "Inject unsaved-buffer and concurrent-target conflicts before output commit"
       ],

@@ -18,7 +18,7 @@ Prüfen Sie Probleme nach Zeile oder Regel und springen Sie zum passenden Quellb
 
 ### Einstellungen mit oberen Registerkarten und CLI-Funktionen
 
-Wählen Sie über fünf obere Registerkarten die genaue DocWen-Laufzeit, konfigurieren Sie Konvertierung und Korrekturlesen und prüfen Sie die Machine-Funktionen.
+Wählen Sie über vier obere Registerkarten mit kontextbezogenen Hinweisen die genaue DocWen-Laufzeit, konfigurieren Sie Konvertierung und Korrekturlesen und prüfen Sie die Machine-Funktionen.
 
 ![DocWen-Assistant-Einstellungen](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ Mit einer kompatiblen Version von [Number Suite](https://github.com/ZHYX91/obsid
 
 ## Einstellungen
 
-Obsidian 1.12.7 oder neuer verwendet fünf horizontal scrollbare Registerkarten: Allgemein, In Markdown exportieren, In Word exportieren, Korrekturlesen und Verwendung. Die Registerkarten unterstützen Pfeiltasten einschließlich RTL, Pos1/Ende, 20-px-Oberflächentext und große Ziele für grobe Zeiger. Die Sprache folgt standardmäßig Obsidian und kann auf eine der 11 unterstützten Sprachen festgelegt werden.
+Obsidian 1.12.7 oder neuer verwendet vier horizontal scrollbare Registerkarten: Allgemein, In Markdown exportieren, In Word exportieren und Korrekturlesen. Kontextbezogene Hinweise stehen auf der jeweiligen Registerkarte statt auf einer eigenen Verwendungsseite. Die Registerkarten unterstützen Pfeiltasten einschließlich RTL, Pos1/Ende, 20-px-Oberflächentext und große Ziele für grobe Zeiger. Die Sprache folgt standardmäßig Obsidian und kann auf eine der 11 unterstützten Sprachen festgelegt werden.
 
 ## Einschränkungen
 

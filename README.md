@@ -18,7 +18,7 @@ Review issues by line or rule and jump back to the matching source range without
 
 ### Top-tab settings and DocWen connection
 
-Use the five top tabs to connect automatically to the Microsoft Store installation, configure a portable installation when needed, and tune conversion and proofreading.
+Use the four top tabs and their contextual help cards to connect automatically to the Microsoft Store installation, configure a portable installation when needed, and tune conversion and proofreading.
 
 ![DocWen Assistant top-tab settings](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-settings-en.png)
 
@@ -80,7 +80,7 @@ With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite
 
 ## Settings
 
-- Obsidian 1.12.7 or later uses five horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, **Proofreading**, and **Usage**.
+- Obsidian 1.12.7 or later uses four horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Contextual help appears on the relevant tab instead of a separate Usage page.
 - Plugin language defaults to **Follow Obsidian** and can be overridden with any of DocWen Assistant's 11 languages. Resource discovery receives the same resolved locale.
 - **Connection method** defaults to **Detect automatically**, which supports Microsoft Store. **Manual installation** reveals the portable-folder picker. The status row checks the product identity, version, protocol, and health without exposing package paths.
 - Tabs support arrow keys (including RTL direction), Home/End, visible keyboard focus, 20 px UI text, and coarse-pointer targets. Runtime numbering schemes are queried only when their tab is rendered.

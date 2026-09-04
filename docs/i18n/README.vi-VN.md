@@ -18,7 +18,7 @@ Xem vấn đề theo dòng hoặc quy tắc và quay lại đúng vùng nguồn 
 
 ### Cài đặt bằng thẻ trên cùng và khả năng CLI
 
-Dùng năm thẻ trên cùng để chọn đúng môi trường DocWen, điều chỉnh chuyển đổi và soát lỗi, rồi xác minh khả năng Machine.
+Dùng bốn thẻ trên cùng và hướng dẫn theo ngữ cảnh để chọn đúng môi trường DocWen, điều chỉnh chuyển đổi và soát lỗi, rồi xác minh khả năng Machine.
 
 ![Cài đặt DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-
 
 ## Cài đặt plugin
 
-Obsidian 1.12.7 trở lên dùng năm thẻ trên cùng có thể cuộn ngang: Chung, Xuất sang Markdown, Xuất sang Word, Hiệu đính và Cách dùng. Các thẻ hỗ trợ phím mũi tên kể cả RTL, Home/End, chữ giao diện 20 px và vùng bấm lớn cho con trỏ thô. Ngôn ngữ mặc định theo Obsidian và có thể đổi sang một trong 11 ngôn ngữ được hỗ trợ.
+Obsidian 1.12.7 trở lên dùng bốn thẻ trên cùng có thể cuộn ngang: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Hướng dẫn theo ngữ cảnh nằm trong thẻ liên quan, không có trang Cách dùng riêng. Các thẻ hỗ trợ phím mũi tên kể cả RTL, Home/End, chữ giao diện 20 px và vùng bấm lớn cho con trỏ thô. Ngôn ngữ mặc định theo Obsidian và có thể đổi sang một trong 11 ngôn ngữ được hỗ trợ.
 
 ## Giới hạn
 

@@ -18,7 +18,7 @@ Examinez les problèmes par ligne ou par règle et revenez à la plage source co
 
 ### Paramètres à onglets supérieurs et capacités CLI
 
-Utilisez les cinq onglets supérieurs pour choisir précisément l’environnement DocWen, régler les conversions et la relecture, puis vérifier les capacités Machine.
+Utilisez les quatre onglets supérieurs et leurs aides contextuelles pour choisir précisément l’environnement DocWen, régler les conversions et la relecture, puis vérifier les capacités Machine.
 
 ![Paramètres de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ Avec une version compatible de [Number Suite](https://github.com/ZHYX91/obsidian
 
 ## Paramètres
 
-Obsidian 1.12.7 ou ultérieur utilise cinq onglets supérieurs à défilement horizontal : Général, Exporter en Markdown, Exporter vers Word, Relecture et Utilisation. Les onglets prennent en charge les flèches, y compris RTL, Début/Fin, le texte d'interface à 20 px et de grandes cibles tactiles. La langue suit Obsidian par défaut et peut être remplacée par l'une des 11 langues prises en charge.
+Obsidian 1.12.7 ou ultérieur utilise quatre onglets supérieurs à défilement horizontal : Général, Exporter en Markdown, Exporter vers Word et Relecture. L’aide contextuelle apparaît dans l’onglet concerné plutôt que dans une page Utilisation séparée. Les onglets prennent en charge les flèches, y compris RTL, Début/Fin, le texte d'interface à 20 px et de grandes cibles tactiles. La langue suit Obsidian par défaut et peut être remplacée par l'une des 11 langues prises en charge.
 
 ## Limitations
 

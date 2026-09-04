@@ -233,7 +233,7 @@ describe("DocWenPlugin lifecycle", () => {
     await vi.waitFor(() => expect(state.savedData).toHaveLength(1));
 
     expect(state.savedData[0]).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       docwenConnectionMode: "manual",
       docwenCliPath: "D:\\DocWen\\DocWenCLI.exe",
       extractImages: false,
@@ -244,7 +244,7 @@ describe("DocWenPlugin lifecycle", () => {
 
   it("does not rewrite or save settings from a future schema", async () => {
     const future = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       language: "en",
       extractImages: false,
       futureField: { preserve: "exactly" },
@@ -262,7 +262,7 @@ describe("DocWenPlugin lifecycle", () => {
     expect(plugin.getSettingsSaveState()).toBe("blocked");
     expect(plugin.getSettingsCompatibility()).toMatchObject({
       status: "incompatible",
-      storedSchemaVersion: 2,
+      storedSchemaVersion: 3,
       reason: "future-schema",
     });
 

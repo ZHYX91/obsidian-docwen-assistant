@@ -4,6 +4,18 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+### Added
+
+- Added a fixed-layout rendering DPI override for PDF, OFD, and XPS Markdown exports.
+
+### Changed
+
+- Replaced the standalone Usage settings tab with contextual help cards on the four relevant tabs.
+- Made conversion options capability-specific and clarified that Assistant overrides never rewrite
+  DocWen's saved settings.
+- Grouped the DocWen file menu and added safe loading, error, folder-target, and submenu-fallback states.
+- Updated the non-major development dependency group in line with Dependabot PR #6.
+
 ## [2.2.3] - 2026-09-01
 
 ### Changed

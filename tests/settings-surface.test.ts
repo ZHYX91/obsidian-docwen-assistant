@@ -14,6 +14,7 @@ const hostState = vi.hoisted(() => ({
 const buttons: FakeButton[] = [];
 const dropdowns: FakeDropdown[] = [];
 const settings: FakeSetting[] = [];
+const texts: FakeText[] = [];
 const toggles: FakeToggle[] = [];
 
 class FakeElement {
@@ -35,6 +36,9 @@ class FakeElement {
   id = "";
   tabIndex = 0;
   type = "";
+  min = "";
+  max = "";
+  step = "";
   readOnly = false;
   href = "";
   target = "";
@@ -108,7 +112,12 @@ class FakeSetting {
     callback(button);
     return this;
   }
-  addText(callback: (text: FakeText) => void): this { callback(new FakeText()); return this; }
+  addText(callback: (text: FakeText) => void): this {
+    const text = new FakeText();
+    texts.push(text);
+    callback(text);
+    return this;
+  }
   addDropdown(callback: (dropdown: FakeDropdown) => void): this {
     const dropdown = new FakeDropdown();
     dropdowns.push(dropdown);
@@ -135,9 +144,14 @@ class FakeButton {
 }
 class FakeText {
   readonly inputEl = new FakeElement();
+  disabled = false;
+  value = "";
+  change: ((value: string) => void | Promise<void>) | null = null;
   setPlaceholder(): this { return this; }
-  setValue(): this { return this; }
-  onChange(): this { return this; }
+  setValue(value: string): this { this.value = value; return this; }
+  setDisabled(value: boolean): this { this.disabled = value; return this; }
+  onChange(callback: (value: string) => void | Promise<void>): this { this.change = callback; return this; }
+  async choose(value: string): Promise<void> { this.value = value; await this.change?.(value); }
 }
 class FakeDropdown {
   readonly selectEl = new FakeElement();
@@ -174,6 +188,7 @@ vi.mock("obsidian", () => ({
     update(): void { lifecycle.push("base-update"); }
   },
   Setting: FakeSetting,
+  setIcon: vi.fn(),
 }));
 vi.mock("../src/main", () => ({ default: class DocWenPlugin {} }));
 vi.mock("../src/host/file-system", () => ({
@@ -190,6 +205,7 @@ describe("settings surface lifecycle", () => {
     buttons.length = 0;
     dropdowns.length = 0;
     settings.length = 0;
+    texts.length = 0;
     toggles.length = 0;
     hostState.dialog = null;
     hostState.files.clear();
@@ -207,9 +223,9 @@ describe("settings surface lifecycle", () => {
     const tabList = root.children[0];
     const panel = root.children[1];
     expect(tabList.attributes.get("role")).toBe("tablist");
-    expect(tabList.children).toHaveLength(5);
+    expect(tabList.children).toHaveLength(4);
     expect(tabList.children.map((item) => item.attributes.get("aria-selected")))
-      .toEqual(["true", "false", "false", "false", "false"]);
+      .toEqual(["true", "false", "false", "false"]);
     expect(panel.attributes.get("role")).toBe("tabpanel");
     expect(settings.some((setting) => setting.nameEl.textContent === "General")).toBe(false);
   });
@@ -224,8 +240,8 @@ describe("settings surface lifecycle", () => {
       docwenCliPath: "D:\\DocWen\\DocWenCLI.exe",
     }, save, {
       status: "incompatible",
-      currentSchemaVersion: 1,
-      storedSchemaVersion: 2,
+      currentSchemaVersion: 2,
+      storedSchemaVersion: 3,
       reason: "future-schema",
     });
     const tab = new SettingTab({} as never, plugin as never);
@@ -235,17 +251,17 @@ describe("settings surface lifecycle", () => {
     const warning = settings.find((setting) => setting.nameEl.textContent === "Settings are read-only")!;
     expect(warning.settingEl.attributes.get("role")).toBe("alert");
     expect(warning.settingEl.attributes.get("aria-live")).toBe("assertive");
-    expect(warning.descEl.textContent).toContain("unsupported schema 2");
-    expect(warning.descEl.textContent).toContain("supports schema 1");
+    expect(warning.descEl.textContent).toContain("unsupported schema 3");
+    expect(warning.descEl.textContent).toContain("supports schema 2");
     expect(warning.descEl.textContent).toContain("was not rewritten");
 
     const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings persistence")!;
-    expect(persistence.descEl.textContent).toContain("unsupported schema 2");
+    expect(persistence.descEl.textContent).toContain("unsupported schema 3");
     expect(buttons.every((button) => button.disabled)).toBe(true);
     expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
 
     const tabRoot = (tab.containerEl as unknown as FakeElement).children[1];
-    expect(tabRoot.children[0].children).toHaveLength(5);
+    expect(tabRoot.children[0].children).toHaveLength(4);
     await expect(tab.setControlValue("extractImages", false)).rejects.toMatchObject({
       code: "settings_schema_incompatible",
     });
@@ -253,23 +269,45 @@ describe("settings surface lifecycle", () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it("renders Usage as one help card without repeating the tab title", async () => {
+  it("renders contextual help cards instead of a Usage tab", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
     tab.display();
     const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
 
-    tabButtons[4].dispatch("click");
+    expect(tabButtons).toHaveLength(4);
+    tabButtons[3].dispatch("click");
 
-    const usage = settings.at(-1)!;
-    expect(usage.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
-    expect(usage.settingEl.attributes.get("role")).toBe("note");
-    expect(usage.settingEl.attributes.get("aria-label")).toBe("Usage");
-    expect(usage.nameEl.textContent).toBe("");
-    expect(usage.descEl.children).toHaveLength(1);
-    expect(usage.descEl.children[0].children).toHaveLength(6);
-    expect(usage.descEl.children[0].children[1].children[1].textContent).toBe("DocWen");
+    const guide = settings.find((setting) =>
+      setting.settingEl.attributes.get("aria-label") === "Choose checks independently")!;
+    expect(guide.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
+    expect(guide.settingEl.attributes.get("role")).toBe("note");
+    expect(guide.settingEl.children[0].children[1].textContent).toBe("Choose checks independently");
+    expect(guide.settingEl.children[1].textContent).toContain("toggled independently");
+  });
+
+  it("renders and validates the fixed-layout DPI override", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const save = vi.fn().mockResolvedValue(undefined);
+    const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+
+    tabButtons[1].dispatch("click");
+    const dpi = texts.find((text) => text.inputEl.type === "number")!;
+    expect(dpi.value).toBe("200");
+    expect(dpi.inputEl.min).toBe("72");
+    expect(dpi.inputEl.max).toBe("600");
+
+    await dpi.choose("601");
+    expect(plugin.settings.renderDpi).toBe(200);
+    expect(save).not.toHaveBeenCalled();
+    await dpi.choose("300");
+    expect(plugin.settings.renderDpi).toBe(300);
+    expect(save).toHaveBeenCalledOnce();
   });
 
   it("runs the Doctor action by mouse or keyboard and ignores unrelated keys", async () => {
@@ -321,7 +359,7 @@ describe("settings surface lifecycle", () => {
 
     const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
     expect(tabButtons[0].textContent).toBe("常规");
-    expect(tabButtons[4].textContent).toBe("使用方法");
+    expect(tabButtons[3].textContent).toBe("校对");
   });
 
   it("invalidates the verified connection before saving a connection-mode change", async () => {
@@ -580,8 +618,8 @@ function settingsPlugin(
   saveSettings = vi.fn().mockResolvedValue(undefined),
   compatibility: Record<string, unknown> = {
     status: "compatible",
-    currentSchemaVersion: 1,
-    storedSchemaVersion: 1,
+    currentSchemaVersion: 2,
+    storedSchemaVersion: 2,
   },
 ) {
   let connectionStatus: Record<string, unknown> = { state: "unchecked" };

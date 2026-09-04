@@ -18,7 +18,7 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ### 상단 탭 설정과 CLI 기능
 
-5개의 상단 탭에서 정확한 DocWen 런타임을 선택하고 변환과 교정을 조정하며 Machine 기능을 확인합니다.
+4개의 상단 탭과 각 탭의 설명 카드에서 정확한 DocWen 런타임을 선택하고 변환과 교정을 조정하며 Machine 기능을 확인합니다.
 
 ![DocWen Assistant 상단 탭 설정](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 
 ## 설정
 
-Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 5개(일반, Markdown으로, Word로, 교정, 사용 방법)를 사용합니다. 탭은 RTL을 포함한 화살표 키, Home/End, 20px UI 글자 및 굵은 포인터용 큰 터치 영역을 지원합니다. 언어는 기본적으로 Obsidian을 따르며 지원되는 11개 언어 중 하나로 지정할 수 있습니다.
+Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 4개(일반, Markdown으로, Word로, 교정)를 사용합니다. 설명은 관련 탭 안에 표시되며 별도의 사용 방법 페이지는 없습니다. 탭은 RTL을 포함한 화살표 키, Home/End, 20px UI 글자 및 굵은 포인터용 큰 터치 영역을 지원합니다. 언어는 기본적으로 Obsidian을 따르며 지원되는 11개 언어 중 하나로 지정할 수 있습니다.
 
 ## 제한 사항
 

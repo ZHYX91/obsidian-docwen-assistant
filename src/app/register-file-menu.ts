@@ -8,7 +8,13 @@ import { type DocWenCapabilityService, type FileCapability } from "../docwen";
 import { resolveAbsoluteFilePath, resolveTargetFile } from "../host/vault-files";
 import { t } from "../i18n";
 
-type MenuItemWithSubmenu = { setSubmenu(): Menu };
+type MenuItemWithOptionalSubmenu = { setSubmenu?: () => Menu };
+
+type MenuEntry = {
+  readonly title: string;
+  readonly icon: string;
+  readonly action?: () => Promise<void> | void;
+};
 
 export interface FileMenuActions {
   readonly exports: ExportActions;
@@ -29,65 +35,124 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
 
       const cached = actions.capabilities.peek(filePath);
       if (!cached || cached instanceof Error) void actions.capabilities.preload(filePath);
+      const folderTargetPath = targetFile === abstractFile ? null : targetFile.path;
+      let usedFallback = false;
 
       menu.addItem((item) => {
-        item.setTitle(t("contextMenuSubmenuTitle")).setIcon("file-text");
-        const submenu = (item as unknown as MenuItemWithSubmenu).setSubmenu();
-        if (cached instanceof Error) {
-          submenu.addItem((errorItem) => {
-            errorItem
-              .setTitle(t("noticeCapabilityFailed", { error: cached.message }))
-              .setIcon("alert-triangle")
-              .onClick(() => actions.presentCapabilityFailure(cached));
-          });
-          submenu.addSeparator();
-        } else if (cached) {
-          addCapabilityActions(submenu, cached, targetFile, actions);
-          submenu.addSeparator();
+        const optional = item as unknown as MenuItemWithOptionalSubmenu;
+        if (typeof optional.setSubmenu === "function") {
+          item.setTitle(t("contextMenuSubmenuTitle")).setIcon("file-text");
+          renderSubmenu(optional.setSubmenu(), cached, targetFile, filePath, folderTargetPath, actions);
+          return;
         }
-        addAction(submenu, "contextMenuOpenInDocWen", "external-link", () =>
-          actions.gui.open(filePath));
+
+        usedFallback = true;
+        item
+          .setTitle(prefixed(t("contextMenuOpenInDocWen")))
+          .setIcon("external-link")
+          .onClick(() => void actions.gui.open(filePath));
       });
+
+      if (usedFallback) {
+        for (const section of actionSections(cached, targetFile, folderTargetPath, actions)) {
+          for (const action of section) addEntry(menu, action, true);
+        }
+      }
     }),
   );
 }
 
-function addCapabilityActions(
+function renderSubmenu(
   menu: Menu,
-  capability: FileCapability,
+  cached: FileCapability | Error | null,
   file: NonNullable<ReturnType<typeof resolveTargetFile>>,
+  filePath: string,
+  folderTargetPath: string | null,
   actions: FileMenuActions,
 ): void {
-  const canConvert = (target: "md" | "docx" | "xlsx") =>
-    actions.capabilities.findConversionRoute(capability, target) !== null;
-  if (canConvert("md")) {
-    addAction(menu, "contextMenuConvertToMd", "file-text", () => actions.exports.toMarkdown(file));
-  }
-  if (canConvert("docx")) {
-    addAction(menu, "contextMenuConvertToDocx", "file-output", () => actions.exports.toDocx(file));
-  }
-  if (canConvert("xlsx")) {
-    addAction(menu, "contextMenuConvertToXlsx", "table", () => actions.exports.toXlsx(file));
-  }
-  if (capability.inspection.supportedActions.includes("number markdown")) {
-    addAction(menu, "contextMenuAddNumbering", "list-ordered", () => actions.numbering.add(file));
-    addAction(menu, "contextMenuRemoveNumbering", "list-x", () => actions.numbering.remove(file));
-  }
-  if (capability.inspection.supportedActions.includes("validate")) {
-    addAction(menu, "contextMenuProofread", "check-circle", async () => {
-      await actions.proofread.activateView();
-      await actions.proofread.run(file);
-    });
-  }
+  const sections = actionSections(cached, file, folderTargetPath, actions);
+  sections.push([{
+    title: t("contextMenuOpenInDocWen"),
+    icon: "external-link",
+    action: () => actions.gui.open(filePath),
+  }]);
+  sections.forEach((section, index) => {
+    if (index > 0) menu.addSeparator();
+    for (const action of section) addEntry(menu, action, false);
+  });
 }
 
-function addAction(
-  menu: Menu,
+function actionSections(
+  cached: FileCapability | Error | null,
+  file: NonNullable<ReturnType<typeof resolveTargetFile>>,
+  folderTargetPath: string | null,
+  actions: FileMenuActions,
+): MenuEntry[][] {
+  const sections: MenuEntry[][] = [];
+  if (folderTargetPath !== null) {
+    sections.push([{
+      title: t("contextMenuFolderTarget", { path: folderTargetPath }),
+      icon: "file-symlink",
+    }]);
+  }
+  if (cached instanceof Error) {
+    sections.push([{
+      title: t("contextMenuCapabilityUnavailable"),
+      icon: "alert-triangle",
+      action: () => actions.presentCapabilityFailure(cached),
+    }]);
+    return sections;
+  }
+  if (!cached) {
+    sections.push([{ title: t("contextMenuLoading"), icon: "loader" }]);
+    return sections;
+  }
+
+  const conversion: MenuEntry[] = [];
+  const canConvert = (target: "md" | "docx" | "xlsx") =>
+    actions.capabilities.findConversionRoute(cached, target) !== null;
+  if (canConvert("md")) {
+    conversion.push(actionEntry("contextMenuConvertToMd", "file-text", () => actions.exports.toMarkdown(file)));
+  }
+  if (canConvert("docx")) {
+    conversion.push(actionEntry("contextMenuConvertToDocx", "file-output", () => actions.exports.toDocx(file)));
+  }
+  if (canConvert("xlsx")) {
+    conversion.push(actionEntry("contextMenuConvertToXlsx", "table", () => actions.exports.toXlsx(file)));
+  }
+  if (conversion.length > 0) sections.push(conversion);
+
+  const editing: MenuEntry[] = [];
+  if (cached.inspection.supportedActions.includes("number markdown")) {
+    editing.push(actionEntry("contextMenuAddNumbering", "list-ordered", () => actions.numbering.add(file)));
+    editing.push(actionEntry("contextMenuRemoveNumbering", "list-x", () => actions.numbering.remove(file)));
+  }
+  if (cached.inspection.supportedActions.includes("validate")) {
+    editing.push(actionEntry("contextMenuProofread", "check-circle", async () => {
+      await actions.proofread.activateView();
+      await actions.proofread.run(file);
+    }));
+  }
+  if (editing.length > 0) sections.push(editing);
+  return sections;
+}
+
+function actionEntry(
   title: Parameters<typeof t>[0],
   icon: string,
   action: () => Promise<void>,
-): void {
+): MenuEntry {
+  return { title: t(title), icon, action };
+}
+
+function addEntry(menu: Menu, entry: MenuEntry, withPrefix: boolean): void {
   menu.addItem((item) => {
-    item.setTitle(t(title)).setIcon(icon).onClick(() => void action());
+    item.setTitle(withPrefix ? prefixed(entry.title) : entry.title).setIcon(entry.icon);
+    if (entry.action) item.onClick(() => void entry.action?.());
+    else item.setDisabled(true);
   });
+}
+
+function prefixed(title: string): string {
+  return `${t("contextMenuSubmenuTitle")}: ${title}`;
 }

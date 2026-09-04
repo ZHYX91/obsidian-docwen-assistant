@@ -49,11 +49,14 @@ export interface ConvertOptions {
   imageLinkStyle?: "wiki_embed" | "wiki_link" | "markdown_embed" | "markdown_link";
   tableMergeStrategy?: "fill" | "empty" | "marker" | "replicate";
   ocrPlacement?: "image_md" | "main_md";
+  renderDpi?: number;
   cleanNumbering?: "remove" | "keep";
   addNumbering?: string;
   headingMergeMode?: "always" | "never";
   headingNumberingRenderMode?: "text" | "word_native";
   useDetectedFormat?: boolean;
+  /** Exact option names advertised by the selected Machine capability. */
+  supportedOptions?: readonly string[];
 }
 
 export interface ConvertRequest extends ConvertOptions {
@@ -277,7 +280,7 @@ export class DocWenClient {
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
     const inspection = await this.inspect(source, signal);
     const capabilityId = request.capabilityId ?? conversionCapabilityId(inspection.mediaType, request.target);
-    const options = conversionOptions(request, inspection.mediaType);
+    const options = buildConversionMachineOptions(request, inspection.mediaType);
     return this.runDeliverableTask(
       capabilityId,
       request.inputs,
@@ -805,32 +808,61 @@ function conversionCapabilityId(inputMediaType: string, target: ConvertTarget): 
   return capabilityId;
 }
 
-function conversionOptions(request: ConvertRequest, inputMediaType: string): JsonObject {
+export function buildConversionMachineOptions(request: ConvertRequest, inputMediaType: string): JsonObject {
   const options: JsonObject = {};
-  if (request.template) options.template_name = request.template;
+  const supported = request.supportedOptions ? new Set(request.supportedOptions) : null;
+  const accepts = (name: string) => supported === null || supported.has(name);
+  const setOption = (name: string, value: unknown) => {
+    if (value !== undefined && accepts(name)) options[name] = value;
+  };
+
+  setOption("template_name", request.template);
   if (request.target === "md") {
-    if (request.extractImages !== undefined) options.to_md_keep_images = request.extractImages;
-    if (request.enableOcr !== undefined) options.to_md_enable_ocr = request.enableOcr;
-    if (request.ocrLanguage) options.ocr_language = request.ocrLanguage;
-    if (request.imageMode) options.image_mode = request.imageMode;
-    if (request.imageLinkStyle) options.image_link_style = request.imageLinkStyle;
-    if (request.ocrPlacement) options.ocr_placement = request.ocrPlacement;
-    if (request.tableMergeStrategy) {
-      options.table_merge_strategy = request.tableMergeStrategy === "replicate" ? "fill" : request.tableMergeStrategy;
-    }
+    const resourceOption = preferredSupportedOption(
+      supported,
+      ["preserve_resources", "to_md_keep_images"],
+      inputMediaType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ? "to_md_keep_images"
+        : "preserve_resources",
+    );
+    const ocrOption = preferredSupportedOption(
+      supported,
+      ["recognize_text", "to_md_enable_ocr"],
+      inputMediaType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ? "to_md_enable_ocr"
+        : "recognize_text",
+    );
+    if (resourceOption) setOption(resourceOption, request.extractImages);
+    if (ocrOption) setOption(ocrOption, request.enableOcr);
+    setOption("ocr_language", request.ocrLanguage);
+    const isFixedLayout = [
+      "application/pdf",
+      "application/vnd.ofd",
+      "application/vnd.ms-xpsdocument",
+    ].includes(inputMediaType);
+    if (!isFixedLayout || request.imageMode === "file") setOption("image_mode", request.imageMode);
+    setOption("image_link_style", request.imageLinkStyle);
+    setOption("ocr_placement", request.ocrPlacement);
+    setOption("table_merge_strategy", request.tableMergeStrategy === "replicate" ? "fill" : request.tableMergeStrategy);
+    setOption("render_dpi", request.renderDpi);
   }
-  if (inputMediaType === "text/markdown") {
-    if (request.cleanNumbering) options.remove_numbering = request.cleanNumbering === "remove";
-    if (request.addNumbering) {
-      options.add_numbering = request.addNumbering !== "none";
-      if (request.addNumbering !== "none") options.numbering_scheme = request.addNumbering;
-    }
-    if (request.headingMergeMode) options.heading_merge_mode = request.headingMergeMode;
-    if (request.headingNumberingRenderMode) {
-      options.heading_numbering_render_mode = request.headingNumberingRenderMode;
-    }
+  if (request.cleanNumbering) setOption("remove_numbering", request.cleanNumbering === "remove");
+  if (request.addNumbering) {
+    setOption("add_numbering", request.addNumbering !== "none");
+    if (request.addNumbering !== "none") setOption("numbering_scheme", request.addNumbering);
   }
+  setOption("heading_merge_mode", request.headingMergeMode);
+  setOption("heading_numbering_render_mode", request.headingNumberingRenderMode);
   return options;
+}
+
+function preferredSupportedOption(
+  supported: ReadonlySet<string> | null,
+  candidates: readonly string[],
+  fallback: string,
+): string | null {
+  if (supported === null) return fallback;
+  return candidates.find((candidate) => supported.has(candidate)) ?? null;
 }
 
 function proofreadOptions(checks: readonly ProofreadCheck[]): JsonObject {

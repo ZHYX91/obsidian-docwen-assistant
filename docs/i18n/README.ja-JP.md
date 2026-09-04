@@ -18,7 +18,7 @@ DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHY
 
 ### 上部タブ設定と CLI 機能
 
-5 つの上部タブで正確な DocWen ランタイムを選び、変換と校正を調整し、Machine 機能を確認できます。
+4 つの上部タブと各タブの説明カードで正確な DocWen ランタイムを選び、変換と校正を調整し、Machine 機能を確認できます。
 
 ![DocWen Assistant の上部タブ設定](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 
 ## 設定
 
-Obsidian 1.12.7 以降では、横スクロール可能な 5 つの上部タブ（一般、Markdown へ、Word へ、校正、使用方法）を使用します。タブは RTL を含む矢印キー、Home/End、20 px の UI 文字、粗いポインター向けの大きな操作領域に対応します。言語は既定で Obsidian に従い、対応する 11 言語から明示的に選択できます。
+Obsidian 1.12.7 以降では、横スクロール可能な 4 つの上部タブ（一般、Markdown へ、Word へ、校正）を使用します。説明は関連するタブ内に表示され、独立した使用方法ページはありません。タブは RTL を含む矢印キー、Home/End、20 px の UI 文字、粗いポインター向けの大きな操作領域に対応します。言語は既定で Obsidian に従い、対応する 11 言語から明示的に選択できます。
 
 ## 制限
 

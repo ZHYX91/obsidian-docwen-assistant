@@ -19,6 +19,8 @@ import {
   type DocWenPathStatus,
 } from "./settings-docwen-location";
 import { configureNumberingSchemeSetting } from "./settings-numbering-scheme";
+import { renderSettingsGuide } from "./settings-guide";
+import { configureNumberSetting } from "./settings-number-control";
 import {
   assertSettingsWritable,
   describeSettingsSchemaCompatibility,
@@ -26,7 +28,6 @@ import {
   renderSettingsSchemaCompatibility,
 } from "./settings-schema-compatibility";
 import { SettingsTabs } from "./settings-tabs";
-import { renderUsageList } from "./settings-usage";
 
 export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
@@ -42,7 +43,7 @@ export class SettingTab extends PluginSettingTab {
   }
 
   // Intentionally empty: non-empty declarative definitions bypass the custom
-  // five-tab display() surface and degrade the established settings experience.
+  // four-tab display() surface and degrade the established settings experience.
   override getSettingDefinitions(): SettingDefinitionItem[] {
     return [];
   }
@@ -76,13 +77,7 @@ export class SettingTab extends PluginSettingTab {
       renderPersistenceStatus: (setting) => this.configurePersistenceStatus(setting),
       isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
-      renderHelp: (setting) => {
-        setting.setClass("docwen-settings-help");
-        setting.settingEl.setAttribute("role", "note");
-        setting.settingEl.setAttribute("aria-label", t("settingsUsageTitle"));
-        setting.nameEl.empty();
-        renderUsageList(setting.descEl, t("settingsUsageList"));
-      },
+      renderGuide: renderSettingsGuide,
       runDoctor: () => void this.runDoctorFromSettings(),
     });
   }
@@ -161,6 +156,12 @@ export class SettingTab extends PluginSettingTab {
           .setValue(typeof value === "string" ? value : "")
           .setDisabled(disabled)
           .onChange((nextValue) => void this.changeControlValue(control.key, nextValue)));
+        return;
+      }
+      if (control.type === "number") {
+        configureNumberSetting(setting, control, value, disabled, (nextValue) => {
+          void this.changeControlValue(control.key, nextValue);
+        });
         return;
       }
       throw new Error(`Unsupported custom settings control: ${control.type}`);

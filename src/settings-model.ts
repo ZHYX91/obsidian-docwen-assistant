@@ -24,8 +24,9 @@ export interface PluginSettings {
   ocrLanguage: "auto" | "chinese" | "chinese_cht" | "english" | "japanese" | "korean" | "latin" | "cyrillic";
   imageMode: "file" | "base64" | "embed" | "omit";
   imageLinkStyle: "wiki_embed" | "wiki_link" | "markdown_embed" | "markdown_link";
-  tableMergeStrategy: "fill" | "empty" | "marker" | "replicate";
+  tableMergeStrategy: "fill" | "empty" | "marker";
   ocrPlacement: "image_md" | "main_md";
+  renderDpi: number;
   headingMergeMode: "punct_required" | "always" | "never";
   headingNumberingRenderMode: "default" | "text" | "word_native";
   docToMdCleanNumbering: CleanNumberingMode;
@@ -41,7 +42,7 @@ export interface PluginSettings {
 
 export type SettingsControlKey = keyof PluginSettings;
 
-export const CURRENT_SETTINGS_SCHEMA_VERSION = 1 as const;
+export const CURRENT_SETTINGS_SCHEMA_VERSION = 2 as const;
 
 export interface PersistedPluginSettings extends PluginSettings {
   schemaVersion: typeof CURRENT_SETTINGS_SCHEMA_VERSION;
@@ -51,7 +52,7 @@ export type SettingsCompatibility =
   | {
       readonly status: "compatible";
       readonly currentSchemaVersion: typeof CURRENT_SETTINGS_SCHEMA_VERSION;
-      readonly storedSchemaVersion: 0 | typeof CURRENT_SETTINGS_SCHEMA_VERSION;
+      readonly storedSchemaVersion: 0 | 1 | typeof CURRENT_SETTINGS_SCHEMA_VERSION;
     }
   | {
       readonly status: "incompatible";
@@ -86,6 +87,7 @@ export const DEFAULT_SETTINGS: Readonly<PluginSettings> = Object.freeze({
   imageLinkStyle: "wiki_embed",
   tableMergeStrategy: "fill",
   ocrPlacement: "image_md",
+  renderDpi: 200,
   headingMergeMode: "punct_required",
   headingNumberingRenderMode: "default",
   docToMdCleanNumbering: "default",
@@ -132,6 +134,7 @@ export function normalizeSettings(
     normalized.docwenConnectionMode = "manual";
   }
   if (platform !== "win32") normalized.docwenConnectionMode = "manual";
+  if (input.tableMergeStrategy === "replicate") normalized.tableMergeStrategy = "fill";
   return normalized;
 }
 
@@ -184,7 +187,7 @@ export function loadSettingsData(
     compatibility: {
       status: "compatible",
       currentSchemaVersion: CURRENT_SETTINGS_SCHEMA_VERSION,
-      storedSchemaVersion: hasSchemaVersion ? CURRENT_SETTINGS_SCHEMA_VERSION : 0,
+      storedSchemaVersion: hasSchemaVersion ? storedSchemaVersion as 1 | 2 : 0,
     },
     migration: canonical ? null : snapshot,
   };
@@ -211,6 +214,13 @@ function isSettingValue(key: SettingsControlKey, value: unknown): boolean {
   const defaultValue = DEFAULT_SETTINGS[key];
   if (typeof value !== typeof defaultValue) return false;
   if (typeof defaultValue === "boolean") return true;
+  if (typeof defaultValue === "number") {
+    return key === "renderDpi"
+      && typeof value === "number"
+      && Number.isInteger(value)
+      && value >= 72
+      && value <= 600;
+  }
   if (typeof value !== "string") return false;
   switch (key) {
     case "docwenConnectionMode":
@@ -224,7 +234,7 @@ function isSettingValue(key: SettingsControlKey, value: unknown): boolean {
     case "imageLinkStyle":
       return ["wiki_embed", "wiki_link", "markdown_embed", "markdown_link"].includes(value);
     case "tableMergeStrategy":
-      return ["fill", "empty", "marker", "replicate"].includes(value);
+      return ["fill", "empty", "marker"].includes(value);
     case "ocrPlacement":
       return ["image_md", "main_md"].includes(value);
     case "headingMergeMode":

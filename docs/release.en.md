@@ -34,7 +34,7 @@ scenario contract, and fixture hashes. The ZIP contains neither documentation no
 
 ## Product acceptance
 
-DocWen Assistant is desktop-only. The same Bundle requires desktop acceptance covering all five
+DocWen Assistant is desktop-only. The same Bundle requires desktop acceptance covering all four
 imperative settings tabs, capability discovery, proofread, conversion, validation, numbering,
 cancellation, unsaved-buffer conflicts, and concurrent-target conflicts. External DocWen package
 acceptance and plugin-host acceptance are recorded separately and cannot substitute for each other.

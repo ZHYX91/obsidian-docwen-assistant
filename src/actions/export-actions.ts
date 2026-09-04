@@ -157,10 +157,15 @@ export class ExportActions {
           }
 
           const settings = this.getSettings();
-          const options: ConvertOptions = { target, ...selected, useDetectedFormat };
+          const options: ConvertOptions = {
+            target,
+            ...selected,
+            useDetectedFormat,
+            supportedOptions: route.options,
+          };
           if (target === "md") {
             Object.assign(options, buildMarkdownExportOptions(settings));
-            if (capability.source.category === "document") {
+            if (route.options.some((name) => ["remove_numbering", "add_numbering", "numbering_scheme"].includes(name))) {
               Object.assign(
                 options,
                 buildNumberingOptions(

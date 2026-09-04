@@ -39,7 +39,7 @@ module.exports = [
     files: ["src/settings.ts"],
     rules: {
       // Obsidian 1.13 deprecates display(), but non-empty declarative definitions
-      // bypass this plugin's intentional five-tab settings information architecture.
+      // bypass this plugin's intentional four-tab settings information architecture.
       "@typescript-eslint/no-deprecated": "off",
     },
   },

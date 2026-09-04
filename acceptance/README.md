@@ -25,7 +25,7 @@ and therefore must not be reported as packaged acceptance.
 
 ## Product scenario matrix
 
-- Custom tabbed settings on minimum Obsidian 1.12.7 and current 1.13.x hosts: all five pages, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
+- Custom tabbed settings on minimum Obsidian 1.12.7 and current 1.13.x hosts: all four pages and contextual help cards, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
 - Popout: settings/proofreading use the owning document and window; closing the view cancels the active proofread child.
 - Capability: successful empty results stay empty; typed discovery failures remain visible and never produce default actions.
 - File admission: menus, commands and optimization scope follow Core inspection/capability, including detected-format confirmation.

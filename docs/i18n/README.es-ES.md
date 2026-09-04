@@ -18,7 +18,7 @@ Revisa problemas por línea o regla y vuelve al intervalo de origen correspondie
 
 ### Configuración con pestañas superiores y capacidades de CLI
 
-Usa las cinco pestañas superiores para elegir el entorno exacto de DocWen, ajustar conversiones y revisión y verificar las capacidades Machine.
+Usa las cuatro pestañas superiores y sus ayudas contextuales para elegir el entorno exacto de DocWen, ajustar conversiones y revisión y verificar las capacidades Machine.
 
 ![Configuración de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ Con una versión compatible de [Number Suite](https://github.com/ZHYX91/obsidian
 
 ## Configuración
 
-Obsidian 1.12.7 o posterior usa cinco pestañas superiores con desplazamiento horizontal: General, Exportar a Markdown, Exportar a Word, Corrección y Uso. Las pestañas admiten flechas, incluida la dirección RTL, Inicio/Fin, texto de interfaz de 20 px y objetivos amplios para punteros gruesos. El idioma sigue a Obsidian de forma predeterminada y puede cambiarse a cualquiera de los 11 idiomas compatibles.
+Obsidian 1.12.7 o posterior usa cuatro pestañas superiores con desplazamiento horizontal: General, Exportar a Markdown, Exportar a Word y Corrección. La ayuda contextual aparece en la pestaña correspondiente, sin una página Uso separada. Las pestañas admiten flechas, incluida la dirección RTL, Inicio/Fin, texto de interfaz de 20 px y objetivos amplios para punteros gruesos. El idioma sigue a Obsidian de forma predeterminada y puede cambiarse a cualquiera de los 11 idiomas compatibles.
 
 ## Limitaciones
 

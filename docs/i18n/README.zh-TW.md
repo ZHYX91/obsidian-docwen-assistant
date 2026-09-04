@@ -18,7 +18,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ### 頂部分頁設定與 DocWen 連線
 
-使用五個頂部分頁自動連線 Microsoft Store 安裝版、按需設定可攜版，並調整轉換與校對。
+使用四個頂部分頁及其中的說明卡片自動連線 Microsoft Store 安裝版、按需設定可攜版，並調整轉換與校對。
 
 ![DocWen Assistant 頂部分頁設定](../assets/docwen-assistant-settings-en.png)
 
@@ -66,7 +66,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ## 設定
 
-Obsidian 1.12.7 以上使用五個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word、校對和使用方法。「連線方式」預設為「自動偵測」，只有手動安裝可攜版時才顯示資料夾選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
+Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word和校對；說明放在相關頁籤內，不再另設「使用方法」頁。「連線方式」預設為「自動偵測」，只有手動安裝可攜版時才顯示資料夾選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
 
 ## 限制
 

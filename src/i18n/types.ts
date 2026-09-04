@@ -17,10 +17,15 @@ export interface Translations {
   contextMenuAddNumbering: string;
   contextMenuRemoveNumbering: string;
   contextMenuOpenInDocWen: string;
+  contextMenuLoading: string;
+  contextMenuCapabilityUnavailable: string;
+  contextMenuFolderTarget: string;
 
   // Settings
   settingsTitle: string;
   settingsGeneralTitle: string;
+  settingsGeneralGuideTitle: string;
+  settingsGeneralGuideDesc: string;
   settingsLanguage: string;
   settingsLanguageDesc: string;
   settingsLanguageAuto: string;
@@ -125,7 +130,13 @@ export interface Translations {
   settingsTableMergeStrategyEmpty: string;
   settingsTableMergeStrategyMarker: string;
   settingsTableMergeStrategyReplicate: string;
+  settingsRenderDpi: string;
+  settingsRenderDpiDesc: string;
+  settingsMarkdownGuideTitle: string;
+  settingsMarkdownGuideDesc: string;
   settingsExportDocTitle: string;
+  settingsWordGuideTitle: string;
+  settingsWordGuideDesc: string;
   settingsHeadingMergeMode: string;
   settingsHeadingMergeModeDesc: string;
   settingsHeadingMergeModePunctRequired: string;
@@ -156,6 +167,8 @@ export interface Translations {
 
   // Proofreading
   settingsProofreadTitle: string;
+  settingsProofreadGuideTitle: string;
+  settingsProofreadGuideDesc: string;
   settingsProofreadOnConvert: string;
   settingsProofreadOnConvertDesc: string;
   settingsProofreadTypo: string;

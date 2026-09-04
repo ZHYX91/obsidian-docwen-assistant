@@ -18,7 +18,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 ### 顶部页签设置与 DocWen 连接
 
-通过五个顶部页签自动连接 Microsoft Store 安装版、按需配置便携版，并调整转换与校对。
+通过四个顶部页签及其中的说明卡片自动连接 Microsoft Store 安装版、按需配置便携版，并调整转换与校对。
 
 ![DocWen Assistant 顶部页签设置](../assets/docwen-assistant-settings-en.png)
 
@@ -75,7 +75,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 ## 设置
 
-- Obsidian 1.12.7 或更高版本使用五个可横向滚动的顶部页签：常规、转为 Markdown、转为 Word、校对和使用方法；
+- Obsidian 1.12.7 或更高版本使用四个可横向滚动的顶部页签：常规、转为 Markdown、转为 Word和校对；说明放在相关页签内，不再单设“使用方法”页；
 - 插件语言默认“跟随 Obsidian”，也可明确选择 11 种语言之一；界面、通知和资源查询始终使用同一解析结果；
 - “连接方式”默认“自动检测”，直接支持 Microsoft Store 安装版；切换到“手动安装”后才显示便携版文件夹选择器。状态行会核验产品身份、版本、协议和程序健康状态，不向普通用户暴露包路径；
 - 页签支持方向键（含 RTL）、Home/End、清晰的键盘焦点、20 px 界面字号和粗指针点击区；仅在显示相应页签时查询运行时编号方案。

@@ -18,7 +18,7 @@ Revise problemas por linha ou regra e volte ao trecho correspondente da origem s
 
 ### Configurações em abas superiores e recursos da CLI
 
-Use as cinco abas superiores para escolher o ambiente exato do DocWen, ajustar conversões e revisão e verificar os recursos Machine.
+Use as quatro abas superiores e suas orientações contextuais para escolher o ambiente exato do DocWen, ajustar conversões e revisão e verificar os recursos Machine.
 
 ![Configurações do DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
@@ -60,7 +60,7 @@ Com uma versão compatível do [Number Suite](https://github.com/ZHYX91/obsidian
 
 ## Configurações
 
-O Obsidian 1.12.7 ou superior usa cinco abas superiores com rolagem horizontal: Geral, Exportar para Markdown, Exportar para Word, Revisão e Uso. As abas aceitam setas, inclusive em RTL, Início/Fim, texto de interface de 20 px e alvos amplos para ponteiros imprecisos. O idioma segue o Obsidian por padrão e pode ser alterado para qualquer um dos 11 idiomas compatíveis.
+O Obsidian 1.12.7 ou superior usa quatro abas superiores com rolagem horizontal: Geral, Exportar para Markdown, Exportar para Word e Revisão. As orientações contextuais aparecem na aba relevante, sem uma página Uso separada. As abas aceitam setas, inclusive em RTL, Início/Fim, texto de interface de 20 px e alvos amplos para ponteiros imprecisos. O idioma segue o Obsidian por padrão e pode ser alterado para qualquer um dos 11 idiomas compatíveis.
 
 ## Limitações
 

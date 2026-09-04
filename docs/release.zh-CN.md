@@ -31,7 +31,7 @@ fixture 哈希。ZIP 不包含文档或 `data.json`。
 
 ## 产品验收
 
-DocWen Assistant 是 desktop-only；同一 Bundle 必须完成桌面验收，覆盖五个 imperative settings
+DocWen Assistant 是 desktop-only；同一 Bundle 必须完成桌面验收，覆盖四个 imperative settings
 tab、能力发现、校对、转换、校验、编号、取消、未保存缓冲区与并发目标冲突。外部 DocWen
 package 验收与插件宿主验收分别记录，不能互相替代。
 

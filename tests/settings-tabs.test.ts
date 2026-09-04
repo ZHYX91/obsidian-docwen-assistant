@@ -90,7 +90,6 @@ const pages: SettingsPageDefinition[] = [
   { id: "markdown", name: "To Markdown", items: [] },
   { id: "word", name: "To Word", items: [] },
   { id: "proofread", name: "Proofread", items: [] },
-  { id: "usage", name: "Usage", items: [] },
 ];
 
 describe("settings top tabs", () => {
@@ -113,9 +112,9 @@ describe("settings top tabs", () => {
     expect(tabList.attributes.get("role")).toBe("tablist");
     expect(tabList.attributes.get("aria-label")).toBe("DocWen Assistant settings");
     expect(tabList.attributes.get("aria-orientation")).toBe("horizontal");
-    expect(tabList.children).toHaveLength(5);
-    expect(tabList.children.map((tab) => tab.attributes.get("role"))).toEqual(Array(5).fill("tab"));
-    expect(tabList.children.map((tab) => tab.tabIndex)).toEqual([0, -1, -1, -1, -1]);
+    expect(tabList.children).toHaveLength(4);
+    expect(tabList.children.map((tab) => tab.attributes.get("role"))).toEqual(Array(4).fill("tab"));
+    expect(tabList.children.map((tab) => tab.tabIndex)).toEqual([0, -1, -1, -1]);
     expect(panel.attributes.get("role")).toBe("tabpanel");
     expect(panel.attributes.get("aria-labelledby")).toBe(tabList.children[0].id);
     expect(tabList.children[0].attributes.get("aria-controls")).toBe(panel.id);
@@ -137,16 +136,16 @@ describe("settings top tabs", () => {
     const tabButtons = container.children[0].children[0].children;
 
     expect(tabButtons[0].dispatch("keydown", "ArrowLeft").defaultPrevented).toBe(true);
-    expect(tabs.activePageId).toBe("usage");
-    expect(tabButtons[4].focused).toBe(true);
+    expect(tabs.activePageId).toBe("proofread");
+    expect(tabButtons[3].focused).toBe(true);
 
-    tabButtons[4].dispatch("keydown", "Home");
+    tabButtons[3].dispatch("keydown", "Home");
     expect(tabs.activePageId).toBe("general");
     tabButtons[0].dispatch("keydown", "End");
-    expect(tabs.activePageId).toBe("usage");
+    expect(tabs.activePageId).toBe("proofread");
 
     document.direction = "rtl";
-    tabButtons[4].dispatch("keydown", "ArrowLeft");
+    tabButtons[3].dispatch("keydown", "ArrowLeft");
     expect(tabs.activePageId).toBe("general");
 
     document.direction = "ltr";
@@ -157,7 +156,7 @@ describe("settings top tabs", () => {
     tabButtons[0].dispatch("keydown", "ArrowRight");
     expect(tabs.activePageId).toBe("markdown");
     expect(tabButtons[1].dispatch("keydown", "Escape").defaultPrevented).toBe(false);
-    expect(tabButtons.map((tab) => tab.tabIndex)).toEqual([-1, 0, -1, -1, -1]);
+    expect(tabButtons.map((tab) => tab.tabIndex)).toEqual([-1, 0, -1, -1]);
   });
 
   it("keeps the family tab styling resilient and responsive", () => {
@@ -169,6 +168,8 @@ describe("settings top tabs", () => {
     expect(css).toMatch(/button\.docwen-settings-tab\[aria-selected="true"\]\s*\{[^}]*font-weight:\s*var\(--font-semibold\)\s*!important;/su);
     expect(css).toMatch(/\.docwen-settings-panel\s*\{[^}]*margin-block-start:\s*var\(--size-4-5\);/su);
     expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?min-block-size:\s*44px;/u);
+    expect(css).toMatch(/\.docwen-settings-help\.setting-item\s*\{[^}]*border-inline-start:\s*3px solid var\(--interactive-accent\);/su);
+    expect(css).toMatch(/\.docwen-settings-help-icon\s*\{[^}]*color:\s*var\(--interactive-accent\);/su);
     expect(css).not.toMatch(/\.docwen-settings-tab\s*\{[^}]*\n\s*height:/su);
   });
 });
