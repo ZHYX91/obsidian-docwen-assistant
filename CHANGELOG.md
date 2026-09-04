@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-04
+
 ### Added
 
 - Added a fixed-layout rendering DPI override for PDF, OFD, and XPS Markdown exports.
