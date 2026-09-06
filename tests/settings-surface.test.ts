@@ -391,12 +391,15 @@ describe("settings surface lifecycle", () => {
       };
       const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "manual" });
       const tab = new SettingTab({} as never, plugin as never);
+      tab.display();
+      expect(texts.at(-1)?.value).toBe("");
 
       await (tab as unknown as {
         selectDocWenLocation(kind: "program"): Promise<void>;
       }).selectDocWenLocation("program");
 
       expect(plugin.settings.docwenCliPath).toBe(cliPath);
+      expect(texts.at(-1)?.value).toBe(cliPath);
       expect(plugin.resetDocWenRuntime).toHaveBeenCalledOnce();
       expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
     } finally {

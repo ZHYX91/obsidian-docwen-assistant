@@ -300,7 +300,7 @@ export class SettingTab extends PluginSettingTab {
 
   private async selectDocWenLocation(kind: DocWenLocationKind): Promise<void> {
     assertSettingsWritable(this.plugin.getSettingsCompatibility());
-    const generation = this.surfaceGeneration;
+    let generation = this.surfaceGeneration;
     const cliPath = await pickDocWenCliPath(kind);
     if (!cliPath) return;
     this.plugin.settings.docwenCliPath = cliPath;
@@ -314,7 +314,10 @@ export class SettingTab extends PluginSettingTab {
       }
       return;
     }
-    if (this.isCurrentSurface(generation)) this.refreshPathStatus();
+    if (this.isCurrentSurface(generation)) {
+      this.refreshSettingsUi();
+      generation = this.surfaceGeneration;
+    }
     showNotice(t("noticePathUpdated"));
     await this.plugin.runDoctorCheck();
     if (this.isCurrentSurface(generation)) this.refreshPathStatus();
