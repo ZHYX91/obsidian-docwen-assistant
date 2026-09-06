@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Open an action picker from an uncached file menu so users can choose a conversion or edit without reopening the menu.
 - Use consistent settings control widths, an explicit connection-check button, and localized failure summaries with expandable technical details.
 - Replace command-line wording in image settings and remove obsolete sidecar guidance.
 - Require DocWen 0.10.x and accept its independent DOCX output without an original-source sidecar.

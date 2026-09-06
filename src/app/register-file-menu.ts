@@ -6,7 +6,9 @@ import type { NumberingActions } from "../actions/numbering-actions";
 import type { ProofreadActions } from "../actions/proofread-actions";
 import { type DocWenCapabilityService, type FileCapability } from "../docwen";
 import { resolveAbsoluteFilePath, resolveTargetFile } from "../host/vault-files";
+import { showNotice } from "../host/notices";
 import { t } from "../i18n";
+import { ItemPickerModal } from "../utils/suggest-modal";
 
 type MenuItemWithOptionalSubmenu = { setSubmenu?: () => Menu };
 
@@ -26,6 +28,8 @@ export interface FileMenuActions {
 }
 
 export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void {
+  let disposed = false;
+  plugin.register(() => { disposed = true; });
   plugin.registerEvent(
     plugin.app.workspace.on("file-menu", (menu: Menu, abstractFile: TAbstractFile) => {
       const targetFile = resolveTargetFile(abstractFile);
@@ -36,13 +40,44 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       const cached = actions.capabilities.peek(filePath);
       if (!cached || cached instanceof Error) void actions.capabilities.preload(filePath);
       const folderTargetPath = targetFile === abstractFile ? null : targetFile.path;
+      const chooseActions = async (): Promise<void> => {
+        showNotice(t("contextMenuLoading"));
+        try {
+          await actions.capabilities.preload(filePath);
+          if (disposed) return;
+          const current = actions.capabilities.peek(filePath);
+          if (current instanceof Error) {
+            actions.presentCapabilityFailure(current);
+            return;
+          }
+          if (!current) return;
+          const available = actionSections(current, targetFile, folderTargetPath, actions, chooseActions)
+            .flat().filter((entry) => entry.action !== undefined);
+          if (available.length === 0) {
+            showNotice(t("contextMenuNoActions"));
+            return;
+          }
+          new ItemPickerModal(
+            plugin.app,
+            available.map((entry, index) => ({
+              id: String(index), label: entry.title, description: targetFile.path,
+            })),
+            t("contextMenuChooseAction"),
+            ({ id }) => {
+              if (!disposed) void available[Number(id)]?.action?.();
+            },
+          ).open();
+        } catch (error) {
+          if (!disposed) actions.presentCapabilityFailure(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
       let usedFallback = false;
 
       menu.addItem((item) => {
         const optional = item as unknown as MenuItemWithOptionalSubmenu;
         if (typeof optional.setSubmenu === "function") {
           item.setTitle(t("contextMenuSubmenuTitle")).setIcon("file-text");
-          renderSubmenu(optional.setSubmenu(), cached, targetFile, filePath, folderTargetPath, actions);
+          renderSubmenu(optional.setSubmenu(), cached, targetFile, filePath, folderTargetPath, actions, chooseActions);
           return;
         }
 
@@ -54,7 +89,7 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       });
 
       if (usedFallback) {
-        for (const section of actionSections(cached, targetFile, folderTargetPath, actions)) {
+        for (const section of actionSections(cached, targetFile, folderTargetPath, actions, chooseActions)) {
           for (const action of section) addEntry(menu, action, true);
         }
       }
@@ -69,8 +104,9 @@ function renderSubmenu(
   filePath: string,
   folderTargetPath: string | null,
   actions: FileMenuActions,
+  chooseActions: () => Promise<void>,
 ): void {
-  const sections = actionSections(cached, file, folderTargetPath, actions);
+  const sections = actionSections(cached, file, folderTargetPath, actions, chooseActions);
   sections.push([{
     title: t("contextMenuOpenInDocWen"),
     icon: "external-link",
@@ -87,6 +123,7 @@ function actionSections(
   file: NonNullable<ReturnType<typeof resolveTargetFile>>,
   folderTargetPath: string | null,
   actions: FileMenuActions,
+  chooseActions: () => Promise<void>,
 ): MenuEntry[][] {
   const sections: MenuEntry[][] = [];
   if (folderTargetPath !== null) {
@@ -100,11 +137,15 @@ function actionSections(
       title: t("contextMenuCapabilityUnavailable"),
       icon: "alert-triangle",
       action: () => actions.presentCapabilityFailure(cached),
+    }, {
+      title: t("contextMenuChooseAction"),
+      icon: "list",
+      action: chooseActions,
     }]);
     return sections;
   }
   if (!cached) {
-    sections.push([{ title: t("contextMenuLoading"), icon: "loader" }]);
+    sections.push([{ title: t("contextMenuChooseAction"), icon: "list", action: chooseActions }]);
     return sections;
   }
 

@@ -1,8 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const menuState = vi.hoisted(() => ({ target: null as null | { path: string } }));
+const menuState = vi.hoisted(() => ({
+  target: null as null | { path: string },
+  pickers: [] as Array<{ items: Array<{ id: string; label: string }>; choose: (item: { id: string }) => void }>,
+  notices: [] as string[],
+}));
 
 vi.mock("obsidian", () => ({}));
+vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => menuState.notices.push(message) }));
+vi.mock("../src/utils/suggest-modal", () => ({
+  ItemPickerModal: class {
+    constructor(
+      _app: unknown,
+      private items: Array<{ id: string; label: string }>,
+      _placeholder: string,
+      private choose: (item: { id: string }) => void,
+    ) {}
+    open() { menuState.pickers.push({ items: this.items, choose: this.choose }); }
+  },
+}));
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { path?: string }) => values?.path ? `${key}:${values.path}` : key,
 }));
@@ -68,6 +84,8 @@ class FakeMenu {
 describe("file menu capability states", () => {
   beforeEach(() => {
     menuState.target = null;
+    menuState.pickers = [];
+    menuState.notices = [];
   });
 
   it("shows a concise cached failure and opens its detailed error", async () => {
@@ -92,7 +110,7 @@ describe("file menu capability states", () => {
     expectValidSections(submenu);
   });
 
-  it("shows a disabled loading state while capabilities are being preloaded", async () => {
+  it("offers an actionable picker while capabilities are being preloaded", async () => {
     const preload = vi.fn().mockResolvedValue(undefined);
     const { handler } = await register({ peek: () => null, preload });
     const menu = new FakeMenu();
@@ -101,12 +119,56 @@ describe("file menu capability states", () => {
     const submenu = menu.items[0].submenu!;
 
     expect(submenu.items.map(({ title }) => title)).toEqual([
-      "contextMenuLoading",
+      "contextMenuChooseAction",
       "contextMenuOpenInDocWen",
     ]);
-    expect(submenu.items[0].disabled).toBe(true);
+    expect(submenu.items[0].disabled).toBe(false);
     expect(preload).toHaveBeenCalledOnce();
     expectValidSections(submenu);
+  });
+
+  it("opens loaded operations on the first menu without requiring the user to reopen it", async () => {
+    let cached: unknown = null;
+    let finish!: () => void;
+    const loading = new Promise<void>((resolve) => { finish = resolve; });
+    const { handler, actions } = await register({
+      peek: () => cached,
+      preload: () => loading,
+      findConversionRoute: (_capability: unknown, target: string) => target === "md" ? {} : null,
+    });
+    const menu = new FakeMenu();
+    handler(menu, { path: "note.docx" });
+    menu.items[0].submenu!.items[0].click?.();
+    expect(menuState.pickers).toHaveLength(0);
+    cached = { inspection: { supportedActions: ["convert"] } };
+    finish();
+    await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
+    expect(menuState.pickers[0].items.map((item) => item.label)).toEqual(["contextMenuConvertToMd"]);
+    menuState.pickers[0].choose({ id: "0" });
+    expect(actions.exports.toMarkdown).toHaveBeenCalledWith({ path: "note.docx" });
+  });
+
+  it.each(["empty", "error", "unload"])("keeps %s capability outcomes from producing fallback operations", async (outcome) => {
+    let cached: unknown = null;
+    let finish!: () => void;
+    const loading = new Promise<void>((resolve) => { finish = resolve; });
+    const present = vi.fn();
+    const { handler, dispose } = await register({
+      peek: () => cached,
+      preload: () => loading,
+      findConversionRoute: () => null,
+    }, present);
+    const menu = new FakeMenu();
+    handler(menu, { path: "note.docx" });
+    menu.items[0].submenu!.items[0].click?.();
+    cached = outcome === "error" ? new Error("Unavailable") : { inspection: { supportedActions: [] } };
+    if (outcome === "unload") dispose();
+    finish();
+    await loading;
+    await Promise.resolve();
+    expect(menuState.pickers).toHaveLength(0);
+    expect(present).toHaveBeenCalledTimes(outcome === "error" ? 1 : 0);
+    expect(menuState.notices.includes("contextMenuNoActions")).toBe(outcome === "empty");
   });
 
   it("groups conversion, numbering and proofreading, then keeps Open last", async () => {
@@ -185,6 +247,7 @@ async function register(
 ) {
   const { registerFileMenu } = await import("../src/app/register-file-menu");
   let handler!: (menu: FakeMenu, file: { path: string }) => void;
+  let dispose!: () => void;
   const plugin = {
     app: {
       workspace: {
@@ -196,6 +259,7 @@ async function register(
       vault: {},
     },
     registerEvent: () => undefined,
+    register: (cleanup: () => void) => { dispose = cleanup; },
   };
   const actions = {
     exports: {
@@ -216,7 +280,7 @@ async function register(
     presentCapabilityFailure,
   };
   registerFileMenu(plugin as never, actions as never);
-  return { actions, handler };
+  return { actions, handler, dispose };
 }
 
 function expectValidSections(menu: FakeMenu): void {

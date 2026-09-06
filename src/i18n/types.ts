@@ -18,6 +18,8 @@ export interface Translations {
   contextMenuRemoveNumbering: string;
   contextMenuOpenInDocWen: string;
   contextMenuLoading: string;
+  contextMenuChooseAction: string;
+  contextMenuNoActions: string;
   contextMenuCapabilityUnavailable: string;
   contextMenuFolderTarget: string;
 

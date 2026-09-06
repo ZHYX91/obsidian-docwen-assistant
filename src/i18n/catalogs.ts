@@ -20,6 +20,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "清理标题序号",
     contextMenuOpenInDocWen: "用 DocWen 打开",
     contextMenuLoading: "正在检查可用操作…",
+    contextMenuChooseAction: "选择操作…",
+    contextMenuNoActions: "当前文件没有可用的转换或编辑操作。",
     contextMenuCapabilityUnavailable: "无法获取可用操作",
     contextMenuFolderTarget: "目标文件：{path}",
 
@@ -226,6 +228,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "清理標題序號",
     contextMenuOpenInDocWen: "用 DocWen 開啟",
     contextMenuLoading: "正在檢查可用操作…",
+    contextMenuChooseAction: "選擇操作…",
+    contextMenuNoActions: "目前檔案沒有可用的轉換或編輯操作。",
     contextMenuCapabilityUnavailable: "無法取得可用操作",
     contextMenuFolderTarget: "目標檔案：{path}",
 
@@ -432,6 +436,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Remove heading numbering",
     contextMenuOpenInDocWen: "Open in DocWen",
     contextMenuLoading: "Checking available actions…",
+    contextMenuChooseAction: "Choose an action…",
+    contextMenuNoActions: "No conversion or editing actions are available for this file.",
     contextMenuCapabilityUnavailable: "Available actions could not be loaded",
     contextMenuFolderTarget: "Target file: {path}",
 
@@ -638,6 +644,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Überschriften-Nummerierung entfernen",
     contextMenuOpenInDocWen: "In DocWen öffnen",
     contextMenuLoading: "Verfügbare Aktionen werden geprüft…",
+    contextMenuChooseAction: "Aktion auswählen…",
+    contextMenuNoActions: "Für diese Datei sind keine Konvertierungs- oder Bearbeitungsaktionen verfügbar.",
     contextMenuCapabilityUnavailable: "Verfügbare Aktionen konnten nicht geladen werden",
     contextMenuFolderTarget: "Zieldatei: {path}",
 
@@ -844,6 +852,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Supprimer la numérotation des titres",
     contextMenuOpenInDocWen: "Ouvrir dans DocWen",
     contextMenuLoading: "Vérification des actions disponibles…",
+    contextMenuChooseAction: "Choisir une action…",
+    contextMenuNoActions: "Aucune action de conversion ou de modification n’est disponible pour ce fichier.",
     contextMenuCapabilityUnavailable: "Impossible de charger les actions disponibles",
     contextMenuFolderTarget: "Fichier cible : {path}",
 
@@ -1050,6 +1060,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Удалить нумерацию заголовков",
     contextMenuOpenInDocWen: "Открыть в DocWen",
     contextMenuLoading: "Проверка доступных действий…",
+    contextMenuChooseAction: "Выбрать действие…",
+    contextMenuNoActions: "Для этого файла нет доступных действий преобразования или редактирования.",
     contextMenuCapabilityUnavailable: "Не удалось загрузить доступные действия",
     contextMenuFolderTarget: "Целевой файл: {path}",
 
@@ -1256,6 +1268,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Remover numeração dos títulos",
     contextMenuOpenInDocWen: "Abrir no DocWen",
     contextMenuLoading: "Verificando ações disponíveis…",
+    contextMenuChooseAction: "Escolher uma ação…",
+    contextMenuNoActions: "Não há ações de conversão ou edição disponíveis para este arquivo.",
     contextMenuCapabilityUnavailable: "Não foi possível carregar as ações disponíveis",
     contextMenuFolderTarget: "Arquivo de destino: {path}",
 
@@ -1462,6 +1476,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "見出しの番号を削除",
     contextMenuOpenInDocWen: "DocWen で開く",
     contextMenuLoading: "利用可能な操作を確認しています…",
+    contextMenuChooseAction: "操作を選択…",
+    contextMenuNoActions: "このファイルで利用できる変換または編集操作はありません。",
     contextMenuCapabilityUnavailable: "利用可能な操作を読み込めませんでした",
     contextMenuFolderTarget: "対象ファイル：{path}",
 
@@ -1667,6 +1683,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "제목 번호 제거",
     contextMenuOpenInDocWen: "DocWen에서 열기",
     contextMenuLoading: "사용 가능한 작업을 확인하는 중…",
+    contextMenuChooseAction: "작업 선택…",
+    contextMenuNoActions: "이 파일에 사용할 수 있는 변환 또는 편집 작업이 없습니다.",
     contextMenuCapabilityUnavailable: "사용 가능한 작업을 불러오지 못했습니다",
     contextMenuFolderTarget: "대상 파일: {path}",
 
@@ -1872,6 +1890,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Eliminar numeración de títulos",
     contextMenuOpenInDocWen: "Abrir en DocWen",
     contextMenuLoading: "Comprobando acciones disponibles…",
+    contextMenuChooseAction: "Elegir una acción…",
+    contextMenuNoActions: "No hay acciones de conversión o edición disponibles para este archivo.",
     contextMenuCapabilityUnavailable: "No se pudieron cargar las acciones disponibles",
     contextMenuFolderTarget: "Archivo de destino: {path}",
 
@@ -2077,6 +2097,8 @@ export const translations: Record<string, Translations> = {
     contextMenuRemoveNumbering: "Xóa đánh số tiêu đề",
     contextMenuOpenInDocWen: "Mở trong DocWen",
     contextMenuLoading: "Đang kiểm tra thao tác khả dụng…",
+    contextMenuChooseAction: "Chọn thao tác…",
+    contextMenuNoActions: "Không có thao tác chuyển đổi hoặc chỉnh sửa nào cho tệp này.",
     contextMenuCapabilityUnavailable: "Không thể tải các thao tác khả dụng",
     contextMenuFolderTarget: "Tệp đích: {path}",
 
