@@ -630,6 +630,28 @@ describe("DocWenClient Machine semantics", () => {
     expect(await transactionResidue(destination)).toEqual([]);
   });
 
+  it("keeps transport manifests out of repeated exports and preserves an existing user manifest", async () => {
+    const staging = await temporaryRoot();
+    const destination = await temporaryRoot();
+    const source = path.join(staging, "note.md");
+    const manifestPath = path.join(staging, "docwen-node.json");
+    await writeFile(source, "# Document\n");
+    await writeFile(manifestPath, "{}");
+    await writeFile(path.join(destination, "docwen-node.json"), "user data");
+    const bundle = bundleWithRelated(source, Buffer.from("# Document\n"), manifestPath, Buffer.from("{}"));
+    bundle.artifacts[0].media_type = "text/markdown";
+    bundle.artifacts[1].media_type = "application/json";
+    bundle.artifacts[1].suggested_name = "docwen-node.json";
+    bundle.relations = [{ type: "resource_of", role: "manifest", source_artifact_id: "artifact.related", target_artifact_id: "artifact.primary", ordinal: 0 }];
+    for (const name of ["first.md", "second.md"]) {
+      const output = path.join(destination, name);
+      expect(await atomicCommitBundle(bundle, output, false)).toEqual([output]);
+      expect(await readFile(output, "utf8")).toBe("# Document\n");
+    }
+    expect(await readFile(path.join(destination, "docwen-node.json"), "utf8")).toBe("user data");
+    expect(await transactionResidue(destination)).toEqual([]);
+  });
+
   it("replaces only the confirmed DOCX and preserves an unrelated old companion", async () => {
     const staging = await temporaryRoot();
     const destination = await temporaryRoot();

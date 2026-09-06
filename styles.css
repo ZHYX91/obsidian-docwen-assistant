@@ -361,6 +361,7 @@
 }
 
 .docwen-proofread-status {
+  text-wrap: balance;
   padding: 24px 16px;
   text-align: center;
   color: var(--text-muted);

@@ -8,6 +8,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Keep long-note proofreading responsive by constructing semantic inputs only for exports that need them and indexing text positions once per snapshot.
+- Exclude internal layout manifests from user exports so successive Markdown exports can share a destination folder.
 - Preserve the source document name when exporting resolved Markdown to Word.
 - Export both `.md` and `.markdown` sources through the same resolved document path.
 - Validate editor and Vault snapshots before publishing converted files or proofreading results; preserve outputs when source content conflicts or an operation is cancelled before commit.

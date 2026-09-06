@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
+import { setTimeout as yieldToHost } from "node:timers/promises";
 
 import { TFile, type App } from "obsidian";
 
@@ -20,13 +21,14 @@ import {
   type NumberSuiteSnapshot,
 } from "./number-suite-interop";
 import { VaultWriteError } from "./vault-write-transaction";
+import { SourceTextIndex } from "./source-text-index";
 
 export interface IsolatedSnapshot {
   readonly inputPath: string;
   readonly contentSha256: string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
-  readonly resolvedMarkdownInputs?: readonly [TaskInput, TaskInput];
+  readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
   readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
 }
@@ -111,18 +113,22 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(file.path),
         mediaType: mediaTypeForPath(file.path),
       };
-      const resolvedMarkdownSnapshot = authoredMarkdown !== null
-        ? await this.buildResolvedMarkdownInputs(file, authoredMarkdown, workspace)
-        : undefined;
+      let resolvedMarkdownSnapshot: Promise<ResolvedMarkdownSnapshot> | undefined;
+      const getResolvedMarkdownInputs = async (): Promise<readonly [TaskInput, TaskInput] | undefined> => {
+        if (authoredMarkdown === null) return undefined;
+        await assertCurrent();
+        resolvedMarkdownSnapshot ??= this.buildResolvedMarkdownInputs(file, authoredMarkdown, workspace, signal);
+        const resolved = await resolvedMarkdownSnapshot;
+        await assertCurrent();
+        return resolved.inputs;
+      };
       result = await work({
         inputPath,
         contentSha256,
         publish,
         sourceInput,
         inputs: [sourceInput],
-        ...(resolvedMarkdownSnapshot === undefined ? {} : {
-          resolvedMarkdownInputs: resolvedMarkdownSnapshot.inputs,
-        }),
+        getResolvedMarkdownInputs,
       });
       // After publication the source may legitimately change again. The
       // publication boundary above owns validation, so do not report a late
@@ -148,7 +154,12 @@ export class VaultReadSnapshot {
     file: TFile,
     authoredMarkdown: string,
     workspace: string,
+    signal: AbortSignal,
   ): Promise<ResolvedMarkdownSnapshot> {
+    // Let the host render progress and deliver cancellation before projection.
+    await yieldToHost(0, undefined, { signal });
+    throwIfAborted(signal);
+    const sourceIndex = new SourceTextIndex(authoredMarkdown);
     const resources: Array<Record<string, unknown>> = [];
     const resourceOccurrences: Array<Record<string, unknown>> = [];
     const resourcesByPath = new Map<string, string>();
@@ -158,6 +169,7 @@ export class VaultReadSnapshot {
     const embeds = [...(fileCache?.embeds ?? [])]
       .sort((left, right) => left.position.start.offset - right.position.start.offset);
     for (const embed of embeds) {
+      throwIfAborted(signal);
       const linked = metadataCache.getFirstLinkpathDest(embed.link, file.path);
       const requestedExtension = extensionForLink(embed.link);
       if (!(linked instanceof TFile)) {
@@ -211,8 +223,8 @@ export class VaultReadSnapshot {
         });
       }
       resourceOccurrences.push({
-        source_start: unicodeOffset(authoredMarkdown, jsStart),
-        source_end: unicodeOffset(authoredMarkdown, jsEnd),
+        source_start: sourceIndex.unicodeOffset(jsStart),
+        source_end: sourceIndex.unicodeOffset(jsEnd),
         source_slice_sha256: sha256(authoredToken),
         authored_token: authoredToken,
         authored_locator: embed.link,
@@ -222,7 +234,7 @@ export class VaultReadSnapshot {
 
     const sourceSha256 = sha256(authoredMarkdown);
     const inputId = `obsidian-${sourceSha256.slice(0, 32)}`;
-    const headings = resolvedHeadingTargets(authoredMarkdown, fileCache?.headings ?? []);
+    const headings = resolvedHeadingTargets(authoredMarkdown, fileCache?.headings ?? [], sourceIndex);
     let numbering: NumberingProjection;
     try {
       const numberSuite: NumberSuiteSnapshot | null = loadNumberSuiteSnapshot(
@@ -232,7 +244,7 @@ export class VaultReadSnapshot {
       );
       numbering = numberSuite === null
         ? disabledHeadingNumbering(headings)
-        : numberSuiteNumbering(authoredMarkdown, headings, numberSuite);
+        : numberSuiteNumbering(authoredMarkdown, headings, numberSuite, sourceIndex);
     } catch (error) {
       throw new VaultWriteError(
         "vault_input_invalid",
@@ -267,6 +279,7 @@ export class VaultReadSnapshot {
     };
     const neutralPath = path.join(workspace, "resolved-document.json");
     const planPath = path.join(workspace, "numbering-export-plan.json");
+    throwIfAborted(signal);
     await Promise.all([
       writeFile(neutralPath, JSON.stringify(neutralDocument), "utf8"),
       writeFile(planPath, JSON.stringify(numberingPlan), "utf8"),
@@ -359,6 +372,7 @@ function numberSuiteNumbering(
   source: string,
   headings: readonly ResolvedTargetRecord[],
   snapshot: NumberSuiteSnapshot,
+  sourceIndex: SourceTextIndex,
 ): NumberingProjection {
   const headingsByRange = new Map(headings.map((heading) => [
     `${heading.source_start}:${heading.source_end}`,
@@ -366,14 +380,14 @@ function numberSuiteNumbering(
   ]));
   const headingFacts = new Map<string, NumberSuiteHeadingTarget>();
   for (const fact of snapshot.headingTargets) {
-    const start = unicodeOffset(source, fact.sourceStartUtf16);
-    const end = unicodeOffset(source, fact.sourceEndUtf16);
+    const start = sourceIndex.unicodeOffset(fact.sourceStartUtf16);
+    const end = sourceIndex.unicodeOffset(fact.sourceEndUtf16);
     const key = `${start}:${end}`;
     const heading = headingsByRange.get(key);
     if (
       heading == null
       || heading.heading_level !== fact.level
-      || physicalLineNumber(source, fact.sourceStartUtf16) !== fact.line
+      || sourceIndex.lineNumber(fact.sourceStartUtf16) !== fact.line
     ) {
       throw new NumberSuiteInteropError("Number Suite Heading facts contradict the authenticated Obsidian inventory.");
     }
@@ -391,7 +405,7 @@ function numberSuiteNumbering(
     const fact = headingFacts.get(`${heading.source_start}:${heading.source_end}`);
     return fact == null ? heading : { ...heading, target_id: fact.targetId };
   });
-  const captionTargets = snapshot.captionTargets.map((caption) => resolvedCaptionTarget(source, caption));
+  const captionTargets = snapshot.captionTargets.map((caption) => resolvedCaptionTarget(source, caption, sourceIndex));
   const targets = [...projectedHeadings, ...captionTargets]
     .sort((left, right) => left.source_start - right.source_start
       || left.source_end - right.source_end
@@ -400,7 +414,7 @@ function numberSuiteNumbering(
     `${target.source_start}:${target.source_end}`,
     target,
   ]));
-  const semanticTargets = authenticatedSemanticTargets(source, snapshot, targetByRange);
+  const semanticTargets = authenticatedSemanticTargets(source, snapshot, targetByRange, sourceIndex);
   const semanticTargetByRange = new Map(semanticTargets.map((target) => [
     `${target.sourceStartUtf16}:${target.sourceEndUtf16}`,
     target,
@@ -442,7 +456,7 @@ function numberSuiteNumbering(
       continue;
     }
 
-    const caption = captionFactForTarget(source, snapshot.captionTargets, target);
+    const caption = captionFactForTarget(sourceIndex, snapshot.captionTargets, target);
     if (caption == null || !caption.enabled || caption.derivedNumber == null) {
       planTargets.push(disabledPlanTarget(target));
       continue;
@@ -479,10 +493,10 @@ function numberSuiteNumbering(
   }
 
   const references = snapshot.references.flatMap((reference) => {
-    const sourceStart = unicodeOffset(source, reference.sourceStartUtf16);
-    const sourceEnd = unicodeOffset(source, reference.sourceEndUtf16);
-    const targetStart = unicodeOffset(source, reference.targetSourceStartUtf16);
-    const targetEnd = unicodeOffset(source, reference.targetSourceEndUtf16);
+    const sourceStart = sourceIndex.unicodeOffset(reference.sourceStartUtf16);
+    const sourceEnd = sourceIndex.unicodeOffset(reference.sourceEndUtf16);
+    const targetStart = sourceIndex.unicodeOffset(reference.targetSourceStartUtf16);
+    const targetEnd = sourceIndex.unicodeOffset(reference.targetSourceEndUtf16);
     const targetKey = `${targetStart}:${targetEnd}`;
     const target = targetByRange.get(targetKey);
     const semanticTarget = semanticTargetByRange.get(
@@ -525,6 +539,7 @@ function numberSuiteNumbering(
 function resolvedCaptionTarget(
   source: string,
   caption: NumberSuiteCaptionTarget,
+  sourceIndex: SourceTextIndex,
 ): ResolvedTargetRecord {
   const sourceSlice = exactPhysicalLine(
     source,
@@ -537,7 +552,7 @@ function resolvedCaptionTarget(
     match?.[2] !== caption.kind
     || match[3] == null
     || semanticAuthoredText(match[3]) !== caption.authoredText
-    || physicalLineNumber(source, caption.sourceStartUtf16) !== caption.line
+    || sourceIndex.lineNumber(caption.sourceStartUtf16) !== caption.line
   ) {
     throw new NumberSuiteInteropError("Number Suite caption facts contradict the exact authored source line.");
   }
@@ -549,8 +564,8 @@ function resolvedCaptionTarget(
     "caption",
   );
   return {
-    source_start: unicodeOffset(source, caption.sourceStartUtf16),
-    source_end: unicodeOffset(source, caption.sourceEndUtf16),
+    source_start: sourceIndex.unicodeOffset(caption.sourceStartUtf16),
+    source_end: sourceIndex.unicodeOffset(caption.sourceEndUtf16),
     source_slice_sha256: sha256(sourceSlice),
     kind: CAPTION_KIND_FOR_DOCWEN[caption.kind],
     target_id: caption.targetId,
@@ -593,14 +608,6 @@ function exactPhysicalLine(
     );
   }
   return source.slice(sourceStart, sourceEnd);
-}
-
-function physicalLineNumber(source: string, sourceStart: number): number {
-  let line = 0;
-  for (let index = 0; index < sourceStart; index += 1) {
-    if (source[index] === "\n") line += 1;
-  }
-  return line;
 }
 
 function semanticAuthoredText(value: string): string {
@@ -820,13 +827,13 @@ function semanticBlockIdLineAvailability(lines: readonly string[]): boolean[] {
 }
 
 function captionFactForTarget(
-  source: string,
+  sourceIndex: SourceTextIndex,
   facts: readonly NumberSuiteCaptionTarget[],
   target: ResolvedTargetRecord,
 ): NumberSuiteCaptionTarget | null {
   return facts.find((fact) => (
-    unicodeOffset(source, fact.sourceStartUtf16) === target.source_start
-    && unicodeOffset(source, fact.sourceEndUtf16) === target.source_end
+    sourceIndex.unicodeOffset(fact.sourceStartUtf16) === target.source_start
+    && sourceIndex.unicodeOffset(fact.sourceEndUtf16) === target.source_end
   )) ?? null;
 }
 
@@ -842,6 +849,7 @@ function authenticatedSemanticTargets(
   source: string,
   snapshot: NumberSuiteSnapshot,
   targetByRange: ReadonlyMap<string, ResolvedTargetRecord>,
+  sourceIndex: SourceTextIndex,
 ): AuthenticatedSemanticTarget[] {
   return [
     ...snapshot.headingTargets.map((fact) => ({
@@ -853,8 +861,8 @@ function authenticatedSemanticTargets(
       title: `${fact.kind}: ${fact.authoredText}`.trimEnd(),
     })),
   ].map(({ fact, title }) => {
-    const sourceStart = unicodeOffset(source, fact.sourceStartUtf16);
-    const sourceEnd = unicodeOffset(source, fact.sourceEndUtf16);
+    const sourceStart = sourceIndex.unicodeOffset(fact.sourceStartUtf16);
+    const sourceEnd = sourceIndex.unicodeOffset(fact.sourceEndUtf16);
     const resolved = targetByRange.get(`${sourceStart}:${sourceEnd}`);
     if (resolved == null || resolved.target_id !== fact.targetId) {
       throw new NumberSuiteInteropError(
@@ -1049,6 +1057,7 @@ interface ScannedHeading {
 function resolvedHeadingTargets(
   authoredMarkdown: string,
   cached: readonly CachedHeadingLike[],
+  sourceIndex: SourceTextIndex,
 ): ResolvedTargetRecord[] {
   const scanned = scanAtxHeadings(authoredMarkdown);
   const cachedByRange = new Map(cached.map((heading) => [
@@ -1066,8 +1075,8 @@ function resolvedHeadingTargets(
     }
     const sourceSlice = authoredMarkdown.slice(heading.jsStart, heading.jsEnd);
     return {
-      source_start: unicodeOffset(authoredMarkdown, heading.jsStart),
-      source_end: unicodeOffset(authoredMarkdown, heading.jsEnd),
+      source_start: sourceIndex.unicodeOffset(heading.jsStart),
+      source_end: sourceIndex.unicodeOffset(heading.jsEnd),
       source_slice_sha256: sha256(sourceSlice),
       kind: "heading",
       target_id: heading.targetId,
@@ -1168,10 +1177,6 @@ function extensionForLink(link: string): string {
   const finalSegment = segments[segments.length - 1] ?? "";
   const dot = finalSegment.lastIndexOf(".");
   return dot < 0 ? "" : finalSegment.slice(dot + 1).toLowerCase();
-}
-
-function unicodeOffset(value: string, utf16Offset: number): number {
-  return Array.from(value.slice(0, utf16Offset)).length;
 }
 
 function decodeMarkdown(value: string | ArrayBuffer): string {

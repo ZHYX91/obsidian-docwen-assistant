@@ -135,10 +135,16 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
     });
     expect(roundtrip.output).toBe(markdown);
     expect(roundtrip.outputs).toContain(markdown);
-    const manifestOutput = roundtrip.outputs.find((output) => basename(output) === "docwen-node.json");
-    expect(manifestOutput).toBeDefined();
-    const manifest = JSON.parse(await readFile(manifestOutput!, "utf8")) as { schema?: unknown };
-    expect(manifest.schema).toBe("docwen.document_node.v1");
+    expect(roundtrip.outputs.some((output) => basename(output) === "docwen-node.json")).toBe(false);
+    const secondOutput = join(caseRoot, "second-export.md");
+    const second = await client.convert({
+      sourceInput: docxInput,
+      inputs: [docxInput],
+      outputPath: secondOutput,
+      target: "md",
+      capabilityId: "convert.docx.to_markdown",
+    });
+    expect(second.outputs).toEqual([secondOutput]);
 
     const restored = await readFile(markdown, "utf8");
     expect(restored).toContain("####### Level seven");

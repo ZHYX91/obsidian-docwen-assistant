@@ -445,7 +445,11 @@ export async function atomicCommitBundle(
   const preferred = preferredArtifact(bundle);
   const destinationRoot = path.dirname(path.resolve(outputPath));
   await mkdir(destinationRoot, { recursive: true });
-  const orderedArtifacts = [preferred, ...bundle.artifacts.filter((artifact) => artifact !== preferred)];
+  const manifestIds = new Set(bundle.relations
+    .filter((relation) => relation.type === "resource_of" && relation.role === "manifest")
+    .map((relation) => relation.source_artifact_id));
+  const orderedArtifacts = [preferred, ...bundle.artifacts.filter((artifact) =>
+    artifact !== preferred && !manifestIds.has(artifact.artifact_id))];
   const targets = orderedArtifacts.map((artifact) => ({
     artifact,
     allowOverwrite: artifact.artifact_id === preferred.artifact_id && overwrite,

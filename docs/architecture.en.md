@@ -22,6 +22,8 @@ An action first captures an isolated snapshot from the uniquely path-matched ope
 
 For Markdown-to-DOCX, the original snapshot is used only for inspection, proofreading, and conflict validation. The Assistant resolves images explicitly embedded by that note through Obsidian's metadata cache and supports PNG, JPEG, GIF, BMP, and WebP. Short Wiki links, cross-folder links, and filenames containing spaces follow Obsidian's own resolution result. The Assistant neither enumerates the Vault nor scans for same-named files. It packages each occurrence, authored token, media type, bytes, size, and SHA-256 into a `resolved_document`. It also authenticates DocWen's complete heading inventory, levels 1 through 9, and marks those headings explicitly unnumbered in the consumer-neutral `numbering_export_plan`; it neither guesses nor adds numbering. DocWen does not read the Vault or search for the image again.
 
+Semantic inputs are built lazily, once per snapshot, only when the selected export needs them. Raw-source actions do not read semantic metadata or Number Suite. One scoped text index provides Unicode and line positions without rescanning source prefixes. Deferred construction retains cancellation and source-conflict checks.
+
 When Number Suite is loaded at runtime and exposes `number-suite.interop.v2`, the Assistant validates
 the plain-data snapshot's schema, ranges, targets, references, and counter consistency. The v2
 contract carries H1-H9 targets, exactly nine counter values, and H1-H9 display segments, including
@@ -35,6 +37,8 @@ text is never used to guess a number.
 ## Artifacts and commit
 
 DocWen writes only to a request-owned staging directory. The Assistant accepts and validates only Artifact Bundle v2; every other Bundle schema fails closed. Validation covers Bundle identity, layout, logical paths, graph, roles, relations, physical paths, regular-file status, sizes, and hashes. The preferred artifact maps to the user-confirmed target and related resources use safe names. Commit uses exclusive creation, no-clobber links, backup, and rollback, while the CLI never receives a Vault target.
+
+Artifacts identified by a typed `resource_of` relation with role `manifest` remain in staging after Bundle validation. Internal layout manifests are not user exports and must not collide with later exports or replace existing files in the destination.
 
 The resolved-document route accepts exactly one preferred DOCX artifact, one primary entry, and no relations. The Assistant validates its size and hash before atomic commit. Only the user-confirmed DOCX can be replaced. Adjacent historical companion files remain untouched. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target and use an empty cached_number; their visible text uses Alias or the current title.
 

@@ -178,8 +178,8 @@ export class ExportActions {
             Object.assign(options, buildHeadingMergeOptions(settings));
           }
 
-          const taskInputs = target === "docx" && snapshot.resolvedMarkdownInputs
-            ? snapshot.resolvedMarkdownInputs
+          const taskInputs = target === "docx"
+            ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
             : snapshot.inputs;
           this.capabilities.requireTaskInputs(route, taskInputs);
 

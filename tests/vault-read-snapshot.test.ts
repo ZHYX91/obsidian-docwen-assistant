@@ -5,6 +5,46 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it("passes a long raw source to proofreading without reading semantic metadata or plugins", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const source = "# 中文标题😀\n\n正文。\n".repeat(4_000);
+    const file = { path: "long.md", extension: "md" };
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      get metadataCache(): never { throw new Error("Raw operations must not read metadata"); },
+      get plugins(): never { throw new Error("Raw operations must not load interop plugins"); },
+    };
+    await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      expect(await readFile(snapshot.sourceInput.path, "utf8")).toBe(source);
+    });
+  });
+
+  it("memoizes deferred projection and handles cancellation before metadata access", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const metadataCache = { getFileCache: vi.fn(() => ({})) };
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode("# Title\n").buffer },
+      metadataCache,
+    };
+    await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      expect(metadataCache.getFileCache).not.toHaveBeenCalled();
+      const first = await snapshot.getResolvedMarkdownInputs();
+      expect(await snapshot.getResolvedMarkdownInputs()).toBe(first);
+      expect(metadataCache.getFileCache).toHaveBeenCalledTimes(1);
+    });
+    metadataCache.getFileCache.mockClear();
+    const controller = new AbortController();
+    await expect(new VaultReadSnapshot(app as never).run(file as never, controller.signal, async (snapshot) => {
+      const pending = snapshot.getResolvedMarkdownInputs();
+      setTimeout(() => controller.abort(), 0);
+      return pending;
+    })).rejects.toMatchObject({ name: "AbortError" });
+    expect(metadataCache.getFileCache).not.toHaveBeenCalled();
+  });
+
   it.each(["md", "markdown"])("preserves authored content and source name for a closed .%s file", async (extension) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: `笔记/报告 v2.${extension}`, extension };
@@ -14,10 +54,11 @@ describe("VaultReadSnapshot", () => {
       vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
     };
     await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
-      expect(snapshot.resolvedMarkdownInputs?.[0].logicalPath).toBe(file.path);
-      const payload = JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8"));
+      const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+      expect(resolvedInputs?.[0].logicalPath).toBe(file.path);
+      const payload = JSON.parse(await readFile(resolvedInputs![0].path, "utf8"));
       expect(payload.document.authored_markdown).toBe(source);
-      expect(snapshot.resolvedMarkdownInputs?.map((input) => input.role)).toEqual(["neutral_document", "numbering_export_plan"]);
+      expect(resolvedInputs?.map((input) => input.role)).toEqual(["neutral_document", "numbering_export_plan"]);
     });
   });
 
@@ -81,7 +122,7 @@ describe("VaultReadSnapshot", () => {
     await expect(new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async () => undefined,
+      async (snapshot) => { await snapshot.getResolvedMarkdownInputs(); },
     )).rejects.toMatchObject({ code: "vault_target_changed" });
     expect(app.vault.readBinary).not.toHaveBeenCalled();
   });
@@ -153,12 +194,15 @@ describe("VaultReadSnapshot", () => {
     const captured = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async (snapshot) => ({
-        sourceInput: snapshot.sourceInput,
-        resolvedInputs: snapshot.resolvedMarkdownInputs,
-        neutral: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8")),
-        plan: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![1].path, "utf8")),
-      }),
+      async (snapshot) => {
+        const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+        return {
+          sourceInput: snapshot.sourceInput,
+          resolvedInputs,
+          neutral: JSON.parse(await readFile(resolvedInputs![0].path, "utf8")),
+          plan: JSON.parse(await readFile(resolvedInputs![1].path, "utf8")),
+        };
+      },
     );
 
     expect(captured.sourceInput).toMatchObject(
@@ -182,7 +226,7 @@ describe("VaultReadSnapshot", () => {
     ]);
     expect(captured.plan.plan).toEqual({ heading_definitions: [], heading_instances: [], targets: [] });
     expect(captured.neutral.plan_sha256).toBe(captured.plan.plan_sha256);
-    expect(readBinary).toHaveBeenCalledTimes(3);
+    expect(readBinary.mock.calls.filter(([target]) => target === actual)).toHaveLength(1);
     expect(readBinary).toHaveBeenCalledWith(actual);
     expect(app.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith("actual.png", "notes/note.md");
   });
@@ -215,10 +259,13 @@ describe("VaultReadSnapshot", () => {
     const captured = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async (snapshot) => ({
-        neutral: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8")),
-        plan: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![1].path, "utf8")),
-      }),
+      async (snapshot) => {
+        const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+        return {
+          neutral: JSON.parse(await readFile(resolvedInputs![0].path, "utf8")),
+          plan: JSON.parse(await readFile(resolvedInputs![1].path, "utf8")),
+        };
+      },
     );
 
     expect(captured.neutral.document.targets).toEqual([expect.objectContaining({
@@ -355,10 +402,13 @@ describe("VaultReadSnapshot", () => {
     const captured = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async (snapshot) => ({
-        neutral: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8")),
-        plan: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![1].path, "utf8")),
-      }),
+      async (snapshot) => {
+        const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+        return {
+          neutral: JSON.parse(await readFile(resolvedInputs![0].path, "utf8")),
+          plan: JSON.parse(await readFile(resolvedInputs![1].path, "utf8")),
+        };
+      },
     );
 
     expect(exportSemanticSnapshot).toHaveBeenCalledWith({
@@ -444,7 +494,7 @@ describe("VaultReadSnapshot", () => {
     await expect(new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async () => undefined,
+      async (snapshot) => { await snapshot.getResolvedMarkdownInputs(); },
     )).rejects.toMatchObject({
       code: "vault_input_invalid",
       details: { cause: expect.stringContaining("block ID") },
@@ -535,7 +585,7 @@ describe("VaultReadSnapshot", () => {
     await expect(new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async () => undefined,
+      async (snapshot) => { await snapshot.getResolvedMarkdownInputs(); },
     )).rejects.toMatchObject({
       code: "vault_input_invalid",
       details: { cause: expect.stringContaining(cause) },
@@ -582,10 +632,13 @@ describe("VaultReadSnapshot", () => {
     const captured = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
-      async (snapshot) => ({
-        neutral: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8")),
-        plan: JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![1].path, "utf8")),
-      }),
+      async (snapshot) => {
+        const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+        return {
+          neutral: JSON.parse(await readFile(resolvedInputs![0].path, "utf8")),
+          plan: JSON.parse(await readFile(resolvedInputs![1].path, "utf8")),
+        };
+      },
     );
 
     expect(captured.neutral.document.targets.map((target: Record<string, unknown>) => ({
@@ -1065,10 +1118,13 @@ async function captureNumberSuiteProjection(
   return new VaultReadSnapshot(app as never).run(
     file as never,
     new AbortController().signal,
-    async (resolved) => ({
-      inputs: resolved.resolvedMarkdownInputs,
-      neutral: JSON.parse(await readFile(resolved.resolvedMarkdownInputs![0].path, "utf8")),
-      plan: JSON.parse(await readFile(resolved.resolvedMarkdownInputs![1].path, "utf8")),
-    }),
+    async (resolved) => {
+      const resolvedInputs = await resolved.getResolvedMarkdownInputs();
+      return {
+        inputs: resolvedInputs,
+        neutral: JSON.parse(await readFile(resolvedInputs![0].path, "utf8")),
+        plan: JSON.parse(await readFile(resolvedInputs![1].path, "utf8")),
+      };
+    },
   );
 }

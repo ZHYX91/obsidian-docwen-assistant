@@ -35,7 +35,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
         sourceInput: unknown;
         inputs: unknown[];
-        resolvedMarkdownInputs: unknown[];
+        getResolvedMarkdownInputs: () => Promise<unknown[]>;
       }) => Promise<T>,
     ): Promise<T> {
       const sourceInput = {
@@ -51,7 +51,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         publish: async (commit) => commit(),
         sourceInput,
         inputs: [sourceInput],
-        resolvedMarkdownInputs: [
+        getResolvedMarkdownInputs: async () => [
           {
             path: "D:\\Temp\\resolved-document.json",
             kind: "document",
