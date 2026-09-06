@@ -76,7 +76,7 @@ Obsidian 1.12.7 以降では、横スクロール可能な 4 つの上部タブ�
 
 Node.js 24.19.0 と npm 11.17.0 を使用します。`npm ci`、`npm run check`、`npm run release` を実行します。ソースは `src/`、テストは `tests/` にあり、`dist/` と `release/` の生成物はソースではありません。
 
-安定版文書：[製品要件](../product-requirements.en.md) · [UX 仕様](../ux-spec.en.md) · [アーキテクチャ](../architecture.en.md) · [テスト戦略](../testing-strategy.en.md) · [リリース手順](../release.en.md)
+安定版文書：[製品要件](../product-requirements.en.md) · [UX 仕様](../ux-spec.en.md) · [アーキテクチャ](../architecture.en.md) · [テスト戦略](../testing-strategy.en.md)
 
 リポジトリ運営：[変更履歴](../../CHANGELOG.md) · [コントリビューションガイド](../../CONTRIBUTING.md) · [セキュリティ](../../SECURITY.md)
 

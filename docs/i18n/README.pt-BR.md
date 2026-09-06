@@ -76,7 +76,7 @@ O plugin fornece ao DocWen apenas um instantâneo isolado do editor atual ou do 
 
 Use Node.js 24.19.0 e npm 11.17.0. Execute `npm ci`, `npm run check` e `npm run release`. O código-fonte fica em `src/`, os testes em `tests/`; os arquivos gerados em `dist/` e `release/` não são código-fonte.
 
-Documentos estáveis: [Requisitos do produto](../product-requirements.en.md) · [Especificação de UX](../ux-spec.en.md) · [Arquitetura](../architecture.en.md) · [Estratégia de testes](../testing-strategy.en.md) · [Procedimento de lançamento](../release.en.md)
+Documentos estáveis: [Requisitos do produto](../product-requirements.en.md) · [Especificação de UX](../ux-spec.en.md) · [Arquitetura](../architecture.en.md) · [Estratégia de testes](../testing-strategy.en.md)
 
 Governança do repositório: [Registro de alterações](../../CHANGELOG.md) · [Como contribuir](../../CONTRIBUTING.md) · [Segurança](../../SECURITY.md)
 

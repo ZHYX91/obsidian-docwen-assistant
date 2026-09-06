@@ -76,7 +76,7 @@ Obsidian 1.12.7 и новее использует четыре верхние �
 
 Используйте Node.js 24.19.0 и npm 11.17.0. Выполните `npm ci`, `npm run check` и `npm run release`. Исходный код находится в `src/`, тесты — в `tests/`; созданные файлы в `dist/` и `release/` не являются исходным кодом.
 
-Стабильные документы: [Требования к продукту](../product-requirements.en.md) · [Спецификация UX](../ux-spec.en.md) · [Архитектура](../architecture.en.md) · [Стратегия тестирования](../testing-strategy.en.md) · [Процедура выпуска](../release.en.md)
+Стабильные документы: [Требования к продукту](../product-requirements.en.md) · [Спецификация UX](../ux-spec.en.md) · [Архитектура](../architecture.en.md) · [Стратегия тестирования](../testing-strategy.en.md)
 
 Управление репозиторием: [Журнал изменений](../../CHANGELOG.md) · [Как внести вклад](../../CONTRIBUTING.md) · [Безопасность](../../SECURITY.md)
 

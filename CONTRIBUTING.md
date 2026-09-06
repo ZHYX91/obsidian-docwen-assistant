@@ -22,7 +22,7 @@ Keep composition in `src/main.ts`, user workflows in `src/actions/`, DocWen prot
 
 ## Product and documentation authority
 
-Simplified Chinese is the source for the five stable pairs under `docs/`: product requirements, UX specification, architecture, testing strategy, and release. Update the `.zh-CN.md` source and `.en.md` translation together, preserve exact frontmatter and heading-level parity, and add an Unreleased changelog entry for material user or operational changes.
+Simplified Chinese is the source for the product-specific document pairs under `docs/`: product requirements, UX specification, architecture, and testing strategy. Update the `.zh-CN.md` source and `.en.md` translation together, preserve exact frontmatter and heading-level parity, and add an Unreleased changelog entry for material user or operational changes.
 
 The README remains English at the root with translations under `docs/i18n/`. Do not create a second product authority or reintroduce retired document names.
 

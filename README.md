@@ -112,7 +112,7 @@ npm run release
 
 Runtime source is under `src/`; the DocWen boundary is under `src/docwen/`; tests are under `tests/`. Generated `dist/` and `release/` files are not source.
 
-Stable documents: [Product requirements](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) · [UX specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/ux-spec.en.md) · [Architecture](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/architecture.en.md) · [Testing strategy](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md) · [Release procedure](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/release.en.md)
+Stable documents: [Product requirements](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) · [UX specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/ux-spec.en.md) · [Architecture](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/architecture.en.md) · [Testing strategy](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)
 
 Repository governance: [Changelog](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CHANGELOG.md) · [Contributing](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CONTRIBUTING.md) · [Security](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/SECURITY.md)
 

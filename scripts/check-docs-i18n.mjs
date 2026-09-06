@@ -8,7 +8,6 @@ const DOCUMENTS = Object.freeze([
   "ux-spec",
   "architecture",
   "testing-strategy",
-  "release",
 ]);
 const REQUIRED_TOKENS = Object.freeze({
   "product-requirements": { shared: [
@@ -42,18 +41,6 @@ const REQUIRED_TOKENS = Object.freeze({
     "npm run acceptance:docwen-package",
     "Obsidian 1.12.7",
     "data.json",
-  ] },
-  release: { shared: [
-    "DocWen Assistant",
-    "npm run release:check",
-    "main.js",
-    "manifest.json",
-    "styles.css",
-    "SHA256SUMS",
-    "--verify-tag",
-    "data.json",
-    "docwen-assistant",
-    "DocWen 0.9.x",
   ] },
 });
 const RETIRED_DOCUMENTS = Object.freeze([

@@ -82,7 +82,7 @@ Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉�
 
 使用 Node.js 24.19.0 與 npm 11.17.0。執行 `npm ci`、`npm run check` 和 `npm run release`。執行時原始碼位於 `src/`，測試位於 `tests/`；產生的 `dist/` 與 `release/` 不是原始碼。
 
-穩定文件：[產品需求](../product-requirements.en.md) · [UX 規格](../ux-spec.en.md) · [架構](../architecture.en.md) · [測試策略](../testing-strategy.en.md) · [發佈流程](../release.en.md)
+穩定文件：[產品需求](../product-requirements.en.md) · [UX 規格](../ux-spec.en.md) · [架構](../architecture.en.md) · [測試策略](../testing-strategy.en.md)
 
 儲存庫治理：[變更記錄](../../CHANGELOG.md) · [貢獻指南](../../CONTRIBUTING.md) · [安全性](../../SECURITY.md)
 

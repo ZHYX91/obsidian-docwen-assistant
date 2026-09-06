@@ -48,10 +48,10 @@ describe("README standardization contract", () => {
   it("requires real links to every canonical contract and governance file", async () => {
     await replaceInReadme(
       "README.md",
-      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/release.en.md)",
-      "](#release-contract)",
+      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)",
+      "](#testing-contract)",
     );
-    expect(runReadmeCheck().stderr).toContain("must link repository contract: docs/release.en.md");
+    expect(runReadmeCheck().stderr).toContain("must link repository contract: docs/testing-strategy.en.md");
 
     await rm(path.join(fixtureRoot, "SECURITY.md"));
     expect(runReadmeCheck().stderr).toContain("missing repository link");

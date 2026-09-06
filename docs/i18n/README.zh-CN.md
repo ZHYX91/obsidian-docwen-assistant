@@ -105,7 +105,7 @@ npm run release
 
 运行时代码位于 `src/`，DocWen 边界位于 `src/docwen/`，测试位于 `tests/`；生成的 `dist/` 和 `release/` 文件不是源代码。
 
-稳定文档：[产品需求](../product-requirements.zh-CN.md) · [交互规范](../ux-spec.zh-CN.md) · [架构](../architecture.zh-CN.md) · [测试策略](../testing-strategy.zh-CN.md) · [发布流程](../release.zh-CN.md)
+稳定文档：[产品需求](../product-requirements.zh-CN.md) · [交互规范](../ux-spec.zh-CN.md) · [架构](../architecture.zh-CN.md) · [测试策略](../testing-strategy.zh-CN.md)
 
 仓库治理：[变更日志](../../CHANGELOG.md) · [贡献指南](../../CONTRIBUTING.md) · [安全策略](../../SECURITY.md)
 

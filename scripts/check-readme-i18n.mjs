@@ -11,7 +11,6 @@ const config = {
     "docs/ux-spec.en.md",
     "docs/architecture.en.md",
     "docs/testing-strategy.en.md",
-    "docs/release.en.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
