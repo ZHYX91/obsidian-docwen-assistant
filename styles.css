@@ -1,3 +1,7 @@
+.docwen-settings-root [hidden] {
+  display: none !important;
+}
+
 .docwen-settings-root {
   container-type: inline-size;
   min-width: 0;
