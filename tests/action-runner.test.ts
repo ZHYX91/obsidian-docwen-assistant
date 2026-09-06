@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { initI18n } from "../src/i18n";
 
 const state = vi.hoisted(() => ({
   copied: [] as string[],
@@ -61,6 +62,27 @@ vi.mock("../src/host/clipboard", () => ({
 }));
 
 describe("ActionRunner", () => {
+  beforeEach(() => initI18n("en"));
+
+  it("localizes incompatible-version failures while preserving their technical identity", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    initI18n("zh-cn");
+    state.modals.length = 0;
+    state.notices.length = 0;
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    runner.presentFailure("noticeDoctorFailed", new LocalCliError(
+      "cli_incompatible_version", "A stable DocWen 0.10.x version is required.",
+      { actualProductVersion: "0.9.0" },
+    ));
+    expect(state.notices[0]).toContain("版本不兼容");
+    expect(state.notices[0]).not.toContain("A stable");
+    expect(state.modals[0].contentEl.children[0].text).toContain("请更新 DocWen");
+    expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
+    expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
+  });
+
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
@@ -147,7 +169,7 @@ describe("ActionRunner", () => {
     expect(allText(state.modals[0].contentEl)).toContain("portable ZIP");
   });
 
-  it("does not open a details modal for an empty details object", async () => {
+  it("preserves an error code and message even without extra diagnostic fields", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
@@ -161,7 +183,9 @@ describe("ActionRunner", () => {
     );
 
     expect(state.notices).toHaveLength(1);
-    expect(state.modals).toHaveLength(0);
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
+    expect(allText(state.modals[0].contentEl)).toContain("Invalid response");
   });
 });
 

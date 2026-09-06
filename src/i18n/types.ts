@@ -68,6 +68,11 @@ export interface Translations {
   settingsSchemaReadOnlyTitle: string;
   settingsSchemaReadOnlyDesc: string;
   settingsDoctorDesc: string;
+  settingsCheckConnection: string;
+  dialogDetails: string;
+  errorOperationFailed: string;
+  errorContentConflict: string;
+  errorOperationTimeout: string;
   dialogDocWenSetupTitle: string;
   dialogOpenSettings: string;
   dialogCopyDetails: string;

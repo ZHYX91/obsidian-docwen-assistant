@@ -4,10 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
-## [2.4.0] - 2026-09-06
+## [2.4.0] - 2026-09-07
 
 ### Changed
 
+- Use consistent settings control widths, an explicit connection-check button, and localized failure summaries with expandable technical details.
+- Replace command-line wording in image settings and remove obsolete sidecar guidance.
 - Require DocWen 0.10.x and accept its independent DOCX output without an original-source sidecar.
 - Preserve unnumbered cross references in the neutral document so DocWen can display the target title or Alias.
 - Pass capability-supported Markdown extension overrides without changing DocWen's saved settings.

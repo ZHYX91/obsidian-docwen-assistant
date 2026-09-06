@@ -9,7 +9,7 @@ import {
   type OperationLease,
   type OperationRequest,
 } from "../runtime/operation-coordinator";
-import { getErrorDetails, getErrorMessage, getLocalErrorCode, isCancellationError } from "./action-errors";
+import { getErrorDiagnostics, getErrorMessage, getLocalErrorCode, isCancellationError } from "./action-errors";
 
 type FailureNoticeKey = {
   [K in keyof Translations]: K extends `notice${string}Failed` ? K : never;
@@ -54,8 +54,8 @@ export class ActionRunner {
     }
     const summary = getErrorMessage(error);
     showNotice(t(failureNotice, { error: summary }));
-    const detailsText = serializeErrorDetails(getErrorDetails(error));
-    if (detailsText !== null) new FailureDetailsModal(this.app, summary, detailsText).open();
+    const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
+    new FailureDetailsModal(this.app, summary, detailsText).open();
   }
 }
 
@@ -107,7 +107,9 @@ class FailureDetailsModal extends Modal {
   override onOpen(): void {
     this.titleEl.setText(DOCWEN_PRODUCT_NAME);
     this.contentEl.createEl("p", { text: this.summary });
-    this.contentEl.createEl("pre", { text: this.detailsText });
+    const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
+    details.createEl("summary", { text: t("dialogDetails") });
+    details.createEl("pre", { text: this.detailsText });
     const copy = this.contentEl.createEl("button", {
       text: t("dialogCopyDetails"),
       cls: "mod-cta",
@@ -123,11 +125,4 @@ class FailureDetailsModal extends Modal {
   override onClose(): void {
     this.contentEl.empty();
   }
-}
-
-function serializeErrorDetails(details: unknown): string | null {
-  if (details === null || details === undefined) return null;
-  const text = JSON.stringify(details, null, 2);
-  if (!text || text === "{}" || text === "[]") return null;
-  return text;
 }

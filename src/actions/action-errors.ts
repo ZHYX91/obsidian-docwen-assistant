@@ -1,10 +1,24 @@
 import { LocalCliError, RemoteMachineError } from "../docwen";
 import { VaultWriteError } from "../host/vault-write-transaction";
+import { t } from "../i18n";
 
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof RemoteMachineError) return `${error.code}: ${error.message}`;
-  if (error instanceof Error) return error.message;
-  return String(error);
+  const code = getLocalErrorCode(error);
+  if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
+  if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
+  if (code === "cli_timeout") return t("errorOperationTimeout");
+  if (["vault_target_changed", "vault_content_conflict"].includes(code)) {
+    return t("errorContentConflict");
+  }
+  return t("errorOperationFailed");
+}
+
+export function getErrorDiagnostics(error: unknown): Record<string, unknown> {
+  return {
+    code: getLocalErrorCode(error),
+    message: error instanceof Error ? error.message : String(error),
+    details: getErrorDetails(error),
+  };
 }
 
 export function getLocalErrorCode(error: unknown): string {

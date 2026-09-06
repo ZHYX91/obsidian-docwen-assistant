@@ -310,7 +310,7 @@ describe("settings surface lifecycle", () => {
     expect(save).toHaveBeenCalledOnce();
   });
 
-  it("runs the Doctor action by mouse or keyboard and ignores unrelated keys", async () => {
+  it("uses a native button for the Doctor action instead of an interactive description row", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
@@ -320,12 +320,14 @@ describe("settings surface lifecycle", () => {
 
     doctor.settingEl.dispatch("keydown", "Escape");
     expect(plugin.runDoctorCheck).not.toHaveBeenCalled();
-    const keyboardEvent = doctor.settingEl.dispatch("keydown", "Enter");
+    doctor.settingEl.dispatch("keydown", "Enter");
     doctor.settingEl.dispatch("click");
-
-    expect(keyboardEvent.defaultPrevented).toBe(true);
-    expect(plugin.runDoctorCheck).toHaveBeenCalledTimes(2);
-    expect(doctor.settingEl.attributes.get("role")).toBe("button");
+    expect(plugin.runDoctorCheck).not.toHaveBeenCalled();
+    const check = buttons.find((button) => button.label === "Check")!;
+    expect(check.disabled).toBe(false);
+    check.click?.();
+    expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
+    expect(doctor.settingEl.attributes.get("role")).toBeUndefined();
   });
 
   it("persists tab controls and refreshes dependent disabled states", async () => {

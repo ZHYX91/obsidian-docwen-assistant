@@ -75,7 +75,6 @@ export const translations: Record<string, Translations> = {
         <li>在文件列表中右键文件，选择 <b>DocWen</b> 子菜单：转换格式、添加/清理序号、用 DocWen 打开</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b>，可使用启动、导出、序号、自检等命令</li>
         <li>只有执行“启动或发送当前文件”等 DocWen 操作时，才会传递当前文件路径</li>
-        <li>DocWen 会为解析后的 Markdown 导出提供相邻的单文件 .docwen；Assistant 校验后与 DOCX 原子成对发布，请始终一起移动或备份</li>
         <li>启用兼容版本的 Number Suite 后，Word 导出会保留已验证的虚拟标题、题注编号和同一笔记内的引用，不改写原笔记</li>
       </ul>
     `,
@@ -86,6 +85,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "重试",
     settingsSchemaReadOnlyTitle: "设置为只读",
     settingsSchemaReadOnlyDesc: "这些设置使用不受支持的 schema {stored}；当前插件只支持 schema {current}。请先更新插件再编辑。现有设置数据未被改写。",
+    settingsCheckConnection: "检查",
+    dialogDetails: "技术详情",
+    errorOperationFailed: "操作未能完成。请查看详情后重试。",
+    errorContentConflict: "文件或编辑内容已发生变化，无法安全保存结果。请确认当前内容后重试。",
+    errorOperationTimeout: "操作超时。请检查 DocWen 是否仍在运行，然后重试。",
     settingsDoctorDesc: "确认 DocWen 已安装、版本兼容并且可以正常连接。",
     dialogDocWenSetupTitle: "尚未连接 DocWen",
     dialogOpenSettings: "打开 DocWen 设置",
@@ -122,7 +126,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "拉丁文字",
     settingsOcrLanguageCyrillic: "西里尔文字",
     settingsImageMode: "图片导出模式",
-    settingsImageModeDesc: "仅 --to md 生效",
+    settingsImageModeDesc: "选择 Markdown 中图片的保存方式。",
     settingsImageModeFile: "文件导出",
     settingsImageModeBase64: "Base64 内嵌",
     settingsImageModeEmbed: "复制到附件并嵌入",
@@ -134,7 +138,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown 嵌入图片",
     settingsImageLinkStyleMarkdownLink: "Markdown 普通链接",
     settingsOcrPlacement: "OCR 内容落点",
-    settingsOcrPlacementDesc: "仅 --to md + OCR 生效",
+    settingsOcrPlacementDesc: "选择识别出的文字在 Markdown 中的位置。",
     settingsOcrPlacementImageMd: "作为图片说明",
     settingsOcrPlacementMainMd: "融入正文",
     settingsTableMergeStrategy: "表格合并策略",
@@ -277,7 +281,6 @@ export const translations: Record<string, Translations> = {
         <li>在檔案列表中右鍵檔案，選擇 <b>DocWen</b> 子選單：轉換格式、添加/清理序號、用 DocWen 開啟</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b>，可使用啟動、匯出、序號、自檢等命令</li>
         <li>只有執行「啟動或傳送目前檔案」等 DocWen 操作時，才會傳遞目前檔案路徑</li>
-        <li>DocWen 會為解析後的 Markdown 匯出提供相鄰的單一 .docwen 檔案；Assistant 驗證後與 DOCX 原子成對發佈，請始終一起移動或備份</li>
         <li>啟用相容版本的 Number Suite 後，Word 匯出會保留已驗證的虛擬標題、題注編號及同一筆記內的引用，不改寫原筆記</li>
       </ul>
     `,
@@ -288,6 +291,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "重試",
     settingsSchemaReadOnlyTitle: "設定為唯讀",
     settingsSchemaReadOnlyDesc: "這些設定使用不支援的 schema {stored}；目前外掛程式只支援 schema {current}。請先更新外掛程式再編輯。現有設定資料未被改寫。",
+    settingsCheckConnection: "檢查",
+    dialogDetails: "技術詳細資料",
+    errorOperationFailed: "操作未能完成。請查看詳細資料後重試。",
+    errorContentConflict: "檔案或編輯內容已變更，無法安全儲存結果。請確認目前內容後重試。",
+    errorOperationTimeout: "操作逾時。請確認 DocWen 是否仍在執行，然後重試。",
     settingsDoctorDesc: "確認 DocWen 已安裝、版本相容且可以正常連線。",
     dialogDocWenSetupTitle: "尚未連線 DocWen",
     dialogOpenSettings: "開啟 DocWen 設定",
@@ -324,7 +332,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "拉丁文字",
     settingsOcrLanguageCyrillic: "西里爾文字",
     settingsImageMode: "圖片匯出模式",
-    settingsImageModeDesc: "僅 --to md 生效",
+    settingsImageModeDesc: "選擇 Markdown 中圖片的儲存方式。",
     settingsImageModeFile: "檔案匯出",
     settingsImageModeBase64: "Base64 內嵌",
     settingsImageModeEmbed: "複製到附件並嵌入",
@@ -336,7 +344,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown 嵌入圖片",
     settingsImageLinkStyleMarkdownLink: "Markdown 普通連結",
     settingsOcrPlacement: "OCR 內容落點",
-    settingsOcrPlacementDesc: "僅 --to md + OCR 生效",
+    settingsOcrPlacementDesc: "選擇辨識出的文字在 Markdown 中的位置。",
     settingsOcrPlacementImageMd: "作為圖片說明",
     settingsOcrPlacementMainMd: "融入正文",
     settingsTableMergeStrategy: "表格合併策略",
@@ -479,7 +487,6 @@ export const translations: Record<string, Translations> = {
         <li>Right-click a file in the file list and use the <b>DocWen</b> submenu: convert formats, manage numbering, or open in DocWen</li>
         <li>Use the command palette (Ctrl/Cmd + P) and search <b>DocWen</b> for launch, export, numbering, and connection commands</li>
         <li>The current file path is passed only when you run a DocWen action such as launch or send current file</li>
-        <li>DocWen supplies one adjacent .docwen file for resolved Markdown export; Assistant validates and atomically publishes it with the DOCX, so always move or back up the pair together</li>
         <li>With a compatible Number Suite version enabled, Word export preserves validated virtual heading and caption numbers plus same-note references without rewriting the note</li>
       </ul>
     `,
@@ -490,6 +497,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Retry",
     settingsSchemaReadOnlyTitle: "Settings are read-only",
     settingsSchemaReadOnlyDesc: "These settings use unsupported schema {stored}; this plugin supports schema {current}. Update the plugin before editing. Existing settings data was not rewritten.",
+    settingsCheckConnection: "Check",
+    dialogDetails: "Technical details",
+    errorOperationFailed: "The operation could not be completed. Review the details and try again.",
+    errorContentConflict: "The file or editor content changed, so the result could not be saved safely. Review the current content and try again.",
+    errorOperationTimeout: "The operation timed out. Check whether DocWen is still running, then try again.",
     settingsDoctorDesc: "Confirm that DocWen is installed, compatible, and ready to use.",
     dialogDocWenSetupTitle: "DocWen is not connected",
     dialogOpenSettings: "Open DocWen settings",
@@ -526,7 +538,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Image export mode",
-    settingsImageModeDesc: "Only effective with --to md",
+    settingsImageModeDesc: "Choose how images are saved in Markdown.",
     settingsImageModeFile: "File export",
     settingsImageModeBase64: "Base64 inline",
     settingsImageModeEmbed: "Copy and embed",
@@ -538,7 +550,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "OCR content placement",
-    settingsOcrPlacementDesc: "Only effective with --to md + OCR",
+    settingsOcrPlacementDesc: "Choose where recognized text appears in Markdown.",
     settingsOcrPlacementImageMd: "As image caption",
     settingsOcrPlacementMainMd: "Merge into body text",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -681,7 +693,6 @@ export const translations: Record<string, Translations> = {
         <li>Rechtsklicken Sie auf eine Datei in der Dateiliste und verwenden Sie das <b>DocWen</b>-Untermenü: Formate konvertieren, Nummerierung verwalten oder in DocWen öffnen</li>
         <li>Verwenden Sie die Befehlspalette (Strg/Cmd + P) und suchen Sie nach <b>DocWen</b> für alle verfügbaren Befehle</li>
         <li>Der aktuelle Dateipfad wird nur übergeben, wenn Sie eine DocWen-Aktion wie Starten oder aktuelle Datei senden ausführen</li>
-        <li>DocWen liefert für den aufgelösten Markdown-Export eine benachbarte .docwen-Datei; Assistant prüft und veröffentlicht sie atomar mit der DOCX-Datei, daher beide stets gemeinsam verschieben oder sichern</li>
         <li>Mit einer kompatiblen Number-Suite-Version übernimmt der Word-Export geprüfte virtuelle Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne die Notiz umzuschreiben</li>
       </ul>
     `,
@@ -692,6 +703,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Erneut versuchen",
     settingsSchemaReadOnlyTitle: "Einstellungen sind schreibgeschützt",
     settingsSchemaReadOnlyDesc: "Diese Einstellungen verwenden das nicht unterstützte Schema {stored}; dieses Plugin unterstützt Schema {current}. Aktualisieren Sie das Plugin vor dem Bearbeiten. Die vorhandenen Einstellungsdaten wurden nicht überschrieben.",
+    settingsCheckConnection: "Prüfen",
+    dialogDetails: "Technische Details",
+    errorOperationFailed: "Der Vorgang konnte nicht abgeschlossen werden. Prüfen Sie die Details und versuchen Sie es erneut.",
+    errorContentConflict: "Die Datei oder der Editorinhalt wurde geändert. Das Ergebnis konnte nicht sicher gespeichert werden. Prüfen Sie den aktuellen Inhalt und versuchen Sie es erneut.",
+    errorOperationTimeout: "Zeitüberschreitung. Prüfen Sie, ob DocWen noch läuft, und versuchen Sie es erneut.",
     settingsDoctorDesc: "Bestätigt, dass DocWen installiert, kompatibel und einsatzbereit ist.",
     dialogDocWenSetupTitle: "DocWen ist nicht verbunden",
     dialogOpenSettings: "DocWen-Einstellungen öffnen",
@@ -728,7 +744,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Bildexportmodus",
-    settingsImageModeDesc: "Nur wirksam mit --to md",
+    settingsImageModeDesc: "Wählen Sie, wie Bilder in Markdown gespeichert werden.",
     settingsImageModeFile: "Dateiexport",
     settingsImageModeBase64: "Base64 inline",
     settingsImageModeEmbed: "Copy and embed",
@@ -740,7 +756,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "OCR-Inhaltsplatzierung",
-    settingsOcrPlacementDesc: "Nur wirksam mit --to md + OCR",
+    settingsOcrPlacementDesc: "Wählen Sie, wo erkannter Text in Markdown erscheint.",
     settingsOcrPlacementImageMd: "Als Bildunterschrift",
     settingsOcrPlacementMainMd: "In den Fließtext einfügen",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -883,7 +899,6 @@ export const translations: Record<string, Translations> = {
         <li>Faites un clic droit sur un fichier dans la liste et utilisez le sous-menu <b>DocWen</b> : convertir, numéroter ou ouvrir dans DocWen</li>
         <li>Utilisez la palette de commandes (Ctrl/Cmd + P) et recherchez <b>DocWen</b> pour toutes les commandes disponibles</li>
         <li>Le chemin du fichier actuel est transmis uniquement lorsque vous lancez une action DocWen, comme démarrer ou envoyer le fichier actuel</li>
-        <li>DocWen fournit un fichier .docwen adjacent pour l'export Markdown résolu ; Assistant le valide et le publie atomiquement avec le DOCX, à déplacer ou sauvegarder toujours ensemble</li>
         <li>Avec une version compatible de Number Suite, l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans réécrire la note</li>
       </ul>
     `,
@@ -894,6 +909,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Réessayer",
     settingsSchemaReadOnlyTitle: "Les paramètres sont en lecture seule",
     settingsSchemaReadOnlyDesc: "Ces paramètres utilisent le schéma non pris en charge {stored} ; ce module prend en charge le schéma {current}. Mettez le module à jour avant toute modification. Les données existantes n’ont pas été réécrites.",
+    settingsCheckConnection: "Vérifier",
+    dialogDetails: "Détails techniques",
+    errorOperationFailed: "L’opération n’a pas pu aboutir. Consultez les détails et réessayez.",
+    errorContentConflict: "Le fichier ou le contenu de l’éditeur a changé. Le résultat ne peut pas être enregistré en toute sécurité. Vérifiez le contenu actuel et réessayez.",
+    errorOperationTimeout: "Le délai est dépassé. Vérifiez que DocWen fonctionne toujours, puis réessayez.",
     settingsDoctorDesc: "Confirme que DocWen est installé, compatible et prêt à l’emploi.",
     dialogDocWenSetupTitle: "DocWen n’est pas connecté",
     dialogOpenSettings: "Ouvrir les paramètres DocWen",
@@ -930,7 +950,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Mode d'exportation d'image",
-    settingsImageModeDesc: "Effectif uniquement avec --to md",
+    settingsImageModeDesc: "Choisissez comment enregistrer les images dans Markdown.",
     settingsImageModeFile: "Exportation de fichier",
     settingsImageModeBase64: "Base64 inline",
     settingsImageModeEmbed: "Copy and embed",
@@ -942,7 +962,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "Placement du contenu OCR",
-    settingsOcrPlacementDesc: "Effectif uniquement avec --to md + OCR",
+    settingsOcrPlacementDesc: "Choisissez où placer le texte reconnu dans Markdown.",
     settingsOcrPlacementImageMd: "Comme légende d'image",
     settingsOcrPlacementMainMd: "Fusionner dans le corps du texte",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -1085,7 +1105,6 @@ export const translations: Record<string, Translations> = {
         <li>Щёлкните правой кнопкой мыши по файлу в списке и используйте подменю <b>DocWen</b>: конвертировать, нумеровать или открыть в DocWen</li>
         <li>Используйте палитру команд (Ctrl/Cmd + P) и найдите <b>DocWen</b> для всех доступных команд</li>
         <li>Путь к текущему файлу передаётся только при выполнении действия DocWen, например запуска или отправки текущего файла</li>
-        <li>DocWen предоставляет соседний файл .docwen для экспорта разрешённого Markdown; Assistant проверяет и атомарно публикует его вместе с DOCX, поэтому всегда перемещайте и сохраняйте пару вместе</li>
         <li>При включённой совместимой версии Number Suite экспорт в Word сохраняет проверенные виртуальные номера заголовков и подписей, а также ссылки внутри заметки, не переписывая её</li>
       </ul>
     `,
@@ -1096,6 +1115,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Повторить",
     settingsSchemaReadOnlyTitle: "Настройки доступны только для чтения",
     settingsSchemaReadOnlyDesc: "Эти настройки используют неподдерживаемую схему {stored}; плагин поддерживает схему {current}. Обновите плагин перед редактированием. Существующие данные настроек не были перезаписаны.",
+    settingsCheckConnection: "Проверить",
+    dialogDetails: "Технические сведения",
+    errorOperationFailed: "Не удалось завершить операцию. Просмотрите сведения и повторите попытку.",
+    errorContentConflict: "Файл или текст в редакторе изменился. Безопасное сохранение результата невозможно. Проверьте текущее содержимое и повторите попытку.",
+    errorOperationTimeout: "Время ожидания истекло. Проверьте, работает ли DocWen, и повторите попытку.",
     settingsDoctorDesc: "Проверяет, что DocWen установлен, совместим и готов к работе.",
     dialogDocWenSetupTitle: "DocWen не подключён",
     dialogOpenSettings: "Открыть настройки DocWen",
@@ -1132,7 +1156,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Режим экспорта изображений",
-    settingsImageModeDesc: "Действует только с --to md",
+    settingsImageModeDesc: "Выберите способ сохранения изображений в Markdown.",
     settingsImageModeFile: "Экспорт в файл",
     settingsImageModeBase64: "Base64 встроенный",
     settingsImageModeEmbed: "Copy and embed",
@@ -1144,7 +1168,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "Размещение содержимого OCR",
-    settingsOcrPlacementDesc: "Действует только с --to md + OCR",
+    settingsOcrPlacementDesc: "Выберите расположение распознанного текста в Markdown.",
     settingsOcrPlacementImageMd: "Как подпись к изображению",
     settingsOcrPlacementMainMd: "Вставить в основной текст",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -1287,7 +1311,6 @@ export const translations: Record<string, Translations> = {
         <li>Clique com o botão direito em um arquivo na lista e use o submenu <b>DocWen</b>: converter formatos, gerenciar numeração ou abrir no DocWen</li>
         <li>Use a paleta de comandos (Ctrl/Cmd + P) e pesquise <b>DocWen</b> para todos os comandos disponíveis</li>
         <li>O caminho do arquivo atual só é enviado quando você executa uma ação do DocWen, como iniciar ou enviar o arquivo atual</li>
-        <li>O DocWen fornece um arquivo .docwen adjacente para exportação de Markdown resolvido; o Assistant o valida e publica atomicamente com o DOCX, portanto mova ou faça backup do par sempre junto</li>
         <li>Com uma versão compatível do Number Suite ativada, a exportação para Word preserva números virtuais validados de títulos e legendas e referências da mesma nota sem reescrevê-la</li>
       </ul>
     `,
@@ -1298,6 +1321,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Tentar novamente",
     settingsSchemaReadOnlyTitle: "As configurações são somente leitura",
     settingsSchemaReadOnlyDesc: "Estas configurações usam o schema sem suporte {stored}; este plugin oferece suporte ao schema {current}. Atualize o plugin antes de editar. Os dados existentes não foram regravados.",
+    settingsCheckConnection: "Verificar",
+    dialogDetails: "Detalhes técnicos",
+    errorOperationFailed: "Não foi possível concluir a operação. Confira os detalhes e tente novamente.",
+    errorContentConflict: "O arquivo ou conteúdo do editor mudou. Não foi possível salvar o resultado com segurança. Confira o conteúdo atual e tente novamente.",
+    errorOperationTimeout: "O tempo da operação se esgotou. Verifique se o DocWen ainda está em execução e tente novamente.",
     settingsDoctorDesc: "Confirma que o DocWen está instalado, é compatível e está pronto para uso.",
     dialogDocWenSetupTitle: "O DocWen não está conectado",
     dialogOpenSettings: "Abrir configurações do DocWen",
@@ -1334,7 +1362,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Modo de exportação de imagem",
-    settingsImageModeDesc: "Efetivo apenas com --to md",
+    settingsImageModeDesc: "Escolha como salvar imagens no Markdown.",
     settingsImageModeFile: "Exportação de arquivo",
     settingsImageModeBase64: "Base64 inline",
     settingsImageModeEmbed: "Copy and embed",
@@ -1346,7 +1374,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "Posicionamento do conteúdo OCR",
-    settingsOcrPlacementDesc: "Efetivo apenas com --to md + OCR",
+    settingsOcrPlacementDesc: "Escolha onde o texto reconhecido aparece no Markdown.",
     settingsOcrPlacementImageMd: "Como legenda da imagem",
     settingsOcrPlacementMainMd: "Mesclar no corpo do texto",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -1489,7 +1517,6 @@ export const translations: Record<string, Translations> = {
         <li>ファイルリストでファイルを右クリックし、<b>DocWen</b> サブメニューを使用：形式変換、番号管理、DocWen で開く</li>
         <li>コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索し、すべてのコマンドを利用</li>
         <li>現在のファイルパスは、DocWen の起動や現在のファイルの送信などの操作を実行した場合にのみ渡されます</li>
-        <li>DocWen は解決済み Markdown の出力に隣接する単一の .docwen ファイルを提供します。Assistant は検証して DOCX と原子的に一組で公開するため、必ず一緒に移動またはバックアップしてください</li>
         <li>互換性のある Number Suite を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照をノートを書き換えずに保持します</li>
       </ul>
     `,
@@ -1500,6 +1527,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "再試行",
     settingsSchemaReadOnlyTitle: "設定は読み取り専用です",
     settingsSchemaReadOnlyDesc: "この設定は未対応の schema {stored} を使用しています。このプラグインが対応するのは schema {current} です。編集する前にプラグインを更新してください。既存の設定データは書き換えられていません。",
+    settingsCheckConnection: "確認",
+    dialogDetails: "技術情報",
+    errorOperationFailed: "操作を完了できませんでした。詳細を確認して再試行してください。",
+    errorContentConflict: "ファイルまたは編集中の内容が変更されたため、結果を安全に保存できませんでした。現在の内容を確認して再試行してください。",
+    errorOperationTimeout: "操作がタイムアウトしました。DocWen が実行中か確認して再試行してください。",
     settingsDoctorDesc: "DocWen がインストール済みで互換性があり、使用できることを確認します。",
     dialogDocWenSetupTitle: "DocWen に接続されていません",
     dialogOpenSettings: "DocWen の設定を開く",
@@ -1536,7 +1568,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "画像出力モード",
-    settingsImageModeDesc: "--to md の場合のみ有効",
+    settingsImageModeDesc: "Markdown 内の画像の保存方法を選択します。",
     settingsImageModeFile: "ファイル出力",
     settingsImageModeBase64: "Base64 インライン",
     settingsImageModeEmbed: "Copy and embed",
@@ -1548,7 +1580,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "OCR コンテンツ配置",
-    settingsOcrPlacementDesc: "--to md + OCR の場合のみ有効",
+    settingsOcrPlacementDesc: "認識した文字を Markdown のどこに配置するか選択します。",
     settingsOcrPlacementImageMd: "画像キャプションとして",
     settingsOcrPlacementMainMd: "本文に統合",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -1690,7 +1722,6 @@ export const translations: Record<string, Translations> = {
         <li>파일 목록에서 파일을 우클릭하고 <b>DocWen</b> 하위 메뉴 사용: 형식 변환, 번호 관리, DocWen에서 열기</li>
         <li>명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하여 모든 명령 사용</li>
         <li>현재 파일 경로는 DocWen 실행 또는 현재 파일 전송 같은 작업을 실행할 때만 전달됩니다</li>
-        <li>DocWen은 해석된 Markdown 내보내기에 인접한 단일 .docwen 파일을 제공합니다. Assistant가 검증하여 DOCX와 원자적으로 한 쌍으로 게시하므로 항상 함께 이동하거나 백업하세요</li>
         <li>호환되는 Number Suite를 활성화하면 Word 내보내기는 노트를 다시 쓰지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다</li>
       </ul>
     `,
@@ -1701,6 +1732,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "다시 시도",
     settingsSchemaReadOnlyTitle: "설정이 읽기 전용입니다",
     settingsSchemaReadOnlyDesc: "이 설정은 지원되지 않는 schema {stored}을 사용합니다. 이 플러그인은 schema {current}을 지원합니다. 편집하기 전에 플러그인을 업데이트하세요. 기존 설정 데이터는 다시 쓰지 않았습니다.",
+    settingsCheckConnection: "확인",
+    dialogDetails: "기술 정보",
+    errorOperationFailed: "작업을 완료하지 못했습니다. 세부 정보를 확인한 후 다시 시도하세요.",
+    errorContentConflict: "파일 또는 편집 내용이 변경되어 결과를 안전하게 저장할 수 없습니다. 현재 내용을 확인한 후 다시 시도하세요.",
+    errorOperationTimeout: "작업 시간이 초과되었습니다. DocWen이 실행 중인지 확인한 후 다시 시도하세요.",
     settingsDoctorDesc: "DocWen이 설치되어 있고 호환되며 사용할 준비가 되었는지 확인합니다.",
     dialogDocWenSetupTitle: "DocWen이 연결되지 않았습니다",
     dialogOpenSettings: "DocWen 설정 열기",
@@ -1737,7 +1773,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "이미지 내보내기 모드",
-    settingsImageModeDesc: "--to md에만 적용",
+    settingsImageModeDesc: "Markdown에서 이미지를 저장하는 방법을 선택합니다.",
     settingsImageModeFile: "파일 내보내기",
     settingsImageModeBase64: "Base64 인라인",
     settingsImageModeEmbed: "Copy and embed",
@@ -1749,7 +1785,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "OCR 콘텐츠 배치",
-    settingsOcrPlacementDesc: "--to md + OCR에만 적용",
+    settingsOcrPlacementDesc: "인식한 텍스트가 Markdown에서 표시될 위치를 선택합니다.",
     settingsOcrPlacementImageMd: "이미지 캡션으로",
     settingsOcrPlacementMainMd: "본문에 병합",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -1891,7 +1927,6 @@ export const translations: Record<string, Translations> = {
         <li>Haz clic derecho en un archivo de la lista y usa el submenú <b>DocWen</b>: convertir formatos, gestionar numeración o abrir en DocWen</li>
         <li>Usa la paleta de comandos (Ctrl/Cmd + P) y busca <b>DocWen</b> para todos los comandos disponibles</li>
         <li>La ruta del archivo actual solo se envía al ejecutar una acción de DocWen, como iniciar o enviar el archivo actual</li>
-        <li>DocWen proporciona un archivo .docwen adyacente para exportar Markdown resuelto; Assistant lo valida y publica atómicamente con el DOCX, así que mueve o guarda siempre el par junto</li>
         <li>Con una versión compatible de Number Suite activada, la exportación a Word conserva los números virtuales validados de títulos y leyendas y las referencias de la misma nota sin reescribirla</li>
       </ul>
     `,
@@ -1902,6 +1937,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Reintentar",
     settingsSchemaReadOnlyTitle: "Los ajustes son de solo lectura",
     settingsSchemaReadOnlyDesc: "Estos ajustes usan el schema no compatible {stored}; este complemento admite el schema {current}. Actualice el complemento antes de editarlos. Los datos existentes no se reescribieron.",
+    settingsCheckConnection: "Comprobar",
+    dialogDetails: "Detalles técnicos",
+    errorOperationFailed: "No se pudo completar la operación. Revisa los detalles e inténtalo de nuevo.",
+    errorContentConflict: "El archivo o el contenido del editor cambió. No se pudo guardar el resultado de forma segura. Revisa el contenido actual e inténtalo de nuevo.",
+    errorOperationTimeout: "Se agotó el tiempo de espera. Comprueba si DocWen sigue en ejecución e inténtalo de nuevo.",
     settingsDoctorDesc: "Confirma que DocWen está instalado, es compatible y está listo para usarse.",
     dialogDocWenSetupTitle: "DocWen no está conectado",
     dialogOpenSettings: "Abrir ajustes de DocWen",
@@ -1938,7 +1978,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Modo de exportación de imagen",
-    settingsImageModeDesc: "Solo efectivo con --to md",
+    settingsImageModeDesc: "Elige cómo guardar las imágenes en Markdown.",
     settingsImageModeFile: "Exportación de archivo",
     settingsImageModeBase64: "Base64 en línea",
     settingsImageModeEmbed: "Copy and embed",
@@ -1950,7 +1990,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "Ubicación del contenido OCR",
-    settingsOcrPlacementDesc: "Solo efectivo con --to md + OCR",
+    settingsOcrPlacementDesc: "Elige dónde aparece el texto reconocido en Markdown.",
     settingsOcrPlacementImageMd: "Como pie de imagen",
     settingsOcrPlacementMainMd: "Fusionar en el cuerpo del texto",
     settingsTableMergeStrategy: "Table merge strategy",
@@ -2092,7 +2132,6 @@ export const translations: Record<string, Translations> = {
         <li>Nhấp chuột phải vào tệp trong danh sách và dùng menu con <b>DocWen</b>: chuyển đổi định dạng, đánh số hoặc mở trong DocWen</li>
         <li>Dùng bảng lệnh (Ctrl/Cmd + P) và tìm <b>DocWen</b> để xem tất cả lệnh có sẵn</li>
         <li>Đường dẫn tệp hiện tại chỉ được gửi khi bạn chạy một thao tác DocWen như khởi chạy hoặc gửi tệp hiện tại</li>
-        <li>DocWen cung cấp một tệp .docwen liền kề khi xuất Markdown đã phân giải; Assistant xác thực và phát hành nguyên tử cùng DOCX, vì vậy hãy luôn di chuyển hoặc sao lưu cả cặp cùng nhau</li>
         <li>Khi bật phiên bản Number Suite tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không ghi lại ghi chú</li>
       </ul>
     `,
@@ -2103,6 +2142,11 @@ export const translations: Record<string, Translations> = {
     settingsRetry: "Thử lại",
     settingsSchemaReadOnlyTitle: "Cài đặt đang ở chế độ chỉ đọc",
     settingsSchemaReadOnlyDesc: "Các cài đặt này dùng schema {stored} không được hỗ trợ; plugin này hỗ trợ schema {current}. Hãy cập nhật plugin trước khi chỉnh sửa. Dữ liệu cài đặt hiện có không bị ghi lại.",
+    settingsCheckConnection: "Kiểm tra",
+    dialogDetails: "Chi tiết kỹ thuật",
+    errorOperationFailed: "Không thể hoàn tất thao tác. Hãy xem chi tiết rồi thử lại.",
+    errorContentConflict: "Tệp hoặc nội dung đang chỉnh sửa đã thay đổi nên không thể lưu kết quả an toàn. Hãy kiểm tra nội dung hiện tại rồi thử lại.",
+    errorOperationTimeout: "Thao tác đã hết thời gian chờ. Hãy kiểm tra DocWen còn đang chạy hay không rồi thử lại.",
     settingsDoctorDesc: "Xác nhận DocWen đã được cài đặt, tương thích và sẵn sàng sử dụng.",
     dialogDocWenSetupTitle: "DocWen chưa được kết nối",
     dialogOpenSettings: "Mở cài đặt DocWen",
@@ -2139,7 +2183,7 @@ export const translations: Record<string, Translations> = {
     settingsOcrLanguageLatin: "Latin scripts",
     settingsOcrLanguageCyrillic: "Cyrillic scripts",
     settingsImageMode: "Chế độ xuất ảnh",
-    settingsImageModeDesc: "Chỉ có hiệu lực với --to md",
+    settingsImageModeDesc: "Chọn cách lưu hình ảnh trong Markdown.",
     settingsImageModeFile: "Xuất tệp",
     settingsImageModeBase64: "Base64 nội tuyến",
     settingsImageModeEmbed: "Copy and embed",
@@ -2151,7 +2195,7 @@ export const translations: Record<string, Translations> = {
     settingsImageLinkStyleMarkdownEmbed: "Markdown image embed",
     settingsImageLinkStyleMarkdownLink: "Markdown link",
     settingsOcrPlacement: "Vị trí nội dung OCR",
-    settingsOcrPlacementDesc: "Chỉ có hiệu lực với --to md + OCR",
+    settingsOcrPlacementDesc: "Chọn vị trí văn bản được nhận dạng trong Markdown.",
     settingsOcrPlacementImageMd: "Dưới dạng chú thích ảnh",
     settingsOcrPlacementMainMd: "Hợp nhất vào nội dung văn bản",
     settingsTableMergeStrategy: "Table merge strategy",

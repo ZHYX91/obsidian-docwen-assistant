@@ -175,18 +175,12 @@ export class SettingTab extends PluginSettingTab {
     disabled: boolean,
   ): void {
     setting.setClass("docwen-settings-action");
-    setting.settingEl.setAttribute("role", "button");
-    setting.settingEl.setAttribute("aria-disabled", String(disabled));
-    setting.settingEl.tabIndex = disabled ? -1 : 0;
-    const run = () => {
-      if (!disabled) action(setting.settingEl, index);
-    };
-    setting.settingEl.addEventListener("click", run);
-    setting.settingEl.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      run();
-    });
+    setting.addButton((button) => button
+      .setButtonText(t("settingsCheckConnection"))
+      .setDisabled(disabled)
+      .onClick(() => {
+        if (!disabled) action(setting.settingEl, index);
+      }));
   }
 
   private async changeControlValue(key: SettingsControlKey, value: unknown): Promise<void> {
