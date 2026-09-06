@@ -85,6 +85,12 @@
   max-inline-size: 100%;
 }
 
+.docwen-settings-panel .setting-item-control:has(select) {
+  flex: 0 0 auto;
+  inline-size: 15rem;
+  max-inline-size: 100%;
+}
+
 .docwen-settings-panel .setting-item-control input[type="number"] {
   box-sizing: border-box;
   inline-size: 7rem;
@@ -110,6 +116,10 @@
 
   .docwen-settings-panel .setting-item-control select {
     flex: 1 1 15rem;
+  }
+
+  .docwen-settings-panel .setting-item-control:has(select) {
+    inline-size: 100%;
   }
 }
 
