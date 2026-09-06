@@ -1,0 +1,9 @@
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="docwen-boundary"
+
+--docwen-boundary
+Content-Type: text/html; charset=utf-8
+Content-Location: https://example.invalid/document.html
+
+<!DOCTYPE html><html><head><title>Document example</title></head><body><h1>Document example</h1><p>A readable paragraph.</p></body></html>
+--docwen-boundary--

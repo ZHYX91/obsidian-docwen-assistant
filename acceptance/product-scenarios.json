@@ -23,13 +23,15 @@
       },
       "steps": [
         "Exercise the four imperative settings tabs, contextual help cards, and capability discovery",
+        "Open every Formats example in DocWen from the file explorer; inspect the selected-file controls in single and batch modes, including repeated opens and unsupported-action explanations",
         "Run proofread, conversion, validation, and numbering against the deterministic notes",
         "Inject unsaved-buffer and concurrent-target conflicts before output commit"
       ],
       "expected": [
         "Typed capability failures remain visible and successful empty results remain empty",
         "Only a confirmed staged result may replace an allowed target",
-        "Cancellation, conflict, and unload leave no child process or transaction residue"
+        "Cancellation, conflict, and unload leave no child process or transaction residue",
+        "Every open request selects the requested file without silently executing or reusing a previous input"
       ]
     }
   ]
