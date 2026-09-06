@@ -107,12 +107,15 @@ class FakeChild extends EventEmitter {
   private readonly decoder = new MachineFrameDecoder();
   private taskPlan: JsonObject | null = null;
 
-  constructor() {
+  constructor(closeDelayMs = 0) {
     super();
     this.stdin.on("data", (chunk: Buffer) => {
       for (const message of this.decoder.feed(Buffer.from(chunk))) this.handle(message);
     });
-    this.stdin.on("finish", () => queueMicrotask(() => this.emit("close", 0)));
+    this.stdin.on("finish", () => {
+      if (closeDelayMs > 0) setTimeout(() => this.emit("close", 0), closeDelayMs);
+      else queueMicrotask(() => this.emit("close", 0));
+    });
   }
 
   kill(_signal?: string): boolean {
@@ -249,6 +252,23 @@ describe("DocWenMachineClient", () => {
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
   });
+
+  it("waits for a slow normal exit without killing a successful server", async () => {
+    const child = new FakeChild(2_500);
+    spawnMock.mockReturnValue(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+    expect(child.killed).toBe(false);
+  });
+
+  it("still terminates a server that never closes after stdin ends", async () => {
+    const child = new FakeChild();
+    child.stdin.removeAllListeners("finish");
+    spawnMock.mockReturnValue(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_cleanup_failed" });
+    expect(child.killed).toBe(true);
+  }, 10_000);
 
   it("launches the fixed automatic alias with an explicit safe working directory", async () => {
     const aliasPath = "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe";

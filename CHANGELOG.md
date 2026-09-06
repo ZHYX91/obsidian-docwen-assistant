@@ -12,6 +12,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Preserve unnumbered cross references in the neutral document so DocWen can display the target title or Alias.
 - Pass capability-supported Markdown extension overrides without changing DocWen's saved settings.
 - Preserve existing adjacent files when replacing a generated DOCX.
+- Allow a bounded five-second normal CLI shutdown while still terminating a server that does not exit.
 
 ## [2.3.0] - 2026-09-04
 
