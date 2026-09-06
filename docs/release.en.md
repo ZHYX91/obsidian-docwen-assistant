@@ -25,7 +25,7 @@ compatibility preflight remains a separate external-state gate that is rerun nea
 
 ## Candidate Bundle v3
 
-The vendored release-core `3.0.0` and thin adapter create the sole Candidate Bundle v3. It contains
+The vendored release-core `3.0.1` and thin adapter create the sole Candidate Bundle v3. It contains
 `main.js`, `manifest.json`, `styles.css`, `docwen-assistant-x.y.z.zip`, `SHA256SUMS`, and
 `candidate-bundle.json`, and binds source, toolchain, core/config/workflow, product payload,
 scenario contract, and fixture hashes. The ZIP contains neither documentation nor `data.json`.

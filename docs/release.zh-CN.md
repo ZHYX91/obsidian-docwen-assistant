@@ -23,7 +23,7 @@ translation_status: source
 
 ## Candidate Bundle v3
 
-vendored release-core `3.0.0` 和薄 adapter 创建唯一 Candidate Bundle v3。Bundle 包含
+vendored release-core `3.0.1` 和薄 adapter 创建唯一 Candidate Bundle v3。Bundle 包含
 `main.js`、`manifest.json`、`styles.css`、`docwen-assistant-x.y.z.zip`、`SHA256SUMS` 与
 `candidate-bundle.json`，并绑定源码、工具链、core/config/workflow、产品 payload、场景合同与
 fixture 哈希。ZIP 不包含文档或 `data.json`。
