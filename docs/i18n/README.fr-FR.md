@@ -76,7 +76,7 @@ Le plugin transmet uniquement un instantané isolé de l’éditeur courant ou d
 
 Utilisez Node.js 24.19.0 et npm 11.17.0. Exécutez `npm ci`, `npm run check` et `npm run release`. Le code source se trouve sous `src/`, les tests sous `tests/` ; les fichiers générés dans `dist/` et `release/` ne sont pas du code source.
 
-Documents stables : [Exigences produit](../product-requirements.en.md) · [Spécification UX](../ux-spec.en.md) · [Architecture](../architecture.en.md) · [Stratégie de test](../testing-strategy.en.md) · [Procédure de publication](../release.en.md)
+Documents stables : [Exigences produit](../product-requirements.en.md) · [Spécification UX](../ux-spec.en.md) · [Architecture](../architecture.en.md) · [Stratégie de test](../testing-strategy.en.md)
 
 Gouvernance du dépôt : [Journal des modifications](../../CHANGELOG.md) · [Contribuer](../../CONTRIBUTING.md) · [Sécurité](../../SECURITY.md)
 

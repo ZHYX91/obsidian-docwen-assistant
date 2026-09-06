@@ -76,7 +76,7 @@ Das Plugin übergibt nur einen isolierten Snapshot des aktuellen Editors oder de
 
 Verwenden Sie Node.js 24.19.0 und npm 11.17.0. Führen Sie `npm ci`, `npm run check` und `npm run release` aus. Quellcode liegt unter `src/`, Tests unter `tests/`; erzeugte Dateien in `dist/` und `release/` sind kein Quellcode.
 
-Stabile Dokumente: [Produktanforderungen](../product-requirements.en.md) · [UX-Spezifikation](../ux-spec.en.md) · [Architektur](../architecture.en.md) · [Teststrategie](../testing-strategy.en.md) · [Release-Verfahren](../release.en.md)
+Stabile Dokumente: [Produktanforderungen](../product-requirements.en.md) · [UX-Spezifikation](../ux-spec.en.md) · [Architektur](../architecture.en.md) · [Teststrategie](../testing-strategy.en.md)
 
 Repository-Governance: [Änderungsprotokoll](../../CHANGELOG.md) · [Mitwirken](../../CONTRIBUTING.md) · [Sicherheit](../../SECURITY.md)
 

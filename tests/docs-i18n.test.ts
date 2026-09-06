@@ -26,8 +26,8 @@ afterEach(async () => {
 });
 
 describe("stable documentation contract", () => {
-  it("accepts the five canonical synchronized document pairs", async () => {
-    await expect(checkDocsI18n(fixtureRoot)).resolves.toBe(10);
+  it("accepts the registered product document pairs", async () => {
+    await expect(checkDocsI18n(fixtureRoot)).resolves.toBe(8);
   });
 
   it("rejects wrong or additional translation metadata", async () => {

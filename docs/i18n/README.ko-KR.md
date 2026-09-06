@@ -76,7 +76,7 @@ Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 4개(일�
 
 Node.js 24.19.0과 npm 11.17.0을 사용합니다. `npm ci`, `npm run check`, `npm run release`를 실행합니다. 소스는 `src/`, 테스트는 `tests/`에 있으며 생성된 `dist/`와 `release/` 파일은 소스가 아닙니다.
 
-안정 문서: [제품 요구사항](../product-requirements.en.md) · [UX 사양](../ux-spec.en.md) · [아키텍처](../architecture.en.md) · [테스트 전략](../testing-strategy.en.md) · [릴리스 절차](../release.en.md)
+안정 문서: [제품 요구사항](../product-requirements.en.md) · [UX 사양](../ux-spec.en.md) · [아키텍처](../architecture.en.md) · [테스트 전략](../testing-strategy.en.md)
 
 저장소 거버넌스: [변경 기록](../../CHANGELOG.md) · [기여 안내](../../CONTRIBUTING.md) · [보안](../../SECURITY.md)
 

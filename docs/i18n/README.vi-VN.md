@@ -76,7 +76,7 @@ Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện t
 
 Sử dụng Node.js 24.19.0 và npm 11.17.0. Chạy `npm ci`, `npm run check` và `npm run release`. Mã nguồn nằm trong `src/`, kiểm thử trong `tests/`; các tệp tạo ra trong `dist/` và `release/` không phải mã nguồn.
 
-Tài liệu ổn định: [Yêu cầu sản phẩm](../product-requirements.en.md) · [Đặc tả UX](../ux-spec.en.md) · [Kiến trúc](../architecture.en.md) · [Chiến lược kiểm thử](../testing-strategy.en.md) · [Quy trình phát hành](../release.en.md)
+Tài liệu ổn định: [Yêu cầu sản phẩm](../product-requirements.en.md) · [Đặc tả UX](../ux-spec.en.md) · [Kiến trúc](../architecture.en.md) · [Chiến lược kiểm thử](../testing-strategy.en.md)
 
 Quản trị kho mã: [Nhật ký thay đổi](../../CHANGELOG.md) · [Hướng dẫn đóng góp](../../CONTRIBUTING.md) · [Bảo mật](../../SECURITY.md)
 
