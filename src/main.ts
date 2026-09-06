@@ -450,6 +450,7 @@ export default class DocWenPlugin extends Plugin {
     command: Omit<Command, "name">,
   ): Command {
     const registered = this.addCommand({ ...command, name: t(key) });
+    registered.name = `DocWen: ${t(key)}`;
     this.localizedCommands.push({ command: registered, key });
     return registered;
   }
@@ -459,7 +460,7 @@ export default class DocWenPlugin extends Plugin {
     this.ribbonIconEl?.setAttribute("aria-label", ribbonTitle);
     this.ribbonIconEl?.setAttribute("data-tooltip-position", "right");
     this.ribbonIconEl?.setAttribute("title", ribbonTitle);
-    for (const item of this.localizedCommands) item.command.name = t(item.key);
+    for (const item of this.localizedCommands) item.command.name = `DocWen: ${t(item.key)}`;
     this.operationStatus?.refresh();
   }
 

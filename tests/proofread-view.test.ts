@@ -87,9 +87,10 @@ describe("ProofreadView", () => {
         end: { offset: 3, line: 0, column: 3 },
       },
       matched_text: "bad",
-      rule_key: "spacing",
+      rule_key: "typo",
       error_text: "bad",
       suggestion: "good",
+      fix: { kind: "replace_text", replacement: "good", applicable: true },
       error_type: "spacing",
       source: "fixture",
       }], "Proofread.md", "Proofread.md");
@@ -100,7 +101,7 @@ describe("ProofreadView", () => {
     expect(issue?.tag).toBe("button");
     expect(issue?.options).toMatchObject({
       cls: "docwen-proofread-item",
-      attr: { type: "button", "aria-label": "L1 spacing: bad → good" },
+      attr: { type: "button", "aria-label": "L1 Typo check: bad → good" },
     });
     expect(findByClass(content, "docwen-proofread-filename")?.options).toMatchObject({
       text: "Proofread.md",
@@ -115,6 +116,29 @@ describe("ProofreadView", () => {
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
+  });
+
+  it("localizes unmatched-symbol diagnostics without offering their explanation as replacement text", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const { initI18n } = await import("../src/i18n");
+    initI18n("zh-cn");
+    try {
+      const view = new ProofreadView({} as never, async () => undefined, new OperationCoordinator());
+      view.updateResults([{
+        range: { start: { offset: 0, line: 0, column: 0 }, end: { offset: 1, line: 0, column: 1 } },
+        matched_text: "（", error_text: "（", rule_key: "symbol_pair",
+        suggestion: "Unmatched Symbol", error_type: "symbol", source: "pairing",
+      }], "中文.md", "中文.md");
+      const content = view.containerEl.children[1] as unknown as FakeElement;
+      expect(findByClass(content, "docwen-proofread-rule")?.options.text).toBe("符号缺少配对");
+      expect(findByClass(content, "docwen-proofread-item")?.options.attr).toMatchObject({
+        "aria-label": "L1 符号缺少配对: （",
+      });
+      expect(findByClass(content, "docwen-proofread-suggestion")).toBeUndefined();
+    } finally {
+      initI18n("en");
+    }
   });
 
   it("converts Unicode code-point columns to Obsidian UTF-16 columns", async () => {

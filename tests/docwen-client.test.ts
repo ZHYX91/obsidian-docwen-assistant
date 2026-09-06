@@ -651,6 +651,29 @@ describe("DocWenClient Machine semantics", () => {
     expect(await transactionResidue(destination)).toEqual([]);
   });
 
+  it.each(["source-conflict", "cancelled"])("preserves the destination and removes staging when publication is %s", async (reason) => {
+    const staging = await temporaryRoot();
+    const destination = await temporaryRoot();
+    const artifactPath = path.join(staging, "new.docx");
+    const outputPath = path.join(destination, "chosen.docx");
+    await writeFile(artifactPath, "fixture", "utf8");
+    await writeFile(outputPath, "keep-existing-output", "utf8");
+    const bundle = bundleFor("task.guard", artifactPath,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    const controller = new AbortController();
+    const conflict = Object.assign(new Error("Source changed during conversion"), { code: "vault_content_conflict" });
+    const pending = atomicCommitBundle(bundle, outputPath, true, controller.signal, async (commit) => {
+      expect(await transactionResidue(destination)).toHaveLength(1);
+      expect(await readFile(outputPath, "utf8")).toBe("keep-existing-output");
+      if (reason === "source-conflict") throw conflict;
+      controller.abort();
+      return commit();
+    });
+    await expect(pending).rejects.toMatchObject({ code: reason === "source-conflict" ? "vault_content_conflict" : "cli_cancelled" });
+    expect(await readFile(outputPath, "utf8")).toBe("keep-existing-output");
+    expect(await transactionResidue(destination)).toEqual([]);
+  });
+
   it("overwrites only the explicitly selected primary and never clobbers a related artifact", async () => {
     const staging = await temporaryRoot();
     const destination = await temporaryRoot();

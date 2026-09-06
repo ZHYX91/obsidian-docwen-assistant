@@ -189,6 +189,7 @@ export interface Translations {
   commandProofread: string;
   contextMenuProofread: string;
   proofreadViewTitle: string;
+  proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
   proofreadOpenMdFile: string;
   proofreadSortByLine: string;

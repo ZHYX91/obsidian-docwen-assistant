@@ -58,53 +58,48 @@ export class ExportActions {
       { key: `export-prepare:${file.path}:${target}`, kind: "export" },
       "noticeExportFailed",
       async ({ signal }) => {
-        await this.snapshots.run(file, signal, async (snapshot) => {
+        const selection = await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
           const route = this.capabilities.requireConversionRoute(capability, target);
-          const requiresTemplate = route.options.includes("template_name");
-          if (requiresTemplate) {
-            const templates = await this.docwen.templates(target, signal);
-            if (templates.length === 0) {
-              showNotice(t("noticeNoTemplatesAvailable"));
-              return;
-            }
-            this.openPicker(templates, t("pickerTemplatePlaceholder"), (template) => {
-              void this.execute(file, target, { template: template.id });
-            });
-            return;
+          if (route.options.includes("template_name")) {
+            return { kind: "template" as const, items: await this.docwen.templates(target, signal) };
           }
-
-          const optimizationActionIds = this.capabilities.optimizationActionIds(capability, target);
-          const optimizationResources = optimizationActionIds.length > 0
-            ? await this.docwen.optimizations(signal)
-            : [];
-          const optimizations = this.capabilities.findApplicableOptimizations(
-            capability,
-            optimizationResources,
-            target,
-          );
-          if (optimizations.length === 0) {
-            await this.execute(file, target);
-            return;
-          }
-          const items: PickerItem[] = [
-            { id: "__none__", label: t("pickerNoOptimization") },
-            ...optimizations.map((item) => ({ id: item.id, label: item.name, description: item.description })),
-          ];
-          new ItemPickerModal(
-            this.app,
-            items,
-            t("pickerOptimizationPlaceholder"),
-            (chosen) => {
-              void this.execute(
-                file,
-                target,
-                { optimization: chosen.id === "__none__" ? undefined : chosen.id },
-              );
-            },
-          ).open();
+          const actionIds = this.capabilities.optimizationActionIds(capability, target);
+          const resources = actionIds.length > 0 ? await this.docwen.optimizations(signal) : [];
+          return {
+            kind: "optimization" as const,
+            items: this.capabilities.findApplicableOptimizations(capability, resources, target),
+          };
         });
+        if (selection.kind === "template") {
+          if (selection.items.length === 0) {
+            showNotice(t("noticeNoTemplatesAvailable"));
+            return;
+          }
+          this.openPicker(selection.items, t("pickerTemplatePlaceholder"), (template) => {
+            void this.execute(file, target, { template: template.id });
+          });
+          return;
+        }
+        if (selection.items.length === 0) {
+          await this.execute(file, target);
+          return;
+        }
+        const items: PickerItem[] = [
+          { id: "__none__", label: t("pickerNoOptimization") },
+          ...selection.items.map((item) => ({ id: item.id, label: item.name, description: item.description })),
+        ];
+        new ItemPickerModal(
+          this.app,
+          items,
+          t("pickerOptimizationPlaceholder"),
+          (chosen) => {
+            void this.execute(file, target, {
+              optimization: chosen.id === "__none__" ? undefined : chosen.id,
+            });
+          },
+        ).open();
       },
     );
   }
@@ -195,6 +190,7 @@ export class ExportActions {
             outputPath,
             overwrite: pathExists(outputPath),
             capabilityId: route.capabilityId,
+            publish: snapshot.publish,
           }, signal);
           const output = outcome.output;
           showNotice(t("noticeExportSuccess", { filename: portableBasename(output) }));

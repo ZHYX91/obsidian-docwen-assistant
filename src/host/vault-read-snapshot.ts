@@ -27,6 +27,8 @@ export interface IsolatedSnapshot {
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
   readonly resolvedMarkdownInputs?: readonly [TaskInput, TaskInput];
+  /** Validate the captured source immediately before publishing visible results. */
+  readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
 }
 
 interface ResolvedMarkdownSnapshot {
@@ -69,6 +71,32 @@ export class VaultReadSnapshot {
       ? decodeMarkdown(original)
       : null;
     const contentSha256 = sha256(original);
+    let published = false;
+    const assertCurrent = async (): Promise<void> => {
+      throwIfAborted(signal);
+      if (editor) {
+        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, file.path, target)) {
+          throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
+        }
+        if (sha256(editor.getValue()) !== contentSha256) {
+          throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
+        }
+      } else {
+        assertNoOpenMarkdownTarget(this.app, file.path);
+        const current = await this.app.vault.readBinary(file);
+        assertNoOpenMarkdownTarget(this.app, file.path);
+        if (sha256(current) !== contentSha256) {
+          throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
+        }
+      }
+      throwIfAborted(signal);
+    };
+    const publish = async <U>(commit: () => Promise<U>): Promise<U> => {
+      await assertCurrent();
+      const committed = await commit();
+      published = true;
+      return committed;
+    };
     const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
     const extension = file.extension.replace(/[^a-z0-9]/giu, "") || "bin";
     const inputPath = path.join(workspace, `source.${extension}`);
@@ -89,28 +117,17 @@ export class VaultReadSnapshot {
       result = await work({
         inputPath,
         contentSha256,
+        publish,
         sourceInput,
         inputs: [sourceInput],
         ...(resolvedMarkdownSnapshot === undefined ? {} : {
           resolvedMarkdownInputs: resolvedMarkdownSnapshot.inputs,
         }),
       });
-      throwIfAborted(signal);
-      if (editor) {
-        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, file.path, target)) {
-          throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
-        }
-        if (sha256(editor.getValue()) !== contentSha256) {
-          throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
-        }
-      } else {
-        assertNoOpenMarkdownTarget(this.app, file.path);
-        const current = await this.app.vault.readBinary(file);
-        assertNoOpenMarkdownTarget(this.app, file.path);
-        if (sha256(current) !== contentSha256) {
-          throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
-        }
-      }
+      // After publication the source may legitimately change again. The
+      // publication boundary above owns validation, so do not report a late
+      // conflict after an output was already committed successfully.
+      if (!published) await assertCurrent();
     } catch (primaryError) {
       await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
       throw primaryError;
@@ -260,7 +277,7 @@ export class VaultReadSnapshot {
           path: neutralPath,
           kind: "document",
           role: "neutral_document",
-          logicalPath: "resolved-document.json",
+          logicalPath: logicalPathFor(file.path),
           mediaType: RESOLVED_DOCUMENT_MEDIA_TYPE,
         },
         {

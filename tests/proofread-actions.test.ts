@@ -18,9 +18,12 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
     async run<T>(
       _file: unknown,
       _signal: AbortSignal,
-      work: (snapshot: { inputs: Array<{ path: string }> }) => Promise<T>,
+      work: (snapshot: {
+        inputs: Array<{ path: string }>;
+        publish: <U>(commit: () => Promise<U>) => Promise<U>;
+      }) => Promise<T>,
     ): Promise<T> {
-      return work({ inputs: [{ path: "D:\\Temp\\source.md" }] });
+      return work({ inputs: [{ path: "D:\\Temp\\source.md" }], publish: async (commit) => commit() });
     }
   },
 }));

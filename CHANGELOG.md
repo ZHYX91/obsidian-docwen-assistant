@@ -8,6 +8,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Preserve the source document name when exporting resolved Markdown to Word.
+- Validate editor and Vault snapshots before publishing converted files or proofreading results; preserve outputs when source content conflicts or an operation is cancelled before commit.
+- Localize proofreading issue types and distinguish diagnostic explanations from actual text replacements.
+- Keep every operation discoverable by searching for DocWen in the command palette after settings changes.
+
 - Open an action picker from an uncached file menu so users can choose a conversion or edit without reopening the menu.
 - Use consistent settings control widths, an explicit connection-check button, and localized failure summaries with expandable technical details.
 - Replace command-line wording in image settings and remove obsolete sidecar guidance.

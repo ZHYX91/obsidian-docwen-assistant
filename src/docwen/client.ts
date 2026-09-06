@@ -67,6 +67,8 @@ export interface ConvertRequest extends ConvertOptions {
   sourceInput?: TaskInput;
   outputPath: string;
   capabilityId?: string;
+  /** Host-owned source validation around the final output commit. */
+  publish?: <T>(commit: () => Promise<T>) => Promise<T>;
 }
 
 /** A caller-selected input. Core receives only its isolated local copy. */
@@ -290,6 +292,7 @@ export class DocWenClient {
       request.outputPath,
       request.overwrite === true,
       signal,
+      request.publish,
     );
   }
 
@@ -381,6 +384,7 @@ export class DocWenClient {
     outputPath: string,
     overwrite: boolean,
     signal?: AbortSignal,
+    publish?: <T>(commit: () => Promise<T>) => Promise<T>,
   ): Promise<ConversionOutcome> {
     return this.withTaskStaging(async (stagingRoot) => {
       const result = await this.machine.runTask(
@@ -388,7 +392,7 @@ export class DocWenClient {
         signal,
       );
       if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
-      const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite);
+      const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
       return { output: outputs[0], outputs, bundleId: result.bundle.bundle_id };
     });
   }
@@ -434,7 +438,10 @@ export async function atomicCommitBundle(
   bundle: ValidatedArtifactBundle,
   outputPath: string,
   overwrite: boolean,
+  signal?: AbortSignal,
+  publish?: <T>(commit: () => Promise<T>) => Promise<T>,
 ): Promise<string[]> {
+  throwIfAborted(signal);
   const preferred = preferredArtifact(bundle);
   const destinationRoot = path.dirname(path.resolve(outputPath));
   await mkdir(destinationRoot, { recursive: true });
@@ -453,8 +460,11 @@ export async function atomicCommitBundle(
   const transactionId = randomUUID();
   const prepared: PreparedOutput[] = [];
   const committed: Array<{ identity: FileIdentity; target: string }> = [];
+  let checkingPublication = false;
+  let commitStarted = false;
   try {
     for (let index = 0; index < targets.length; index += 1) {
+      throwIfAborted(signal);
       const { allowOverwrite, artifact, target } = targets[index];
       const expectedTarget = await inspectCommitTarget(target, allowOverwrite);
       const temporary = path.join(destinationRoot, `.docwen-${transactionId}-${index}.new`);
@@ -472,45 +482,51 @@ export async function atomicCommitBundle(
       preparedOutput.temporaryIdentity = await verifyArtifactIdentity(artifact, temporary, false);
       await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
     }
-    for (let index = 0; index < prepared.length; index += 1) {
-      const item = prepared[index];
-      await assertCommitTargetUnchanged(item.target, item.expectedTarget);
-      if (item.expectedTarget) {
-        item.backup = path.join(destinationRoot, `.docwen-${transactionId}-${index}.bak`);
-        await link(item.target, item.backup);
+    const commit = async (): Promise<string[]> => {
+      throwIfAborted(signal);
+      commitStarted = true;
+      for (let index = 0; index < prepared.length; index += 1) {
+        const item = prepared[index];
+        await assertCommitTargetUnchanged(item.target, item.expectedTarget);
+        if (item.expectedTarget) {
+          item.backup = path.join(destinationRoot, `.docwen-${transactionId}-${index}.bak`);
+          await link(item.target, item.backup);
+          const backupIdentity = await regularFileIdentity(item.backup);
+          if (!sameFileIdentity(backupIdentity, item.expectedTarget)) {
+            throw new Error(`Output target changed while its backup was being created: ${item.target}`);
+          }
+          await rm(item.target);
+          const retainedIdentity = await regularFileIdentity(item.backup);
+          if (!sameFileIdentity(retainedIdentity, item.expectedTarget)) {
+            throw new Error(`Output backup changed while its target was being removed: ${item.target}`);
+          }
+        }
+      }
+      for (const item of prepared) {
+        await link(item.temporary, item.target);
+        const [targetIdentity, temporaryIdentity] = await Promise.all([
+          regularFileIdentity(item.target),
+          regularFileIdentity(item.temporary),
+        ]);
+        item.temporaryIdentity = temporaryIdentity;
+        if (!sameFileIdentity(targetIdentity, temporaryIdentity)) {
+          throw new Error(`Committed output identity does not match its prepared artifact: ${item.target}`);
+        }
+        committed.push({ identity: targetIdentity, target: item.target });
+        await rm(item.temporary);
+      }
+      for (const item of prepared) {
+        if (!item.backup) continue;
         const backupIdentity = await regularFileIdentity(item.backup);
-        if (!sameFileIdentity(backupIdentity, item.expectedTarget)) {
-          throw new Error(`Output target changed while its backup was being created: ${item.target}`);
+        if (!sameFileIdentity(backupIdentity, item.expectedTarget!)) {
+          throw new Error(`Output backup identity changed before cleanup: ${item.backup}`);
         }
-        await rm(item.target);
-        const retainedIdentity = await regularFileIdentity(item.backup);
-        if (!sameFileIdentity(retainedIdentity, item.expectedTarget)) {
-          throw new Error(`Output backup changed while its target was being removed: ${item.target}`);
-        }
+        await rm(item.backup);
       }
-    }
-    for (const item of prepared) {
-      await link(item.temporary, item.target);
-      const [targetIdentity, temporaryIdentity] = await Promise.all([
-        regularFileIdentity(item.target),
-        regularFileIdentity(item.temporary),
-      ]);
-      item.temporaryIdentity = temporaryIdentity;
-      if (!sameFileIdentity(targetIdentity, temporaryIdentity)) {
-        throw new Error(`Committed output identity does not match its prepared artifact: ${item.target}`);
-      }
-      committed.push({ identity: targetIdentity, target: item.target });
-      await rm(item.temporary);
-    }
-    for (const item of prepared) {
-      if (!item.backup) continue;
-      const backupIdentity = await regularFileIdentity(item.backup);
-      if (!sameFileIdentity(backupIdentity, item.expectedTarget!)) {
-        throw new Error(`Output backup identity changed before cleanup: ${item.backup}`);
-      }
-      await rm(item.backup);
-    }
-    return targets.map(({ target }) => target);
+      return targets.map(({ target }) => target);
+    };
+    checkingPublication = publish !== undefined;
+    return await (publish ? publish(commit) : commit());
   } catch (error) {
     const cleanupFailures: string[] = [];
     for (const item of committed.reverse()) {
@@ -566,6 +582,8 @@ export async function atomicCommitBundle(
         }
       }
     }
+    if (!commitStarted && cleanupFailures.length === 0
+      && (checkingPublication || (error instanceof LocalCliError && error.code === "cli_cancelled"))) throw error;
     throw new LocalCliError("cli_commit_failed", "Unable to commit the DocWen Artifact Bundle.", {
       cause: errorMessage(error),
       ...(cleanupFailures.length > 0 ? { cleanupFailures } : {}),

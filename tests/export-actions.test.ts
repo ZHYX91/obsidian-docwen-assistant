@@ -32,6 +32,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
       work: (snapshot: {
         inputPath: string;
         contentSha256: string;
+        publish: <U>(commit: () => Promise<U>) => Promise<U>;
         sourceInput: unknown;
         inputs: unknown[];
         resolvedMarkdownInputs: unknown[];
@@ -47,6 +48,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
       return work({
         inputPath: "D:\\Temp\\input.bin",
         contentSha256: "sha",
+        publish: async (commit) => commit(),
         sourceInput,
         inputs: [sourceInput],
         resolvedMarkdownInputs: [

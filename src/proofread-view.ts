@@ -9,6 +9,7 @@
 
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
 import { t } from "./i18n";
+import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
 import {
   type OperationCoordinator,
@@ -19,6 +20,13 @@ import {
 export const PROOFREAD_VIEW_TYPE = "docwen-proofread-view";
 
 type SortMode = "line" | "rule";
+
+const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
+  typo: "settingsProofreadTypo",
+  symbol_correct: "settingsProofreadSymbol",
+  symbol_pair: "settingsProofreadPunct",
+  sensitive: "settingsProofreadSensitive",
+};
 
 export class ProofreadView extends ItemView {
   private issues: ProofreadIssue[] = [];
@@ -177,12 +185,16 @@ export class ProofreadView extends ItemView {
 
     for (const issue of sorted) {
       const displayLine = issue.range.start.line + 1;
-      const correction = issue.suggestion ? ` → ${issue.suggestion}` : "";
+      const ruleLabel = issue.rule_key === "symbol_pair"
+        ? t("proofreadUnmatchedSymbol")
+        : t(RULE_LABELS[issue.rule_key] ?? "proofreadViewTitle");
+      const suggestion = issue.fix?.replacement;
+      const correction = suggestion !== undefined ? ` → ${suggestion}` : "";
       const item = list.createEl("button", {
         cls: "docwen-proofread-item",
         attr: {
           type: "button",
-          "aria-label": `L${displayLine} ${issue.rule_key}: ${issue.error_text}${correction}`,
+          "aria-label": `L${displayLine} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
       item.addEventListener("click", () => {
@@ -191,13 +203,13 @@ export class ProofreadView extends ItemView {
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
       header.createSpan({ cls: "docwen-proofread-line", text: `L${displayLine}` });
-      header.createSpan({ cls: "docwen-proofread-rule", text: issue.rule_key });
+      header.createSpan({ cls: "docwen-proofread-rule", text: ruleLabel });
 
       const body = item.createDiv({ cls: "docwen-proofread-item-body" });
       body.createSpan({ cls: "docwen-proofread-error", text: issue.error_text });
-      if (issue.suggestion) {
+      if (suggestion !== undefined) {
         body.createSpan({ cls: "docwen-proofread-arrow", text: " → " });
-        body.createSpan({ cls: "docwen-proofread-suggestion", text: issue.suggestion });
+        body.createSpan({ cls: "docwen-proofread-suggestion", text: suggestion });
       }
     }
   }

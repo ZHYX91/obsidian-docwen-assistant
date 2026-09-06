@@ -5,6 +5,31 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it("rejects changed source before publishing and does not recheck after successful publication", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    let buffer = "# Original\n";
+    const editor = { getValue: () => buffer };
+    const leaf = { view: { file, editor } };
+    const app = {
+      workspace: { getLeavesOfType: () => [leaf] },
+      vault: { readBinary: vi.fn() },
+    };
+    const publishResult = vi.fn(async () => "visible");
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal,
+      async (snapshot) => {
+        buffer = "# Edited while converting\n";
+        return snapshot.publish(publishResult);
+      })).rejects.toMatchObject({ code: "vault_content_conflict" });
+    expect(publishResult).not.toHaveBeenCalled();
+
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal,
+      async (snapshot) => snapshot.publish(async () => {
+        buffer = "# Later edit after the publication boundary\n";
+        return "published";
+      }))).resolves.toBe("published");
+  });
+
   it("copies an unsaved editor buffer from a background Markdown split", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
@@ -124,7 +149,7 @@ describe("VaultReadSnapshot", () => {
       { kind: "document", role: "source", logicalPath: "notes/note.md", mediaType: "text/markdown" },
     );
     expect(captured.resolvedInputs).toMatchObject([
-      { kind: "document", role: "neutral_document", mediaType: "application/vnd.docwen.resolved-document+json" },
+      { kind: "document", role: "neutral_document", logicalPath: "notes/note.md", mediaType: "application/vnd.docwen.resolved-document+json" },
       { kind: "resource", role: "numbering_export_plan", mediaType: "application/vnd.docwen.numbering-export-plan+json" },
     ]);
     expect(captured.neutral.document.authored_markdown).toBe(source);

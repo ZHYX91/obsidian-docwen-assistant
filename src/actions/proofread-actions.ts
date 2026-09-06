@@ -44,9 +44,12 @@ export class ProofreadActions {
           lease.signal,
         );
         if (!lease.isCurrent()) return null;
-        view?.updateResults(report.issues, file.name, file.path);
-        showNotice(t("noticeProofreadSuccess", { count: String(report.issues.length) }));
-        return report;
+        return snapshot.publish(async () => {
+          if (!lease.isCurrent()) return null;
+          view?.updateResults(report.issues, file.name, file.path);
+          showNotice(t("noticeProofreadSuccess", { count: String(report.issues.length) }));
+          return report;
+        });
       }),
     );
   }

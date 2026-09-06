@@ -201,6 +201,16 @@ describe("DocWenPlugin lifecycle", () => {
     plugin.onunload();
   });
 
+  it("keeps every command searchable by DocWen after saving settings", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    expect(state.commands.every((command) => String(command.name).startsWith("DocWen: "))).toBe(true);
+    await plugin.saveSettings();
+    expect(state.commands.every((command) => String(command.name).startsWith("DocWen: "))).toBe(true);
+    plugin.onunload();
+  });
+
   it("registers keyboard cancellation for one or all active operations", async () => {
     const { default: DocWenPlugin } = await import("../src/main");
     const plugin = new DocWenPlugin({} as never, {} as never);
