@@ -5,6 +5,22 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it.each(["md", "markdown"])("preserves authored content and source name for a closed .%s file", async (extension) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: `笔记/报告 v2.${extension}`, extension };
+    const source = "# 标题\n\n当前正文。\n";
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+    };
+    await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      expect(snapshot.resolvedMarkdownInputs?.[0].logicalPath).toBe(file.path);
+      const payload = JSON.parse(await readFile(snapshot.resolvedMarkdownInputs![0].path, "utf8"));
+      expect(payload.document.authored_markdown).toBe(source);
+      expect(snapshot.resolvedMarkdownInputs?.map((input) => input.role)).toEqual(["neutral_document", "numbering_export_plan"]);
+    });
+  });
+
   it("rejects changed source before publishing and does not recheck after successful publication", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };

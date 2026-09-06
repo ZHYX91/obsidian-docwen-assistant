@@ -67,7 +67,7 @@ export class VaultReadSnapshot {
     const target = targetLookup.kind === "open" ? targetLookup.target : null;
     const editor = target?.editor ?? null;
     const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
-    const authoredMarkdown = file.extension.toLowerCase() === "md"
+    const authoredMarkdown = ["md", "markdown"].includes(file.extension.toLowerCase())
       ? decodeMarkdown(original)
       : null;
     const contentSha256 = sha256(original);
