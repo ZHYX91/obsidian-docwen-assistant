@@ -14,9 +14,7 @@ separate boundaries.
 
 ## Boundaries
 
-An ordinary tag push does not trigger publication. Commit, push, tag, workflow dispatch, GitHub
-Release, and production-Vault deployment require separate authorization; local gates make no
-remote write.
+An authorized stable version tag push triggers publication. Manual dispatch on the same tag supports verify-only or publish mode through the same workflow. Host acceptance is optional; publishing does not deploy to a Vault.
 
 ## Version and source
 
@@ -27,32 +25,27 @@ compatibility preflight remains a separate external-state gate that is rerun nea
 
 ## Candidate Bundle v3
 
-The vendored release-core `2.0.0` and thin adapter create the sole Candidate Bundle v3. It contains
+The vendored release-core `3.0.0` and thin adapter create the sole Candidate Bundle v3. It contains
 `main.js`, `manifest.json`, `styles.css`, `docwen-assistant-x.y.z.zip`, `SHA256SUMS`, and
 `candidate-bundle.json`, and binds source, toolchain, core/config/workflow, product payload,
 scenario contract, and fixture hashes. The ZIP contains neither documentation nor `data.json`.
 
-## Product acceptance
+## Optional product acceptance
 
-DocWen Assistant is desktop-only. The same Bundle requires desktop acceptance covering all four
+DocWen Assistant is desktop-only. Use the same Bundle for desktop acceptance covering all four
 imperative settings tabs, capability discovery, proofread, conversion, validation, numbering,
 cancellation, unsaved-buffer conflicts, and concurrent-target conflicts. External DocWen package
 acceptance and plugin-host acceptance are recorded separately and cannot substitute for each other.
 
 ## Standalone workflow
 
-The generated, checked-in standalone workflow accepts only explicit `workflow_dispatch`. Its
-read-only verify job performs one independent install and one complete `release:check` at the exact
-commit, rebuilds the Bundle, and source-verifies it. The publish job downloads the fixed artifact
-and performs transport verification without restoring `dist`.
+Tag push and manual dispatch use the same build, publish, and post-verification jobs. The read-only build job produces and verifies the Bundle. Publication downloads that fixed artifact without rebuilding and verifies the event, tag, commit, and Bundle digest before writing. Manual verify mode performs no publication.
 
 ## Publication and verification
 
-The acceptance closure does not authorize publication; separate authorization binds the same
-Bundle and closure. Before the first write, the workflow deeply validates both records, applies the
-equivalent of `--verify-tag`, and performs a read-only preflight. The public Release contains
-exactly the three loose assets and versioned ZIP; `SHA256SUMS` and `candidate-bundle.json` remain in
-the private Bundle. Post-verification reads back hosted bytes and provenance.
+Source and transport verification use `--verify-tag` to enforce the exact release tag.
+
+Actions generates SLSA build provenance for the four public assets. The publisher verifies their source, tag and workflow, creates a draft, downloads and checks all draft assets, then publishes the immutable Release. A separate job checks the hosted release. Only the three loose files and versioned ZIP are public assets; Bundle metadata stays in the CI artifact. GitHub publication and Community Directory review are separate outcomes.
 
 ## Failure, rollback, and deployment
 

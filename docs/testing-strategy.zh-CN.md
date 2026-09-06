@@ -37,4 +37,4 @@ Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用�
 
 ## 发布证据
 
-精确 Candidate Bundle v3 摘要、一次隔离确定性 CI 重建、候选 ZIP、`SHA256SUMS`、可移植 acceptance closure、显式 authorization、tag 绑定、attestation、不可变 GitHub Release 与远端字节回读是彼此分离的发布证据；tag 本身绝不是执行或发布信号。source verification 绑定源码与 `dist`，下载后的 transport verification 只绑定 Bundle 字节。adapter、工作流源码与失败路径测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。
+精确 Candidate Bundle v3 摘要、一次隔离确定性 CI 重建、候选 ZIP、`SHA256SUMS`、可选产品证据、事件绑定的 authorization、tag 绑定、attestation、不可变 GitHub Release 与远端字节回读是彼此分离的发布证据；获授权的稳定版本 tag push 触发经过验证的发布工作流。source verification 绑定源码与 `dist`，下载后的 transport verification 只绑定 Bundle 字节。adapter、工作流源码与失败路径测试只证明合同存在，不证明该提交已在 GitHub 上成功执行或已进入 Community Plugins。

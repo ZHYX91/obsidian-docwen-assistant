@@ -24,7 +24,7 @@ the three loose release assets. Release checks must preserve and verify all four
 
 ## Release acceptance scope
 
-This plugin is desktop-only. An exact release candidate requires current desktop acceptance;
+This plugin is desktop-only. Desktop acceptance is an optional quality check on an exact candidate; explicitly authorized publication requires source/build checks, version identity, asset integrity and build provenance. Record skipped, failed and incomplete checks honestly.
 Android emulators, Android physical devices, and iOS are out of scope. Keep source,
 packaged-candidate, real-host, publication, and production-Vault claims separate.
 
