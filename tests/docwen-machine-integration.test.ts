@@ -108,8 +108,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       outputPath: docx,
       target: "docx",
       capabilityId: "convert.markdown.to_docx",
-    })).resolves.toMatchObject({ output: docx, outputs: [docx, `${docx}.docwen`] });
-    expect((await readFile(`${docx}.docwen`)).byteLength).toBeGreaterThan(0);
+      markdownExtensions: { input: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
+    })).resolves.toMatchObject({ output: docx, outputs: [docx] });
     expect(await readFile(source, "utf8")).toBe(authored);
 
     const docxArchive = readStrictZip(await readFile(docx));
@@ -131,6 +131,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       outputPath: markdown,
       target: "md",
       capabilityId: "convert.docx.to_markdown",
+      markdownExtensions: { output: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
     });
     expect(roundtrip.output).toBe(markdown);
     expect(roundtrip.outputs).toContain(markdown);

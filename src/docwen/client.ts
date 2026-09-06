@@ -29,7 +29,6 @@ export const INPUT_HANDLE_LIMITS = Object.freeze({
   totalBytes: 1024 * 1024 * 1024,
 });
 export const PROOFREAD_REPORT_LIMIT_BYTES = 16 * 1024 * 1024;
-export const ROUND_TRIP_SIDECAR_MEDIA_TYPE = "application/vnd.docwen.round-trip-sidecar+zip";
 
 const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -50,6 +49,9 @@ export interface ConvertOptions {
   tableMergeStrategy?: "fill" | "empty" | "marker" | "replicate";
   ocrPlacement?: "image_md" | "main_md";
   renderDpi?: number;
+  markdownExtensions?: Partial<Record<"input" | "output", Partial<Record<
+    "structural_tables" | "captions_references" | "extended_headings" | "typed_endnotes", boolean
+  >>>>;
   cleanNumbering?: "remove" | "keep";
   addNumbering?: string;
   headingMergeMode?: "always" | "never";
@@ -385,12 +387,8 @@ export class DocWenClient {
         await taskRequest(capabilityId, inputs, stagingRoot, options, signal),
         signal,
       );
-      const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite, {
-        requireRoundTripSidecar: capabilityId === "convert.markdown.to_docx"
-          && inputs.some((input) => (
-            input.role === "neutral_document" || input.role === "numbering_export_plan"
-          )),
-      });
+      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite);
       return { output: outputs[0], outputs, bundleId: result.bundle.bundle_id };
     });
   }
@@ -436,28 +434,16 @@ export async function atomicCommitBundle(
   bundle: ValidatedArtifactBundle,
   outputPath: string,
   overwrite: boolean,
-  options: { requireRoundTripSidecar?: boolean } = {},
 ): Promise<string[]> {
   const preferred = preferredArtifact(bundle);
-  const sidecarArtifacts = bundle.artifacts.filter(
-    (artifact) => artifact.media_type === ROUND_TRIP_SIDECAR_MEDIA_TYPE,
-  );
-  const sidecar = options.requireRoundTripSidecar === true || sidecarArtifacts.length > 0
-    ? requiredRoundTripSidecar(bundle, preferred)
-    : null;
   const destinationRoot = path.dirname(path.resolve(outputPath));
   await mkdir(destinationRoot, { recursive: true });
   const orderedArtifacts = [preferred, ...bundle.artifacts.filter((artifact) => artifact !== preferred)];
   const targets = orderedArtifacts.map((artifact) => ({
     artifact,
-    allowOverwrite: (
-      artifact.artifact_id === preferred.artifact_id
-      || artifact.artifact_id === sidecar?.artifact_id
-    ) && overwrite,
+    allowOverwrite: artifact.artifact_id === preferred.artifact_id && overwrite,
     target: artifact.artifact_id === preferred.artifact_id
       ? path.resolve(outputPath)
-      : artifact.artifact_id === sidecar?.artifact_id
-        ? `${path.resolve(outputPath)}.docwen`
       : path.join(destinationRoot, artifact.suggested_name),
   }));
   const normalizedTargets = targets.map(({ target }) => target.toLowerCase());
@@ -817,6 +803,7 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
   };
 
   setOption("template_name", request.template);
+  setOption("markdown_extensions", request.markdownExtensions);
   if (request.target === "md") {
     const resourceOption = preferredSupportedOption(
       supported,
@@ -892,59 +879,23 @@ function preferredArtifact(bundle: ValidatedArtifactBundle): ValidatedBundleArti
   return artifact;
 }
 
-function requiredRoundTripSidecar(
-  bundle: ValidatedArtifactBundle,
-  preferred: ValidatedBundleArtifact,
-): ValidatedBundleArtifact {
-  const invalid = (): never => {
-    throw new LocalCliError(
-      "cli_integrity_error",
-      "Resolved Markdown to DOCX requires one unambiguous DocWen round-trip sidecar resource.",
-    );
-  };
-  if (
-    bundle.artifacts.length !== 2
-    || bundle.entries.length !== 1
-    || bundle.relations.length !== 1
-    || preferred.kind !== "document"
-    || preferred.media_type !== DOCX_MEDIA_TYPE
-  ) {
-    return invalid();
-  }
+function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
+  const preferred = preferredArtifact(bundle);
   const entry = bundle.entries[0];
   if (
-    !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
+    bundle.artifacts.length !== 1
+    || bundle.entries.length !== 1
+    || bundle.relations.length !== 0
+    || preferred.kind !== "document"
+    || preferred.media_type !== DOCX_MEDIA_TYPE
+    || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
     || entry.artifact_id !== preferred.artifact_id
     || entry.role !== "primary"
     || entry.ordinal !== 0
     || entry.preferred !== true
   ) {
-    return invalid();
+    throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
   }
-  const sidecars = bundle.artifacts.filter((artifact) => (
-    artifact.kind === "resource" && artifact.media_type === ROUND_TRIP_SIDECAR_MEDIA_TYPE
-  ));
-  if (sidecars.length !== 1) return invalid();
-  const sidecar = sidecars[0];
-  if (sidecar.suggested_name !== `${preferred.suggested_name}.docwen`) return invalid();
-  const relation = bundle.relations[0];
-  if (
-    !hasExactKeys(relation, [
-      "type",
-      "source_artifact_id",
-      "target_artifact_id",
-      "role",
-      "ordinal",
-    ])
-    || relation.type !== "resource_of"
-    || relation.source_artifact_id !== sidecar.artifact_id
-    || relation.target_artifact_id !== preferred.artifact_id
-    || relation.role !== "manifest"
-    || relation.ordinal !== 0
-  ) {
-    return invalid();
-  }
-  return sidecar;
 }
 
 function hasExactKeys(value: JsonObject, expected: readonly string[]): boolean {

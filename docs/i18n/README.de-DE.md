@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant verbindet Obsidian mit einer lokalen [DocWen](https://github.com/ZHYX91/docwen)-Installation. Erforderlich sind Windows, Obsidian 1.12.7 oder neuer und eine stabile DocWen-Version der Reihe 0.9.x.
+DocWen Assistant verbindet Obsidian mit einer lokalen [DocWen](https://github.com/ZHYX91/docwen)-Installation. Erforderlich sind Windows, Obsidian 1.12.7 oder neuer und eine stabile DocWen-Version der Reihe 0.10.x.
 
 > **DocWen ist erforderlich.** Installieren Sie eine kompatible Version aus dem [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) oder entpacken Sie die portable ZIP-Datei aus [DocWen Releases](https://github.com/ZHYX91/docwen/releases) vollständig.
 
@@ -35,7 +35,7 @@ Die Erweiterung öffnet Dateien in DocWen, exportiert Word/Excel/Markdown mit ei
 ## Voraussetzungen und Kompatibilität
 
 - Windows und Obsidian 1.12.7 oder neuer; das Plugin ist nur für den Desktop verfügbar.
-- Ein vollständig entpacktes Windows-Komplettpaket einer stabilen DocWen-Version der Reihe 0.9.x; das Plugin lädt DocWen nicht automatisch herunter.
+- Ein vollständig entpacktes Windows-Komplettpaket einer stabilen DocWen-Version der Reihe 0.10.x; das Plugin lädt DocWen nicht automatisch herunter.
 - Das Plugin benötigt `docwen.machine.v1` und `docwen.artifact_bundle.v2`; eine inkompatible DocWen-Version wird abgelehnt, statt ein anderes Protokoll zu verwenden.
 
 Die automatische Erkennung verwendet standardmäßig den registrierten Alias `docwen.exe` und bleibt bei Microsoft-Store-Updates stabil. Für die portable ZIP-Version können Sie zur manuellen Installation wechseln und den entpackten DocWen-Ordner auswählen. Das Plugin durchsucht weder `WindowsApps` noch beliebige Ordner und lädt keine Software automatisch herunter.
@@ -54,7 +54,7 @@ Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es e
 
 Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und doctor ausführen. Hintergrundexporte verlangen immer eine ausdrücklich gewählte Ausgabedatei.
 
-Beim Export von aufgelöstem Markdown nach DOCX liefert DocWen eine benachbarte Datei `<Dokument>.docwen`. Der Assistant prüft sie und veröffentlicht sie atomar zusammen mit der DOCX-Datei; fehlt sie, ist sie beschädigt oder mehrdeutig zugeordnet, wird keine der beiden Dateien veröffentlicht. Verschieben oder sichern Sie beide Dateien stets gemeinsam. Bei der Rückkonvertierung deaktiviert eine fehlende oder nicht passende Begleitdatei nur die wortgetreue Wiederherstellung; authentifizierte kanonische Markdown-Semantik bleibt verfügbar.
+Der Export erzeugt eine eigenständige DOCX-Datei. Bewahren Sie das ursprüngliche Markdown selbst auf. Die Rückkonvertierung liest DOCX-Inhalt und -Struktur ohne Quelldatei-Begleiter; identische Schreibweise und Leerzeichen werden nicht garantiert. Erweiterungen wählen Sie in den DocWen-Einstellungen.
 
 Mit einer kompatiblen Version von [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) übernimmt der Word-Export die geprüften virtuellen Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne diese Nummern in die Markdown-Notiz zu schreiben.
 

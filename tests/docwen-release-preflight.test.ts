@@ -19,17 +19,17 @@ describe("public DocWen compatibility preflight", () => {
       .toBe("node scripts/check-docwen-compatibility.mjs");
   });
 
-  it("selects the highest compatible immutable stable 0.9.x package", () => {
+  it("selects the highest compatible immutable stable 0.10.x package", () => {
     const selected = selectPublicDocWenRelease([
-      release("0.9.7"),
-      release("0.9.12"),
-      release("0.9.11"),
+      release("0.10.7"),
+      release("0.10.12"),
+      release("0.10.11"),
       release("0.10.0"),
-      release("0.9.99", { prerelease: true }),
+      release("0.10.99", { prerelease: true }),
     ]);
 
-    expect(selected.release.tag_name).toBe("0.9.12");
-    expect(selected.version).toEqual(["0", "9", "12"]);
+    expect(selected.release.tag_name).toBe("0.10.12");
+    expect(selected.version).toEqual(["0", "10", "12"]);
     expect(selected.asset.name).toBe("DocWen-windows-x64.zip");
     expect(PUBLIC_DOCWEN_REPOSITORY).toBe("ZHYX91/docwen");
     expect(PUBLIC_DOCWEN_ASSET).toBe("DocWen-windows-x64.zip");
@@ -37,29 +37,29 @@ describe("public DocWen compatibility preflight", () => {
 
   it("rejects mutable, incomplete, untrusted, or wrongly named packages", () => {
     expect(() => selectPublicDocWenRelease([
-      release("0.9.12", { immutable: false }),
+      release("0.10.12", { immutable: false }),
     ])).toThrow("is not immutable");
     expect(() => selectPublicDocWenRelease([
-      release("0.9.12", { assets: [asset({ state: "starter" })] }),
+      release("0.10.12", { assets: [asset({ state: "starter" })] }),
     ])).toThrow("is not fully uploaded");
     expect(() => selectPublicDocWenRelease([
-      release("0.9.12", { assets: [asset({ digest: null })] }),
+      release("0.10.12", { assets: [asset({ digest: null })] }),
     ])).toThrow("has no trusted SHA-256 digest");
     expect(() => selectPublicDocWenRelease([
-      release("0.9.12", { assets: [asset({ name: "DocWen.zip" })] }),
+      release("0.10.12", { assets: [asset({ name: "DocWen.zip" })] }),
     ])).toThrow("must contain exactly one DocWen-windows-x64.zip");
     expect(() => selectPublicDocWenRelease([
-      release("0.9.12", {
+      release("0.10.12", {
         assets: [asset({ browser_download_url: "https://example.test/package.zip" })],
       }),
     ])).toThrow("asset URL is outside the canonical GitHub repository");
   });
 
   it("does not accept prefixed tags or a newer incompatible product line", () => {
-    expect(() => selectPublicDocWenRelease([release("v0.9.12")]))
-      .toThrow("No public stable DocWen 0.9.x Release exists");
-    expect(() => selectPublicDocWenRelease([release("0.10.0")]))
-      .toThrow("No public stable DocWen 0.9.x Release exists");
+    expect(() => selectPublicDocWenRelease([release("v0.10.12")]))
+      .toThrow("No public stable DocWen 0.10.x Release exists");
+    expect(() => selectPublicDocWenRelease([release("0.11.0")]))
+      .toThrow("No public stable DocWen 0.10.x Release exists");
   });
 });
 
@@ -70,7 +70,7 @@ function asset(overrides: Record<string, unknown> = {}): Record<string, unknown>
     size: 42,
     digest: `sha256:${"a".repeat(64)}`,
     browser_download_url:
-      "https://github.com/ZHYX91/docwen/releases/download/0.9.12/DocWen-windows-x64.zip",
+      "https://github.com/ZHYX91/docwen/releases/download/0.10.12/DocWen-windows-x64.zip",
     ...overrides,
   };
 }

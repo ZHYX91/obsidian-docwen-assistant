@@ -37,8 +37,8 @@ describe("DocWen settings location picker", () => {
     expect(getDocWenConnectionDisplay("automatic", "", {
       state: "connected",
       mode: "automatic",
-      productVersion: "0.9.1",
-    })).toMatchObject({ state: "valid", message: expect.stringContaining("0.9.1") });
+      productVersion: "0.10.1",
+    })).toMatchObject({ state: "valid", message: expect.stringContaining("0.10.1") });
     expect(getDocWenConnectionDisplay("automatic", "", {
       state: "error",
       mode: "automatic",

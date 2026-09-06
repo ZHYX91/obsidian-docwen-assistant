@@ -14,7 +14,7 @@ translation_status: synced
 
 ## DocWen process boundary
 
-Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v1, server identity, and a stable 0.9.x product version.
+Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v1, server identity, and a stable 0.10.x product version.
 
 ## Request data flow
 
@@ -36,17 +36,7 @@ text is never used to guess a number.
 
 DocWen writes only to a request-owned staging directory. The Assistant accepts and validates only Artifact Bundle v2; every other Bundle schema fails closed. Validation covers Bundle identity, layout, logical paths, graph, roles, relations, physical paths, regular-file status, sizes, and hashes. The preferred artifact maps to the user-confirmed target and related resources use safe names. Commit uses exclusive creation, no-clobber links, backup, and rollback, while the CLI never receives a Vault target.
 
-For the resolved-document route, DocWen's Machine Bundle must contain exactly one preferred DOCX and
-one `application/vnd.docwen.round-trip-sidecar+zip` resource. The resource must have the sole
-`resource_of(role=manifest, ordinal=0)` relation to that DOCX and the suggested name
-`<DOCX suggested name>.docwen`. DocWen owns and creates the single-file sidecar; the Assistant never
-reconstructs it from private inputs. The Assistant revalidates both staged files and commits them as
-one adjacent pair, mapping the sidecar to the user-selected DOCX path plus `.docwen`. A missing,
-damaged, additional, or ambiguously related sidecar fails before either output is published. When an
-existing DOCX replacement is explicitly confirmed, its regular-file sidecar may be replaced in the
-same rollback-safe transaction. During reverse conversion, missing or mismatched sidecar evidence
-disables exact-source restoration while authenticated semantic recovery continues as canonical
-Markdown.
+The resolved-document route accepts exactly one preferred DOCX artifact, one primary entry, and no relations. The Assistant validates its size and hash before atomic commit. Only the user-confirmed DOCX can be replaced. Adjacent historical companion files remain untouched. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target and use an empty cached_number; their visible text uses Alias or the current title.
 
 ## Vault writes
 

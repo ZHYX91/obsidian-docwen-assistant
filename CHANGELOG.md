@@ -4,6 +4,15 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-06
+
+### Changed
+
+- Require DocWen 0.10.x and accept its independent DOCX output without an original-source sidecar.
+- Preserve unnumbered cross references in the neutral document so DocWen can display the target title or Alias.
+- Pass capability-supported Markdown extension overrides without changing DocWen's saved settings.
+- Preserve existing adjacent files when replacing a generated DOCX.
+
 ## [2.3.0] - 2026-09-04
 
 ### Added

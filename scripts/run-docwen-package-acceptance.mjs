@@ -7,7 +7,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
-const DOCWEN_VERSION_PATTERN = /^0\.9\.(?:0|[1-9]\d*)$/u;
+const DOCWEN_VERSION_PATTERN = /^0\.10\.(?:0|[1-9]\d*)$/u;
 const ACCEPTANCE_RECEIPT_SCHEMA = "docwen.assistant.package_acceptance.v1";
 const ACCEPTANCE_RECEIPT_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_RECEIPT";
 const ACCEPTANCE_TOKEN_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_TOKEN";
@@ -45,7 +45,7 @@ export async function validateDocWenPackageCandidate(environment) {
     throw new Error("DOCWEN_TEST_SIZE_BYTES must be a positive safe integer.");
   }
   if (!DOCWEN_VERSION_PATTERN.test(expectedVersion)) {
-    throw new Error("DOCWEN_TEST_VERSION must be an exact stable DocWen 0.9.x version.");
+    throw new Error("DOCWEN_TEST_VERSION must be an exact stable DocWen 0.10.x version.");
   }
 
   let candidateInfo;

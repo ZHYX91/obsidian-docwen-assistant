@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.9.x.
+O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.10.x.
 
 > **O DocWen é obrigatório.** Instale uma versão compatível pela [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extraia totalmente o ZIP portátil disponível em [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,7 +35,7 @@ O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino es
 ## Requisitos e compatibilidade
 
 - Windows e Obsidian 1.12.7 ou superior; o plugin funciona apenas no desktop.
-- Um pacote completo de uma versão estável do DocWen 0.9.x para Windows, totalmente extraído; o plugin não baixa o DocWen automaticamente.
+- Um pacote completo de uma versão estável do DocWen 0.10.x para Windows, totalmente extraído; o plugin não baixa o DocWen automaticamente.
 - O plugin exige `docwen.machine.v1` e `docwen.artifact_bundle.v2`; uma versão incompatível do DocWen é recusada em vez de usar outro protocolo.
 
 A detecção automática usa por padrão o alias registrado `docwen.exe` e continua válida após atualizações da Microsoft Store. Para o ZIP portátil, escolha a instalação manual e a pasta extraída do DocWen. O plugin não examina `WindowsApps` nem pastas arbitrárias e não baixa software automaticamente.
@@ -54,7 +54,7 @@ O pacote de lançamento contém somente `main.js`, `manifest.json` e `styles.css
 
 O ícone, o submenu **DocWen** e a paleta de comandos permitem iniciar o DocWen, exportar Word/Excel/Markdown, alterar a numeração de títulos, revisar Markdown e executar doctor. A exportação em segundo plano sempre exige um arquivo de saída escolhido explicitamente.
 
-Ao exportar Markdown resolvido para DOCX, o DocWen fornece um arquivo adjacente `<documento>.docwen`. O Assistant o valida e publica atomicamente com o DOCX; se ele estiver ausente, corrompido ou relacionado de forma ambígua, nenhum dos dois arquivos será publicado. Mova-os ou faça backup sempre juntos. Na conversão inversa, um arquivo complementar ausente ou incompatível desativa apenas a restauração literal; a semântica Markdown canônica autenticada continua disponível.
+A exportação gera um DOCX independente. Guarde o Markdown original. A conversão inversa lê o conteúdo e a estrutura do DOCX sem arquivo auxiliar da origem; não garante a mesma escrita ou os mesmos espaços. Escolha as extensões nas configurações do DocWen.
 
 Com uma versão compatível do [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) ativada, a exportação para Word preserva números virtuais validados de títulos e legendas e referências da mesma nota sem adicionar esses números ao Markdown.
 

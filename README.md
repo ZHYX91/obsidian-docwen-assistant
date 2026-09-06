@@ -4,7 +4,7 @@
 
 DocWen Assistant connects Obsidian to the local [DocWen](https://github.com/ZHYX91/docwen) desktop application for conversion, proofreading, numbering, and file opening.
 
-> **DocWen is required.** Install a compatible DocWen 0.9.x version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+> **DocWen is required.** Install a compatible DocWen 0.10.x version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Screenshots
 
@@ -41,7 +41,7 @@ Choose an available conversion route and an explicit output location while keepi
 ## Requirements and compatibility
 
 - Windows and Obsidian 1.12.7 or later. The plugin is desktop-only.
-- A compatible DocWen 0.9.x installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
+- A compatible DocWen 0.10.x installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
 - The plugin requires `docwen.machine.v1` and `docwen.artifact_bundle.v2`; incompatible DocWen versions fail validation instead of using a fallback protocol.
 
 Automatic detection is the default and uses the registered `docwen.exe` application execution alias, so Microsoft Store updates do not invalidate a saved package path. Portable ZIP users can switch to manual installation and select the extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`. The plugin never scans `WindowsApps`, recursively searches for executables, exchanges command files, downloads software, or falls back to an older protocol.
@@ -50,7 +50,7 @@ Automatic detection is the default and uses the registered `docwen.exe` applicat
 
 ### Install DocWen and the plugin
 
-1. Install a compatible DocWen 0.9.x version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97). Alternatively, download `DocWen-windows-x64.zip` from [DocWen Releases](https://github.com/ZHYX91/docwen/releases) and extract it completely.
+1. Install a compatible DocWen 0.10.x version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97). Alternatively, download `DocWen-windows-x64.zip` from [DocWen Releases](https://github.com/ZHYX91/docwen/releases) and extract it completely.
 2. Install DocWen Assistant from Obsidian Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases), then copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Reload Community plugins and enable DocWen Assistant.
 4. Automatic detection needs no file selection. If you use the portable ZIP, open **Settings → DocWen Assistant → General**, choose **Manual installation**, and select the extracted DocWen folder.
@@ -74,7 +74,7 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 
 Background export always asks for an output file. Existing output is overwritten only after the native save dialog confirms the target.
 
-Resolved Markdown-to-DOCX export receives one adjacent `<document>.docwen` file from DocWen. The Assistant validates and publishes that file atomically with the DOCX; if the required file is missing, damaged, or ambiguously related, neither output is published. Keep the two files together. During DOCX-to-Markdown conversion, a missing or mismatched companion disables only exact-source restoration, so DocWen can still return authenticated canonical Markdown semantics.
+Export produces one independent DOCX. Keep the original Markdown yourself. Reverse conversion reads DOCX content and structures without an original-source companion. Optional Markdown extensions are selected in DocWen settings; identical spelling and whitespace are not guaranteed.
 
 With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) version enabled, Word export preserves its validated virtual heading and caption numbers plus same-note references without adding those numbers to the Markdown note.
 

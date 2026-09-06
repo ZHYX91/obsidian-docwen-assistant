@@ -13,7 +13,7 @@ translation_status: source
 
 ## DocWen 进程边界
 
-自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine v1、服务身份和稳定 0.9.x 产品版本。
+自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine v1、服务身份和稳定 0.10.x 产品版本。
 
 ## 请求数据流
 
@@ -31,14 +31,7 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 DocWen 只写请求拥有的 staging 目录。Assistant 只接受并校验 Artifact Bundle v2，其他 Bundle schema 一律失败关闭；校验覆盖 Bundle 身份、布局、逻辑路径、图、角色、关系、物理路径、普通文件、大小和哈希。首选产物映射到用户确认的目标，相关资源使用安全名称；提交使用独占创建、无覆盖链接、备份与回滚，不让 CLI 直接接触 Vault 目标。
 
-resolved-document 路径的 DocWen Machine Bundle 必须恰好包含一个首选 DOCX，以及一个
-`application/vnd.docwen.round-trip-sidecar+zip` 资源。该资源必须以唯一的
-`resource_of(role=manifest, ordinal=0)` 关系归属于 DOCX，建议名称为
-`<DOCX 建议名称>.docwen`。这个单文件 sidecar 由 DocWen 创建和拥有，Assistant 不再用私有输入重建。
-Assistant 会重新校验两个 staging 文件，并把 sidecar 映射到用户所选 DOCX 路径再加 `.docwen`，然后作为
-相邻文件对一次提交。sidecar 缺失、损坏、多余或关系有歧义时，在发布任何一个文件前失败关闭。用户明确
-确认替换现有 DOCX 时，可在同一个可回滚事务中替换其普通文件 sidecar。反向转换时，sidecar 缺失或与
-DOCX 不匹配只会关闭逐字源码恢复，经过认证的语义仍可恢复为规范化 Markdown。
+resolved-document 路径只接受一个首选 DOCX 产物、一个 primary entry，且没有关系。Assistant 在原子提交前校验大小和哈希，只替换用户确认的 DOCX；历史相邻伴随文件保持不动。反向转换只读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
 ## Vault 写入
 

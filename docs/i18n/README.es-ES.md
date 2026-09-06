@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen). Requiere Windows, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.9.x.
+DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen). Requiere Windows, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.10.x.
 
 > **DocWen es obligatorio.** Instala una versión compatible desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae por completo el ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,7 +35,7 @@ El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida
 ## Requisitos y compatibilidad
 
 - Windows y Obsidian 1.12.7 o posterior; el complemento es solo para escritorio.
-- Un paquete completo de una versión estable de DocWen 0.9.x para Windows, totalmente extraído; el complemento no descarga DocWen automáticamente.
+- Un paquete completo de una versión estable de DocWen 0.10.x para Windows, totalmente extraído; el complemento no descarga DocWen automáticamente.
 - El complemento requiere `docwen.machine.v1` y `docwen.artifact_bundle.v2`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
 
 La detección automática usa de forma predeterminada el alias registrado `docwen.exe` y sigue funcionando tras las actualizaciones de Microsoft Store. Para el ZIP portátil, selecciona la instalación manual y la carpeta extraída de DocWen. El complemento no examina `WindowsApps` ni carpetas arbitrarias y no descarga software automáticamente.
@@ -54,7 +54,7 @@ El paquete de la versión contiene únicamente `main.js`, `manifest.json` y `sty
 
 El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y ejecutar doctor. La exportación en segundo plano siempre exige elegir explícitamente un archivo de salida.
 
-Al exportar Markdown resuelto a DOCX, DocWen entrega un archivo adyacente `<documento>.docwen`. Assistant lo valida y lo publica atómicamente junto con el DOCX; si falta, está dañado o su relación es ambigua, no se publica ninguno de los dos archivos. Muévelos o guárdalos siempre juntos. En la conversión inversa, un archivo complementario ausente o no coincidente solo desactiva la restauración literal; la semántica Markdown canónica autenticada sigue disponible.
+La exportación genera un DOCX independiente. Conserva el Markdown original. La conversión inversa lee el contenido y la estructura del DOCX sin archivo auxiliar del original; no garantiza la misma escritura ni los mismos espacios. Elige las extensiones en los ajustes de DocWen.
 
 Con una versión compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) activada, la exportación a Word conserva los números virtuales validados de títulos y leyendas y las referencias de la misma nota sin añadir esos números al Markdown.
 

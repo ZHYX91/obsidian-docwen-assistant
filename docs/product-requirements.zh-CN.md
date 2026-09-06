@@ -13,7 +13,7 @@ DocWen Assistant 是 Windows 桌面端 Obsidian 插件，将当前笔记或用�
 
 ## 兼容性前提
 
-插件要求 Windows、Obsidian 1.12.7 或更高版本，以及 Microsoft Store 安装版或完整解压的 ZIP 便携版稳定 DocWen 0.9.x。插件只接受 `docwen.machine.v1` 和 `docwen.artifact_bundle.v2`；其他 Bundle schema 与不兼容的进程信封均失败关闭。
+插件要求 Windows、Obsidian 1.12.7 或更高版本，以及 Microsoft Store 安装版或完整解压的 ZIP 便携版稳定 DocWen 0.10.x。插件只接受 `docwen.machine.v1` 和 `docwen.artifact_bundle.v2`；其他 Bundle schema 与不兼容的进程信封均失败关闭。
 
 ## 核心能力
 

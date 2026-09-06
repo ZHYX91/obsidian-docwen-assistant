@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows, Obsidian 1.12.7 이상, 안정적인 DocWen 0.9.x 버전이 필요합니다.
+DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows, Obsidian 1.12.7 이상, 안정적인 DocWen 0.10.x 버전이 필요합니다.
 
 > **DocWen 본체가 필요합니다.** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환 버전을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 완전히 압축 해제하세요.
 
@@ -35,7 +35,7 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 ## 요구 사항 및 호환성
 
 - Windows와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
-- 완전히 압축 해제한 안정적인 DocWen 0.9.x Windows 전체 패키지. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
+- 완전히 압축 해제한 안정적인 DocWen 0.10.x Windows 전체 패키지. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v1`과 `docwen.artifact_bundle.v2`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 
 기본 자동 감지는 등록된 `docwen.exe` 별칭을 사용하며 Microsoft Store 업데이트 후에도 유지됩니다. 휴대용 ZIP은 수동 설치로 전환해 압축을 푼 DocWen 폴더를 선택합니다. `WindowsApps`나 임의 폴더를 검색하지 않으며 소프트웨어를 자동 다운로드하지 않습니다.
@@ -54,7 +54,7 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 
 리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, doctor 실행을 할 수 있습니다. 백그라운드 내보내기는 항상 출력 파일을 명시적으로 선택해야 합니다.
 
-해석된 Markdown을 DOCX로 내보내면 DocWen이 인접한 `<문서>.docwen` 파일을 제공합니다. Assistant는 이를 검증하고 DOCX와 원자적으로 한 쌍으로 게시합니다. 필수 파일이 없거나 손상되었거나 관계가 모호하면 두 파일 모두 게시되지 않습니다. 항상 DOCX와 함께 이동하거나 백업하세요. 역변환에서는 동반 파일이 없거나 일치하지 않아도 정확한 원문 복원만 비활성화되고, 인증된 정규화 Markdown 의미는 계속 복원할 수 있습니다.
+독립된 DOCX 하나를 생성합니다. 원본 Markdown은 직접 보관하세요. 역변환은 원문을 저장한 동반 파일 없이 DOCX의 내용과 구조를 읽으며 동일한 표기와 공백을 보장하지 않습니다. 확장은 DocWen 설정에서 선택할 수 있습니다.
 
 호환되는 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite)를 활성화하면 Word 내보내기는 Markdown 노트에 번호를 추가하지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다.
 

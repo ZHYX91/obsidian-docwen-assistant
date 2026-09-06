@@ -701,7 +701,12 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
     }]);
 
     expect(captured.neutral.document.authored_markdown).toBe(source);
-    expect(captured.neutral.document.references).toEqual([]);
+    expect(captured.neutral.document.references).toMatchObject([{
+      source_start: referenceStart,
+      source_end: referenceStart + reference.length,
+      alias: null,
+      cached_number: "",
+    }]);
     expect(captured.plan.plan.targets).toMatchObject([{ enabled: false, derived_number: null }]);
   });
 

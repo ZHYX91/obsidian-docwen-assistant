@@ -44,7 +44,7 @@ assets. No release operation contains, replaces, or deletes `data.json`.
 ## Product compatibility preflight
 
 `npm run release:docwen-compatibility` is the sole product-specific release hook. With a read-only
-`GH_TOKEN`, it selects only the highest stable numeric 0.9.x immutable Release from public
+`GH_TOKEN`, it selects only the highest stable numeric 0.10.x immutable Release from public
 `ZHYX91/docwen`, requiring exactly one complete `DocWen-windows-x64.zip`, canonical URLs, nonzero
 size, and a GitHub SHA-256 digest. This network preflight is outside the ordinary offline source
 gate and does not replace real-host acceptance of packaged `DocWenCLI.exe`.

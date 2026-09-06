@@ -69,7 +69,7 @@ function bundleFor(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.1",
     task_id: taskId,
-    producer: { name: "DocWen", product_version: "0.9.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [{
       artifact_id: "artifact.1",
@@ -102,7 +102,7 @@ function bundleWithRelated(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.related",
     task_id: "task.related",
-    producer: { name: "DocWen", product_version: "0.9.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [
       {
@@ -133,57 +133,6 @@ function bundleWithRelated(
       { artifact_id: "artifact.related", role: "supplementary", ordinal: 1, preferred: false },
     ],
     relations: [],
-  };
-}
-
-function roundTripBundleFor(
-  taskId: string,
-  docxPath: string,
-  docxBytes: Buffer,
-  sidecarPath: string,
-  sidecarBytes: Buffer,
-): ValidatedArtifactBundle {
-  const documentName = path.basename(docxPath);
-  return {
-    schema: "docwen.artifact_bundle.v2",
-    bundle_id: "bundle.round-trip",
-    task_id: taskId,
-    producer: { name: "DocWen", product_version: "0.9.0", machine_protocol: "docwen.machine.v1" },
-    layout_schema: "docwen.artifact_layout.v1",
-    artifacts: [
-      {
-        artifact_id: "artifact.document",
-        kind: "document",
-        locator: documentName,
-        logical_path: documentName,
-        suggested_name: documentName,
-        media_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        size_bytes: docxBytes.length,
-        sha256: createHash("sha256").update(docxBytes).digest("hex"),
-        absolutePath: docxPath,
-      },
-      {
-        artifact_id: "artifact.sidecar",
-        kind: "resource",
-        locator: path.basename(sidecarPath),
-        logical_path: path.basename(sidecarPath),
-        suggested_name: `${documentName}.docwen`,
-        media_type: "application/vnd.docwen.round-trip-sidecar+zip",
-        size_bytes: sidecarBytes.length,
-        sha256: createHash("sha256").update(sidecarBytes).digest("hex"),
-        absolutePath: sidecarPath,
-      },
-    ],
-    entries: [
-      { artifact_id: "artifact.document", role: "primary", ordinal: 0, preferred: true },
-    ],
-    relations: [{
-      type: "resource_of",
-      source_artifact_id: "artifact.sidecar",
-      target_artifact_id: "artifact.document",
-      role: "manifest",
-      ordinal: 0,
-    }],
   };
 }
 
@@ -305,15 +254,12 @@ describe("DocWenClient Machine semantics", () => {
     const query = vi.fn().mockResolvedValue(inspection(input));
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const artifactPath = path.join(request.output.staging_root.path, "note.docx");
-      const sidecarPath = path.join(request.output.staging_root.path, "note.docx.docwen");
       const docxBytes = Buffer.from("fixture", "utf8");
-      const sidecarBytes = Buffer.from("docwen-sidecar", "utf8");
       await writeFile(artifactPath, docxBytes);
-      await writeFile(sidecarPath, sidecarBytes);
       return {
         taskId: "task.1",
         plan: {},
-        bundle: roundTripBundleFor("task.1", artifactPath, docxBytes, sidecarPath, sidecarBytes),
+        bundle: bundleFor("task.1", artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "document", docxBytes),
         diagnostics: [],
         metrics: {},
       };
@@ -344,11 +290,11 @@ describe("DocWenClient Machine semantics", () => {
       headingMergeMode: "always",
     })).resolves.toEqual({
       output,
-      outputs: [output, `${output}.docwen`],
-      bundleId: "bundle.round-trip",
+      outputs: [output],
+      bundleId: "bundle.1",
     });
     expect(await readFile(output, "utf8")).toBe("fixture");
-    expect(await readFile(`${output}.docwen`, "utf8")).toBe("docwen-sidecar");
+    await expect(lstat(`${output}.docwen`)).rejects.toMatchObject({ code: "ENOENT" });
     expect(runTask.mock.calls[0]![0]).toMatchObject({
       capability_id: "convert.markdown.to_docx",
       inputs: [
@@ -372,7 +318,7 @@ describe("DocWenClient Machine semantics", () => {
     });
   });
 
-  it("fails closed when a resolved DOCX Bundle omits or ambiguously relates its sidecar", async () => {
+  it("fails closed when a resolved DOCX Bundle includes an unexpected second artifact", async () => {
     const root = await temporaryRoot();
     const input = path.join(root, "note.md");
     const neutral = path.join(root, "resolved-document.json");
@@ -401,14 +347,12 @@ describe("DocWenClient Machine semantics", () => {
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const artifactPath = path.join(request.output.staging_root.path, "note.docx");
       await writeFile(artifactPath, "fixture", "utf8");
+      const bundle = bundleFor("task.extra", artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      bundle.artifacts.push({ ...bundle.artifacts[0]!, artifact_id: "artifact.extra" });
       return {
-        taskId: "task.missing",
+        taskId: "task.extra",
         plan: {},
-        bundle: bundleFor(
-          "task.missing",
-          artifactPath,
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ),
+        bundle,
         diagnostics: [],
         metrics: {},
       };
@@ -686,65 +630,24 @@ describe("DocWenClient Machine semantics", () => {
     expect(await transactionResidue(destination)).toEqual([]);
   });
 
-  it("rejects damaged or ambiguous round-trip sidecars before publishing either file", async () => {
-    const staging = await temporaryRoot();
-    const destination = await temporaryRoot();
-    const docxPath = path.join(staging, "note.docx");
-    const sidecarPath = path.join(staging, "note.docx.docwen");
-    const outputPath = path.join(destination, "chosen.docx");
-    const docxBytes = Buffer.from("docx", "utf8");
-    const sidecarBytes = Buffer.from("sidecar", "utf8");
-    await writeFile(docxPath, docxBytes);
-    await writeFile(sidecarPath, sidecarBytes);
-    const validated = roundTripBundleFor("task.1", docxPath, docxBytes, sidecarPath, sidecarBytes);
-
-    await writeFile(sidecarPath, "damaged", "utf8");
-    await expect(atomicCommitBundle(validated, outputPath, false, {
-      requireRoundTripSidecar: true,
-    })).rejects.toMatchObject({ code: "cli_commit_failed" });
-    await expect(lstat(outputPath)).rejects.toMatchObject({ code: "ENOENT" });
-    await expect(lstat(`${outputPath}.docwen`)).rejects.toMatchObject({ code: "ENOENT" });
-
-    await writeFile(sidecarPath, sidecarBytes);
-    const ambiguous: ValidatedArtifactBundle = {
-      ...validated,
-      artifacts: [
-        ...validated.artifacts,
-        { ...validated.artifacts[1]!, artifact_id: "artifact.sidecar.duplicate" },
-      ],
-    };
-    await expect(atomicCommitBundle(ambiguous, outputPath, false, {
-      requireRoundTripSidecar: true,
-    })).rejects.toMatchObject({ code: "cli_integrity_error" });
-    expect(await transactionResidue(destination)).toEqual([]);
-  });
-
-  it("replaces the confirmed DOCX and its adjacent sidecar as one transaction", async () => {
+  it("replaces only the confirmed DOCX and preserves an unrelated old companion", async () => {
     const staging = await temporaryRoot();
     const destination = await temporaryRoot();
     const docxPath = path.join(staging, "producer-name.docx");
-    const sidecarPath = path.join(staging, "producer-name.docx.docwen");
     const outputPath = path.join(destination, "chosen.docx");
-    const sidecarOutput = `${outputPath}.docwen`;
+    const oldCompanion = `${outputPath}.docwen`;
     const docxBytes = Buffer.from("new-docx", "utf8");
-    const sidecarBytes = Buffer.from("new-sidecar", "utf8");
     await writeFile(docxPath, docxBytes);
-    await writeFile(sidecarPath, sidecarBytes);
     await writeFile(outputPath, "old-docx", "utf8");
-    await writeFile(sidecarOutput, "old-sidecar", "utf8");
-    const validated = roundTripBundleFor("task.1", docxPath, docxBytes, sidecarPath, sidecarBytes);
+    await writeFile(oldCompanion, "keep-old-companion", "utf8");
+    const validated = bundleFor("task.1", docxPath,
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "document", docxBytes);
 
-    await expect(atomicCommitBundle(validated, outputPath, false, {
-      requireRoundTripSidecar: true,
-    })).rejects.toMatchObject({ code: "cli_commit_failed" });
+    await expect(atomicCommitBundle(validated, outputPath, false)).rejects.toMatchObject({ code: "cli_commit_failed" });
     expect(await readFile(outputPath, "utf8")).toBe("old-docx");
-    expect(await readFile(sidecarOutput, "utf8")).toBe("old-sidecar");
-
-    await expect(atomicCommitBundle(validated, outputPath, true, {
-      requireRoundTripSidecar: true,
-    })).resolves.toEqual([outputPath, sidecarOutput]);
+    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual([outputPath]);
     expect(await readFile(outputPath)).toEqual(docxBytes);
-    expect(await readFile(sidecarOutput)).toEqual(sidecarBytes);
+    expect(await readFile(oldCompanion, "utf8")).toBe("keep-old-companion");
     expect(await transactionResidue(destination)).toEqual([]);
   });
 

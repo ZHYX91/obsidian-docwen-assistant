@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows、Obsidian 1.12.7 以上及 DocWen 0.9.x 穩定版。
+DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows、Obsidian 1.12.7 以上及 DocWen 0.10.x 穩定版。
 
 > **必須安裝 DocWen 本體。** 請從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容版本，或完整解壓縮 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 提供的 ZIP 可攜版。
 
@@ -39,7 +39,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 ## 使用要求與相容性
 
 - 需要 Windows 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- 需要 Microsoft Store 安裝版或完整解壓縮的 ZIP 可攜版 DocWen 0.9.x；外掛不會自動下載 DocWen；
+- 需要 Microsoft Store 安裝版或完整解壓縮的 ZIP 可攜版 DocWen 0.10.x；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v1` 與 `docwen.artifact_bundle.v2`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 
 預設的自動偵測使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。ZIP 可攜版使用者可切換到手動安裝並選擇解壓縮後的 DocWen 資料夾。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
@@ -60,7 +60,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。背景匯出一定會要求明確選擇輸出檔案。
 
-解析後的 Markdown 轉 DOCX 時，DocWen 會提供一個相鄰的 `<文件>.docwen` 檔案。Assistant 會驗證並把它與 DOCX 原子成對發佈；必要檔案遺失、損壞或關係有歧義時，兩個檔案都不會發佈。請始終將它與 DOCX 一起移動或備份。反向轉換時，伴隨檔案遺失或不相符只會停用逐字還原，DocWen 仍可還原經過驗證的規範化 Markdown 語意。
+匯出只產生一個獨立 DOCX，請自行保留原始 Markdown。反向轉換讀取 DOCX 的實際內容和結構，不依賴原文伴隨檔案，也不保證完全相同的寫法和空白。可在 DocWen 設定中選擇 Markdown 擴充語法。
 
 啟用相容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 後，Word 匯出會保留其經過驗證的虛擬標題、題注編號及同一筆記內的引用，不會把這些編號寫入 Markdown 筆記。
 

@@ -17,7 +17,7 @@ const REQUIRED_TOKENS = Object.freeze({
     "docwen.artifact_bundle.v2",
     "Windows",
     "Obsidian 1.12.7",
-    "DocWen 0.9.x",
+    "DocWen 0.10.x",
   ] },
   "ux-spec": {
     shared: [
@@ -33,7 +33,7 @@ const REQUIRED_TOKENS = Object.freeze({
     "Content-Length",
     "JSON-RPC 2.0",
     "Machine v1",
-    "0.9.x",
+    "0.10.x",
     "task/cancel",
   ] },
   "testing-strategy": { shared: [
@@ -53,7 +53,7 @@ const REQUIRED_TOKENS = Object.freeze({
     "--verify-tag",
     "data.json",
     "docwen-assistant",
-    "DocWen 0.9.x",
+    "DocWen 0.10.x",
   ] },
 });
 const RETIRED_DOCUMENTS = Object.freeze([

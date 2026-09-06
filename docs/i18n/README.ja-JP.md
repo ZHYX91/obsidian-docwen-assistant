@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.9.x が必要です。
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.10.x が必要です。
 
 > **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
 
@@ -35,7 +35,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 ## 要件と互換性
 
 - Windows と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
-- 完全に展開した安定版 DocWen 0.9.x の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
+- 完全に展開した安定版 DocWen 0.10.x の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v1` と `docwen.artifact_bundle.v2` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 
 既定の自動検出は登録済みの `docwen.exe` エイリアスを使用し、Microsoft Store の更新後も有効です。ポータブル ZIP では手動インストールに切り替え、展開した DocWen フォルダーを選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
@@ -54,7 +54,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 
 リボンアイコン、**DocWen** サブメニュー、コマンドパレットから、DocWen の起動、Word／Excel／Markdown の出力、見出し番号の変更、Markdown 校正、doctor を実行できます。バックグラウンド出力では必ず出力ファイルを明示的に選択します。
 
-解決済み Markdown を DOCX に出力すると、DocWen は隣接する `<文書>.docwen` ファイルを提供します。Assistant はこれを検証し、DOCX と原子的に一組として公開します。必須ファイルがない、破損している、または関係が曖昧な場合は、どちらも公開されません。必ず DOCX と一緒に移動またはバックアップしてください。逆変換では、伴うファイルがない、または一致しない場合でも逐語復元だけが無効になり、認証済みの正規化 Markdown セマンティクスは利用できます。
+独立した DOCX のみを生成します。元の Markdown はご自身で保管してください。逆変換は元の文書を保存した付随ファイルに依存せず、DOCX の内容と構造を読み取ります。元と同じ記法や空白は保証しません。拡張構文は DocWen の設定で選択できます。
 
 互換性のある [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照を Markdown ノートに番号を書き込まずに保持します。
 

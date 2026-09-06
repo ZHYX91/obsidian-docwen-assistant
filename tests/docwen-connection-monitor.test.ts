@@ -8,7 +8,7 @@ describe("DocWen connection monitor", () => {
   it("records the verified product version and connection source", async () => {
     const monitor = new DocWenConnectionMonitor(
       () => "automatic",
-      vi.fn().mockResolvedValue({ allOk: true, productVersion: "0.9.2", checks: [] }),
+      vi.fn().mockResolvedValue({ allOk: true, productVersion: "0.10.2", checks: [] }),
     );
 
     await monitor.check();
@@ -16,7 +16,7 @@ describe("DocWen connection monitor", () => {
     expect(monitor.getStatus()).toEqual({
       state: "connected",
       mode: "automatic",
-      productVersion: "0.9.2",
+      productVersion: "0.10.2",
     });
   });
 
@@ -30,7 +30,7 @@ describe("DocWen connection monitor", () => {
 
     const unhealthy = new DocWenConnectionMonitor(
       () => "manual",
-      vi.fn().mockResolvedValue({ allOk: false, productVersion: "0.9.0", checks: [] }),
+      vi.fn().mockResolvedValue({ allOk: false, productVersion: "0.10.0", checks: [] }),
     );
     await expect(unhealthy.check()).rejects.toMatchObject({ code: "cli_health_failed" });
     expect(unhealthy.getStatus()).toMatchObject({ state: "error", mode: "manual" });
@@ -49,7 +49,7 @@ describe("DocWen connection monitor", () => {
     const pending = monitor.check();
     monitor.reset();
     expect(requestSignal?.aborted).toBe(true);
-    release({ allOk: true, productVersion: "0.9.0", checks: [] });
+    release({ allOk: true, productVersion: "0.10.0", checks: [] });
     await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
 
     expect(monitor.getStatus()).toEqual({ state: "unchecked" });
@@ -65,23 +65,23 @@ describe("DocWen connection monitor", () => {
 
     expect(second).toBe(first);
     expect(checkHealth).toHaveBeenCalledOnce();
-    release({ allOk: true, productVersion: "0.9.0", checks: [] });
-    await expect(first).resolves.toMatchObject({ productVersion: "0.9.0" });
+    release({ allOk: true, productVersion: "0.10.0", checks: [] });
+    await expect(first).resolves.toMatchObject({ productVersion: "0.10.0" });
   });
 
   it("retries after a failed check and replaces the error state", async () => {
     const checkHealth = vi.fn()
       .mockRejectedValueOnce(new LocalCliError("cli_alias_not_found", "missing"))
-      .mockResolvedValueOnce({ allOk: true, productVersion: "0.9.3", checks: [] });
+      .mockResolvedValueOnce({ allOk: true, productVersion: "0.10.3", checks: [] });
     const monitor = new DocWenConnectionMonitor(() => "automatic", checkHealth);
 
     await expect(monitor.check()).rejects.toMatchObject({ code: "cli_alias_not_found" });
     expect(monitor.getStatus()).toMatchObject({ state: "error" });
-    await expect(monitor.check()).resolves.toMatchObject({ productVersion: "0.9.3" });
+    await expect(monitor.check()).resolves.toMatchObject({ productVersion: "0.10.3" });
     expect(monitor.getStatus()).toEqual({
       state: "connected",
       mode: "automatic",
-      productVersion: "0.9.3",
+      productVersion: "0.10.3",
     });
   });
 
@@ -115,13 +115,13 @@ describe("DocWen connection monitor", () => {
     const old = monitor.check();
     monitor.reset();
     const replacement = monitor.check();
-    releases[0]?.({ allOk: true, productVersion: "0.9.1", checks: [] });
+    releases[0]?.({ allOk: true, productVersion: "0.10.1", checks: [] });
     await expect(old).rejects.toMatchObject({ code: "cli_cancelled" });
     const sharedReplacement = monitor.check();
 
     expect(sharedReplacement).toBe(replacement);
     expect(checkHealth).toHaveBeenCalledTimes(2);
-    releases[1]?.({ allOk: true, productVersion: "0.9.2", checks: [] });
-    await expect(replacement).resolves.toMatchObject({ productVersion: "0.9.2" });
+    releases[1]?.({ allOk: true, productVersion: "0.10.2", checks: [] });
+    await expect(replacement).resolves.toMatchObject({ productVersion: "0.10.2" });
   });
 });

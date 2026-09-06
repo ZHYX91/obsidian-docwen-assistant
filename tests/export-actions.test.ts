@@ -356,7 +356,7 @@ describe("ExportActions advisory proofreading", () => {
     expect(runner.presentFailure).not.toHaveBeenCalled();
   });
 
-  it("delegates the resolved DOCX and sidecar pair to one DocWen conversion", async () => {
+  it("delegates the resolved DOCX to one DocWen conversion", async () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const signal = new AbortController().signal;
     const runner = advisoryRunner(signal);
@@ -367,7 +367,7 @@ describe("ExportActions advisory proofreading", () => {
       validate: vi.fn(),
       convert: vi.fn().mockResolvedValue({
         output: "D:\\Vault\\note.docx",
-        outputs: ["D:\\Vault\\note.docx", "D:\\Vault\\note.docx.docwen"],
+        outputs: ["D:\\Vault\\note.docx"],
         bundleId: "bundle.1",
       }),
     };

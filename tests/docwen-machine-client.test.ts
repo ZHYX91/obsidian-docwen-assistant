@@ -20,10 +20,10 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     holdTask: false,
     ignoreCancellation: false,
     serverName: "DocWen",
-    serverVersion: "0.9.0",
+    serverVersion: "0.10.0",
     stderrOverflow: false,
     taskAccepted: false,
-    bundleVersion: "0.9.0",
+    bundleVersion: "0.10.0",
     artifactBundleSchema: "docwen.artifact_bundle.v2",
   },
 }));
@@ -73,7 +73,7 @@ function bundle(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.graph",
     task_id: "task.graph",
-    producer: { name: "DocWen", product_version: "0.9.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts,
     entries,
@@ -228,10 +228,10 @@ describe("DocWenMachineClient", () => {
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.9.0";
+    serverState.serverVersion = "0.10.0";
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
-    serverState.bundleVersion = "0.9.0";
+    serverState.bundleVersion = "0.10.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v2";
     spawnMock.mockImplementation(() => new FakeChild());
   });
@@ -402,7 +402,7 @@ describe("DocWenMachineClient", () => {
     });
 
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.10.0";
+    serverState.serverVersion = "0.9.1";
     const incompatible = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
     await expect(incompatible.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
@@ -417,21 +417,21 @@ describe("DocWenMachineClient", () => {
       code: "cli_incompatible_version",
     });
 
-    serverState.serverVersion = "0.9.0-rc.1";
+    serverState.serverVersion = "0.10.0-rc.1";
     const prerelease = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
     await expect(prerelease.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
     });
 
-    serverState.serverVersion = "0.9.1";
+    serverState.serverVersion = "0.10.1";
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.9.0",
+      "0.10.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.9.0", actualProductVersion: "0.9.1" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.10.0", actualProductVersion: "0.10.1" }),
     });
   });
 
@@ -496,7 +496,7 @@ describe("DocWenMachineClient", () => {
   });
 
   it("binds every Bundle producer version to the initialized Machine server", async () => {
-    serverState.bundleVersion = "0.9.1";
+    serverState.bundleVersion = "0.10.1";
     const root = await temporaryRoot();
     const input = path.join(root, "input.md");
     const bytes = Buffer.from("# input\n", "utf8");
@@ -530,7 +530,7 @@ describe("DocWenMachineClient", () => {
       bundle([artifact("artifact.1", "../output.md", bytes)], [entry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
 
     await expect(validateArtifactBundle(
@@ -540,7 +540,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
 
     if (process.platform !== "win32") {
@@ -555,7 +555,7 @@ describe("DocWenMachineClient", () => {
         bundle([artifact("artifact.1", "nested/outside.md", bytes)], [entry]),
         caseRoot,
         "task.graph",
-        "0.9.0",
+        "0.10.0",
       )).rejects.toMatchObject({ code: "cli_integrity_error" });
     }
   });
@@ -571,7 +571,7 @@ describe("DocWenMachineClient", () => {
       bundle([validArtifact], [entry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).resolves.toMatchObject({
       schema: "docwen.artifact_bundle.v2",
       layout_schema: "docwen.artifact_layout.v1",
@@ -582,7 +582,7 @@ describe("DocWenMachineClient", () => {
       bundle([{ ...validArtifact, logical_path: "../output.md" }], [entry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
   });
 
@@ -611,14 +611,14 @@ describe("DocWenMachineClient", () => {
       bundle([document, manifest], [entry], [relation]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).resolves.toMatchObject({ schema: "docwen.artifact_bundle.v2" });
 
     await expect(validateArtifactBundle(
       { ...bundle([document, manifest], [entry], [relation]), schema: "docwen.artifact_bundle.v1" },
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
   });
 
@@ -633,14 +633,14 @@ describe("DocWenMachineClient", () => {
       bundle([{ ...validArtifact, suggested_name: ".." }], [validEntry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
 
     await expect(validateArtifactBundle(
       bundle(Array.from({ length: ARTIFACT_BUNDLE_LIMITS.artifacts + 1 }, () => validArtifact), [validEntry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_output_limit" });
 
     const oneThirdOver = Math.floor(ARTIFACT_BUNDLE_LIMITS.totalBytes / 3) + 1;
@@ -654,14 +654,14 @@ describe("DocWenMachineClient", () => {
       })), [validEntry]),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_output_limit" });
 
     await expect(validateArtifactBundle(
       bundle([validArtifact], Array.from({ length: ARTIFACT_BUNDLE_LIMITS.entries + 1 }, () => validEntry)),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_output_limit" });
 
     await expect(validateArtifactBundle(
@@ -677,7 +677,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_output_limit" });
   });
 
@@ -694,7 +694,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).resolves.toMatchObject({ bundle_id: "bundle.graph" });
 
     await expect(validateArtifactBundle(
@@ -707,7 +707,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
   });
 
@@ -730,7 +730,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
 
     await expect(validateArtifactBundle(
@@ -750,7 +750,7 @@ describe("DocWenMachineClient", () => {
       ),
       root,
       "task.graph",
-      "0.9.0",
+      "0.10.0",
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
   });
 });

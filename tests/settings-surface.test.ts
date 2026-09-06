@@ -636,7 +636,7 @@ function settingsPlugin(
       connectionStatus = {
         state: "connected",
         mode: String(defaults.docwenConnectionMode ?? "automatic"),
-        productVersion: "0.9.0",
+        productVersion: "0.10.0",
       };
     }),
     saveSettings,

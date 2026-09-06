@@ -21,7 +21,7 @@ const CLEAN_CLOSE_GRACE_MS = 2_000;
 const TERMINATION_GRACE_MS = 1_000;
 const FORCE_KILL_WAIT_MS = 2_000;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const SUPPORTED_DOCWEN_VERSION_PATTERN = /^0\.9\.(?:0|[1-9]\d*)$/u;
+const SUPPORTED_DOCWEN_VERSION_PATTERN = /^0\.10\.(?:0|[1-9]\d*)$/u;
 const EXIT_WAIT_EXPIRED = Symbol("exit_wait_expired");
 
 export type DocWenLaunchTarget = {
@@ -268,7 +268,7 @@ class MachineSession {
       throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.");
     }
     if (!SUPPORTED_DOCWEN_VERSION_PATTERN.test(productVersion)) {
-      throw new LocalCliError("cli_incompatible_version", "A stable DocWen 0.9.x version is required.", {
+      throw new LocalCliError("cli_incompatible_version", "A stable DocWen 0.10.x version is required.", {
         actualProductVersion: productVersion,
       });
     }

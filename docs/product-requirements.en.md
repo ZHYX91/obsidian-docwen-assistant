@@ -14,7 +14,7 @@ DocWen Assistant is a Windows desktop Obsidian plugin that connects the current 
 
 ## Compatibility prerequisites
 
-The plugin requires Windows, Obsidian 1.12.7 or later, and either a Microsoft Store installation or a fully extracted portable package of stable DocWen 0.9.x. It accepts `docwen.machine.v1` and `docwen.artifact_bundle.v2`; other Bundle schemas and incompatible process envelopes fail closed.
+The plugin requires Windows, Obsidian 1.12.7 or later, and either a Microsoft Store installation or a fully extracted portable package of stable DocWen 0.10.x. It accepts `docwen.machine.v1` and `docwen.artifact_bundle.v2`; other Bundle schemas and incompatible process envelopes fail closed.
 
 ## Core capabilities
 

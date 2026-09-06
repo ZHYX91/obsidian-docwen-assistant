@@ -481,12 +481,6 @@ function numberSuiteNumbering(
       throw new NumberSuiteInteropError("Number Suite reference alias contradicts its authored token.");
     }
     assertSemanticReferenceTarget(parsedToken, semanticTarget, semanticTargets);
-    if (cachedNumber == null) {
-      // resolved_document.v1 requires a non-empty cached_number. Keep a valid
-      // unnumbered reference only in authored_markdown instead of inventing a
-      // visible number or rejecting Number Suite's broader semantic snapshot.
-      return [];
-    }
     return [{
       source_start: sourceStart,
       source_end: sourceEnd,
@@ -496,7 +490,7 @@ function numberSuiteNumbering(
       target_source_end: target.source_end,
       target_kind: target.kind,
       target_id: target.target_id,
-      cached_number: cachedNumber,
+      cached_number: cachedNumber ?? "",
       alias: parsedToken.alias,
     }];
   });

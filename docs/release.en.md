@@ -20,7 +20,7 @@ An authorized stable version tag push triggers publication. Manual dispatch on t
 
 `manifest.json`, `package.json`, `package-lock.json`, and `versions.json` bind one canonical `x.y.z`
 version, the Obsidian `1.12.7` minimum, and the exact commit/tree. A clean worktree must pass
-the deterministic offline `npm run release:check`. The read-only DocWen 0.9.x package
+the deterministic offline `npm run release:check`. The read-only DocWen 0.10.x package
 compatibility preflight remains a separate external-state gate that is rerun near publication.
 
 ## Candidate Bundle v3
