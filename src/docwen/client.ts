@@ -698,7 +698,7 @@ async function inspectInputFile(input: TaskInput): Promise<InputFileInspection> 
   const absolutePath = path.resolve(input.path);
   try {
     assertInputKindAndRole(input.kind, input.role);
-    const fileInfo = await lstat(absolutePath);
+    const fileInfo = await lstat(absolutePath, { bigint: true });
     if (!fileInfo.isFile() || fileInfo.isSymbolicLink()) {
       throw new LocalCliError("cli_input_invalid", "DocWen input must be a regular file.", { filePath: absolutePath });
     }

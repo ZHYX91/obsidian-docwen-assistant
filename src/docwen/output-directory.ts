@@ -35,7 +35,7 @@ export async function captureOutputDirectory(directory: string, signal?: AbortSi
 }
 
 async function directoryIdentity(directory: string) {
-  const value = await lstat(directory);
+  const value = await lstat(directory, { bigint: true });
   if (!value.isDirectory() || value.isSymbolicLink()) {
     throw new LocalCliError("cli_commit_failed", "The output parent must be an existing directory, not a link.");
   }
@@ -127,7 +127,7 @@ export async function atomicCommitDirectory(
       const digest = createHash("sha256").update(rootName.toLowerCase()).digest("hex").slice(0, 24);
       const lockPath = path.join(parent.path, `.docwen-output-${digest}.lock`);
       const lock = await open(lockPath, "wx");
-      const lockIdentity = await lock.stat();
+      const lockIdentity = await lock.stat({ bigint: true });
       try {
         await parent.assertCurrent();
         await requireAbsent(finalRoot);
@@ -136,7 +136,7 @@ export async function atomicCommitDirectory(
         committed = true;
       } finally {
         await lock.close().catch((error: unknown) => { if (!committed) throw error; });
-        const currentLock = await lstat(lockPath).catch(() => null);
+        const currentLock = await lstat(lockPath, { bigint: true }).catch(() => null);
         if (currentLock?.dev === lockIdentity.dev && currentLock.ino === lockIdentity.ino) {
           await rm(lockPath).catch(() => undefined);
         }

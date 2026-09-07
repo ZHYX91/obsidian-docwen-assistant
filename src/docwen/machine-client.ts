@@ -7,6 +7,7 @@ import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "no
 
 import { LocalCliError, RemoteMachineError } from "./errors";
 import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
+import { fileIdentity, sameFileIdentity } from "./output-integrity";
 
 export type { JsonObject } from "./machine-framing";
 
@@ -688,20 +689,20 @@ export async function validateArtifactBundle(
     if (!SHA256_PATTERN.test(sha256)) throw integrityError("Artifact sha256 is invalid.");
     const absolutePath = path.resolve(root, ...locator.split("/"));
     if (!isPathWithin(root, absolutePath)) throw integrityError("Artifact locator escapes staging.");
-    const fileInfo = await lstat(absolutePath);
+    const fileInfo = await lstat(absolutePath, { bigint: true });
     if (!fileInfo.isFile() || fileInfo.isSymbolicLink()) throw integrityError("Artifact is not a regular file.");
     const canonicalPath = await realpath(absolutePath);
     if (!isPathWithin(root, canonicalPath)) throw integrityError("Artifact resolves outside staging.");
-    const actual = await stat(canonicalPath);
-    if (actual.size !== sizeBytes) throw integrityError("Artifact size does not match its manifest.");
+    const actual = await stat(canonicalPath, { bigint: true });
+    if (actual.size !== BigInt(sizeBytes)) throw integrityError("Artifact size does not match its manifest.");
     const digest = await sha256File(canonicalPath, sizeBytes, assertActive);
     if (digest !== sha256) throw integrityError("Artifact sha256 does not match its content.");
-    const finalInfo = await lstat(absolutePath);
+    const finalInfo = await lstat(absolutePath, { bigint: true });
     const finalCanonicalPath = await realpath(absolutePath);
     if (
       !finalInfo.isFile()
       || finalInfo.isSymbolicLink()
-      || !sameFilesystemIdentity(fileInfo, finalInfo)
+      || !sameFileIdentity(fileIdentity(fileInfo), fileIdentity(finalInfo))
       || !sameCanonicalPath(canonicalPath, finalCanonicalPath)
     ) {
       throw integrityError("Artifact identity changed during validation.");
@@ -1056,16 +1057,6 @@ function isErrno(error: unknown, code: string): boolean {
 
 function isAbsolutePlatformPath(value: string): boolean {
   return path.isAbsolute(value) || path.win32.isAbsolute(value);
-}
-
-function sameFilesystemIdentity(
-  left: { dev: number; ino: number; mtimeMs: number; size: number },
-  right: { dev: number; ino: number; mtimeMs: number; size: number },
-): boolean {
-  return left.dev === right.dev
-    && left.ino === right.ino
-    && left.size === right.size
-    && left.mtimeMs === right.mtimeMs;
 }
 
 function sameCanonicalPath(left: string, right: string): boolean {

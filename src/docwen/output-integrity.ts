@@ -7,9 +7,9 @@ import { LocalCliError } from "./errors";
 import type { ValidatedArtifactBundle, ValidatedBundleArtifact } from "./machine-client";
 
 export type FileIdentity = {
-  dev: number;
-  ino: number;
-  mtimeMs: number;
+  dev: bigint;
+  ino: bigint;
+  mtimeNs: bigint;
   size: number;
 };
 
@@ -56,19 +56,23 @@ export async function verifyArtifactIdentity(
 }
 
 export async function regularFileIdentity(filePath: string): Promise<FileIdentity> {
-  const value = await lstat(filePath);
+  const value = await lstat(filePath, { bigint: true });
   if (!value.isFile() || value.isSymbolicLink()) {
     throw new LocalCliError("cli_commit_failed", "Commit paths must be regular non-link files.", { filePath });
   }
   return fileIdentity(value);
 }
 
-export function fileIdentity(value: { dev: number; ino: number; mtimeMs: number; size: number }): FileIdentity {
+export function fileIdentity(value: { dev: bigint; ino: bigint; mtimeNs: bigint; size: bigint }): FileIdentity {
+  const size = Number(value.size);
+  if (!Number.isSafeInteger(size) || size < 0) {
+    throw new LocalCliError("cli_integrity_error", "File size cannot be represented safely.");
+  }
   return {
     dev: value.dev,
     ino: value.ino,
-    mtimeMs: value.mtimeMs,
-    size: value.size,
+    mtimeNs: value.mtimeNs,
+    size,
   };
 }
 
@@ -76,7 +80,7 @@ export function sameFileIdentity(left: FileIdentity, right: FileIdentity): boole
   return left.dev === right.dev
     && left.ino === right.ino
     && left.size === right.size
-    && left.mtimeMs === right.mtimeMs;
+    && left.mtimeNs === right.mtimeNs;
 }
 
 export function samePath(left: string, right: string): boolean {
