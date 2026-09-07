@@ -52,9 +52,11 @@ El paquete de la versión contiene únicamente `main.js`, `manifest.json` y `sty
 
 ## Uso
 
-El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y ejecutar doctor. La exportación en segundo plano siempre exige elegir explícitamente un archivo de salida.
+El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y ejecutar doctor.
 
-La exportación genera un DOCX independiente. Conserva el Markdown original. La conversión inversa lee el contenido y la estructura del DOCX sin archivo auxiliar del original; no garantiza la misma escritura ni los mismos espacios. Elige las extensiones en los ajustes de DocWen.
+Elige una carpeta de salida. Cada conversión crea su propia carpeta de resultados con el nombre de origen, la fecha y hora y el formato de entrada. Conserva los nombres, recursos vinculados y el manifiesto de disposición; no sobrescribe carpetas existentes.
+
+La exportación a Word genera un DOCX independiente dentro de la carpeta de resultados. Conserva el Markdown original. La conversión inversa lee el contenido y la estructura del DOCX sin archivo auxiliar del original; no garantiza la misma escritura ni los mismos espacios. Elige las extensiones en los ajustes de DocWen.
 
 Con una versión compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) activada, la exportación a Word conserva los números virtuales validados de títulos y leyendas y las referencias de la misma nota sin añadir esos números al Markdown.
 

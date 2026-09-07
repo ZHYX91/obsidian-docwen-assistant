@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -74,8 +74,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
   it("round-trips extended headings and note domains through a document-node Bundle", async () => {
     const caseRoot = join(root, "extended-heading-note-roundtrip");
     const source = join(caseRoot, "authored.md");
-    const docx = join(caseRoot, "authored.docx");
-    const markdown = join(caseRoot, "published", "roundtrip.md");
+    const markdownParent = join(caseRoot, "published");
+    await mkdir(markdownParent, { recursive: true });
     const authored = [
       "####### Level seven",
       "",
@@ -102,14 +102,17 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       mediaType: "text/markdown",
     };
     const resolvedInputs = await writeResolvedTextPort(join(caseRoot, "port"), authored);
-    await expect(client.convert({
+    const generated = await client.convert({
       sourceInput,
       inputs: resolvedInputs,
-      outputPath: docx,
+      outputDirectory: caseRoot,
       target: "docx",
       capabilityId: "convert.markdown.to_docx",
       markdownExtensions: { input: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
-    })).resolves.toMatchObject({ output: docx, outputs: [docx] });
+    });
+    const docx = generated.output;
+    expect(generated.outputs).toEqual([docx]);
+    expect(basename(dirname(docx))).toBe(basename(docx, ".docx"));
     expect(await readFile(source, "utf8")).toBe(authored);
 
     const docxArchive = readStrictZip(await readFile(docx));
@@ -128,23 +131,26 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
     const roundtrip = await client.convert({
       sourceInput: docxInput,
       inputs: [docxInput],
-      outputPath: markdown,
+      outputDirectory: markdownParent,
       target: "md",
       capabilityId: "convert.docx.to_markdown",
       markdownExtensions: { output: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
     });
-    expect(roundtrip.output).toBe(markdown);
+    const markdown = roundtrip.output;
+    expect(dirname(dirname(markdown))).toBe(markdownParent);
     expect(roundtrip.outputs).toContain(markdown);
     expect(roundtrip.outputs.some((output) => basename(output) === "docwen-node.json")).toBe(false);
-    const secondOutput = join(caseRoot, "second-export.md");
+    const secondParent = join(caseRoot, "second");
+    await mkdir(secondParent);
     const second = await client.convert({
       sourceInput: docxInput,
       inputs: [docxInput],
-      outputPath: secondOutput,
+      outputDirectory: secondParent,
       target: "md",
       capabilityId: "convert.docx.to_markdown",
     });
-    expect(second.outputs).toEqual([secondOutput]);
+    expect(second.outputs).toEqual([second.output]);
+    expect(dirname(dirname(second.output))).toBe(secondParent);
 
     const restored = await readFile(markdown, "utf8");
     expect(restored).toContain("####### Level seven");
@@ -163,7 +169,6 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
     const source = join(root, "physical-source", "typed-source.md");
     const linked = join(root, "declared-pool", "typed linked.png");
     const decoy = join(root, "physical-source", "assets", "typed linked.png");
-    const output = join(root, "typed-output.docx");
     await mkdir(join(root, "physical-source", "assets"), { recursive: true });
     await mkdir(join(root, "declared-pool"), { recursive: true });
     const sourceBytes = Buffer.from("# Typed input\n\n![[typed linked.png]]\n", "utf8");
@@ -186,13 +191,15 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       mediaType: "text/markdown",
     };
     const resolvedInputs = await writeResolvedPort(root, sourceBytes.toString("utf8"), declaredBytes);
-    await expect(client.convert({
+    const generated = await client.convert({
       sourceInput,
       inputs: resolvedInputs,
-      outputPath: output,
+      outputDirectory: root,
       target: "docx",
       capabilityId: "convert.markdown.to_docx",
-    })).resolves.toMatchObject({ output, bundleId: expect.any(String) });
+    });
+    const output = generated.output;
+    expect(generated.outputs).toEqual([output]);
     const outputBytes = await readFile(output);
     const archive = readStrictZip(outputBytes);
     expect(archive.has("[Content_Types].xml")).toBe(true);
@@ -287,7 +294,7 @@ async function writeResolvedPort(portRoot: string, source: string, imageBytes: B
       path: neutralPath,
       kind: "document",
       role: "neutral_document",
-      logicalPath: "resolved-document.json",
+      logicalPath: "notes/authored.md",
       mediaType: "application/vnd.docwen.resolved-document+json",
     },
     {
@@ -363,7 +370,7 @@ async function writeResolvedTextPort(portRoot: string, source: string): Promise<
       path: neutralPath,
       kind: "document",
       role: "neutral_document",
-      logicalPath: "resolved-document.json",
+      logicalPath: "notes/authored.md",
       mediaType: "application/vnd.docwen.resolved-document+json",
     },
     {

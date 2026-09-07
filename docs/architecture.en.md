@@ -36,15 +36,13 @@ text is never used to guess a number.
 
 ## Artifacts and commit
 
-DocWen writes only to a request-owned staging directory. The Assistant accepts and validates only Artifact Bundle v2; every other Bundle schema fails closed. Validation covers Bundle identity, layout, logical paths, graph, roles, relations, physical paths, regular-file status, sizes, and hashes. The preferred artifact maps to the user-confirmed target and related resources use safe names. Commit uses exclusive creation, no-clobber links, backup, and rollback, while the CLI never receives a Vault target.
+DocWen writes only to a request-owned staging directory. Assistant validates Bundle v2 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory, including its bound `docwen-node.json`, is prepared beside the chosen parent and published in one directory rename. Existing result roots are rejected. The UI lists business outputs and excludes the manifest from its output count.
 
-Artifacts identified by a typed `resource_of` relation with role `manifest` remain in staging after Bundle validation. Internal layout manifests are not user exports and must not collide with later exports or replace existing files in the destination.
-
-The resolved-document route accepts exactly one preferred DOCX artifact, one primary entry, and no relations. The Assistant validates its size and hash before atomic commit. Only the user-confirmed DOCX can be replaced. Adjacent historical companion files remain untouched. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target and use an empty cached_number; their visible text uses Alias or the current title.
+Resolved Markdown-to-DOCX contains one preferred DOCX, one primary entry and one manifest resource bound through `resource_of`. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
 
 ## Vault writes
 
-Export captures the selected destination's identity and content before conversion starts. Its publication guard rechecks the disk snapshot and any uniquely matched open Markdown editor, including unsaved content. A new, removed, changed, or newly opened destination refuses publication; overwrite permission is never inferred again after conversion.
+Export captures the chosen parent directory identity before conversion. Publication rechecks the parent, source snapshot and prepared bytes, rejects an existing result root or an editor open inside that root, and checks cancellation before rename. Unrelated files and editors in the chosen parent do not block export.
 
 Proofreading only reads a report. Numbering is generated in an isolated file, and `VaultWriteTransaction` compares the original snapshot with the uniquely path-matched Markdown leaf, view, and editor state. It commits once through the Editor or Vault API only when all still match. A second matching view, an open/closed transition, plugin unload, view closure, or a conflict cancels or refuses the write.
 

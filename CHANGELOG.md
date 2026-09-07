@@ -10,10 +10,10 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Offer direct table export before optional Excel templates, including when no templates are installed.
 
-- Capture destination identity and open editor content before conversion, and refuse publication if either changes while the task runs.
+- Capture output-parent identity before conversion and reject source changes, directory conflicts or open editors inside a new result root before atomic publication.
 - Show a persistent cancelled proofreading status instead of presenting previous results as a completed check.
 - Keep long-note proofreading responsive by constructing semantic inputs only for exports that need them and indexing text positions once per snapshot.
-- Exclude internal layout manifests from user exports so successive Markdown exports can share a destination folder.
+- Publish complete result directories with timestamped source names, linked resources and layout manifests; omit manifests from business output counts and preserve existing result directories.
 - Preserve the source document name when exporting resolved Markdown to Word.
 - Export both `.md` and `.markdown` sources through the same resolved document path.
 - Validate editor and Vault snapshots before publishing converted files or proofreading results; preserve outputs when source content conflicts or an operation is cancelled before commit.
@@ -26,7 +26,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Require DocWen 0.10.x and accept its independent DOCX output without an original-source sidecar.
 - Preserve unnumbered cross references in the neutral document so DocWen can display the target title or Alias.
 - Pass capability-supported Markdown extension overrides without changing DocWen's saved settings.
-- Preserve existing adjacent files when replacing a generated DOCX.
+- Preserve existing result directories and adjacent files during Word export.
 - Allow a bounded five-second normal CLI shutdown while still terminating a server that does not exit.
 
 ## [2.3.0] - 2026-09-04

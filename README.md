@@ -72,9 +72,9 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 - **Proofread current Markdown file**
 - **Check DocWen connection**
 
-Background export always asks for an output file. Existing output is overwritten only after the native save dialog confirms the target.
+Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames, linked resources and layout manifest. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
 
-Export produces one independent DOCX. Keep the original Markdown yourself. Reverse conversion reads DOCX content and structures without an original-source companion. Optional Markdown extensions are selected in DocWen settings; identical spelling and whitespace are not guaranteed.
+Word export produces an independent DOCX inside its result folder. Keep the original Markdown yourself. Reverse conversion reads DOCX content and structures without an original-source companion. Optional Markdown extensions are selected in DocWen settings; identical spelling and whitespace are not guaranteed.
 
 With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) version enabled, Word export preserves its validated virtual heading and caption numbers plus same-note references without adding those numbers to the Markdown note.
 
@@ -89,12 +89,12 @@ With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite
 
 - DocWen Assistant is Windows desktop-only and requires a compatible local DocWen installation.
 - Automatic mode uses only the fixed registered `docwen.exe` alias. Manual mode accepts only the selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`; neither mode searches arbitrary folders.
-- Background export requires an explicit output file, and proofreading does not rewrite the source note.
+- Background export requires an explicit output folder, and proofreading does not rewrite the source note.
 - A command is rejected when the CLI response, source snapshot, editor state, or target cannot be verified safely.
 
 ## Privacy and security
 
-The plugin takes a snapshot of the current Obsidian editor buffer (including unsaved text) or Vault file and gives DocWen only isolated temporary inputs. It intentionally accesses files outside the Vault only to start the registered DocWen execution alias or the manually selected portable executable, manage isolated temporary inputs and validated artifacts, and write to an output path explicitly chosen by the user; this access is required for local conversion and export. It never opens or stores the versioned Microsoft Store package path. For Markdown-to-DOCX, Obsidian resolves image embeds explicitly present in that note, including cross-folder short Wiki links and filenames with spaces; the plugin authenticates and embeds those bytes in a neutral request. It never scans the Vault for matching filenames. Conversion commits the validated preferred output to the user-confirmed target and any validated related resources beside it under safe names. Proofreading is read-only. Numbering is produced in an isolated output, then committed once through the current Obsidian editor or Vault API only if the source snapshot still matches. The plugin does not upload documents or enumerate the Vault for DocWen operations.
+The plugin takes a snapshot of the current Obsidian editor buffer (including unsaved text) or Vault file and gives DocWen only isolated temporary inputs. It intentionally accesses files outside the Vault only to start the registered DocWen execution alias or the manually selected portable executable, manage isolated temporary inputs and validated artifacts, and write to an output path explicitly chosen by the user; this access is required for local conversion and export. It never opens or stores the versioned Microsoft Store package path. For Markdown-to-DOCX, Obsidian resolves image embeds explicitly present in that note, including cross-folder short Wiki links and filenames with spaces; the plugin authenticates and embeds those bytes in a neutral request. It never scans the Vault for matching filenames. Conversion publishes the complete validated result folder inside the selected directory. It preserves the producer's relative paths and reports the preferred output separately from the layout manifest. Proofreading is read-only. Numbering is produced in an isolated output, then committed once through the current Obsidian editor or Vault API only if the source snapshot still matches. The plugin does not upload documents or enumerate the Vault for DocWen operations.
 
 The CLI boundary uses JSON-RPC 2.0 with canonical `Content-Length` framing. Every task uses integrity-pinned input handles and a request-owned staging directory; every returned Artifact Bundle is graph-, path-, size-, and SHA-256-validated before the plugin commits outputs atomically. Calls have timeouts, task cancellation, output limits, and child-process cleanup.
 

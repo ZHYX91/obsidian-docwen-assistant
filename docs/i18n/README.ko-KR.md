@@ -30,7 +30,7 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ## 기능
 
-DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/Markdown 변환, Markdown 제목 번호 추가·제거, 교정 및 doctor 진단을 제공합니다.
+DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown 변환, Markdown 제목 번호 추가·제거, 교정 및 doctor 진단을 제공합니다.
 
 ## 요구 사항 및 호환성
 
@@ -52,9 +52,11 @@ DocWen에서 파일 열기, 명시적 출력 파일을 사용하는 Word/Excel/M
 
 ## 사용
 
-리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, doctor 실행을 할 수 있습니다. 백그라운드 내보내기는 항상 출력 파일을 명시적으로 선택해야 합니다.
+리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, doctor 실행을 할 수 있습니다.
 
-독립된 DOCX 하나를 생성합니다. 원본 Markdown은 직접 보관하세요. 역변환은 원문을 저장한 동반 파일 없이 DOCX의 내용과 구조를 읽으며 동일한 표기와 공백을 보장하지 않습니다. 확장은 DocWen 설정에서 선택할 수 있습니다.
+출력 폴더를 선택하세요. 변환마다 원본 이름, 타임스탬프와 입력 형식을 포함한 결과 폴더를 만들고 파일 이름, 연결 리소스와 레이아웃 목록을 유지합니다. 기존 결과 폴더는 덮어쓰지 않습니다.
+
+Word 내보내기는 결과 폴더에 독립된 DOCX를 생성합니다. 원본 Markdown은 직접 보관하세요. 역변환은 원문을 저장한 동반 파일 없이 DOCX의 내용과 구조를 읽으며 동일한 표기와 공백을 보장하지 않습니다. 확장은 DocWen 설정에서 선택할 수 있습니다.
 
 호환되는 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite)를 활성화하면 Word 내보내기는 Markdown 노트에 번호를 추가하지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다.
 

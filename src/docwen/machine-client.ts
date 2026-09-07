@@ -798,8 +798,13 @@ export async function validateArtifactBundle(
     if (type === "fragment_of" && (source.kind !== "fragment" || target.kind !== "document")) {
       throw integrityError("fragment_of relation kinds are invalid.");
     }
+    const manifestResourceOwner = role === "manifest"
+      && source.media_type === "application/vnd.docwen.document-node+json"
+      && source.suggested_name === "docwen-node.json"
+      && target.kind === "resource"
+      && entries.some((entry) => entry.artifact_id === targetId && entry.preferred);
     if (type === "resource_of" && (
-      source.kind !== "resource" || (target.kind !== "document" && target.kind !== "fragment")
+      source.kind !== "resource" || (target.kind !== "document" && target.kind !== "fragment" && !manifestResourceOwner)
     )) {
       throw integrityError("resource_of relation kinds are invalid.");
     }

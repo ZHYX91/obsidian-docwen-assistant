@@ -71,6 +71,7 @@ export interface Translations {
   settingsSchemaReadOnlyDesc: string;
   settingsDoctorDesc: string;
   settingsCheckConnection: string;
+  dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
   errorContentConflict: string;

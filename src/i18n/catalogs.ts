@@ -4,6 +4,7 @@ import type { Translations } from "./types";
 export const translations: Record<string, Translations> = {
   // Simplified Chinese
   "zh-cn": {
+    dialogExportDirectory: "选择输出目录",
     ribbonTooltip: "启动 DocWen",
     commandLaunch: "启动 DocWen",
     commandLaunchWithFile: "使用当前文件启动 DocWen",
@@ -215,6 +216,7 @@ export const translations: Record<string, Translations> = {
 
   // Traditional Chinese
   "zh-tw": {
+    dialogExportDirectory: "選擇輸出目錄",
     ribbonTooltip: "啟動 DocWen",
     commandLaunch: "啟動 DocWen",
     commandLaunchWithFile: "使用當前檔案啟動 DocWen",
@@ -426,6 +428,7 @@ export const translations: Record<string, Translations> = {
 
   // English
   "en": {
+    dialogExportDirectory: "Choose output folder",
     ribbonTooltip: "Launch DocWen",
     commandLaunch: "Launch DocWen",
     commandLaunchWithFile: "Launch DocWen with current file",
@@ -637,6 +640,7 @@ export const translations: Record<string, Translations> = {
 
   // German
   "de": {
+    dialogExportDirectory: "Ausgabeordner auswählen",
     ribbonTooltip: "DocWen starten",
     commandLaunch: "DocWen starten",
     commandLaunchWithFile: "DocWen mit aktueller Datei starten",
@@ -848,6 +852,7 @@ export const translations: Record<string, Translations> = {
 
   // French
   "fr": {
+    dialogExportDirectory: "Choisir le dossier de sortie",
     ribbonTooltip: "Lancer DocWen",
     commandLaunch: "Lancer DocWen",
     commandLaunchWithFile: "Lancer DocWen avec le fichier actuel",
@@ -1059,6 +1064,7 @@ export const translations: Record<string, Translations> = {
 
   // Russian
   "ru": {
+    dialogExportDirectory: "Выбрать папку вывода",
     ribbonTooltip: "Запустить DocWen",
     commandLaunch: "Запустить DocWen",
     commandLaunchWithFile: "Запустить DocWen с текущим файлом",
@@ -1270,6 +1276,7 @@ export const translations: Record<string, Translations> = {
 
   // Portuguese (Brazil)
   "pt": {
+    dialogExportDirectory: "Escolher pasta de saída",
     ribbonTooltip: "Iniciar DocWen",
     commandLaunch: "Iniciar DocWen",
     commandLaunchWithFile: "Iniciar DocWen com arquivo atual",
@@ -1481,6 +1488,7 @@ export const translations: Record<string, Translations> = {
 
   // Japanese
   "ja": {
+    dialogExportDirectory: "出力フォルダーを選択",
     ribbonTooltip: "DocWen を起動",
     commandLaunch: "DocWen を起動",
     commandLaunchWithFile: "現在のファイルで DocWen を起動",
@@ -1691,6 +1699,7 @@ export const translations: Record<string, Translations> = {
   },
 
   "ko": {
+    dialogExportDirectory: "출력 폴더 선택",
     ribbonTooltip: "DocWen 실행",
     commandLaunch: "DocWen 실행",
     commandLaunchWithFile: "현재 파일로 DocWen 실행",
@@ -1901,6 +1910,7 @@ export const translations: Record<string, Translations> = {
   },
 
   "es": {
+    dialogExportDirectory: "Elegir carpeta de salida",
     ribbonTooltip: "Iniciar DocWen",
     commandLaunch: "Iniciar DocWen",
     commandLaunchWithFile: "Iniciar DocWen con el archivo actual",
@@ -2111,6 +2121,7 @@ export const translations: Record<string, Translations> = {
   },
 
   "vi": {
+    dialogExportDirectory: "Chọn thư mục đầu ra",
     ribbonTooltip: "Khởi chạy DocWen",
     commandLaunch: "Khởi chạy DocWen",
     commandLaunchWithFile: "Khởi chạy DocWen với tệp hiện tại",

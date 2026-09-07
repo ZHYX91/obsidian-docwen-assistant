@@ -22,7 +22,7 @@ Under the pinned toolchain, `npm run check` runs runtime verification, lint, for
 
 ## Fixed DocWen package
 
-`npm run acceptance:docwen-package` accepts only a full DocWen Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, internal `docwen.document_node.v1` manifest exclusion and successive exports into one folder, and DocWen Bundle v2 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.
+`npm run acceptance:docwen-package` accepts only a full DocWen Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, complete `docwen.document_node.v1` publication, manifest exclusion from business output counts, and successive exports into a chosen parent, and DocWen Bundle v2 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.
 
 ## Obsidian host
 
@@ -30,7 +30,7 @@ Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 h
 
 ## Manual compatibility matrix
 
-Windows manual checks cover Microsoft Store install, alias disable/enable, Store upgrade, uninstall recovery, portable fallback, DocWen GUI activation, native save dialogs, Word/Excel/Markdown outputs, numbering conflicts, and visible proofreading. When Office or real-document rendering matters, the application version, sample, candidate digest, and human conclusion are recorded separately.
+Windows manual checks cover Microsoft Store install, alias disable/enable, Store upgrade, uninstall recovery, portable fallback, DocWen GUI activation, native directory dialogs, Word/Excel/Markdown outputs, numbering conflicts, and visible proofreading. When Office or real-document rendering matters, the application version, sample, candidate digest, and human conclusion are recorded separately.
 
 ## Safe fixtures
 

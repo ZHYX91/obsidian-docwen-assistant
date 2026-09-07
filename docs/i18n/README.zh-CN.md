@@ -31,7 +31,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 ## 功能
 
 - 在 DocWen 中打开当前文件或激活 DocWen 窗口；
-- 导出 Word、Excel、Markdown，并明确选择输出文件；
+- 导出 Word、Excel、Markdown，并明确选择输出目录；
 - 添加或删除 Markdown 标题序号；
 - 在 Obsidian 侧边栏校对 Markdown；
 - 检查本机 DocWen 连接，并使用文件右键菜单命令。
@@ -62,14 +62,14 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 可以通过侧边栏图标、文件列表的 **DocWen** 子菜单或命令面板执行以下操作：
 
 - 启动 DocWen，或使用当前文件启动；
-- 后台导出 Word、Excel 或 Markdown，并明确选择输出文件；
+- 后台导出 Word、Excel 或 Markdown，并明确选择输出目录；
 - 添加或删除 Markdown 标题序号；
 - 在 Obsidian 侧边栏校对当前 Markdown；
 - 检查 DocWen 连接。
 
-后台导出始终要求选择输出文件；只有原生保存对话框确认目标后，才会覆盖已有输出。
+选择输出目录后，每次转换会创建独立结果文件夹，保留生成的文件名、关联资源和布局清单。文件名包含原文件名、时间戳和本次传入格式；不会覆盖已有结果文件夹。
 
-导出只生成一个独立 DOCX，请自行保留原始 Markdown。反向转换读取 DOCX 的实际内容和结构，不依赖原文伴随文件，也不保证完全相同的写法和空白。可在 DocWen 设置中选择 Markdown 扩展语法。
+Word 导出在结果文件夹中生成独立 DOCX，请自行保留原始 Markdown。反向转换读取 DOCX 的实际内容和结构，不依赖原文伴随文件，也不保证完全相同的写法和空白。可在 DocWen 设置中选择 Markdown 扩展语法。
 
 启用兼容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 后，Word 导出会保留它经过验证的虚拟标题、题注编号和同一笔记内的引用，不会把这些编号写入 Markdown 笔记。
 
@@ -84,12 +84,12 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 - 仅支持 Windows 桌面端，并要求本机存在兼容的 DocWen；
 - 自动模式只使用固定的 `docwen.exe` 注册别名；手动模式只接受用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，两种模式都不会搜索任意目录；
-- 后台导出必须明确选择输出文件，校对不会直接重写源笔记；
+- 后台导出必须明确选择输出目录，校对不会直接重写源笔记；
 - 无法安全核验 CLI 响应、源快照、编辑器状态或目标时，操作会被拒绝。
 
 ## 隐私与安全
 
-插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 DocWen。它仅为启动系统注册的 DocWen 执行别名或用户手动选择的便携版程序、管理隔离的临时输入和已验证产物，以及写入用户明确选择的输出路径而访问 Vault 外部文件；不会打开或保存版本化的 Microsoft Store 包路径。转换会把经过验证的首选输出提交到用户确认的目标，并以安全名称把经过验证的关联资源提交到同一目录。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 DocWen。它仅为启动系统注册的 DocWen 执行别名或用户手动选择的便携版程序、管理隔离的临时输入和已验证产物，以及写入用户明确选择的输出路径而访问 Vault 外部文件；不会打开或保存版本化的 Microsoft Store 包路径。转换会在所选目录内发布完整且经过验证的结果文件夹，保持相对路径，并将首选输出与布局清单区分展示。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
 CLI 边界使用 JSON-RPC 2.0 和规范的 `Content-Length` framing。所有输入均固定大小与 SHA-256，所有 Artifact Bundle 在原子提交前都要校验图、路径、大小和哈希；调用具有超时、任务取消、输出上限和子进程清理。
 

@@ -14,7 +14,7 @@ Users can start actions from the ribbon icon, the file explorer **DocWen** subme
 
 ## Export flow
 
-Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. The user explicitly selects a destination through the native save dialog. Format-extension conflicts and an existing preferred target require confirmation, while related resources never overwrite existing files.
+Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames, linked resources and layout manifest. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
 
 ## Numbering and proofreading
 

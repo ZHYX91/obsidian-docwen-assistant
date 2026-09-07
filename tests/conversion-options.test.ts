@@ -125,7 +125,7 @@ function request(options: Partial<ConvertRequest>): ConvertRequest {
   return {
     target: "md",
     inputs: [],
-    outputPath: "D:\\Vault\\output.md",
+    outputDirectory: "D:\\Vault",
     ...options,
   };
 }

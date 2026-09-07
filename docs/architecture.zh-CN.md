@@ -31,15 +31,13 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 ## 产物与提交
 
-DocWen 只写请求拥有的 staging 目录。Assistant 只接受并校验 Artifact Bundle v2，其他 Bundle schema 一律失败关闭；校验覆盖 Bundle 身份、布局、逻辑路径、图、角色、关系、物理路径、普通文件、大小和哈希。首选产物映射到用户确认的目标，相关资源使用安全名称；提交使用独占创建、无覆盖链接、备份与回滚，不让 CLI 直接接触 Vault 目标。
+DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v2 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，连同绑定的 `docwen-node.json` 一次重命名发布；已有结果目录一律拒绝覆盖。界面只列业务输出，清单不计入输出数量。
 
-由类型化 `resource_of` 关系及 `manifest` 角色标识的产物，在 Bundle 校验后留在 staging 中。内部布局清单不属于用户导出文件，不得与后续导出冲突或替换目标目录的既有文件。
-
-resolved-document 路径只接受一个首选 DOCX 产物、一个 primary entry，且没有关系。Assistant 在原子提交前校验大小和哈希，只替换用户确认的 DOCX；历史相邻伴随文件保持不动。反向转换只读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
+resolved-document 转 DOCX 包含一个首选 DOCX、一个 primary entry 和通过 `resource_of` 绑定的清单资源，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
 ## Vault 写入
 
-导出在转换开始前记录所选目标的身份和内容，发布前再次核对磁盘快照及唯一匹配的 Markdown 编辑器，包括未保存的正文。目标被新建、删除、修改或新打开时拒绝发布，不在转换结束后重新推断覆盖权限。
+导出在转换前记录所选父目录身份。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的结果目录或该目录内打开的编辑器，并在重命名前检查取消状态。父目录中的其他文件或编辑器不阻止导出。
 
 校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
 

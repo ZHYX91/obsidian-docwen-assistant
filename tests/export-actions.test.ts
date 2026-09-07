@@ -20,15 +20,14 @@ vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.n
 vi.mock("../src/host/file-system", () => ({ pathExists: () => false }));
 vi.mock("../src/host/export-target-snapshot", () => ({
   captureExportTarget: async () => ({
-    overwrite: false,
-    publish: async <T>(commit: () => Promise<T>): Promise<T> => commit(),
+    publish: async <T>(_root: string, commit: () => Promise<T>): Promise<T> => commit(),
   }),
 }));
 vi.mock("../src/host/vault-files", () => ({ resolveAbsoluteFilePath: () => "D:\\Vault\\note.bin" }));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: vi.fn().mockResolvedValue(true) }));
 vi.mock("../src/host/electron-dialogs", () => ({
-  getElectronSaveDialog: () => ({
-    showSaveDialog: vi.fn().mockResolvedValue({ canceled: false, filePath: "D:\\Vault\\note.docx" }),
+  getElectronOpenDialog: () => ({
+    showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ["D:\\Vault"] }),
   }),
 }));
 vi.mock("../src/host/vault-read-snapshot", () => ({
@@ -396,7 +395,7 @@ describe("ExportActions advisory proofreading", () => {
         expect.objectContaining({ role: "neutral_document" }),
         expect.objectContaining({ role: "numbering_export_plan" }),
       ],
-      outputPath: resolve("D:\\Vault\\note.docx"),
+      outputDirectory: resolve("D:\\Vault"),
     }), signal);
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
     expect(runner.presentFailure).not.toHaveBeenCalled();

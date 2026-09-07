@@ -92,6 +92,25 @@ function bundleFor(
   };
 }
 
+async function groupedDocxBundle(taskId: string, artifactPath: string): Promise<ValidatedArtifactBundle> {
+  const bundle = bundleFor(taskId, artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  const node = "note_20260907_180000_fromMd";
+  bundle.layout_schema = "docwen.document_node.v1";
+  bundle.artifacts[0]!.logical_path = `${node}/${node}.docx`;
+  bundle.artifacts[0]!.suggested_name = `${node}.docx`;
+  const manifestPath = path.join(path.dirname(artifactPath), "docwen-node.json");
+  const bytes = Buffer.from("{}");
+  await writeFile(manifestPath, bytes);
+  bundle.artifacts.push({
+    artifact_id: "manifest", kind: "resource", locator: "docwen-node.json",
+    logical_path: `${node}/docwen-node.json`, suggested_name: "docwen-node.json",
+    media_type: "application/vnd.docwen.document-node+json", size_bytes: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath: manifestPath,
+  });
+  bundle.relations.push({ type: "resource_of", source_artifact_id: "manifest", target_artifact_id: "artifact.1", role: "manifest", ordinal: 0 });
+  return bundle;
+}
+
 function bundleWithRelated(
   primaryPath: string,
   primaryBytes: Buffer,
@@ -247,7 +266,7 @@ describe("DocWenClient Machine semantics", () => {
     const input = path.join(root, "note.md");
     const neutral = path.join(root, "resolved-document.json");
     const numberingPlan = path.join(root, "numbering-export-plan.json");
-    const output = path.join(root, "note.docx");
+    const output = path.join(root, "note_20260907_180000_fromMd", "note_20260907_180000_fromMd.docx");
     await writeFile(input, "# note\n", "utf8");
     await writeFile(neutral, "{}", "utf8");
     await writeFile(numberingPlan, "{}", "utf8");
@@ -259,7 +278,7 @@ describe("DocWenClient Machine semantics", () => {
       return {
         taskId: "task.1",
         plan: {},
-        bundle: bundleFor("task.1", artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "document", docxBytes),
+        bundle: await groupedDocxBundle("task.1", artifactPath),
         diagnostics: [],
         metrics: {},
       };
@@ -273,7 +292,7 @@ describe("DocWenClient Machine semantics", () => {
           path: neutral,
           kind: "document",
           role: "neutral_document",
-          logicalPath: "resolved-document.json",
+          logicalPath: "notes/note.md",
           mediaType: "application/vnd.docwen.resolved-document+json",
         },
         {
@@ -284,7 +303,7 @@ describe("DocWenClient Machine semantics", () => {
           mediaType: "application/vnd.docwen.numbering-export-plan+json",
         },
       ],
-      outputPath: output,
+      outputDirectory: root,
       target: "docx",
       template: "template.standard",
       headingMergeMode: "always",
@@ -301,7 +320,7 @@ describe("DocWenClient Machine semantics", () => {
         {
           kind: "document",
           role: "neutral_document",
-          logical_path: "resolved-document.json",
+          logical_path: "notes/note.md",
           media_type: "application/vnd.docwen.resolved-document+json",
         },
         {
@@ -323,7 +342,7 @@ describe("DocWenClient Machine semantics", () => {
     const input = path.join(root, "note.md");
     const neutral = path.join(root, "resolved-document.json");
     const numberingPlan = path.join(root, "numbering-export-plan.json");
-    const output = path.join(root, "note.docx");
+    const output = path.join(root, "note_20260907_180000_fromMd", "note_20260907_180000_fromMd.docx");
     await writeFile(input, "# note\n", "utf8");
     await writeFile(neutral, "{}", "utf8");
     await writeFile(numberingPlan, "{}", "utf8");
@@ -332,7 +351,7 @@ describe("DocWenClient Machine semantics", () => {
         path: neutral,
         kind: "document" as const,
         role: "neutral_document" as const,
-        logicalPath: "resolved-document.json",
+        logicalPath: "notes/note.md",
         mediaType: "application/vnd.docwen.resolved-document+json",
       },
       {
@@ -347,7 +366,7 @@ describe("DocWenClient Machine semantics", () => {
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const artifactPath = path.join(request.output.staging_root.path, "note.docx");
       await writeFile(artifactPath, "fixture", "utf8");
-      const bundle = bundleFor("task.extra", artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      const bundle = await groupedDocxBundle("task.extra", artifactPath);
       bundle.artifacts.push({ ...bundle.artifacts[0]!, artifact_id: "artifact.extra" });
       return {
         taskId: "task.extra",
@@ -362,7 +381,7 @@ describe("DocWenClient Machine semantics", () => {
     await expect(client.convert({
       sourceInput: sourceInput(input),
       inputs,
-      outputPath: output,
+      outputDirectory: root,
       target: "docx",
     })).rejects.toMatchObject({ code: "cli_integrity_error" });
     await expect(lstat(output)).rejects.toMatchObject({ code: "ENOENT" });
@@ -373,7 +392,7 @@ describe("DocWenClient Machine semantics", () => {
     const source = path.join(root, "note.md");
     const linked = path.join(root, "actual.png");
     const decoy = path.join(root, "decoy.png");
-    const output = path.join(root, "note.docx");
+    const output = path.join(root, "note_20260907_180000_fromMd", "note_20260907_180000_fromMd.docx");
     await writeFile(source, "![[actual.png]]\n", "utf8");
     await writeFile(linked, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     await writeFile(decoy, "DECOY", "utf8");
@@ -387,7 +406,7 @@ describe("DocWenClient Machine semantics", () => {
       return {
         taskId: "task.1",
         plan: {},
-        bundle: bundleFor("task.1", artifactPath, "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        bundle: await groupedDocxBundle("task.1", artifactPath),
         diagnostics: [],
         metrics: {},
       };
@@ -405,11 +424,12 @@ describe("DocWenClient Machine semantics", () => {
           mediaType: "image/png",
         },
       ],
-      outputPath: output,
+      outputDirectory: root,
       target: "docx",
     });
 
     expect(runTask).toHaveBeenCalledOnce();
+    expect(await readFile(output, "utf8")).toBe("fixture");
   });
 
   it("rejects invalid or duplicate logical paths before Machine task planning", async () => {
@@ -426,7 +446,7 @@ describe("DocWenClient Machine semantics", () => {
         { ...sourceInput(source), logicalPath: "notes/../note.md" },
         { path: linked, kind: "resource", role: "linked_resource", logicalPath: "notes/../note.md", mediaType: "image/png" },
       ],
-      outputPath: path.join(root, "note.docx"),
+      outputDirectory: root,
       target: "docx",
     })).rejects.toMatchObject({ code: "cli_input_invalid" });
 
@@ -441,7 +461,7 @@ describe("DocWenClient Machine semantics", () => {
           mediaType: "image/png",
         })),
       ],
-      outputPath: path.join(root, "note.docx"),
+      outputDirectory: root,
       target: "docx",
     })).rejects.toMatchObject({ code: "cli_input_invalid" });
     expect(runTask).not.toHaveBeenCalled();

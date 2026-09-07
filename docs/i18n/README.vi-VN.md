@@ -52,9 +52,11 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 ## Cách sử dụng
 
-Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor. Xuất nền luôn yêu cầu chọn rõ tệp đầu ra.
+Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor.
 
-Xuất tạo một tệp DOCX độc lập. Hãy tự giữ Markdown gốc. Chuyển đổi ngược đọc nội dung và cấu trúc DOCX mà không cần tệp kèm chứa bản gốc; không đảm bảo cách viết và khoảng trắng giống hệt. Chọn phần mở rộng trong cài đặt DocWen.
+Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục kết quả riêng với tên nguồn, dấu thời gian và định dạng đầu vào. Tên tệp, tài nguyên liên kết và bản kê bố cục được giữ nguyên; thư mục kết quả có sẵn không bị ghi đè.
+
+Xuất Word tạo một tệp DOCX độc lập trong thư mục kết quả. Hãy tự giữ Markdown gốc. Chuyển đổi ngược đọc nội dung và cấu trúc DOCX mà không cần tệp kèm chứa bản gốc; không đảm bảo cách viết và khoảng trắng giống hệt. Chọn phần mở rộng trong cài đặt DocWen.
 
 Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không thêm các số đó vào Markdown.
 

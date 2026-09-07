@@ -642,6 +642,28 @@ describe("DocWenMachineClient", () => {
     )).rejects.toMatchObject({ code: "cli_integrity_error" });
   });
 
+  it("allows only typed layout manifests to belong to preferred resource entries", async () => {
+    const root = await temporaryRoot();
+    const csv = Buffer.from("name\nvalue\n");
+    const json = Buffer.from("{}");
+    writeFileSync(path.join(root, "table.csv"), csv);
+    writeFileSync(path.join(root, "docwen-node.json"), json);
+    const table = { ...artifact("table", "table.csv", csv, "resource"), media_type: "text/csv", logical_path: "result/table.csv" };
+    const manifest = { ...artifact("manifest", "docwen-node.json", json, "resource"), media_type: "application/vnd.docwen.document-node+json", logical_path: "result/docwen-node.json" };
+    const entry = { artifact_id: "table", role: "supplementary", ordinal: 0, preferred: true };
+    const relation = { type: "resource_of", source_artifact_id: "manifest", target_artifact_id: "table", role: "manifest", ordinal: 0 };
+    const value = { ...bundle([table, manifest], [entry], [relation]), layout_schema: "docwen.document_node.v1" };
+    await expect(validateArtifactBundle(value, root, "task.graph", "0.10.0")).resolves.toMatchObject({ entries: [entry] });
+    for (const invalid of [
+      { ...value, artifacts: [table, { ...manifest, media_type: "application/json" }] },
+      { ...value, artifacts: [table, { ...manifest, suggested_name: "other.json" }] },
+      { ...value, entries: [{ ...entry, preferred: false }] },
+      { ...value, relations: [{ ...relation, role: "image" }] },
+    ]) {
+      await expect(validateArtifactBundle(invalid, root, "task.graph", "0.10.0")).rejects.toMatchObject({ code: "cli_integrity_error" });
+    }
+  });
+
   it("enforces finite Bundle counts, byte budgets, and portable suggested names", async () => {
     const root = await temporaryRoot();
     const bytes = Buffer.from("# output\n", "utf8");

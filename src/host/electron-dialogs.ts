@@ -11,6 +11,7 @@ export interface ElectronSaveDialog {
 export interface ElectronOpenDialog {
   showOpenDialog(options: {
     title: string;
+    defaultPath?: string;
     filters?: Array<{ name: string; extensions: string[] }>;
     properties: string[];
   }): Promise<{ canceled: boolean; filePaths: string[] }>;

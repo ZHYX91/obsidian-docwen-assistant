@@ -11,7 +11,7 @@ import {
   LocalCliError,
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
-import { getElectronSaveDialog } from "../host/electron-dialogs";
+import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { captureExportTarget } from "../host/export-target-snapshot";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
@@ -148,14 +148,14 @@ export class ExportActions {
       );
       return;
     }
-    const outputPath = await pickExportOutput(filePath, target);
-    if (!outputPath) return;
+    const outputDirectory = await pickExportOutput(filePath, target);
+    if (!outputDirectory) return;
 
     await this.runner.run(
       { key: `export:${file.path}`, kind: "export" },
       "noticeExportFailed",
       async ({ signal }) => {
-        const destination = await captureExportTarget(this.app, outputPath, signal);
+        const destination = await captureExportTarget(this.app, outputDirectory, signal);
         await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
@@ -206,10 +206,9 @@ export class ExportActions {
             ...options,
             inputs: taskInputs,
             sourceInput,
-            outputPath,
-            overwrite: destination.overwrite,
+            outputDirectory,
             capabilityId: route.capabilityId,
-            publish: (commit) => snapshot.publish(() => destination.publish(commit)),
+            publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
           }, signal);
           const output = outcome.output;
           showNotice(t("noticeExportSuccess", { filename: portableBasename(output) }));
@@ -243,19 +242,12 @@ function portableBasename(filePath: string): string {
 }
 
 async function pickExportOutput(filePath: string, target: ConvertTarget): Promise<string | null> {
-  const dialog = getElectronSaveDialog();
-  if (!dialog) throw new LocalCliError("cli_spawn_failed", "Save dialog is unavailable.");
-  const inputExtension = path.extname(filePath).toLowerCase();
-  const outputExtension = `.${target}`;
-  const stem = path.basename(filePath, inputExtension);
-  const outputStem = inputExtension === outputExtension ? `${stem}-converted` : stem;
-  const result = await dialog.showSaveDialog({
-    title: `DocWen — ${target.toUpperCase()}`,
-    defaultPath: path.join(path.dirname(filePath), `${outputStem}${outputExtension}`),
-    filters: [
-      { name: target.toUpperCase(), extensions: [target] },
-      { name: "All files", extensions: ["*"] },
-    ],
+  const dialog = getElectronOpenDialog();
+  if (!dialog) throw new LocalCliError("cli_spawn_failed", "Directory dialog is unavailable.");
+  const result = await dialog.showOpenDialog({
+    title: `DocWen — ${target.toUpperCase()} — ${t("dialogExportDirectory")}`,
+    defaultPath: path.dirname(filePath),
+    properties: ["openDirectory", "createDirectory"],
   });
-  return result.canceled || !result.filePath ? null : path.resolve(result.filePath);
+  return result.canceled || result.filePaths.length !== 1 ? null : path.resolve(result.filePaths[0]);
 }

@@ -9,6 +9,7 @@ export type {
   ValidatedBundleArtifact,
 } from "./machine-client";
 export { DocWenClient, captureOutputTarget, mediaTypeForPath, normalizeLogicalPath } from "./client";
+export { captureOutputDirectory } from "./output-directory";
 export { DocWenCapabilityService } from "./capability-service";
 export type { FileCapability } from "./capability-service";
 export { LocalCliError, RemoteMachineError } from "./errors";

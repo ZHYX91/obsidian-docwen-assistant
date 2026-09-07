@@ -21,7 +21,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## 固定 DocWen 包
 
-`npm run acceptance:docwen-package` 只接受绑定版本、Candidate Bundle v3 身份和哈希的完整 DocWen Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、内部 `docwen.document_node.v1` 清单不落入用户目录、同目录连续导出与 DocWen Bundle v2 写入边界；没有精确候选身份时应跳过或失败关闭，不能转称为源码通过。
+`npm run acceptance:docwen-package` 只接受绑定版本、Candidate Bundle v3 身份和哈希的完整 DocWen Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、完整 `docwen.document_node.v1` 目录发布、清单不计入业务输出数量、同一父目录连续导出与 DocWen Bundle v2 写入边界；没有精确候选身份时应跳过或失败关闭，不能转称为源码通过。
 
 ## Obsidian 宿主
 
@@ -29,7 +29,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## 人工兼容矩阵
 
-Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用、Store 升级、卸载恢复、便携版回退、DocWen GUI 激活、原生保存对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
+Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用、Store 升级、卸载恢复、便携版回退、DocWen GUI 激活、原生目录选择对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
 
 ## 安全夹具
 

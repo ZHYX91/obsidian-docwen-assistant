@@ -1,4 +1,16 @@
-import { createHash, randomUUID } from "node:crypto";
+import {
+  type FileIdentity,
+  preferredArtifact,
+  verifyArtifactIdentity,
+  regularFileIdentity,
+  fileIdentity,
+  sameFileIdentity,
+  samePath,
+  sha256File,
+  throwIfAborted,
+  isErrno,
+} from "./output-integrity";
+import { randomUUID } from "node:crypto";
 import { constants as fsConstants, createReadStream } from "node:fs";
 import {
   copyFile,
@@ -13,6 +25,7 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 
 import { LocalCliError } from "./errors";
+import { atomicCommitDirectory, captureOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
   type JsonObject,
@@ -40,7 +53,6 @@ export interface ConvertOptions {
   template?: string;
   optimization?: string;
   checks?: readonly ProofreadCheck[];
-  overwrite?: boolean;
   extractImages?: boolean;
   enableOcr?: boolean;
   ocrLanguage?: "auto" | "chinese" | "chinese_cht" | "english" | "japanese" | "korean" | "latin" | "cyrillic";
@@ -65,10 +77,10 @@ export interface ConvertRequest extends ConvertOptions {
   inputs: readonly TaskInput[];
   /** Original user-selected input used only for inspection and route selection. */
   sourceInput?: TaskInput;
-  outputPath: string;
+  outputDirectory: string;
   capabilityId?: string;
   /** Host-owned source validation around the final output commit. */
-  publish?: <T>(commit: () => Promise<T>) => Promise<T>;
+  publish?: DirectoryPublication;
 }
 
 /** A caller-selected input. Core receives only its isolated local copy. */
@@ -281,19 +293,19 @@ export class DocWenClient {
         "The selected optimization is not exposed by the Machine capability contract.",
       );
     }
+    const destination = await captureOutputDirectory(request.outputDirectory, signal);
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
     const inspection = await this.inspect(source, signal);
     const capabilityId = request.capabilityId ?? conversionCapabilityId(inspection.mediaType, request.target);
     const options = buildConversionMachineOptions(request, inspection.mediaType);
-    return this.runDeliverableTask(
-      capabilityId,
-      request.inputs,
-      options,
-      request.outputPath,
-      request.overwrite === true,
-      signal,
-      request.publish,
-    );
+    return this.withTaskStaging(async (stagingRoot) => {
+      const result = await this.machine.runTask(
+        await taskRequest(capabilityId, request.inputs, stagingRoot, options, signal), signal,
+      );
+      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
+      return { ...outputs, bundleId: result.bundle.bundle_id };
+    });
   }
 
   async validate(
@@ -391,7 +403,6 @@ export class DocWenClient {
         await taskRequest(capabilityId, inputs, stagingRoot, options, signal),
         signal,
       );
-      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
       const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
       return { output: outputs[0], outputs, bundleId: result.bundle.bundle_id };
     });
@@ -418,13 +429,6 @@ export class DocWenClient {
     }
   }
 }
-
-type FileIdentity = {
-  dev: number;
-  ino: number;
-  mtimeMs: number;
-  size: number;
-};
 
 type PreparedOutput = {
   backup: string | null;
@@ -915,20 +919,20 @@ function proofreadOptions(checks: readonly ProofreadCheck[]): JsonObject {
   };
 }
 
-function preferredArtifact(bundle: ValidatedArtifactBundle): ValidatedBundleArtifact {
-  const entry = bundle.entries.find((candidate) => candidate.preferred === true);
-  const artifact = bundle.artifacts.find((candidate) => candidate.artifact_id === entry?.artifact_id);
-  if (!artifact) throw new LocalCliError("cli_integrity_error", "Artifact Bundle preferred output is missing.");
-  return artifact;
-}
-
 function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
   const preferred = preferredArtifact(bundle);
   const entry = bundle.entries[0];
+  const manifests = bundle.relations.filter((relation) =>
+    relation.type === "resource_of" && relation.role === "manifest"
+    && relation.target_artifact_id === preferred.artifact_id);
+  const manifest = bundle.artifacts.find((artifact) => artifact.artifact_id === manifests[0]?.source_artifact_id);
   if (
-    bundle.artifacts.length !== 1
+    bundle.artifacts.length !== 2
     || bundle.entries.length !== 1
-    || bundle.relations.length !== 0
+    || bundle.relations.length !== 1
+    || manifests.length !== 1
+    || manifest?.kind !== "resource"
+    || manifest.media_type !== "application/vnd.docwen.document-node+json"
     || preferred.kind !== "document"
     || preferred.media_type !== DOCX_MEDIA_TYPE
     || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
@@ -1191,40 +1195,6 @@ async function assertCommitTargetUnchanged(target: string, expected: FileIdentit
   }
 }
 
-async function verifyArtifactIdentity(
-  artifact: ValidatedBundleArtifact,
-  filePath: string,
-  requireCanonicalPath: boolean,
-): Promise<FileIdentity> {
-  const before = await regularFileIdentity(filePath);
-  if (before.size !== artifact.size_bytes) {
-    throw new LocalCliError("cli_integrity_error", "Artifact size changed before commit.", {
-      artifactId: artifact.artifact_id,
-    });
-  }
-  if (requireCanonicalPath) {
-    const canonical = await realpath(filePath);
-    const left = path.resolve(canonical);
-    const right = path.resolve(artifact.absolutePath);
-    const samePath = process.platform === "win32"
-      ? left.toLowerCase() === right.toLowerCase()
-      : left === right;
-    if (!samePath) {
-      throw new LocalCliError("cli_integrity_error", "Artifact canonical path changed before commit.", {
-        artifactId: artifact.artifact_id,
-      });
-    }
-  }
-  const digest = await sha256File(filePath, artifact.size_bytes);
-  const after = await regularFileIdentity(filePath);
-  if (!sameFileIdentity(before, after) || digest !== artifact.sha256) {
-    throw new LocalCliError("cli_integrity_error", "Artifact identity changed before commit.", {
-      artifactId: artifact.artifact_id,
-    });
-  }
-  return after;
-}
-
 async function readValidatedArtifactText(
   artifact: ValidatedBundleArtifact,
   limitBytes: number,
@@ -1257,64 +1227,6 @@ async function readValidatedArtifactText(
       cause: errorMessage(error),
     });
   }
-}
-
-async function regularFileIdentity(filePath: string): Promise<FileIdentity> {
-  const value = await lstat(filePath);
-  if (!value.isFile() || value.isSymbolicLink()) {
-    throw new LocalCliError("cli_commit_failed", "Commit paths must be regular non-link files.", { filePath });
-  }
-  return fileIdentity(value);
-}
-
-function fileIdentity(value: { dev: number; ino: number; mtimeMs: number; size: number }): FileIdentity {
-  return {
-    dev: value.dev,
-    ino: value.ino,
-    mtimeMs: value.mtimeMs,
-    size: value.size,
-  };
-}
-
-function sameFileIdentity(left: FileIdentity, right: FileIdentity): boolean {
-  return left.dev === right.dev
-    && left.ino === right.ino
-    && left.size === right.size
-    && left.mtimeMs === right.mtimeMs;
-}
-
-function samePath(left: string, right: string): boolean {
-  const normalizedLeft = path.resolve(left);
-  const normalizedRight = path.resolve(right);
-  return process.platform === "win32"
-    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
-    : normalizedLeft === normalizedRight;
-}
-
-async function sha256File(
-  filePath: string,
-  expectedBytes: number,
-  signal?: AbortSignal,
-): Promise<string> {
-  const hash = createHash("sha256");
-  let bytesRead = 0;
-  throwIfAborted(signal);
-  for await (const chunk of createReadStream(filePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
-    throwIfAborted(signal);
-    bytesRead += chunk.length;
-    if (bytesRead > expectedBytes) {
-      throw new LocalCliError("cli_integrity_error", "File grew while it was being hashed.", { filePath });
-    }
-    hash.update(chunk);
-  }
-  if (bytesRead !== expectedBytes) {
-    throw new LocalCliError("cli_integrity_error", "File size changed while it was being hashed.", { filePath });
-  }
-  return hash.digest("hex");
-}
-
-function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
 }
 
 function objectArray(value: unknown, field: string): JsonObject[] {
@@ -1370,10 +1282,6 @@ function invalidResponse(field: string): LocalCliError {
 
 function inputLimitError(message: string, details: Record<string, unknown>): LocalCliError {
   return new LocalCliError("cli_input_invalid", message, details);
-}
-
-function isErrno(error: unknown, code: string): boolean {
-  return error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === code;
 }
 
 function errorMessage(error: unknown): string {
