@@ -12,7 +12,7 @@ import {
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
 import { getElectronSaveDialog } from "../host/electron-dialogs";
-import { pathExists } from "../host/file-system";
+import { captureExportTarget } from "../host/export-target-snapshot";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
 import { resolveAbsoluteFilePath } from "../host/vault-files";
@@ -137,6 +137,7 @@ export class ExportActions {
       { key: `export:${file.path}`, kind: "export" },
       "noticeExportFailed",
       async ({ signal }) => {
+        const destination = await captureExportTarget(this.app, outputPath, signal);
         await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
@@ -188,9 +189,9 @@ export class ExportActions {
             inputs: taskInputs,
             sourceInput,
             outputPath,
-            overwrite: pathExists(outputPath),
+            overwrite: destination.overwrite,
             capabilityId: route.capabilityId,
-            publish: snapshot.publish,
+            publish: (commit) => snapshot.publish(() => destination.publish(commit)),
           }, signal);
           const output = outcome.output;
           showNotice(t("noticeExportSuccess", { filename: portableBasename(output) }));

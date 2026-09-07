@@ -17,6 +17,12 @@ vi.mock("../src/i18n", () => ({
 }));
 vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.notices.push(message) }));
 vi.mock("../src/host/file-system", () => ({ pathExists: () => false }));
+vi.mock("../src/host/export-target-snapshot", () => ({
+  captureExportTarget: async () => ({
+    overwrite: false,
+    publish: async <T>(commit: () => Promise<T>): Promise<T> => commit(),
+  }),
+}));
 vi.mock("../src/host/vault-files", () => ({ resolveAbsoluteFilePath: () => "D:\\Vault\\note.bin" }));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: vi.fn().mockResolvedValue(true) }));
 vi.mock("../src/host/electron-dialogs", () => ({

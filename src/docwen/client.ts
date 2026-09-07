@@ -434,6 +434,27 @@ type PreparedOutput = {
   temporaryIdentity: FileIdentity;
 };
 
+/** Capture the user-selected destination before conversion or other preparation. */
+export async function captureOutputTarget(outputPath: string, signal?: AbortSignal) {
+  const target = path.resolve(outputPath);
+  const expected = await inspectCommitTarget(target, true);
+  const contentSha256 = expected ? await sha256File(target, expected.size, signal) : null;
+  await assertCommitTargetUnchanged(target, expected);
+  return {
+    existed: expected !== null,
+    contentSha256,
+    async assertCurrent(): Promise<void> {
+      throwIfAborted(signal);
+      await assertCommitTargetUnchanged(target, expected);
+      if (expected && await sha256File(target, expected.size, signal) !== contentSha256) {
+        throw new LocalCliError("cli_commit_failed", "The selected output changed during conversion.");
+      }
+      await assertCommitTargetUnchanged(target, expected);
+      throwIfAborted(signal);
+    },
+  };
+}
+
 export async function atomicCommitBundle(
   bundle: ValidatedArtifactBundle,
   outputPath: string,

@@ -44,6 +44,8 @@ The resolved-document route accepts exactly one preferred DOCX artifact, one pri
 
 ## Vault writes
 
+Export captures the selected destination's identity and content before conversion starts. Its publication guard rechecks the disk snapshot and any uniquely matched open Markdown editor, including unsaved content. A new, removed, changed, or newly opened destination refuses publication; overwrite permission is never inferred again after conversion.
+
 Proofreading only reads a report. Numbering is generated in an isolated file, and `VaultWriteTransaction` compares the original snapshot with the uniquely path-matched Markdown leaf, view, and editor state. It commits once through the Editor or Vault API only when all still match. A second matching view, an open/closed transition, plugin unload, view closure, or a conflict cancels or refuses the write.
 
 ## Lifecycle and resources
