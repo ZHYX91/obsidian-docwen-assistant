@@ -83,15 +83,24 @@
   min-width: 0;
 }
 
+.docwen-settings-panel .setting-item:has(select) {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .docwen-settings-panel .setting-item-control select {
   box-sizing: border-box;
-  inline-size: 15rem;
+  flex: 0 0 100%;
+  inline-size: 100%;
   max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .docwen-settings-panel .setting-item-control:has(select) {
   flex: 0 0 auto;
-  inline-size: 15rem;
+  inline-size: 100%;
+  justify-content: flex-start;
   max-inline-size: 100%;
 }
 
@@ -126,24 +135,15 @@
 }
 
 @container (max-width: 560px) {
-  .docwen-settings-panel .setting-item:has(select, input[type="number"], .docwen-path-input, button):not(:has(.checkbox-container)) {
+  .docwen-settings-panel .setting-item:has(input[type="number"], .docwen-path-input, button):not(:has(.checkbox-container)) {
     align-items: stretch;
     flex-direction: column;
     gap: 12px;
   }
 
-  .docwen-settings-panel .setting-item:has(select, input[type="number"], .docwen-path-input, button):not(:has(.checkbox-container)) .setting-item-control {
+  .docwen-settings-panel .setting-item:has(input[type="number"], .docwen-path-input, button):not(:has(.checkbox-container)) .setting-item-control {
     justify-content: flex-start;
   }
-
-  .docwen-settings-panel .setting-item-control select {
-    flex: 1 1 15rem;
-  }
-
-  .docwen-settings-panel .setting-item-control:has(select) {
-    inline-size: 100%;
-  }
-
 }
 
 .docwen-error-details {
