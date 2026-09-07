@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Clarify subheading/body paragraph merging and its adjacency and ending-punctuation rules in every interface language.
 - Offer direct table export before optional Excel templates, including when no templates are installed.
 
 - Capture output-parent identity before conversion and reject source changes, directory conflicts or open editors inside a new result root before atomic publication.
