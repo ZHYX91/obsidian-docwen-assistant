@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from "../src/settings-model";
 const state = vi.hoisted(() => ({
   notices: [] as string[],
   pickerItems: [] as Array<{ id: string }>,
+  choose: undefined as ((item: { id: string }) => void) | undefined,
 }));
 
 vi.mock("obsidian", () => ({ TFile: class TFile {} }));
@@ -79,8 +80,9 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
 }));
 vi.mock("../src/utils/suggest-modal", () => ({
   ItemPickerModal: class ItemPickerModal {
-    constructor(_app: unknown, items: Array<{ id: string }>) {
+    constructor(_app: unknown, items: Array<{ id: string }>, _placeholder: string, choose: (item: { id: string }) => void) {
       state.pickerItems = items;
+      state.choose = choose;
     }
     open(): void {}
   },
@@ -404,6 +406,7 @@ describe("ExportActions advisory proofreading", () => {
 function resetState(): void {
   state.notices.length = 0;
   state.pickerItems = [];
+  state.choose = undefined;
 }
 
 function advisoryRunner(signal: AbortSignal) {
@@ -445,3 +448,32 @@ function markdownSettings(proofreadOnConvert: boolean) {
     headingNumberingRenderMode: "default",
   };
 }
+
+describe("Excel template choice", () => {
+  beforeEach(resetState);
+
+  it.each(["direct", "template", "empty"])("exports with the %s choice", async (choice) => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const capabilities = advisoryCapabilities(markdownCapability());
+    capabilities.requireConversionRoute.mockReturnValue({ options: ["template_name"] });
+    const docwen = {
+      templates: vi.fn().mockResolvedValue(choice === "empty" ? [] : [{ id: "sheet-template", name: "Sheet template" }]),
+      convert: vi.fn().mockResolvedValue({ output: "note.xlsx", outputs: [], bundleId: "bundle.1" }),
+    };
+    const actions = new ExportActions(
+      {} as never, docwen as never, capabilities as never,
+      () => DEFAULT_SETTINGS, advisoryRunner(new AbortController().signal) as never,
+    );
+    await actions.toXlsx({ path: "note.md", name: "note.md" } as never);
+    if (choice !== "empty") {
+      expect(docwen.convert).not.toHaveBeenCalled();
+      expect(state.pickerItems.map((item) => item.id)).toEqual(["", "sheet-template"]);
+      state.choose!(state.pickerItems[choice === "direct" ? 0 : 1]);
+    }
+    await vi.waitFor(() => expect(docwen.convert).toHaveBeenCalledOnce());
+    const options = docwen.convert.mock.calls[0][0];
+    if (choice === "template") expect(options.template).toBe("sheet-template");
+    else expect(options.template).toBeUndefined();
+    expect(state.notices).not.toContain("noticeNoTemplatesAvailable");
+  });
+});

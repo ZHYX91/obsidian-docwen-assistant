@@ -8,6 +8,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Offer direct table export before optional Excel templates, including when no templates are installed.
+
 - Capture destination identity and open editor content before conversion, and refuse publication if either changes while the task runs.
 - Show a persistent cancelled proofreading status instead of presenting previous results as a completed check.
 - Keep long-note proofreading responsive by constructing semantic inputs only for exports that need them and indexing text positions once per snapshot.

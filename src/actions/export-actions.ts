@@ -73,6 +73,24 @@ export class ExportActions {
           };
         });
         if (selection.kind === "template") {
+          if (target === "xlsx") {
+            if (selection.items.length === 0) {
+              await this.execute(file, target);
+              return;
+            }
+            const direct: PickerItem = { id: "", label: t("pickerNoSpreadsheetTemplate") };
+            new ItemPickerModal(
+              this.app,
+              [direct, ...selection.items.map((item) => ({
+                id: item.id, label: item.name, description: item.description,
+              }))],
+              t("pickerTemplatePlaceholder"),
+              (chosen) => {
+                void this.execute(file, target, chosen === direct ? {} : { template: chosen.id });
+              },
+            ).open();
+            return;
+          }
           if (selection.items.length === 0) {
             showNotice(t("noticeNoTemplatesAvailable"));
             return;

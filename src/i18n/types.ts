@@ -95,6 +95,7 @@ export interface Translations {
 
   // Picker
   pickerTemplatePlaceholder: string;
+  pickerNoSpreadsheetTemplate: string;
   pickerOptimizationPlaceholder: string;
   pickerNoOptimization: string;
   noticeNoTemplatesAvailable: string;
