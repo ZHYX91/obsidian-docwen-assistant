@@ -107,6 +107,24 @@
   gap: 12px;
 }
 
+.docwen-settings-panel .docwen-location-setting .setting-item-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.docwen-settings-panel .docwen-location-setting .docwen-path-input {
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.docwen-settings-panel .docwen-location-setting button {
+  block-size: auto;
+  inline-size: 100%;
+  min-block-size: var(--input-height);
+  white-space: normal;
+}
+
 @container (max-width: 560px) {
   .docwen-settings-panel .setting-item:has(select, input[type="number"], .docwen-path-input, button):not(:has(.checkbox-container)) {
     align-items: stretch;
@@ -126,23 +144,6 @@
     inline-size: 100%;
   }
 
-  .docwen-settings-panel .docwen-location-setting .setting-item-control {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .docwen-settings-panel .docwen-location-setting .docwen-path-input {
-    grid-column: 1 / -1;
-    inline-size: 100%;
-    min-inline-size: 0;
-  }
-
-  .docwen-settings-panel .docwen-location-setting button {
-    block-size: auto;
-    inline-size: 100%;
-    min-block-size: var(--input-height);
-    white-space: normal;
-  }
 }
 
 .docwen-error-details {

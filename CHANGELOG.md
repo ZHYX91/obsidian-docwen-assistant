@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Keep the manual installation path on its own row with two equal-width picker buttons across languages and panel widths.
 - Clarify subheading/body paragraph merging and its adjacency and ending-punctuation rules in every interface language.
 - Offer direct table export before optional Excel templates, including when no templates are installed.
 
