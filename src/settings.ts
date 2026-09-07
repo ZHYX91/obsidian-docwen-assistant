@@ -28,6 +28,7 @@ import {
   renderSettingsSchemaCompatibility,
 } from "./settings-schema-compatibility";
 import { SettingsTabs } from "./settings-tabs";
+import { preserveSettingsView } from "./settings-view-state";
 
 export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
@@ -49,17 +50,19 @@ export class SettingTab extends PluginSettingTab {
   }
 
   override display(): void {
-    this.activePageId = this.tabs?.activePageId ?? this.activePageId;
-    this.destroyPageSurface();
-    this.containerEl.empty();
-    renderSettingsSchemaCompatibility(this.containerEl, this.plugin.getSettingsCompatibility());
-    const pages = this.getSettingsPages();
-    this.tabs = new SettingsTabs({
-      ariaLabel: t("settingsTitle"),
-      containerEl: this.containerEl,
-      initialPageId: this.activePageId,
-      pages,
-      renderPage: (containerEl, page) => this.renderPage(containerEl, page),
+    preserveSettingsView(this.containerEl, () => {
+      this.activePageId = this.tabs?.activePageId ?? this.activePageId;
+      this.destroyPageSurface();
+      this.containerEl.empty();
+      renderSettingsSchemaCompatibility(this.containerEl, this.plugin.getSettingsCompatibility());
+      const pages = this.getSettingsPages();
+      this.tabs = new SettingsTabs({
+        ariaLabel: t("settingsTitle"),
+        containerEl: this.containerEl,
+        initialPageId: this.activePageId,
+        pages,
+        renderPage: (containerEl, page) => this.renderPage(containerEl, page),
+      });
     });
   }
 
@@ -112,16 +115,18 @@ export class SettingTab extends PluginSettingTab {
   private renderPage(containerEl: HTMLElement, page: SettingsPageDefinition): void {
     this.destroyPageSurface();
     ++this.surfaceGeneration;
-    page.items.forEach((item, index) => this.renderDefinition(containerEl, item, index));
+    page.items.forEach((item, index) => this.renderDefinition(containerEl, item, index, page.id));
   }
 
   private renderDefinition(
     containerEl: HTMLElement,
     item: SettingDefinition<SettingsControlKey>,
     index: number,
+    pageId: SettingsPageId,
   ): void {
     if (!evaluate(item.visible, true)) return;
     const setting = new Setting(containerEl).setName(item.name);
+    setting.settingEl.setAttribute("data-docwen-setting-key", `${pageId}:${index}`);
     if (item.desc !== undefined) setting.setDesc(item.desc);
 
     if ("render" in item && item.render) {
@@ -193,9 +198,7 @@ export class SettingTab extends PluginSettingTab {
     if (!this.containerEl.isConnected) return;
     if (key === "language") {
       this.display();
-    } else if (key === "docwenConnectionMode") {
-      this.tabs?.renderActivePage();
-    } else if (key === "extractImages" || key === "enableOcr") {
+    } else if (key === "docwenConnectionMode" || key === "extractImages" || key === "enableOcr") {
       this.tabs?.renderActivePage();
     }
   }

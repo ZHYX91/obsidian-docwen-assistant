@@ -1,4 +1,5 @@
 import type { SettingsPageDefinition, SettingsPageId } from "./settings-definitions";
+import { preserveSettingsView } from "./settings-view-state";
 
 let settingsTabsInstance = 0;
 
@@ -47,10 +48,12 @@ export class SettingsTabs {
   renderActivePage(): void {
     const page = this.options.pages[this.activeIndex];
     if (!page) return;
-    this.panelEl.empty();
-    this.panelEl.id = this.panelId(page.id);
-    this.panelEl.setAttribute("aria-labelledby", this.buttons[this.activeIndex].id);
-    this.options.renderPage(this.panelEl, page);
+    preserveSettingsView(this.panelEl, () => {
+      this.panelEl.empty();
+      this.panelEl.id = this.panelId(page.id);
+      this.panelEl.setAttribute("aria-labelledby", this.buttons[this.activeIndex].id);
+      this.options.renderPage(this.panelEl, page);
+    });
   }
 
   private createTab(page: SettingsPageDefinition, index: number): void {
