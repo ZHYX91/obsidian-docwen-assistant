@@ -109,6 +109,29 @@ describe("ProofreadView", () => {
     });
   });
 
+  it("keeps cancellation distinct from previous successful results until a new result arrives", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const operations = new OperationCoordinator();
+    const view = new ProofreadView({} as never, async () => undefined, operations);
+    await view.onOpen();
+    view.updateResults([], "Proofread.md", "Proofread.md");
+    const lease = operations.begin({ key: "proofread", kind: "proofread" });
+    operations.cancelGeneration(lease.generation);
+    lease.finish();
+    const content = view.containerEl.children[1] as unknown as FakeElement;
+    expect(findByClass(content, "docwen-proofread-status")?.options.text)
+      .toBe("Proofreading cancelled. Run it again to update the results.");
+    const unrelated = operations.begin({ key: "export", kind: "export" });
+    unrelated.finish();
+    expect(findByClass(content, "docwen-proofread-status")?.options.text)
+      .toBe("Proofreading cancelled. Run it again to update the results.");
+    const retry = operations.begin({ key: "proofread", kind: "proofread" });
+    view.updateResults([], "Proofread.md", "Proofread.md");
+    retry.finish();
+    expect(findByClass(content, "docwen-proofread-status")?.options.text).toBe("No issues found");
+  });
+
   it("keeps controls visible while long issue content scrolls and wraps", () => {
     const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 

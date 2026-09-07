@@ -34,6 +34,7 @@ export class ProofreadView extends ItemView {
   private fileName = "";
   private vaultPath = "";
   private activeOperation: OperationItem | null = null;
+  private cancelled = false;
   private unsubscribeOperations: (() => void) | null = null;
 
   constructor(
@@ -74,6 +75,7 @@ export class ProofreadView extends ItemView {
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath?: string): void {
+    this.cancelled = false;
     this.issues = issues;
     this.fileName = fileName;
     this.vaultPath = vaultPath ?? "";
@@ -81,9 +83,12 @@ export class ProofreadView extends ItemView {
   }
 
   private updateOperation(snapshot: OperationSnapshot): void {
+    const previousOperation = this.activeOperation;
     this.activeOperation = [...snapshot.operations]
       .reverse()
       .find(({ kind }) => kind === "proofread") ?? null;
+    if (this.activeOperation) this.cancelled = false;
+    else if (previousOperation?.state === "cancelling") this.cancelled = true;
     this.render();
   }
 
@@ -161,6 +166,15 @@ export class ProofreadView extends ItemView {
           "aria-live": "polite",
           "aria-busy": "true",
         },
+      });
+      return;
+    }
+
+    if (this.cancelled) {
+      container.createDiv({
+        cls: "docwen-proofread-status",
+        text: t("proofreadCancelled"),
+        attr: { role: "status", "aria-live": "polite" },
       });
       return;
     }

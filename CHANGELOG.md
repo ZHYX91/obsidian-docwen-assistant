@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Show a persistent cancelled proofreading status instead of presenting previous results as a completed check.
 - Keep long-note proofreading responsive by constructing semantic inputs only for exports that need them and indexing text positions once per snapshot.
 - Exclude internal layout manifests from user exports so successive Markdown exports can share a destination folder.
 - Preserve the source document name when exporting resolved Markdown to Word.
