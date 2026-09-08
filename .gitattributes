@@ -3,13 +3,22 @@
 # Release inputs and all build-relevant source text must have identical bytes
 # on Windows and Linux.
 *.css text eol=lf
+*.csv text eol=lf
 *.cjs text eol=lf
+*.enex text eol=lf
+*.htm text eol=lf
 *.html text eol=lf
 *.js text eol=lf
 *.json text eol=lf
 *.md text eol=lf
+*.markdown text eol=lf
+*.mht text eol=lf
+*.mhtml text eol=lf
 *.mjs text eol=lf
+*.rtf text eol=lf
 *.ts text eol=lf
+*.tsv text eol=lf
+*.txt text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
 .gitattributes text eol=lf
