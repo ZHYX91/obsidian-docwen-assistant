@@ -9,6 +9,7 @@ import { DocWenClient } from "../src/docwen";
 import {
   atomicCommitBundle,
   INPUT_HANDLE_LIMITS,
+  mediaTypeForPath,
   PROOFREAD_REPORT_LIMIT_BYTES,
 } from "../src/docwen/client";
 import type {
@@ -246,6 +247,20 @@ describe("DocWenClient Machine semantics", () => {
       size_bytes: 7,
       sha256: expect.stringMatching(/^[0-9a-f]{64}$/u),
     });
+  });
+
+  it("uses inspected format for capability matching while declaring the input extension", async () => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "presentation.DOC");
+    await writeFile(input, "fixture");
+    const query = vi.fn().mockResolvedValue(inspection(input, "ppt"));
+    const client = new DocWenClient(machine(query));
+    await expect(client.inspect(input)).resolves.toMatchObject({
+      detectedFormat: "ppt",
+      mediaType: "application/vnd.ms-powerpoint",
+    });
+    expect(query.mock.calls[0]![1].input.media_type).toBe("application/msword");
+    expect(mediaTypeForPath("notes.unknown")).toBe("application/octet-stream");
   });
 
   it("honors cancellation before hashing a local input handle", async () => {

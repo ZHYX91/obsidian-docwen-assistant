@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
@@ -56,6 +56,34 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
       code: "cli_input_invalid",
     });
   });
+
+  it("matches every format fixture to the exact advertised Machine capabilities", async () => {
+    const fixtures = join(import.meta.dirname, "../acceptance/fixtures/Formats");
+    const names = (await readdir(fixtures)).filter((name) => /^\d{2}-/u.test(name)).sort();
+    expect(names).toHaveLength(35);
+    const service = new DocWenCapabilityService(client);
+    const projection = await client.runtimeCapabilities();
+    for (const name of names) {
+      const source = join(root, name);
+      await copyFile(join(fixtures, name), source);
+      const inspection = await client.inspect(source);
+      expect(inspection.mediaType, name).not.toBe("application/octet-stream");
+      const advertised = projection.capabilities.filter((capability) =>
+        capability.availability !== "unavailable"
+        && (capability.input_shape.slots.some((slot) =>
+          slot.role === "source" && slot.media_types.includes(inspection.mediaType))
+          || (inspection.mediaType === "text/markdown" && capability.capability_id === "convert.markdown.to_docx")));
+      if (advertised.length === 0) {
+        await expect(service.forFile(source), name).rejects.toMatchObject({
+          code: "cli_invalid_envelope", details: { mediaType: inspection.mediaType },
+        });
+      } else {
+        const file = await service.forFile(source);
+        expect(file.machineCapabilities.map((item) => item.capability_id), name)
+          .toEqual(advertised.map((item) => item.capability_id));
+      }
+    }
+  }, 120_000);
 
   it("validates a Bundle and commits only the explicit Unicode target", async () => {
     const source = join(root, "输入 空格 #.md");

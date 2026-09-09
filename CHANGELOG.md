@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ### Changed
 
+- Match inspected document formats to their correct media types, including OFD and XPS, when discovering Machine operations.
 - Place dropdowns below their descriptions at a consistent full width, preserving room for translated choices and numbering retry controls.
 - Keep the manual installation path on its own row with two equal-width picker buttons across languages and panel widths.
 - Clarify subheading/body paragraph merging and its adjacency and ending-punctuation rules in every interface language.
