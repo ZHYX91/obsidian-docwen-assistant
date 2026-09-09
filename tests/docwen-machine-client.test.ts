@@ -285,6 +285,22 @@ describe("DocWenMachineClient", () => {
     );
   });
 
+  it("preserves explicitly supplied DocWen profile directories without forwarding unrelated variables", async () => {
+    vi.stubEnv("DOCWEN_CONFIG_DIR", "C:\\Isolated Profile\\config");
+    vi.stubEnv("DOCWEN_LOG_DIR", "C:\\Isolated Profile\\logs");
+    vi.stubEnv("DOCWEN_UNRELATED_SECRET", "must-not-cross-boundary");
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+
+    const environment = spawnMock.mock.calls[0][2].env as NodeJS.ProcessEnv;
+    expect(environment).toMatchObject({
+      DOCWEN_CONFIG_DIR: "C:\\Isolated Profile\\config",
+      DOCWEN_LOG_DIR: "C:\\Isolated Profile\\logs",
+    });
+    expect(environment).not.toHaveProperty("DOCWEN_UNRELATED_SECRET");
+  });
+
   it("preserves only the Linux desktop session variables needed by Machine GUI control", async () => {
     vi.stubEnv("HOME", "/home/tester");
     vi.stubEnv("XDG_RUNTIME_DIR", "/run/user/1000");

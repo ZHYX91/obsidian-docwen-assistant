@@ -1027,6 +1027,9 @@ function boundedEnvironment(): NodeJS.ProcessEnv {
   for (const key of ["SystemRoot", "WINDIR", "COMSPEC", "PATH", "PATHEXT", "TEMP", "TMP", "LANG", "LC_ALL"]) {
     if (process.env[key]) environment[key] = process.env[key];
   }
+  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_LOG_DIR"]) {
+    if (process.env[key]) environment[key] = process.env[key];
+  }
   if (process.platform === "linux") {
     for (const key of [
       "HOME",
