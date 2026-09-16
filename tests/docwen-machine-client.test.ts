@@ -287,6 +287,7 @@ describe("DocWenMachineClient", () => {
 
   it("preserves explicitly supplied DocWen profile directories without forwarding unrelated variables", async () => {
     vi.stubEnv("DOCWEN_CONFIG_DIR", "C:\\Isolated Profile\\config");
+    vi.stubEnv("DOCWEN_DATA_DIR", "C:\\Isolated Profile\\data");
     vi.stubEnv("DOCWEN_LOG_DIR", "C:\\Isolated Profile\\logs");
     vi.stubEnv("DOCWEN_UNRELATED_SECRET", "must-not-cross-boundary");
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
@@ -296,6 +297,7 @@ describe("DocWenMachineClient", () => {
     const environment = spawnMock.mock.calls[0][2].env as NodeJS.ProcessEnv;
     expect(environment).toMatchObject({
       DOCWEN_CONFIG_DIR: "C:\\Isolated Profile\\config",
+      DOCWEN_DATA_DIR: "C:\\Isolated Profile\\data",
       DOCWEN_LOG_DIR: "C:\\Isolated Profile\\logs",
     });
     expect(environment).not.toHaveProperty("DOCWEN_UNRELATED_SECRET");
@@ -430,7 +432,7 @@ describe("DocWenMachineClient", () => {
     expect(child.killed).toBe(true);
   });
 
-  it("fails closed for a wrong server identity or incompatible product version", async () => {
+  it("uses protocol identity for runtime compatibility and exact product identity only for package acceptance", async () => {
     serverState.serverName = "NotDocWen";
     const wrongName = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
     await expect(wrongName.query("health/check", {})).rejects.toMatchObject({
@@ -439,36 +441,35 @@ describe("DocWenMachineClient", () => {
 
     serverState.serverName = "DocWen";
     serverState.serverVersion = "0.9.1";
-    const incompatible = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
-    await expect(incompatible.query("health/check", {})).rejects.toMatchObject({
-      code: "cli_incompatible_version",
-    });
-
-    const pinnedIncompatible = new DocWenMachineClient(
+    const oldProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.10.0",
     );
-    await expect(pinnedIncompatible.query("health/check", {})).rejects.toMatchObject({
-      code: "cli_incompatible_version",
-    });
+    await expect(oldProductWithCurrentProtocol.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
 
-    serverState.serverVersion = "0.10.0-rc.1";
-    const prerelease = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
-    await expect(prerelease.query("health/check", {})).rejects.toMatchObject({
-      code: "cli_incompatible_version",
-    });
+    serverState.serverVersion = "0.12.0";
+    const futureProductWithCurrentProtocol = new DocWenMachineClient(
+      () => "C:\\DocWen\\DocWenCLI.exe",
+      () => "en_US",
+    );
+    await expect(futureProductWithCurrentProtocol.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
 
-    serverState.serverVersion = "0.10.1";
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.10.0",
+      "0.11.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.10.0", actualProductVersion: "0.10.1" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.11.0", actualProductVersion: "0.12.0" }),
     });
+
+    const matchingCandidate = new DocWenMachineClient(
+      () => "C:\\DocWen\\DocWenCLI.exe",
+      () => "en_US",
+      "0.12.0",
+    );
+    await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });
 
   it("fails closed when the Machine server does not declare Bundle v2", async () => {
