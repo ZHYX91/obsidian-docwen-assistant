@@ -22,7 +22,6 @@ const CLEAN_CLOSE_GRACE_MS = 5_000;
 const TERMINATION_GRACE_MS = 1_000;
 const FORCE_KILL_WAIT_MS = 2_000;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const SUPPORTED_DOCWEN_VERSION_PATTERN = /^0\.10\.(?:0|[1-9]\d*)$/u;
 const EXIT_WAIT_EXPIRED = Symbol("exit_wait_expired");
 
 export type DocWenLaunchTarget = {
@@ -267,11 +266,6 @@ class MachineSession {
     const productVersion = requiredString(server.version, "initialize.server.version");
     if (server.name !== "DocWen") {
       throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.");
-    }
-    if (!SUPPORTED_DOCWEN_VERSION_PATTERN.test(productVersion)) {
-      throw new LocalCliError("cli_incompatible_version", "A stable DocWen 0.10.x version is required.", {
-        actualProductVersion: productVersion,
-      });
     }
     if (expectedProductVersion !== undefined && productVersion !== expectedProductVersion) {
       throw new LocalCliError("cli_incompatible_version", "The DocWen product version does not match the expected candidate.", {
@@ -1027,7 +1021,7 @@ function boundedEnvironment(): NodeJS.ProcessEnv {
   for (const key of ["SystemRoot", "WINDIR", "COMSPEC", "PATH", "PATHEXT", "TEMP", "TMP", "LANG", "LC_ALL"]) {
     if (process.env[key]) environment[key] = process.env[key];
   }
-  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_LOG_DIR"]) {
+  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_DATA_DIR", "DOCWEN_LOG_DIR"]) {
     if (process.env[key]) environment[key] = process.env[key];
   }
   if (process.platform === "linux") {
