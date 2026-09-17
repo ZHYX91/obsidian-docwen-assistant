@@ -25,86 +25,52 @@ jobs:
           p = Path('src/docwen/client.ts')
           s = p.read_text(encoding='utf-8')
 
-          old = '''export interface TemplateItem {
+          s = s.replace(
+          '''export interface TemplateItem {
             id: string;
             name: string;
             target: string;
             description?: string;
-          }'''
-          new = '''export interface TemplateItem {
+          }''',
+          '''export interface TemplateItem {
             id: string;
             name: string;
             target: string;
             description?: string;
             origin: "builtin" | "custom";
             isDefault: boolean;
-          }'''
-          assert old in s
-          s = s.replace(old, new, 1)
-
-          old = '''    return resources.map((item) => ({
+          }''', 1)
+          s = s.replace(
+          '''    return resources.map((item) => ({
                 id: requiredStringValue(item.id, "template.id"),
                 name: requiredStringValue(item.name, "template.name"),
                 target: stringValue(item.target),
                 description: stringValue(item.description) || undefined,
-              }));'''
-          new = '''    return resources.map((item) => ({
+              }));''',
+          '''    return resources.map((item) => ({
                 id: requiredStringValue(item.id, "template.id"),
                 name: requiredStringValue(item.name, "template.name"),
                 target: stringValue(item.target),
                 description: stringValue(item.description) || undefined,
                 origin: requiredTemplateOrigin(item.origin),
                 isDefault: item.is_default === true,
-              }));'''
-          assert old in s
-          s = s.replace(old, new, 1)
+              }));''', 1)
 
-          old = '''      try {
-                await rm(stagingRoot, { recursive: true, force: true });
-              } catch (error) {
-                throw new LocalCliError("cli_cleanup_failed", "Unable to remove DocWen task staging.", {
-                  stagingRoot,
-                  cause: errorMessage(error),
-                });
-              }
-              return result;'''
-          new = '''      try {
+          start = s.index('      try {\n        await rm(stagingRoot, { recursive: true, force: true });', s.index('private async withTaskStaging'))
+          end_token = '      return result;'
+          end = s.index(end_token, start) + len(end_token)
+          s = s[:start] + '''      try {
                 await rm(stagingRoot, { recursive: true, force: true });
               } catch (error) {
                 // The business result is already authoritative. A post-publish
                 // cleanup failure must not turn a successful task into a retry.
                 console.warn("DocWen Assistant could not remove completed task staging.", error);
               }
-              return result;'''
-          assert old in s
-          s = s.replace(old, new, 1)
+              return result;''' + s[end:]
 
-          old = '''function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
-            const preferred = preferredArtifact(bundle);
-            const entry = bundle.entries[0];
-            const manifests = bundle.relations.filter((relation) =>
-              relation.type === "resource_of" && relation.role === "manifest"
-              && relation.target_artifact_id === preferred.artifact_id);
-            const manifest = bundle.artifacts.find((artifact) => artifact.artifact_id === manifests[0]?.source_artifact_id);
-            if (
-              bundle.artifacts.length !== 2
-              || bundle.entries.length !== 1
-              || bundle.relations.length !== 1
-              || manifests.length !== 1
-              || manifest?.kind !== "resource"
-              || manifest.media_type !== "application/vnd.docwen.document-node+json"
-              || preferred.kind !== "document"
-              || preferred.media_type !== DOCX_MEDIA_TYPE
-              || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
-              || entry.artifact_id !== preferred.artifact_id
-              || entry.role !== "primary"
-              || entry.ordinal !== 0
-              || entry.preferred !== true
-            ) {
-              throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
-            }
-          }'''
-          new = '''function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
+          start = s.index('function requireSingleDocx(bundle: ValidatedArtifactBundle): void {')
+          end = s.index('\n}\n\n', start) + 2
+          s = s[:start] + '''function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
             const preferred = preferredArtifact(bundle);
             const entry = bundle.entries[0];
             if (
@@ -119,35 +85,23 @@ jobs:
             ) {
               throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
             }
-          }'''
-          assert old in s
-          s = s.replace(old, new, 1)
+          }''' + s[end:]
 
-          marker = '''function preferredSupportedOption(
-          '''
-          insert = '''function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
+          marker = 'function preferredSupportedOption('
+          assert marker in s
+          s = s.replace(marker, '''function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
             if (value === "builtin" || value === "custom") return value;
             throw invalidResponse("template.origin");
           }
 
-          function preferredSupportedOption(
-          '''
-          assert marker in s
-          s = s.replace(marker, insert, 1)
+          function preferredSupportedOption(''', 1)
           p.write_text(s, encoding='utf-8')
 
           p = Path('src/actions/action-runner.ts')
           s = p.read_text(encoding='utf-8')
-          old = '''const TECHNICAL_DETAIL_CODES = new Set([
-            "cli_integrity_error",
-            "cli_invalid_response",'''
-          new = '''const TECHNICAL_DETAIL_CODES = new Set([
-            "cli_incompatible_version",
-            "cli_integrity_error",
-            "cli_invalid_envelope",
-            "cli_invalid_response",'''
-          assert old in s
-          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+          assert '  "cli_integrity_error",\n  "cli_invalid_response",' in s
+          s = s.replace('  "cli_integrity_error",\n  "cli_invalid_response",', '  "cli_incompatible_version",\n  "cli_integrity_error",\n  "cli_invalid_envelope",\n  "cli_invalid_response",', 1)
+          p.write_text(s, encoding='utf-8')
 
           p = Path('tests/action-runner.test.ts')
           s = p.read_text(encoding='utf-8')
@@ -181,9 +135,7 @@ jobs:
       - name: Commit
         shell: bash
         run: |
-          if git diff --quiet; then
-            exit 0
-          fi
+          if git diff --quiet; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/docwen/client.ts src/actions/action-runner.ts tests/action-runner.test.ts
