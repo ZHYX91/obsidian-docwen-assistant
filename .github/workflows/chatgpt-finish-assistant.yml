@@ -1,0 +1,144 @@
+name: chatgpt-finish-assistant
+
+on:
+  push:
+    branches: [fix/docwen-compat-templates-and-profile]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/docwen-compat-templates-and-profile
+          fetch-depth: 0
+      - name: Apply coordinated contract fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('src/docwen/client.ts')
+          s = p.read_text(encoding='utf-8')
+
+          old = '''export interface TemplateItem {
+  id: string;
+  name: string;
+  target: string;
+  description?: string;
+}'''
+          new = '''export interface TemplateItem {
+  id: string;
+  name: string;
+  target: string;
+  description?: string;
+  origin: "builtin" | "custom";
+  isDefault: boolean;
+}'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''    return resources.map((item) => ({
+      id: requiredStringValue(item.id, "template.id"),
+      name: requiredStringValue(item.name, "template.name"),
+      target: stringValue(item.target),
+      description: stringValue(item.description) || undefined,
+    }));'''
+          new = '''    return resources.map((item) => ({
+      id: requiredStringValue(item.id, "template.id"),
+      name: requiredStringValue(item.name, "template.name"),
+      target: stringValue(item.target),
+      description: stringValue(item.description) || undefined,
+      origin: requiredTemplateOrigin(item.origin),
+      isDefault: item.is_default === true,
+    }));'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''      try {
+        await rm(stagingRoot, { recursive: true, force: true });
+      } catch (error) {
+        throw new LocalCliError("cli_cleanup_failed", "Unable to remove DocWen task staging.", {
+          stagingRoot,
+          cause: errorMessage(error),
+        });
+      }
+      return result;'''
+          new = '''      try {
+        await rm(stagingRoot, { recursive: true, force: true });
+      } catch (error) {
+        // The business result is already authoritative. Cleanup failure must
+        // never convert a successful publish into a retryable task failure.
+        console.warn("DocWen Assistant could not remove completed task staging.", error);
+      }
+      return result;'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
+  const preferred = preferredArtifact(bundle);
+  const entry = bundle.entries[0];
+  const manifests = bundle.relations.filter((relation) =>
+    relation.type === "resource_of" && relation.role === "manifest"
+    && relation.target_artifact_id === preferred.artifact_id);
+  const manifest = bundle.artifacts.find((artifact) => artifact.artifact_id === manifests[0]?.source_artifact_id);
+  if (
+    bundle.artifacts.length !== 2
+    || bundle.entries.length !== 1
+    || bundle.relations.length !== 1
+    || manifests.length !== 1
+    || manifest?.kind !== "resource"
+    || manifest.media_type !== "application/vnd.docwen.document-node+json"
+    || preferred.kind !== "document"
+    || preferred.media_type !== DOCX_MEDIA_TYPE
+    || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
+    || entry.artifact_id !== preferred.artifact_id
+    || entry.role !== "primary"
+    || entry.ordinal !== 0
+    || entry.preferred !== true
+  ) {
+    throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
+  }
+}'''
+          new = '''function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
+  const preferred = preferredArtifact(bundle);
+  const entry = bundle.entries[0];
+  if (
+    bundle.entries.length !== 1
+    || preferred.kind !== "document"
+    || preferred.media_type !== DOCX_MEDIA_TYPE
+    || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
+    || entry.artifact_id !== preferred.artifact_id
+    || entry.role !== "primary"
+    || entry.ordinal !== 0
+    || entry.preferred !== true
+  ) {
+    throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
+  }
+}'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          marker = '''function preferredSupportedOption(
+'''
+          insert = '''function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
+  if (value === "builtin" || value === "custom") return value;
+  throw invalidResponse("template.origin");
+}
+
+''' + marker
+          assert marker in s
+          s = s.replace(marker, insert, 1)
+
+          p.write_text(s, encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/docwen/client.ts
+          git diff --cached --check
+          git commit -m "fix: consume template metadata and cleaned bundle contract"
+          git push origin HEAD:fix/docwen-compat-templates-and-profile
