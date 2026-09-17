@@ -26,7 +26,9 @@ const SETUP_ERROR_CODES = new Set([
 ]);
 
 const TECHNICAL_DETAIL_CODES = new Set([
+  "cli_incompatible_version",
   "cli_integrity_error",
+  "cli_invalid_envelope",
   "cli_invalid_response",
   "cli_machine_protocol_error",
   "cli_protocol_error",

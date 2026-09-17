@@ -76,9 +76,9 @@ describe("ActionRunner", () => {
       "cli_incompatible_version", "A stable DocWen 0.10.x version is required.",
       { actualProductVersion: "0.9.0" },
     ));
-    expect(state.notices[0]).toContain("版本不兼容");
-    expect(state.notices[0]).not.toContain("A stable");
-    expect(state.modals[0].contentEl.children[0].text).toContain("请更新 DocWen");
+    expect(state.notices).toHaveLength(0);
+    expect(state.modals).toHaveLength(1);
+    expect(state.modals[0].contentEl.children[0].text).toContain("版本不兼容");
     expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
     expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
   });
@@ -97,7 +97,8 @@ describe("ActionRunner", () => {
       new LocalCliError("cli_invalid_envelope", "Invalid response", { reason: "bad" }),
     );
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
+    expect(state.modals).toHaveLength(1);
     expect(state.copied).toHaveLength(0);
     const button = state.modals[0].contentEl.children.at(-1);
     button?.listeners.get("click")?.();
@@ -133,7 +134,7 @@ describe("ActionRunner", () => {
       });
     });
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
   });
 
@@ -182,7 +183,7 @@ describe("ActionRunner", () => {
       new LocalCliError("cli_invalid_envelope", "Invalid response"),
     );
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
     expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
     expect(allText(state.modals[0].contentEl)).toContain("Invalid response");
