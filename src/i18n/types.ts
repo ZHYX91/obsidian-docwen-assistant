@@ -74,6 +74,8 @@ export interface Translations {
   dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
+  errorDocWenInternal: string;
+  errorCapabilityUnavailable: string;
   errorContentConflict: string;
   errorOperationTimeout: string;
   dialogDocWenSetupTitle: string;
