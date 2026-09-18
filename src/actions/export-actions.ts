@@ -228,8 +228,8 @@ export class ExportActions {
 }
 
 function templatePickerItem(item: TemplateItem): PickerItem {
-  const origin = item.origin === "builtin" ? "Built-in" : "Custom";
-  const status = item.isDefault ? `${origin} · Default` : origin;
+  const origin = item.origin === "builtin" ? t("pickerTemplateBuiltin") : t("pickerTemplateCustom");
+  const status = item.isDefault ? `${origin} · ${t("pickerTemplateDefault")}` : origin;
   return {
     id: item.id,
     label: item.isDefault ? `★ ${item.name}` : item.name,
