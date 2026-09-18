@@ -176,13 +176,28 @@ describe("DocWenClient Machine semantics", () => {
       .mockResolvedValueOnce({ state: "opened" })
       .mockResolvedValueOnce({
         kind: "templates",
-        resources: [{ id: "template.1", name: "Standard", target: "docx" }],
+        resources: [
+          {
+            id: "template.1",
+            name: "Standard",
+            target: "docx",
+            origin: "builtin",
+            is_default: true,
+          },
+        ],
       });
     const client = new DocWenClient(machine(query));
 
     await client.guiOpen("D:\\Vault\\note.md");
     await expect(client.templates("docx")).resolves.toEqual([
-      { id: "template.1", name: "Standard", target: "docx", description: undefined },
+      {
+        id: "template.1",
+        name: "Standard",
+        target: "docx",
+        description: undefined,
+        origin: "builtin",
+        isDefault: true,
+      },
     ]);
     expect(query.mock.calls).toEqual([
       ["gui/open", { timeout_seconds: 10, file_path: "D:\\Vault\\note.md" }, undefined],

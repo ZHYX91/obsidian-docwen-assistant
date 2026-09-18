@@ -8,6 +8,7 @@ import {
   type DocWenClient,
   type DocWenCapabilityService,
   type TaskInput,
+  type TemplateItem,
   LocalCliError,
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
@@ -81,9 +82,7 @@ export class ExportActions {
             const direct: PickerItem = { id: "", label: t("pickerNoSpreadsheetTemplate") };
             new ItemPickerModal(
               this.app,
-              [direct, ...selection.items.map((item) => ({
-                id: item.id, label: item.name, description: item.description,
-              }))],
+              [direct, ...selection.items.map(templatePickerItem)],
               t("pickerTemplatePlaceholder"),
               (chosen) => {
                 void this.execute(file, target, chosen === direct ? {} : { template: chosen.id });
@@ -95,7 +94,7 @@ export class ExportActions {
             showNotice(t("noticeNoTemplatesAvailable"));
             return;
           }
-          this.openPicker(selection.items, t("pickerTemplatePlaceholder"), (template) => {
+          this.openTemplatePicker(selection.items, (template) => {
             void this.execute(file, target, { template: template.id });
           });
           return;
@@ -122,15 +121,11 @@ export class ExportActions {
     );
   }
 
-  private openPicker(
-    items: Array<{ id: string; name: string; description?: string }>,
-    placeholder: string,
-    select: (item: { id: string }) => void,
-  ): void {
+  private openTemplatePicker(items: TemplateItem[], select: (item: { id: string }) => void): void {
     new ItemPickerModal(
       this.app,
-      items.map((item) => ({ id: item.id, label: item.name, description: item.description })),
-      placeholder,
+      items.map(templatePickerItem),
+      t("pickerTemplatePlaceholder"),
       select,
     ).open();
   }
@@ -140,21 +135,17 @@ export class ExportActions {
     target: ConvertTarget,
     selected: Pick<ConvertOptions, "template" | "optimization"> = {},
   ): Promise<void> {
-    const filePath = resolveAbsoluteFilePath(this.app.vault, file);
-    if (!filePath) {
-      this.runner.presentFailure(
-        "noticeExportFailed",
-        new LocalCliError("cli_not_file", "The selected Vault file has no local filesystem path."),
-      );
-      return;
-    }
-    const outputDirectory = await pickExportOutput(filePath, target);
-    if (!outputDirectory) return;
-
     await this.runner.run(
       { key: `export:${file.path}`, kind: "export" },
       "noticeExportFailed",
       async ({ signal }) => {
+        const filePath = resolveAbsoluteFilePath(this.app.vault, file);
+        if (!filePath) {
+          throw new LocalCliError("cli_not_file", "The selected Vault file has no local filesystem path.");
+        }
+        const outputDirectory = await pickExportOutput(filePath, target);
+        if (!outputDirectory) return;
+
         const destination = await captureExportTarget(this.app, outputDirectory, signal);
         await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
@@ -210,8 +201,7 @@ export class ExportActions {
             capabilityId: route.capabilityId,
             publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
           }, signal);
-          const output = outcome.output;
-          showNotice(t("noticeExportSuccess", { filename: portableBasename(output) }));
+          showNotice(t("noticeExportSuccess", { filename: portableBasename(outcome.output) }));
         });
       },
     );
@@ -235,6 +225,16 @@ export class ExportActions {
       this.runner.presentFailure("noticeProofreadFailed", error);
     }
   }
+}
+
+function templatePickerItem(item: TemplateItem): PickerItem {
+  const origin = item.origin === "builtin" ? t("pickerTemplateBuiltin") : t("pickerTemplateCustom");
+  const status = item.isDefault ? `${origin} · ${t("pickerTemplateDefault")}` : origin;
+  return {
+    id: item.id,
+    label: item.isDefault ? `★ ${item.name}` : item.name,
+    description: item.description ? `${status} · ${item.description}` : status,
+  };
 }
 
 function portableBasename(filePath: string): string {

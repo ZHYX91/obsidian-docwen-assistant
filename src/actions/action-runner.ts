@@ -15,6 +15,26 @@ type FailureNoticeKey = {
   [K in keyof Translations]: K extends `notice${string}Failed` ? K : never;
 }[keyof Translations];
 
+const SETUP_ERROR_CODES = new Set([
+  "cli_path_not_configured",
+  "cli_alias_not_found",
+  "cli_platform_unsupported",
+  "cli_not_found",
+  "cli_not_file",
+  "cli_not_executable",
+  "cli_wrong_filename",
+]);
+
+const TECHNICAL_DETAIL_CODES = new Set([
+  "cli_incompatible_version",
+  "cli_integrity_error",
+  "cli_invalid_envelope",
+  "cli_invalid_response",
+  "cli_machine_protocol_error",
+  "cli_protocol_error",
+  "cli_cleanup_failed",
+]);
+
 export class ActionRunner {
   constructor(
     private readonly app: App,
@@ -27,35 +47,38 @@ export class ActionRunner {
     failureNotice: FailureNoticeKey,
     work: (lease: OperationLease) => Promise<T>,
   ): Promise<T | undefined> {
-    const lease = this.operations.begin(operation);
+    let lease: OperationLease | null = null;
     try {
+      lease = this.operations.begin(operation);
       const result = await work(lease);
       return lease.isCurrent() ? result : undefined;
     } catch (error) {
       if (!isCancellationError(error)) this.presentFailure(failureNotice, error);
       return undefined;
     } finally {
-      lease.finish();
+      lease?.finish();
     }
   }
 
   presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
-    if ([
-      "cli_path_not_configured",
-      "cli_alias_not_found",
-      "cli_platform_unsupported",
-      "cli_not_found",
-      "cli_not_file",
-      "cli_not_executable",
-      "cli_wrong_filename",
-    ].includes(getLocalErrorCode(error) ?? "")) {
+    const code = getLocalErrorCode(error) ?? "";
+    if (SETUP_ERROR_CODES.has(code)) {
       new DocWenSetupModal(this.app, this.openSettings).open();
       return;
     }
+
     const summary = getErrorMessage(error);
-    showNotice(t(failureNotice, { error: summary }));
+    const notice = t(failureNotice, { error: summary });
+    const showTechnicalDetails = code === "" || TECHNICAL_DETAIL_CODES.has(code);
+    if (!showTechnicalDetails) {
+      showNotice(notice);
+      return;
+    }
+
+    // Internal/protocol failures get one detailed surface instead of a notice
+    // immediately followed by a second modal for the same event.
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
-    new FailureDetailsModal(this.app, summary, detailsText).open();
+    new FailureDetailsModal(this.app, notice, detailsText).open();
   }
 }
 

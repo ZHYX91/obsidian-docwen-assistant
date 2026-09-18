@@ -111,6 +111,8 @@ export interface TemplateItem {
   name: string;
   target: string;
   description?: string;
+  origin: "builtin" | "custom";
+  isDefault: boolean;
 }
 
 export interface OptimizationItem {
@@ -264,6 +266,8 @@ export class DocWenClient {
       name: requiredStringValue(item.name, "template.name"),
       target: stringValue(item.target),
       description: stringValue(item.description) || undefined,
+      origin: requiredTemplateOrigin(item.origin),
+      isDefault: item.is_default === true,
     }));
   }
 
@@ -415,14 +419,13 @@ export class DocWenClient {
       const result = await body(stagingRoot);
       bodyCompleted = true;
       try {
-        await rm(stagingRoot, { recursive: true, force: true });
-      } catch (error) {
-        throw new LocalCliError("cli_cleanup_failed", "Unable to remove DocWen task staging.", {
-          stagingRoot,
-          cause: errorMessage(error),
-        });
-      }
-      return result;
+      await rm(stagingRoot, { recursive: true, force: true });
+    } catch (error) {
+      // The business result is already authoritative. A post-publish
+      // cleanup failure must not turn a successful task into a retry.
+      console.warn("DocWen Assistant could not remove completed task staging.", error);
+    }
+    return result;
     } catch (error) {
       if (!bodyCompleted) await rm(stagingRoot, { recursive: true, force: true }).catch(() => undefined);
       throw error;
@@ -890,6 +893,11 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
   return options;
 }
 
+function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
+  if (value === "builtin" || value === "custom") return value;
+  throw invalidResponse("template.origin");
+}
+
 function preferredSupportedOption(
   supported: ReadonlySet<string> | null,
   candidates: readonly string[],
@@ -922,17 +930,8 @@ function proofreadOptions(checks: readonly ProofreadCheck[]): JsonObject {
 function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
   const preferred = preferredArtifact(bundle);
   const entry = bundle.entries[0];
-  const manifests = bundle.relations.filter((relation) =>
-    relation.type === "resource_of" && relation.role === "manifest"
-    && relation.target_artifact_id === preferred.artifact_id);
-  const manifest = bundle.artifacts.find((artifact) => artifact.artifact_id === manifests[0]?.source_artifact_id);
   if (
-    bundle.artifacts.length !== 2
-    || bundle.entries.length !== 1
-    || bundle.relations.length !== 1
-    || manifests.length !== 1
-    || manifest?.kind !== "resource"
-    || manifest.media_type !== "application/vnd.docwen.document-node+json"
+    bundle.entries.length !== 1
     || preferred.kind !== "document"
     || preferred.media_type !== DOCX_MEDIA_TYPE
     || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])

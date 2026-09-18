@@ -4,6 +4,14 @@ import { t } from "../i18n";
 
 export function getErrorMessage(error: unknown): string {
   const code = getLocalErrorCode(error);
+  if (error instanceof RemoteMachineError) {
+    if (error.category === "internal") return t("errorDocWenInternal");
+    if (["unsupported", "unavailable", "dependency"].includes(error.category)) {
+      return t("errorCapabilityUnavailable");
+    }
+    if (error.category === "timeout") return t("errorOperationTimeout");
+    if (error.category === "conflict") return t("errorContentConflict");
+  }
   if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
   if (code === "cli_timeout") return t("errorOperationTimeout");

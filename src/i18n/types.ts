@@ -74,6 +74,8 @@ export interface Translations {
   dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
+  errorDocWenInternal: string;
+  errorCapabilityUnavailable: string;
   errorContentConflict: string;
   errorOperationTimeout: string;
   dialogDocWenSetupTitle: string;
@@ -96,6 +98,9 @@ export interface Translations {
 
   // Picker
   pickerTemplatePlaceholder: string;
+  pickerTemplateBuiltin: string;
+  pickerTemplateCustom: string;
+  pickerTemplateDefault: string;
   pickerNoSpreadsheetTemplate: string;
   pickerOptimizationPlaceholder: string;
   pickerNoOptimization: string;
