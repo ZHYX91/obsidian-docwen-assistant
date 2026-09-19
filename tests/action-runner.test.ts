@@ -165,6 +165,62 @@ describe("ActionRunner", () => {
     expect(button?.text).toBe("Copied");
   });
 
+  it("uses one redacted snapshot for preview and copying without serializing private details", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const secret = "private-note token-example /home/user/notes/private.md";
+    const details: Record<string, unknown> = {
+      outputState: "unconfirmed", actualProductVersion: "0.11.0", expectedProductVersion: "0.12.0",
+      exitCode: 7, timeoutMs: 2500, primaryCode: "cli_cancelled",
+      path: "C:\\private\\note.md", stdout: secret, stderr: secret,
+      cause: secret, config: { password: secret }, command: ["DocWenCLI", secret],
+    };
+    details.cycle = details;
+    Object.defineProperty(details, "maxBytes", { get: () => { throw new Error(secret); } });
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure(
+      "noticeDoctorFailed", new LocalCliError("cli_protocol_error", secret, details),
+    );
+    expect(state.modals).toHaveLength(1);
+    const preview = allText(state.modals[0].contentEl);
+    expect(preview).not.toContain(secret);
+    expect(preview).not.toContain("private");
+    expect(preview).toContain("local paths and credentials are omitted");
+    expect(state.copied).toHaveLength(0);
+    state.modals[0].contentEl.children.at(-1)?.listeners.get("click")?.();
+    await vi.waitFor(() => expect(state.copied).toHaveLength(1));
+    const copied = JSON.parse(state.copied[0]);
+    expect(copied).toMatchObject({ redacted: true, code: "cli_protocol_error", details: {
+      outputState: "unconfirmed", actualProductVersion: "0.11.0", expectedProductVersion: "0.12.0",
+      exitCode: 7, timeoutMs: 2500, primaryCode: "cli_cancelled",
+    } });
+    expect(Object.keys(copied.details)).toHaveLength(6);
+    expect(state.copied[0]).not.toContain(secret);
+    expect(details.cause).toBe(secret);
+  });
+
+  it("offers diagnostics for ordinary failures from the existing notice", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure(
+      "noticeExportFailed", new LocalCliError("cli_input_invalid", "private document contents"),
+    );
+    expect(state.notices).toHaveLength(1);
+    expect(state.modals).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("cli_input_invalid");
+    expect(allText(state.modals[0].contentEl)).not.toContain("private document contents");
+  });
+
+  it("does not stringify unknown thrown values", async () => {
+    const { getErrorDiagnostics } = await import("../src/actions/action-errors");
+    const throwing = { toString: () => { throw new Error("must not serialize"); } };
+    expect(getErrorDiagnostics(throwing)).toMatchObject({ code: "", redacted: true, details: {} });
+    expect(JSON.stringify(getErrorDiagnostics("private note text"))).not.toContain("private note text");
+  });
+
   it("suppresses user-facing failures for cancelled operations", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
@@ -229,7 +285,7 @@ describe("ActionRunner", () => {
     expect(allText(state.modals[0].contentEl)).toContain("portable ZIP");
   });
 
-  it("preserves an error code and message even without extra diagnostic fields", async () => {
+  it("preserves the error code and localized summary without raw exception text", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
@@ -245,7 +301,8 @@ describe("ActionRunner", () => {
     expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
     expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
-    expect(allText(state.modals[0].contentEl)).toContain("Invalid response");
+    expect(allText(state.modals[0].contentEl)).not.toContain("Invalid response");
+    expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
   });
 });
 

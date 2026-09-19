@@ -72,23 +72,17 @@ export class ActionRunner {
 
     const summary = getErrorMessage(error);
     const notice = t(failureNotice, { error: summary });
-    const warnings = getFailureWarnings(error);
-    if (warnings.length > 0) {
-      const details = JSON.stringify(getErrorDiagnostics(error), null, 2);
-      showNoticeWithAction(notice, t("dialogDetails"), () => {
-        new OperationDetailsModal(this.app, notice, details).open();
-      });
-      return;
-    }
+    const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
     const showTechnicalDetails = code === "" || TECHNICAL_DETAIL_CODES.has(code);
-    if (!showTechnicalDetails) {
-      showNotice(notice);
+    if (getFailureWarnings(error).length > 0 || !showTechnicalDetails) {
+      showNoticeWithAction(notice, t("dialogDetails"), () => {
+        new OperationDetailsModal(this.app, notice, detailsText).open();
+      });
       return;
     }
 
     // Internal/protocol failures get one detailed surface instead of a notice
     // immediately followed by a second modal for the same event.
-    const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
     new OperationDetailsModal(this.app, notice, detailsText).open();
   }
 
@@ -162,6 +156,7 @@ class OperationDetailsModal extends Modal {
     this.contentEl.createEl("p", { text: this.summary });
     const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
     details.createEl("summary", { text: t("dialogDetails") });
+    details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
     details.createEl("pre", { text: this.detailsText });
     const copy = this.contentEl.createEl("button", {
       text: t("dialogCopyDetails"),

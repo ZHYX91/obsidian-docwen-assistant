@@ -3,6 +3,7 @@ export interface Translations {
   noticeCompletedWithWarnings: string;
   noticeCleanupWarning: string;
   errorOutputUnconfirmed: string;
+  dialogDiagnosticsPrivacy: string;
   dialogContinue: string;
   dialogDetectedFormat: string;
   // Ribbon & Commands

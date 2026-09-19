@@ -2,6 +2,7 @@ import { LocalCliError, RemoteMachineError } from "../docwen";
 import { getFailureWarnings } from "../docwen/operation-outcome";
 import { VaultWriteError } from "../host/vault-write-transaction";
 import { t } from "../i18n";
+import { diagnosticCode, diagnosticDetails } from "./diagnostic-details";
 
 export function getErrorMessage(error: unknown): string {
   const code = getLocalErrorCode(error);
@@ -28,9 +29,10 @@ export function getErrorMessage(error: unknown): string {
 
 export function getErrorDiagnostics(error: unknown): Record<string, unknown> {
   return {
-    code: getLocalErrorCode(error),
-    message: error instanceof Error ? error.message : String(error),
-    details: getErrorDetails(error),
+    redacted: true,
+    code: diagnosticCode(getLocalErrorCode(error)),
+    message: getErrorMessage(error),
+    details: diagnosticDetails(getErrorDetails(error)),
     warnings: getFailureWarnings(error),
   };
 }
