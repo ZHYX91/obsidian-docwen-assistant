@@ -40,7 +40,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 - 需要 Windows 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
 - 需要 Microsoft Store 安裝版或完整解壓縮的 ZIP 可攜版 DocWen 0.10.x；外掛不會自動下載 DocWen；
-- 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v2`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
+- 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 
 預設的自動偵測使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。ZIP 可攜版使用者可切換到手動安裝並選擇解壓縮後的 DocWen 資料夾。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
 

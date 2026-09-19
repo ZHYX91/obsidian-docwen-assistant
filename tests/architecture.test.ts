@@ -62,7 +62,7 @@ describe("architecture boundaries", () => {
     expect(machine).toContain('process.kill(-pid, force ? "SIGKILL" : "SIGTERM")');
     expect(machine).toContain('detached: process.platform !== "win32"');
     expect(machine).toContain("ARTIFACT_BUNDLE_LIMITS");
-    expect(machine).toContain('"docwen.artifact_bundle.v2"');
+    expect(machine).toContain('"docwen.artifact_bundle.v3"');
     expect(machine).not.toContain('shell: true');
     expect(client).toContain("await link(item.temporary, item.target)");
     expect(client).not.toContain("await rename(item.temporary, item.target)");

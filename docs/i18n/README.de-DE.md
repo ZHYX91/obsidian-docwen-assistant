@@ -36,7 +36,7 @@ Die Erweiterung öffnet Dateien in DocWen, exportiert Word/Excel/Markdown mit ei
 
 - Windows und Obsidian 1.12.7 oder neuer; das Plugin ist nur für den Desktop verfügbar.
 - Ein vollständig entpacktes Windows-Komplettpaket einer stabilen DocWen-Version der Reihe 0.10.x; das Plugin lädt DocWen nicht automatisch herunter.
-- Das Plugin benötigt `docwen.machine.v2` und `docwen.artifact_bundle.v2`; eine inkompatible DocWen-Version wird abgelehnt, statt ein anderes Protokoll zu verwenden.
+- Das Plugin benötigt `docwen.machine.v2` und `docwen.artifact_bundle.v3`; eine inkompatible DocWen-Version wird abgelehnt, statt ein anderes Protokoll zu verwenden.
 
 Die automatische Erkennung verwendet standardmäßig den registrierten Alias `docwen.exe` und bleibt bei Microsoft-Store-Updates stabil. Für die portable ZIP-Version können Sie zur manuellen Installation wechseln und den entpackten DocWen-Ordner auswählen. Das Plugin durchsucht weder `WindowsApps` noch beliebige Ordner und lädt keine Software automatisch herunter.
 

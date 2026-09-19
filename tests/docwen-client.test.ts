@@ -67,7 +67,7 @@ function bundleFor(
   bytes = Buffer.from("fixture"),
 ): ValidatedArtifactBundle {
   return {
-    schema: "docwen.artifact_bundle.v2",
+    schema: "docwen.artifact_bundle.v3",
     bundle_id: "bundle.1",
     task_id: taskId,
     producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
@@ -119,7 +119,7 @@ function bundleWithRelated(
   relatedBytes: Buffer,
 ): ValidatedArtifactBundle {
   return {
-    schema: "docwen.artifact_bundle.v2",
+    schema: "docwen.artifact_bundle.v3",
     bundle_id: "bundle.related",
     task_id: "task.related",
     producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },

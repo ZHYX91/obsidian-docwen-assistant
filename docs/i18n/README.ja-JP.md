@@ -36,7 +36,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 
 - Windows と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
 - 完全に展開した安定版 DocWen 0.10.x の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
-- プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v2` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
+- プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 
 既定の自動検出は登録済みの `docwen.exe` エイリアスを使用し、Microsoft Store の更新後も有効です。ポータブル ZIP では手動インストールに切り替え、展開した DocWen フォルダーを選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
 

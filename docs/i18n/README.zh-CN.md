@@ -40,7 +40,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 - 需要 Windows 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
 - 需要 Microsoft Store 安装版或完整解压的 ZIP 便携版 DocWen 0.10.x，插件不会自动下载 DocWen；
-- 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v2`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
+- 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
 
 插件默认通过系统注册的 `docwen.exe` 执行别名自动连接，因此 Microsoft Store 更新不会导致保存的程序路径失效。ZIP 便携版用户可以切换到“手动安装”，再选择解压后的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`。插件不会扫描 `WindowsApps`、递归搜索程序、写命令文件、自动下载软件或降级到旧协议。
 

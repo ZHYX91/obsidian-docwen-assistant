@@ -25,7 +25,7 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     stderrOverflow: false,
     taskAccepted: false,
     bundleVersion: "0.10.0",
-    artifactBundleSchema: "docwen.artifact_bundle.v2",
+    artifactBundleSchema: "docwen.artifact_bundle.v3",
     protocolMajor: 2,
     protocolMinor: 0,
     rejectInitialize: false,
@@ -75,7 +75,7 @@ function bundle(
   relations: JsonObject[] = [],
 ): JsonObject {
   return {
-    schema: "docwen.artifact_bundle.v2",
+    schema: "docwen.artifact_bundle.v3",
     bundle_id: "bundle.graph",
     task_id: "task.graph",
     producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
@@ -185,7 +185,7 @@ class FakeChild extends EventEmitter {
       queueMicrotask(() => this.notify("task/completed", {
         task_id: "task.1",
         bundle: {
-          schema: "docwen.artifact_bundle.v2",
+          schema: "docwen.artifact_bundle.v3",
           bundle_id: "bundle.1",
           task_id: "task.1",
           producer: {
@@ -245,7 +245,7 @@ describe("DocWenMachineClient", () => {
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
     serverState.bundleVersion = "0.10.0";
-    serverState.artifactBundleSchema = "docwen.artifact_bundle.v2";
+    serverState.artifactBundleSchema = "docwen.artifact_bundle.v3";
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
     serverState.rejectInitialize = false;
@@ -500,7 +500,7 @@ describe("DocWenMachineClient", () => {
     await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });
 
-  it("fails closed when the Machine server does not declare Bundle v2", async () => {
+  it("fails closed when the Machine server does not declare Bundle v3", async () => {
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v1";
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
@@ -625,7 +625,7 @@ describe("DocWenMachineClient", () => {
     }
   });
 
-  it("accepts Artifact Bundle v2 logical paths and rejects unsafe paths", async () => {
+  it("accepts Artifact Bundle v3 logical paths and rejects unsafe paths", async () => {
     const root = await temporaryRoot();
     const bytes = Buffer.from("# output\n", "utf8");
     writeFileSync(path.join(root, "output.md"), bytes);
@@ -638,7 +638,7 @@ describe("DocWenMachineClient", () => {
       "task.graph",
       "0.10.0",
     )).resolves.toMatchObject({
-      schema: "docwen.artifact_bundle.v2",
+      schema: "docwen.artifact_bundle.v3",
       layout_schema: "docwen.artifact_layout.v1",
       artifacts: [{ logical_path: "output/output.md" }],
     });
@@ -677,7 +677,7 @@ describe("DocWenMachineClient", () => {
       root,
       "task.graph",
       "0.10.0",
-    )).resolves.toMatchObject({ schema: "docwen.artifact_bundle.v2" });
+    )).resolves.toMatchObject({ schema: "docwen.artifact_bundle.v3" });
 
     await expect(validateArtifactBundle(
       { ...bundle([document, manifest], [entry], [relation]), schema: "docwen.artifact_bundle.v1" },

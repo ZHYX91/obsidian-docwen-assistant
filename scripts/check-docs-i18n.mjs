@@ -13,7 +13,7 @@ const REQUIRED_TOKENS = Object.freeze({
   "product-requirements": { shared: [
     "DocWen Assistant",
     "docwen.machine.v2",
-    "docwen.artifact_bundle.v2",
+    "docwen.artifact_bundle.v3",
     "Windows",
     "Obsidian 1.12.7",
     "DocWen 0.10.x",

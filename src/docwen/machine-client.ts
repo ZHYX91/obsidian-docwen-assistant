@@ -111,7 +111,7 @@ export type ValidatedBundleArtifact = {
 };
 
 export type ValidatedArtifactBundle = {
-  schema: "docwen.artifact_bundle.v2";
+  schema: "docwen.artifact_bundle.v3";
   bundle_id: string;
   task_id: string;
   producer: {
@@ -260,8 +260,8 @@ class MachineSession {
     if (protocol.name !== "docwen.machine" || protocol.major !== 2 || protocol.minor !== 0) {
       throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol v2 is required.");
     }
-    if (result.artifact_bundle_schema !== "docwen.artifact_bundle.v2") {
-      throw new LocalCliError("cli_incompatible_version", "Artifact Bundle v2 is required.");
+    if (result.artifact_bundle_schema !== "docwen.artifact_bundle.v3") {
+      throw new LocalCliError("cli_incompatible_version", "Artifact Bundle v3 is required.");
     }
     const server = requiredObject(result.server, "initialize.server");
     const productVersion = requiredString(server.version, "initialize.server.version");
@@ -618,7 +618,7 @@ export async function validateArtifactBundle(
   assertActive?.();
   const bundle = requiredObject(value, "bundle");
   if (
-    bundle.schema !== "docwen.artifact_bundle.v2"
+    bundle.schema !== "docwen.artifact_bundle.v3"
     || bundle.task_id !== taskId
   ) {
     throw integrityError("Artifact Bundle schema or task identity is invalid.");

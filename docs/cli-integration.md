@@ -1,6 +1,6 @@
 # Machine integration contract
 
-DocWen Assistant consumes `docwen.machine.v2` and Artifact Bundle v2 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
+DocWen Assistant consumes `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
 
 ## Process boundary
 

@@ -36,7 +36,7 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 
 - Windows와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
 - 완전히 압축 해제한 안정적인 DocWen 0.10.x Windows 전체 패키지. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
-- 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v2`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
+- 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 
 기본 자동 감지는 등록된 `docwen.exe` 별칭을 사용하며 Microsoft Store 업데이트 후에도 유지됩니다. 휴대용 ZIP은 수동 설치로 전환해 압축을 푼 DocWen 폴더를 선택합니다. `WindowsApps`나 임의 폴더를 검색하지 않으며 소프트웨어를 자동 다운로드하지 않습니다.
 
