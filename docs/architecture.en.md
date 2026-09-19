@@ -14,7 +14,9 @@ translation_status: synced
 
 ## DocWen process boundary
 
-Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v2, server identity, and a stable 0.10.x product version.
+The child inherits the platform profile-directory variables and explicit `DOCWEN_DATA_DIR`, `DOCWEN_CONFIG_DIR`, `DOCWEN_LOG_DIR` and truthy `DOCWEN_LOG_TO_TEMP` within a bounded environment. DATA selects a whole profile; CONFIG and LOG are component overrides. Relative selectors resolve against the parent working directory before spawning. Unrelated variables and credentials are excluded.
+
+Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine Protocol 2.0, Artifact Bundle v3 and server identity. Product versions are bound to their session and separately pinned for candidate acceptance.
 
 ## Request data flow
 
@@ -38,7 +40,7 @@ text is never used to guess a number.
 
 DocWen writes only to a request-owned staging directory. Assistant validates Bundle v3 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory is prepared beside the chosen parent and published in one directory rename. Ordinary conversion requires no node JSON; sizes, hashes and relations come from the validated Bundle. Existing result roots are rejected. The UI lists business outputs and excludes bound layout manifests and image resources from its output count.
 
-Resolved Markdown-to-DOCX contains one preferred DOCX, one primary entry and one manifest resource bound through `resource_of`. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
+Resolved Markdown-to-DOCX contains one preferred DOCX and one primary entry with size and SHA-256 in the validated Bundle. Ordinary conversion does not require a node JSON. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
 
 ## Vault writes
 

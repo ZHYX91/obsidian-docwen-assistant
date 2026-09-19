@@ -317,6 +317,7 @@ describe("DocWenMachineClient", () => {
     vi.stubEnv("DOCWEN_CONFIG_DIR", "C:\\Isolated Profile\\config");
     vi.stubEnv("DOCWEN_DATA_DIR", "C:\\Isolated Profile\\data");
     vi.stubEnv("DOCWEN_LOG_DIR", "C:\\Isolated Profile\\logs");
+    vi.stubEnv("DOCWEN_LOG_TO_TEMP", "YES");
     vi.stubEnv("DOCWEN_UNRELATED_SECRET", "must-not-cross-boundary");
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
@@ -327,8 +328,32 @@ describe("DocWenMachineClient", () => {
       DOCWEN_CONFIG_DIR: "C:\\Isolated Profile\\config",
       DOCWEN_DATA_DIR: "C:\\Isolated Profile\\data",
       DOCWEN_LOG_DIR: "C:\\Isolated Profile\\logs",
+      DOCWEN_LOG_TO_TEMP: "1",
     });
     expect(environment).not.toHaveProperty("DOCWEN_UNRELATED_SECRET");
+  });
+
+  it("keeps the parent profile roots when a Machine child uses a different working directory", async () => {
+    const profileKeys = process.platform === "win32"
+      ? ["USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
+      : ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"];
+    for (const key of profileKeys) vi.stubEnv(key, `profile-${key}`);
+    vi.stubEnv("DOCWEN_DATA_DIR", "./selected-profile");
+    vi.stubEnv("DOCWEN_CONFIG_DIR", "   ");
+    vi.stubEnv("DOCWEN_LOG_TO_TEMP", "false");
+    vi.stubEnv("NODE_OPTIONS", "must-not-cross-boundary");
+    const client = new DocWenMachineClient(
+      () => ({ executable: "C:\\DocWen\\DocWenCLI.exe", cwd: "C:\\Other", mode: "automatic" }),
+      () => "en_US",
+    );
+
+    await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+    const environment = spawnMock.mock.calls[0][2].env as NodeJS.ProcessEnv;
+    for (const key of profileKeys) expect(environment[key]).toBe(`profile-${key}`);
+    expect(environment.DOCWEN_DATA_DIR).toBe(path.resolve("./selected-profile"));
+    expect(environment).not.toHaveProperty("DOCWEN_CONFIG_DIR");
+    expect(environment).not.toHaveProperty("DOCWEN_LOG_TO_TEMP");
+    expect(environment).not.toHaveProperty("NODE_OPTIONS");
   });
 
   it("preserves only the Linux desktop session variables needed by Machine GUI control", async () => {

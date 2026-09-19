@@ -16,7 +16,6 @@ const REQUIRED_TOKENS = Object.freeze({
     "docwen.artifact_bundle.v3",
     "Windows",
     "Obsidian 1.12.7",
-    "DocWen 0.10.x",
   ] },
   "ux-spec": {
     shared: [
@@ -31,8 +30,9 @@ const REQUIRED_TOKENS = Object.freeze({
     "serve --stdio",
     "Content-Length",
     "JSON-RPC 2.0",
-    "Machine v2",
-    "0.10.x",
+    "Machine Protocol 2.0",
+    "Artifact Bundle v3",
+    "DOCWEN_DATA_DIR",
     "task/cancel",
   ] },
   "testing-strategy": { shared: [

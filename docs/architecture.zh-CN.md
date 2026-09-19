@@ -13,7 +13,9 @@ translation_status: source
 
 ## DocWen 进程边界
 
-自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine v2、服务身份和稳定 0.10.x 产品版本。
+子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
+
+自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收另外固定精确产品版本。
 
 ## 请求数据流
 
@@ -33,7 +35,7 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录并一次重命名发布；普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle；已有结果目录一律拒绝覆盖。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
 
-resolved-document 转 DOCX 包含一个首选 DOCX、一个 primary entry 和通过 `resource_of` 绑定的清单资源，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
+resolved-document 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
 ## Vault 写入
 
