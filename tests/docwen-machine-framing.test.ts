@@ -5,7 +5,7 @@ import {
   MachineFrameDecoder,
 } from "../src/docwen/machine-framing";
 
-describe("DocWen Machine v1 framing", () => {
+describe("DocWen Machine v2 framing", () => {
   it("round-trips UTF-8 messages across arbitrary chunks", () => {
     const message = { jsonrpc: "2.0", id: 1, method: "health/check", params: { label: "文档" } };
     const frame = encodeMachineFrame(message);

@@ -24,7 +24,7 @@ async function fixture() {
   const child = "通知_附件_20260907_180000_fromDocx";
   const bundle: ValidatedArtifactBundle = {
     schema: "docwen.artifact_bundle.v2", layout_schema: "docwen.document_node.v1", bundle_id: "bundle.directory", task_id: "task.directory",
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     artifacts: [], entries: [{ artifact_id: "main", preferred: true, role: "primary", ordinal: 0 }],
     relations: [
       { type: "attachment_of", source_artifact_id: "attachment", target_artifact_id: "main", role: "attachment", ordinal: 0 },

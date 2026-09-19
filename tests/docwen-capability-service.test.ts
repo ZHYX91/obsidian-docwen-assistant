@@ -89,7 +89,7 @@ function resolvedMarkdownDocxCapability(): MachineCapability {
 
 function projection() {
   return {
-    contractId: "docwen.machine.v1" as const,
+    contractId: "docwen.machine.v2" as const,
     capabilities: [
       resolvedMarkdownDocxCapability(),
       capability("validate.markdown", "validate", "application/json"),
@@ -143,7 +143,7 @@ describe("DocWenCapabilityService", () => {
     const client = {
       inspect: vi.fn().mockResolvedValue(inspection({ supportedActions: ["inspect", "validate"] })),
       runtimeCapabilities: vi.fn().mockResolvedValue({
-        contractId: "docwen.machine.v1",
+        contractId: "docwen.machine.v2",
         capabilities: [retired, capability("validate.markdown", "validate", "application/json")],
       }),
     } as unknown as DocWenClient;

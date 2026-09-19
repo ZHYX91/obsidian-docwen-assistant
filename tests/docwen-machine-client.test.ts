@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import packageJson from "../package.json";
 import { EventEmitter } from "node:events";
 import { writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
@@ -25,6 +26,10 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     taskAccepted: false,
     bundleVersion: "0.10.0",
     artifactBundleSchema: "docwen.artifact_bundle.v2",
+    protocolMajor: 2,
+    protocolMinor: 0,
+    rejectInitialize: false,
+    requests: [] as JsonObject[],
   },
 }));
 
@@ -73,7 +78,7 @@ function bundle(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.graph",
     task_id: "task.graph",
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts,
     entries,
@@ -126,9 +131,14 @@ class FakeChild extends EventEmitter {
 
   private handle(message: JsonObject): void {
     const id = message.id;
+    serverState.requests.push(message);
     if (message.method === "initialize") {
+      if (serverState.rejectInitialize) {
+        queueMicrotask(() => this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", id, error: { code: -32602, message: "Invalid params" } })));
+        return;
+      }
       this.reply(id, {
-        protocol: { name: "docwen.machine", major: 1, minor: 0 },
+        protocol: { name: "docwen.machine", major: serverState.protocolMajor, minor: serverState.protocolMinor },
         server: { name: serverState.serverName, version: serverState.serverVersion },
         artifact_bundle_schema: serverState.artifactBundleSchema,
         methods: [],
@@ -181,7 +191,7 @@ class FakeChild extends EventEmitter {
           producer: {
             name: "DocWen",
             product_version: serverState.bundleVersion,
-            machine_protocol: "docwen.machine.v1",
+            machine_protocol: "docwen.machine.v2",
           },
           layout_schema: "docwen.artifact_layout.v1",
           artifacts: [{
@@ -236,10 +246,14 @@ describe("DocWenMachineClient", () => {
     serverState.taskAccepted = false;
     serverState.bundleVersion = "0.10.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v2";
+    serverState.protocolMajor = 2;
+    serverState.protocolMinor = 0;
+    serverState.rejectInitialize = false;
+    serverState.requests = [];
     spawnMock.mockImplementation(() => new FakeChild());
   });
 
-  it("initializes Machine v1 and performs a framed query", async () => {
+  it("initializes Machine v2 and performs a framed query", async () => {
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
     await expect(client.query("health/check", {})).resolves.toEqual({
@@ -251,6 +265,20 @@ describe("DocWenMachineClient", () => {
       ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
+  });
+
+  it.each([[1, 0, false], [2, 1, false], [2, 0, true]])("rejects incompatible negotiation before querying (%s.%s, rejected=%s)", async (major, minor, rejected) => {
+    serverState.protocolMajor = major as number;
+    serverState.protocolMinor = minor as number;
+    serverState.rejectInitialize = rejected as boolean;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_incompatible_version" });
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
+    expect(serverState.requests[0].params).toMatchObject({
+      protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      client: { version: packageJson.version },
+    });
   });
 
   it("waits for a slow normal exit without killing a successful server", async () => {

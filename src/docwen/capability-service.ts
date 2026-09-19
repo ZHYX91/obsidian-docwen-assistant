@@ -84,7 +84,7 @@ export class DocWenCapabilityService {
     if (!capability.inspection.supportedActions.includes(action) || !machineSupports) {
       throw new LocalCliError(
         "cli_invalid_envelope",
-        `DocWen does not advertise ${action} for this file through Machine v1.`,
+        `DocWen does not advertise ${action} for this file through Machine v2.`,
         { action, supportedActions: capability.inspection.supportedActions },
       );
     }
@@ -156,7 +156,7 @@ export class DocWenCapabilityService {
   }
 
   optimizationActionIds(_capability: FileCapability, _target: ConvertTarget): string[] {
-    // Machine v1 exposes only consumer-neutral conversion capabilities. Route-
+    // Machine v2 exposes only consumer-neutral conversion capabilities. Route-
     // specific optimizer actions are intentionally absent until promoted to a
     // versioned capability with normalized options.
     return [];

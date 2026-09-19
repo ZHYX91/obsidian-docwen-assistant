@@ -6,7 +6,7 @@ export const PUBLIC_DOCWEN_REPOSITORY = "ZHYX91/docwen";
 export const PUBLIC_DOCWEN_ASSET = "DocWen-windows-x64.zip";
 const API_ROOT = "https://api.github.com";
 const API_VERSION = "2026-03-10";
-const MINIMUM_DOCWEN_VERSION = Object.freeze(["0", "11", "0"]);
+const MINIMUM_DOCWEN_VERSION = Object.freeze(["0", "12", "0"]);
 const RELEASE_TAG_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
 
 export function selectPublicDocWenRelease(releases) {

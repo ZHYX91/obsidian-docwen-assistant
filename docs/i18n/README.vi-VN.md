@@ -36,7 +36,7 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích �
 
 - Windows và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
 - Gói Windows đầy đủ của một bản DocWen 0.10.x ổn định đã được giải nén hoàn toàn; plugin không tự động tải DocWen.
-- Plugin yêu cầu `docwen.machine.v1` và `docwen.artifact_bundle.v2`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
+- Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v2`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
 
 Tự động phát hiện dùng bí danh `docwen.exe` đã đăng ký theo mặc định và vẫn hoạt động sau khi Microsoft Store cập nhật. Với ZIP di động, hãy chọn cài đặt thủ công và thư mục DocWen đã giải nén. Plugin không quét `WindowsApps` hay thư mục tùy ý và không tự động tải phần mềm.
 

@@ -42,7 +42,7 @@ Choose an available conversion route and an explicit output location while keepi
 
 - Windows and Obsidian 1.12.7 or later. The plugin is desktop-only.
 - A compatible DocWen 0.10.x installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
-- The plugin requires `docwen.machine.v1` and `docwen.artifact_bundle.v2`; incompatible DocWen versions fail validation instead of using a fallback protocol.
+- The plugin requires `docwen.machine.v2` and `docwen.artifact_bundle.v2`; incompatible DocWen versions fail validation instead of using a fallback protocol.
 
 Automatic detection is the default and uses the registered `docwen.exe` application execution alias, so Microsoft Store updates do not invalidate a saved package path. Portable ZIP users can switch to manual installation and select the extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`. The plugin never scans `WindowsApps`, recursively searches for executables, exchanges command files, downloads software, or falls back to an older protocol.
 

@@ -14,7 +14,7 @@ const INCLUDED_EXTENSIONS = new Set([
   ".yml",
 ]);
 const INCLUDED_NAMES = new Set([".gitattributes", ".gitignore", ".node-version", "LICENSE"]);
-const IGNORED_DIRECTORIES = new Set([".git", "coverage", "dist", "node_modules", "release"]);
+const IGNORED_DIRECTORIES = new Set([".git", "build", "coverage", "dist", "node_modules", "release"]);
 const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true });
 const UTF8_BOM = Buffer.from([0xef, 0xbb, 0xbf]);
 

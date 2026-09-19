@@ -11,7 +11,7 @@ import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acce
 
 const packageBinding = await loadPackageAcceptanceReceipt(process.env);
 
-describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () => {
+describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () => {
   let root: string;
   let machine: DocWenMachineClient;
   let client: DocWenClient;
@@ -35,7 +35,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v1", () 
   it("reads health and versioned Machine capabilities", async () => {
     await expect(client.doctor()).resolves.toMatchObject({ allOk: true });
     const projection = await client.runtimeCapabilities();
-    expect(projection.contractId).toBe("docwen.machine.v1");
+    expect(projection.contractId).toBe("docwen.machine.v2");
     expect(projection.capabilities.map((item) => item.capability_id)).toContain("convert.markdown.to_docx");
 
     const source = join(root, "capability-adapter.md");

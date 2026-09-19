@@ -36,7 +36,7 @@ El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida
 
 - Windows y Obsidian 1.12.7 o posterior; el complemento es solo para escritorio.
 - Un paquete completo de una versión estable de DocWen 0.10.x para Windows, totalmente extraído; el complemento no descarga DocWen automáticamente.
-- El complemento requiere `docwen.machine.v1` y `docwen.artifact_bundle.v2`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
+- El complemento requiere `docwen.machine.v2` y `docwen.artifact_bundle.v2`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
 
 La detección automática usa de forma predeterminada el alias registrado `docwen.exe` y sigue funcionando tras las actualizaciones de Microsoft Store. Para el ZIP portátil, selecciona la instalación manual y la carpeta extraída de DocWen. El complemento no examina `WindowsApps` ni carpetas arbitrarias y no descarga software automáticamente.
 

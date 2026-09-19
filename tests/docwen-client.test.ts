@@ -70,7 +70,7 @@ function bundleFor(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.1",
     task_id: taskId,
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [{
       artifact_id: "artifact.1",
@@ -122,7 +122,7 @@ function bundleWithRelated(
     schema: "docwen.artifact_bundle.v2",
     bundle_id: "bundle.related",
     task_id: "task.related",
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [
       {
@@ -178,7 +178,7 @@ describe("DocWenClient Machine semantics", () => {
         kind: "templates",
         resources: [
           {
-            id: "template.1",
+            id: `template.docx.${"a".repeat(64)}`,
             name: "Standard",
             target: "docx",
             origin: "builtin",
@@ -191,7 +191,7 @@ describe("DocWenClient Machine semantics", () => {
     await client.guiOpen("D:\\Vault\\note.md");
     await expect(client.templates("docx")).resolves.toEqual([
       {
-        id: "template.1",
+        id: `template.docx.${"a".repeat(64)}`,
         name: "Standard",
         target: "docx",
         description: undefined,
@@ -203,6 +203,27 @@ describe("DocWenClient Machine semantics", () => {
       ["gui/open", { timeout_seconds: 10, file_path: "D:\\Vault\\note.md" }, undefined],
       ["resource/list", { kind: "templates", locale: "en_US", target: "docx" }, undefined],
     ]);
+  });
+
+  it.each([
+    ["origin", undefined], ["origin", "local"], ["is_default", undefined], ["is_default", "false"],
+    ["id", "Standard"], ["target", "odt"], ["target", "xlsx"],
+  ])("rejects malformed template %s metadata", async (field, value) => {
+    const item = { id: `template.docx.${"a".repeat(64)}`, name: "Standard", target: "docx", origin: "builtin", is_default: false, [field as string]: value };
+    const client = new DocWenClient(machine(vi.fn().mockResolvedValue({ kind: "templates", resources: [item] })));
+    await expect(client.templates("docx")).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+  });
+
+  it("keeps template server order and rejects ambiguous identities/defaults", async () => {
+    const first = { id: `template.docx.${"b".repeat(64)}`, name: "Standard", target: "docx", origin: "custom", is_default: true };
+    const second = { ...first, id: `template.docx.${"a".repeat(64)}`, origin: "builtin", is_default: false };
+    const query = vi.fn().mockResolvedValue({ kind: "templates", resources: [first, second] });
+    const client = new DocWenClient(machine(query));
+    expect((await client.templates("docx")).map((item) => item.id)).toEqual([first.id, second.id]);
+    query.mockResolvedValue({ kind: "templates", resources: [first, first] });
+    await expect(client.templates()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+    query.mockResolvedValue({ kind: "templates", resources: [first, { ...second, is_default: true }] });
+    await expect(client.templates()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
   });
 
   it("parses only D2 capability input_shape slots", async () => {

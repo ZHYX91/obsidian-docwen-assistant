@@ -12,7 +12,7 @@ const DOCUMENTS = Object.freeze([
 const REQUIRED_TOKENS = Object.freeze({
   "product-requirements": { shared: [
     "DocWen Assistant",
-    "docwen.machine.v1",
+    "docwen.machine.v2",
     "docwen.artifact_bundle.v2",
     "Windows",
     "Obsidian 1.12.7",
@@ -31,7 +31,7 @@ const REQUIRED_TOKENS = Object.freeze({
     "serve --stdio",
     "Content-Length",
     "JSON-RPC 2.0",
-    "Machine v1",
+    "Machine v2",
     "0.10.x",
     "task/cancel",
   ] },

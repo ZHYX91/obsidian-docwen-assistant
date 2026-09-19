@@ -5,6 +5,7 @@ import { lstat, realpath, stat } from "node:fs/promises";
 import * as path from "node:path";
 import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "node:timers";
 
+import packageJson from "../../package.json";
 import { LocalCliError, RemoteMachineError } from "./errors";
 import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
 import { fileIdentity, sameFileIdentity } from "./output-integrity";
@@ -12,7 +13,7 @@ import { fileIdentity, sameFileIdentity } from "./output-integrity";
 export type { JsonObject } from "./machine-framing";
 
 const CLIENT_NAME = "DocWen Obsidian Assistant";
-const CLIENT_VERSION = "2.0.2";
+const CLIENT_VERSION = packageJson.version;
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
@@ -116,7 +117,7 @@ export type ValidatedArtifactBundle = {
   producer: {
     name: "DocWen";
     product_version: string;
-    machine_protocol: "docwen.machine.v1";
+    machine_protocol: "docwen.machine.v2";
   };
   layout_schema: "docwen.artifact_layout.v1" | "docwen.document_node.v1";
   artifacts: ValidatedBundleArtifact[];
@@ -251,13 +252,13 @@ class MachineSession {
 
   async initialize(expectedProductVersion?: string): Promise<string> {
     const result = await this.rpc("initialize", {
-      protocol: { name: "docwen.machine", major: 1, minor: 0 },
+      protocol: { name: "docwen.machine", major: 2, minor: 0 },
       client: { name: CLIENT_NAME, version: CLIENT_VERSION },
       features: { progress: true, cancellation: true },
     });
     const protocol = requiredObject(result.protocol, "initialize.protocol");
-    if (protocol.name !== "docwen.machine" || protocol.major !== 1 || protocol.minor !== 0) {
-      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol v1 is required.");
+    if (protocol.name !== "docwen.machine" || protocol.major !== 2 || protocol.minor !== 0) {
+      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol v2 is required.");
     }
     if (result.artifact_bundle_schema !== "docwen.artifact_bundle.v2") {
       throw new LocalCliError("cli_incompatible_version", "Artifact Bundle v2 is required.");
@@ -289,7 +290,12 @@ class MachineSession {
         continue;
       }
       if (message.jsonrpc !== "2.0") throw protocolError(`invalid JSON-RPC response for ${method}`);
-      if (isJsonObject(message.error)) throw remoteRpcError(message.error);
+      if (isJsonObject(message.error)) {
+        if (method === "initialize" && message.error.code === -32602) {
+          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol 2.0 is required. Update DocWen and its client together.");
+        }
+        throw remoteRpcError(message.error);
+      }
       return requiredObject(message.result, `${method}.result`);
     }
   }
@@ -628,7 +634,7 @@ export async function validateArtifactBundle(
   const producer = requiredObject(bundle.producer, "bundle.producer");
   if (
     producer.name !== "DocWen"
-    || producer.machine_protocol !== "docwen.machine.v1"
+    || producer.machine_protocol !== "docwen.machine.v2"
     || producer.product_version !== productVersion
   ) {
     throw integrityError("Artifact Bundle producer identity is invalid.");
@@ -846,7 +852,7 @@ export async function validateArtifactBundle(
     producer: {
       name: "DocWen",
       product_version: producer.product_version,
-      machine_protocol: "docwen.machine.v1",
+      machine_protocol: "docwen.machine.v2",
     },
     layout_schema: validatedLayoutSchema,
     artifacts,

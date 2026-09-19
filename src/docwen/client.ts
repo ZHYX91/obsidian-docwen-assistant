@@ -191,7 +191,7 @@ export interface RuntimeSource {
 }
 
 export interface RuntimeCapabilityProjection {
-  contractId: "docwen.machine.v1";
+  contractId: "docwen.machine.v2";
   capabilities: MachineCapability[];
 }
 
@@ -256,18 +256,33 @@ export class DocWenClient {
   async runtimeCapabilities(signal?: AbortSignal): Promise<RuntimeCapabilityProjection> {
     const result = await this.machine.query("capability/list", {}, signal);
     const capabilities = objectArray(result.capabilities, "capability/list.capabilities").map(normalizeCapability);
-    return { contractId: "docwen.machine.v1", capabilities };
+    return { contractId: "docwen.machine.v2", capabilities };
   }
 
   async templates(target?: string, signal?: AbortSignal): Promise<TemplateItem[]> {
     const resources = await this.listResources("templates", target, signal);
+    const ids = new Set<string>();
+    const defaults = new Set<string>();
+    for (const item of resources) {
+      const id = requiredTemplateId(item.id);
+      const itemTarget = requiredTemplateTarget(item.target);
+      if (!id.startsWith(`template.${itemTarget}.`) || (target !== undefined && target !== itemTarget)) {
+        throw invalidResponse("template.target");
+      }
+      if (ids.has(id)) throw invalidResponse("template.id.unique");
+      ids.add(id);
+      if (requiredBoolean(item.is_default, "template.is_default")) {
+        if (defaults.has(itemTarget)) throw invalidResponse("template.is_default.unique");
+        defaults.add(itemTarget);
+      }
+    }
     return resources.map((item) => ({
-      id: requiredStringValue(item.id, "template.id"),
+      id: requiredTemplateId(item.id),
       name: requiredStringValue(item.name, "template.name"),
-      target: stringValue(item.target),
+      target: requiredTemplateTarget(item.target),
       description: stringValue(item.description) || undefined,
       origin: requiredTemplateOrigin(item.origin),
-      isDefault: item.is_default === true,
+      isDefault: requiredBoolean(item.is_default, "template.is_default"),
     }));
   }
 
@@ -320,7 +335,7 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const inspection = await this.inspect(source, signal);
     if (inspection.mediaType !== "text/markdown") {
-      throw new LocalCliError("cli_invalid_envelope", "Machine v1 proofreading currently accepts Markdown input.");
+      throw new LocalCliError("cli_invalid_envelope", "Machine v2 proofreading currently accepts Markdown input.");
     }
     return this.withTaskStaging(async (stagingRoot) => {
       const request = await taskRequest(
@@ -896,6 +911,21 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
 function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
   if (value === "builtin" || value === "custom") return value;
   throw invalidResponse("template.origin");
+}
+
+function requiredTemplateId(value: unknown): string {
+  if (typeof value === "string" && /^template\.(?:docx|xlsx)\.[0-9a-f]{64}$/.test(value)) return value;
+  throw invalidResponse("template.id");
+}
+
+function requiredTemplateTarget(value: unknown): "docx" | "xlsx" {
+  if (value === "docx" || value === "xlsx") return value;
+  throw invalidResponse("template.target");
+}
+
+function requiredBoolean(value: unknown, field: string): boolean {
+  if (typeof value === "boolean") return value;
+  throw invalidResponse(field);
 }
 
 function preferredSupportedOption(
