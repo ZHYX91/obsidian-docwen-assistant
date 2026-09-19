@@ -69,7 +69,7 @@ export class NumberingActions {
       { key: `numbering:${file.path}`, kind: "numbering" },
       "noticeNumberingFailed",
       async ({ signal }) => {
-        await this.writer.run(
+        const warnings = await this.writer.run(
           file,
           async (inputPath, outputPath, originalSha256, transformSignal) => {
             const capability = await this.capabilities.requireAction(
@@ -87,7 +87,7 @@ export class NumberingActions {
                 },
               );
             }
-            await this.docwen.numberMarkdown(
+            const outcome = await this.docwen.numberMarkdown(
               inputPath,
               outputPath,
               operation,
@@ -95,10 +95,11 @@ export class NumberingActions {
               transformSignal,
               file.path,
             );
+            return outcome.warnings;
           },
           signal,
         );
-        showNotice(t("noticeNumberingSuccess", { filename: file.name }));
+        this.runner.presentCompletion(t("noticeNumberingSuccess", { filename: file.name }), warnings);
       },
     );
   }

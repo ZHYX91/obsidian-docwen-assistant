@@ -14,7 +14,7 @@ Users can start actions from the ribbon icon, the file explorer **DocWen** subme
 
 ## Export flow
 
-Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames, linked resources and layout manifest. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
+Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
 
 ## Numbering and proofreading
 
@@ -23,6 +23,8 @@ Heading numbering runs against an isolated copy and rechecks the uniquely path-m
 ## States and recovery
 
 Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result.
+
+Completion waits for owned cleanup. If a result was published but cleanup or a follow-up step fails, one notice retains the successful result and offers Details; it does not open a second error dialog automatically. Details can be inspected and copied on request. Preparation and cancelled-operation cleanup warnings do not claim that a result exists. An unconfirmed write asks the user to check the destination before running again. Warning diagnostics contain codes and phases, not raw exception text or document content.
 
 ## Settings surface
 

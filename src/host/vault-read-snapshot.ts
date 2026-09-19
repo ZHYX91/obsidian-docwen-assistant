@@ -1,3 +1,4 @@
+import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -58,7 +59,7 @@ export class VaultReadSnapshot {
     file: TFile,
     signal: AbortSignal,
     work: (snapshot: IsolatedSnapshot) => Promise<T>,
-  ): Promise<T> {
+  ): Promise<Completed<T>> {
     const targetLookup = locateOpenMarkdownTarget(this.app.workspace, file.path);
     if (targetLookup.kind === "ambiguous") {
       throw new VaultWriteError(
@@ -135,19 +136,18 @@ export class VaultReadSnapshot {
       // conflict after an output was already committed successfully.
       if (!published) await assertCurrent();
     } catch (primaryError) {
-      await rm(workspace, { recursive: true, force: true }).catch(() => undefined);
+      await rm(workspace, { recursive: true, force: true }).catch((cleanupError: unknown) => {
+        recordFailureWarning(primaryError, operationWarning("input_cleanup_failed", cleanupError));
+      });
       throw primaryError;
     }
+    const warnings: OperationWarning[] = [];
     try {
       await rm(workspace, { recursive: true, force: true });
     } catch (cleanupError) {
-      throw new VaultWriteError(
-        "vault_temp_cleanup_failed",
-        "The isolated input workspace could not be removed.",
-        { cause: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) },
-      );
+      warnings.push(operationWarning("input_cleanup_failed", cleanupError));
     }
-    return result;
+    return { value: result, warnings };
   }
 
   private async buildResolvedMarkdownInputs(

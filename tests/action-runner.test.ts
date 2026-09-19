@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   copied: [] as string[],
   modals: [] as Array<{ contentEl: FakeElement; titleEl: FakeElement }>,
   notices: [] as string[],
+  noticeActions: [] as Array<() => void>,
 }));
 
 class FakeElement {
@@ -53,7 +54,13 @@ vi.mock("obsidian", () => ({
     }
   },
 }));
-vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.notices.push(message) }));
+vi.mock("../src/host/notices", () => ({
+  showNotice: (message: string) => state.notices.push(message),
+  showNoticeWithAction: (message: string, _label: string, selected: () => void) => {
+    state.notices.push(message);
+    state.noticeActions.push(selected);
+  },
+}));
 vi.mock("../src/host/clipboard", () => ({
   copyTextToClipboard: async (text: string) => {
     state.copied.push(text);
@@ -62,7 +69,49 @@ vi.mock("../src/host/clipboard", () => ({
 }));
 
 describe("ActionRunner", () => {
-  beforeEach(() => initI18n("en"));
+  beforeEach(() => {
+    initI18n("en");
+    state.copied.length = 0;
+    state.modals.length = 0;
+    state.notices.length = 0;
+    state.noticeActions.length = 0;
+  });
+
+  it("offers warning details and copying only when requested", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    runner.presentCompletion("Exported result.md", [{ code: "output_cleanup_failed", phase: "cleanup", detailCode: "EACCES" }]);
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain("Exported result.md");
+    expect(state.notices[0]).toContain("result is available");
+    expect(state.modals).toHaveLength(0);
+    expect(state.copied).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("completed_with_warnings");
+    state.modals[0].contentEl.children.at(-1)?.listeners.get("click")?.();
+    await vi.waitFor(() => expect(state.copied).toHaveLength(1));
+    expect(JSON.parse(state.copied[0])).toMatchObject({ warnings: [{ detailCode: "EACCES" }] });
+  });
+
+  it("shows cleanup warnings on cancellation without claiming a result exists", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { recordFailureWarning } = await import("../src/docwen/operation-outcome");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    await runner.run({ key: "proofread", kind: "proofread" }, "noticeProofreadFailed", async () => {
+      throw recordFailureWarning(new LocalCliError("cli_cancelled", "cancelled"), {
+        code: "input_cleanup_failed", phase: "cleanup", detailCode: "EACCES",
+      });
+    });
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain("Temporary data cleanup");
+    expect(state.notices[0]).not.toContain("result is available");
+    state.noticeActions[0]();
+    expect(allText(state.modals[0].contentEl)).toContain('"status": "cancelled"');
+  });
 
   it("localizes incompatible-version failures while preserving their technical identity", async () => {
     const { LocalCliError } = await import("../src/docwen");
@@ -81,6 +130,16 @@ describe("ActionRunner", () => {
     expect(state.modals[0].contentEl.children[0].text).toContain("版本不兼容");
     expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
     expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
+  });
+
+  it("identifies an unconfirmed write and does not suggest automatic retry", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const { VaultWriteError } = await import("../src/host/vault-write-transaction");
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure("noticeNumberingFailed",
+      new VaultWriteError("vault_reconciliation_failed", "write result unknown", { outputState: "unconfirmed" }));
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("Check the destination before running again");
   });
 
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {

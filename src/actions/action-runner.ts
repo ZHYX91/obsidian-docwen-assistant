@@ -2,7 +2,8 @@ import { type App, Modal } from "obsidian";
 
 import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../docwen/links";
 import { copyTextToClipboard } from "../host/clipboard";
-import { showNotice } from "../host/notices";
+import { showNotice, showNoticeWithAction } from "../host/notices";
+import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
 import { t, type Translations } from "../i18n";
 import {
   OperationCoordinator,
@@ -33,6 +34,7 @@ const TECHNICAL_DETAIL_CODES = new Set([
   "cli_machine_protocol_error",
   "cli_protocol_error",
   "cli_cleanup_failed",
+  "vault_reconciliation_failed",
 ]);
 
 export class ActionRunner {
@@ -54,6 +56,7 @@ export class ActionRunner {
       return lease.isCurrent() ? result : undefined;
     } catch (error) {
       if (!isCancellationError(error)) this.presentFailure(failureNotice, error);
+      else this.presentWarnings(getFailureWarnings(error), "", "cancelled");
       return undefined;
     } finally {
       lease?.finish();
@@ -69,6 +72,14 @@ export class ActionRunner {
 
     const summary = getErrorMessage(error);
     const notice = t(failureNotice, { error: summary });
+    const warnings = getFailureWarnings(error);
+    if (warnings.length > 0) {
+      const details = JSON.stringify(getErrorDiagnostics(error), null, 2);
+      showNoticeWithAction(notice, t("dialogDetails"), () => {
+        new OperationDetailsModal(this.app, notice, details).open();
+      });
+      return;
+    }
     const showTechnicalDetails = code === "" || TECHNICAL_DETAIL_CODES.has(code);
     if (!showTechnicalDetails) {
       showNotice(notice);
@@ -78,7 +89,26 @@ export class ActionRunner {
     // Internal/protocol failures get one detailed surface instead of a notice
     // immediately followed by a second modal for the same event.
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
-    new FailureDetailsModal(this.app, notice, detailsText).open();
+    new OperationDetailsModal(this.app, notice, detailsText).open();
+  }
+
+  presentCompletion(summary: string, warnings: readonly OperationWarning[]): void {
+    if (warnings.length === 0) showNotice(summary);
+    else this.presentWarnings(warnings, summary, "completed_with_warnings");
+  }
+
+  presentWarnings(
+    warnings: readonly OperationWarning[],
+    summary = "",
+    status: "prepared_with_warnings" | "completed_with_warnings" | "cancelled" = "prepared_with_warnings",
+  ): void {
+    if (warnings.length === 0) return;
+    const message = [summary, t(status === "completed_with_warnings" ? "noticeCompletedWithWarnings" : "noticeCleanupWarning")]
+      .filter(Boolean).join("\n");
+    const details = JSON.stringify({ status, warnings }, null, 2);
+    showNoticeWithAction(message, t("dialogDetails"), () => {
+      new OperationDetailsModal(this.app, message, details).open();
+    });
   }
 }
 
@@ -118,7 +148,7 @@ class DocWenSetupModal extends Modal {
   }
 }
 
-class FailureDetailsModal extends Modal {
+class OperationDetailsModal extends Modal {
   constructor(
     app: App,
     private readonly summary: string,

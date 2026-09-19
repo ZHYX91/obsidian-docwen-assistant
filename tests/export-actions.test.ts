@@ -43,7 +43,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         inputs: unknown[];
         getResolvedMarkdownInputs: () => Promise<unknown[]>;
       }) => Promise<T>,
-    ): Promise<T> {
+    ): Promise<{ value: T; warnings: [] }> {
       const sourceInput = {
         path: "D:\\Temp\\input.bin",
         kind: "document",
@@ -51,7 +51,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         logicalPath: "note.md",
         mediaType: "text/markdown",
       };
-      return work({
+      const value = await work({
         inputPath: "D:\\Temp\\input.bin",
         contentSha256: "sha",
         publish: async (commit) => commit(),
@@ -74,6 +74,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
           },
         ],
       });
+      return { value, warnings: [] };
     }
   },
 }));
@@ -96,6 +97,8 @@ describe("ExportActions optimization discovery", () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const signal = new AbortController().signal;
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal, isCurrent: () => true }),
       presentFailure: vi.fn(),
@@ -114,7 +117,7 @@ describe("ExportActions optimization discovery", () => {
     };
     const docwen = {
       optimizations: vi.fn(),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
       {} as never,
@@ -135,6 +138,8 @@ describe("ExportActions optimization discovery", () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const signal = new AbortController().signal;
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal, isCurrent: () => true }),
       presentFailure: vi.fn(),
@@ -209,7 +214,7 @@ describe("ExportActions optimization discovery", () => {
       convert: vi.fn().mockResolvedValue({
         output: "D:\\Vault\\note.md",
         outputs: [],
-        bundleId: "bundle.1",
+        bundleId: "bundle.1", warnings: [],
       }),
     };
     const actions = new ExportActions(
@@ -251,7 +256,7 @@ describe("ExportActions advisory proofreading", () => {
     const docwen = {
       optimizations: vi.fn(),
       validate: vi.fn().mockResolvedValue({ issues: [{ message: "typo" }] }),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
       {} as never,
@@ -294,7 +299,7 @@ describe("ExportActions advisory proofreading", () => {
     const docwen = {
       optimizations: vi.fn(),
       validate: vi.fn().mockRejectedValue(proofreadError),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
       {} as never,
@@ -321,7 +326,7 @@ describe("ExportActions advisory proofreading", () => {
     const docwen = {
       optimizations: vi.fn(),
       validate: vi.fn(),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1" }),
+      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
       {} as never,
@@ -377,7 +382,7 @@ describe("ExportActions advisory proofreading", () => {
       convert: vi.fn().mockResolvedValue({
         output: "D:\\Vault\\note.docx",
         outputs: ["D:\\Vault\\note.docx"],
-        bundleId: "bundle.1",
+        bundleId: "bundle.1", warnings: [],
       }),
     };
     const actions = new ExportActions(
@@ -410,6 +415,8 @@ function resetState(): void {
 
 function advisoryRunner(signal: AbortSignal) {
   return {
+    presentCompletion: (summary: string) => state.notices.push(summary),
+    presentWarnings: vi.fn(),
     run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
       action({ signal, isCurrent: () => true }),
     presentFailure: vi.fn(),
@@ -457,7 +464,7 @@ describe("Excel template choice", () => {
     capabilities.requireConversionRoute.mockReturnValue({ options: ["template_name"] });
     const docwen = {
       templates: vi.fn().mockResolvedValue(choice === "empty" ? [] : [{ id: "sheet-template", name: "Sheet template" }]),
-      convert: vi.fn().mockResolvedValue({ output: "note.xlsx", outputs: [], bundleId: "bundle.1" }),
+      convert: vi.fn().mockResolvedValue({ output: "note.xlsx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
       {} as never, docwen as never, capabilities as never,

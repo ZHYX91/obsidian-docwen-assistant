@@ -4,6 +4,7 @@ import { constants as fsConstants } from "node:fs";
 import { copyFile, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
 import * as path from "node:path";
 import { LocalCliError } from "./errors";
+import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning } from "./operation-outcome";
 import type { ValidatedArtifactBundle } from "./machine-client";
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 
@@ -68,7 +69,7 @@ export async function atomicCommitDirectory(
   parent: OutputDirectorySnapshot,
   signal?: AbortSignal,
   publish?: DirectoryPublication,
-): Promise<{ output: string; outputs: string[] }> {
+): Promise<{ output: string; outputs: string[]; warnings: OperationWarning[] }> {
   throwIfAborted(signal);
   if (bundle.layout_schema !== "docwen.document_node.v1") {
     throw new LocalCliError("cli_integrity_error", "Conversion output requires the document-node layout.");
@@ -87,9 +88,12 @@ export async function atomicCommitDirectory(
   const finalRoot = path.join(parent.path, rootName);
   await requireAbsent(finalRoot);
   const temporary = await mkdtemp(path.join(parent.path, ".docwen-output-"));
-  const temporaryIdentity = await directoryIdentity(temporary);
+  let temporaryIdentity: Awaited<ReturnType<typeof directoryIdentity>> | null = null;
   let committed = false;
+  const warnings: OperationWarning[] = [];
+  let primaryFailure: unknown;
   try {
+    temporaryIdentity = await directoryIdentity(temporary);
     for (const { artifact, parts } of paths) {
       throwIfAborted(signal);
       const destination = path.join(temporary, ...parts.slice(1));
@@ -109,7 +113,7 @@ export async function atomicCommitDirectory(
       if (committed) throw new LocalCliError("cli_commit_failed", "The conversion was already published.");
       await parent.assertCurrent();
       const currentTemporary = await directoryIdentity(temporary);
-      if (currentTemporary.dev !== temporaryIdentity.dev || currentTemporary.ino !== temporaryIdentity.ino) {
+      if (!temporaryIdentity || currentTemporary.dev !== temporaryIdentity.dev || currentTemporary.ino !== temporaryIdentity.ino) {
         throw new LocalCliError("cli_integrity_error", "The prepared result directory changed before publication.");
       }
       for (const { file, identity } of prepared) {
@@ -123,18 +127,29 @@ export async function atomicCommitDirectory(
       const digest = createHash("sha256").update(rootName.toLowerCase()).digest("hex").slice(0, 24);
       const lockPath = path.join(parent.path, `.docwen-output-${digest}.lock`);
       const lock = await open(lockPath, "wx");
-      const lockIdentity = await lock.stat({ bigint: true });
+      let lockIdentity: { dev: bigint; ino: bigint } | null = null;
       try {
+        lockIdentity = await lock.stat({ bigint: true });
         await parent.assertCurrent();
         await requireAbsent(finalRoot);
         throwIfAborted(signal);
         await rename(temporary, finalRoot);
         committed = true;
       } finally {
-        await lock.close().catch((error: unknown) => { if (!committed) throw error; });
-        const currentLock = await lstat(lockPath, { bigint: true }).catch(() => null);
-        if (currentLock?.dev === lockIdentity.dev && currentLock.ino === lockIdentity.ino) {
-          await rm(lockPath).catch(() => undefined);
+        try {
+          await lock.close();
+        } catch (error) {
+          warnings.push(operationWarning("output_cleanup_failed", error));
+        }
+        try {
+          const currentLock = await lstat(lockPath, { bigint: true });
+          if (!lockIdentity || currentLock.dev !== lockIdentity.dev || currentLock.ino !== lockIdentity.ino) {
+            warnings.push(operationWarning("output_cleanup_failed", new LocalCliError("cli_integrity_error", "Output lock identity changed; the lock was preserved.")));
+          } else {
+            await rm(lockPath);
+          }
+        } catch (error) {
+          if (!isErrno(error, "ENOENT")) warnings.push(operationWarning("output_cleanup_failed", error));
         }
       }
       const output = path.join(parent.path, ...logicalParts(preferred.logical_path));
@@ -144,12 +159,25 @@ export async function atomicCommitDirectory(
         .map(({ parts }) => path.join(parent.path, ...parts))];
       return { output, outputs };
     };
-    return await (publish ? publish(finalRoot, commit) : commit());
+    const published = await publishOnce(commit, publish ? (guarded) => publish(finalRoot, guarded) : undefined);
+    return { ...published.value, warnings: [...warnings, ...published.warnings] };
+  } catch (error) {
+    primaryFailure = error;
+    for (const warning of warnings) recordFailureWarning(error, warning);
+    throw error;
   } finally {
     if (!committed) {
-      const current = await directoryIdentity(temporary).catch(() => null);
-      if (current?.dev === temporaryIdentity.dev && current.ino === temporaryIdentity.ino) {
-        await rm(temporary, { recursive: true, force: true });
+      try {
+        const current = await directoryIdentity(temporary);
+        if (!temporaryIdentity || current.dev !== temporaryIdentity.dev || current.ino !== temporaryIdentity.ino) {
+          recordFailureWarning(primaryFailure, operationWarning("output_cleanup_failed", new LocalCliError(
+            "cli_integrity_error", "Prepared output identity changed; the directory was preserved.",
+          )));
+        } else {
+          await rm(temporary, { recursive: true, force: true });
+        }
+      } catch (error) {
+        if (!isErrno(error, "ENOENT")) recordFailureWarning(primaryFailure, operationWarning("output_cleanup_failed", error));
       }
     }
   }

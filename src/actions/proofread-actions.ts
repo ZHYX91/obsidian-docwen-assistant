@@ -36,21 +36,29 @@ export class ProofreadActions {
     await this.runner.run(
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
-      async (lease) => this.snapshots.run(file, lease.signal, async (snapshot) => {
-        await this.capabilities.requireAction(snapshot.inputs[0], "validate", lease.signal);
-        const report = await this.docwen.validate(
-          snapshot.inputs[0],
-          buildProofreadChecks(this.getSettings()),
-          lease.signal,
-        );
-        if (!lease.isCurrent()) return null;
-        return snapshot.publish(async () => {
+      async (lease) => {
+        const completed = await this.snapshots.run(file, lease.signal, async (snapshot) => {
+          await this.capabilities.requireAction(snapshot.inputs[0], "validate", lease.signal);
+          const report = await this.docwen.validate(
+            snapshot.inputs[0],
+            buildProofreadChecks(this.getSettings()),
+            lease.signal,
+          );
           if (!lease.isCurrent()) return null;
-          view?.updateResults(report.issues, file.name, file.path);
-          showNotice(t("noticeProofreadSuccess", { count: String(report.issues.length) }));
-          return report;
+          return snapshot.publish(async () => {
+            if (!lease.isCurrent()) return null;
+            view?.updateResults(report.issues, file.name, file.path);
+            return report;
+          });
         });
-      }),
+        if (completed.value && lease.isCurrent()) {
+          this.runner.presentCompletion(
+            t("noticeProofreadSuccess", { count: String(completed.value.issues.length) }),
+            [...completed.value.warnings, ...completed.warnings],
+          );
+        }
+        return completed.value;
+      },
     );
   }
 

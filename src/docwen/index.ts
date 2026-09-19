@@ -8,7 +8,9 @@ export type {
   ValidatedArtifactBundle,
   ValidatedBundleArtifact,
 } from "./machine-client";
-export { DocWenClient, captureOutputTarget, mediaTypeForPath, normalizeLogicalPath } from "./client";
+export { DocWenClient, mediaTypeForPath, normalizeLogicalPath } from "./client";
+export { captureOutputTarget } from "./output-files";
+export type { OperationWarning } from "./operation-outcome";
 export { captureOutputDirectory } from "./output-directory";
 export { DocWenCapabilityService } from "./capability-service";
 export type { FileCapability } from "./capability-service";

@@ -5,9 +5,9 @@ import * as path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { atomicCommitBundle } from "../src/docwen/output-files";
 import { DocWenClient } from "../src/docwen";
 import {
-  atomicCommitBundle,
   INPUT_HANDLE_LIMITS,
   mediaTypeForPath,
   PROOFREAD_REPORT_LIMIT_BYTES,
@@ -352,6 +352,7 @@ describe("DocWenClient Machine semantics", () => {
       output,
       outputs: [output],
       bundleId: "bundle.1",
+      warnings: [],
     });
     expect(await readFile(output, "utf8")).toBe("fixture");
     await expect(lstat(`${output}.docwen`)).rejects.toMatchObject({ code: "ENOENT" });
@@ -706,7 +707,7 @@ describe("DocWenClient Machine semantics", () => {
     bundle.relations = [{ type: "resource_of", role: "manifest", source_artifact_id: "artifact.related", target_artifact_id: "artifact.primary", ordinal: 0 }];
     for (const name of ["first.md", "second.md"]) {
       const output = path.join(destination, name);
-      expect(await atomicCommitBundle(bundle, output, false)).toEqual([output]);
+      expect(await atomicCommitBundle(bundle, output, false)).toEqual({ outputs: [output], warnings: [] });
       expect(await readFile(output, "utf8")).toBe("# Document\n");
     }
     expect(await readFile(path.join(destination, "docwen-node.json"), "utf8")).toBe("user data");
@@ -728,7 +729,7 @@ describe("DocWenClient Machine semantics", () => {
 
     await expect(atomicCommitBundle(validated, outputPath, false)).rejects.toMatchObject({ code: "cli_commit_failed" });
     expect(await readFile(outputPath, "utf8")).toBe("old-docx");
-    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual([outputPath]);
+    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual({ outputs: [outputPath], warnings: [] });
     expect(await readFile(outputPath)).toEqual(docxBytes);
     expect(await readFile(oldCompanion, "utf8")).toBe("keep-old-companion");
     expect(await transactionResidue(destination)).toEqual([]);
@@ -786,7 +787,7 @@ describe("DocWenClient Machine semantics", () => {
     expect(await transactionResidue(destination)).toEqual([]);
 
     await rm(relatedOutput);
-    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual([outputPath, relatedOutput]);
+    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual({ outputs: [outputPath, relatedOutput], warnings: [] });
     expect(await readFile(outputPath)).toEqual(primaryBytes);
     expect(await readFile(relatedOutput)).toEqual(relatedBytes);
     expect(await transactionResidue(destination)).toEqual([]);

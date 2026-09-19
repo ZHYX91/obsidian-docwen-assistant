@@ -4,6 +4,9 @@ import type { Translations } from "./types";
 export const translations: Record<string, Translations> = {
   // Simplified Chinese
   "zh-cn": {
+    noticeCompletedWithWarnings: "结果已保留，但清理或后续操作未完成。请先查看详情，避免重复执行。",
+    noticeCleanupWarning: "临时数据清理未完成，请查看详情。",
+    errorOutputUnconfirmed: "无法确认写入结果。请先检查目标内容，避免重复执行。",
     dialogExportDirectory: "选择输出目录",
     ribbonTooltip: "启动 DocWen",
     commandLaunch: "启动 DocWen",
@@ -221,6 +224,9 @@ export const translations: Record<string, Translations> = {
 
   // Traditional Chinese
   "zh-tw": {
+    noticeCompletedWithWarnings: "結果已保留，但清理或後續操作未完成。請先查看詳情，避免重複執行。",
+    noticeCleanupWarning: "暫存資料清理未完成，請查看詳情。",
+    errorOutputUnconfirmed: "無法確認寫入結果。請先檢查目標內容，避免重複執行。",
     dialogExportDirectory: "選擇輸出目錄",
     ribbonTooltip: "啟動 DocWen",
     commandLaunch: "啟動 DocWen",
@@ -438,6 +444,9 @@ export const translations: Record<string, Translations> = {
 
   // English
   "en": {
+    noticeCompletedWithWarnings: "The result is available, but cleanup or a follow-up step did not finish. View details before running again.",
+    noticeCleanupWarning: "Temporary data cleanup did not finish. View details.",
+    errorOutputUnconfirmed: "The write result could not be confirmed. Check the destination before running again.",
     dialogExportDirectory: "Choose output folder",
     ribbonTooltip: "Launch DocWen",
     commandLaunch: "Launch DocWen",
@@ -655,6 +664,9 @@ export const translations: Record<string, Translations> = {
 
   // German
   "de": {
+    noticeCompletedWithWarnings: "Das Ergebnis ist verfügbar, aber die Bereinigung oder ein Folgeschritt wurde nicht abgeschlossen. Prüfen Sie die Details vor einer erneuten Ausführung.",
+    noticeCleanupWarning: "Temporäre Daten konnten nicht vollständig bereinigt werden. Details anzeigen.",
+    errorOutputUnconfirmed: "Das Schreibergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel vor einer erneuten Ausführung.",
     dialogExportDirectory: "Ausgabeordner auswählen",
     ribbonTooltip: "DocWen starten",
     commandLaunch: "DocWen starten",
@@ -872,6 +884,9 @@ export const translations: Record<string, Translations> = {
 
   // French
   "fr": {
+    noticeCompletedWithWarnings: "Le résultat est disponible, mais le nettoyage ou une étape suivante reste incomplet. Consultez les détails avant de relancer.",
+    noticeCleanupWarning: "Le nettoyage des données temporaires est incomplet. Consultez les détails.",
+    errorOutputUnconfirmed: "Le résultat de l’écriture n’a pas pu être confirmé. Vérifiez la destination avant de relancer.",
     dialogExportDirectory: "Choisir le dossier de sortie",
     ribbonTooltip: "Lancer DocWen",
     commandLaunch: "Lancer DocWen",
@@ -1089,6 +1104,9 @@ export const translations: Record<string, Translations> = {
 
   // Russian
   "ru": {
+    noticeCompletedWithWarnings: "Результат сохранён, но очистка или последующее действие не завершены. Просмотрите сведения перед повторным запуском.",
+    noticeCleanupWarning: "Очистка временных данных не завершена. Просмотрите сведения.",
+    errorOutputUnconfirmed: "Не удалось подтвердить результат записи. Проверьте целевой файл перед повторным запуском.",
     dialogExportDirectory: "Выбрать папку вывода",
     ribbonTooltip: "Запустить DocWen",
     commandLaunch: "Запустить DocWen",
@@ -1306,6 +1324,9 @@ export const translations: Record<string, Translations> = {
 
   // Portuguese (Brazil)
   "pt": {
+    noticeCompletedWithWarnings: "O resultado está disponível, mas a limpeza ou uma etapa posterior não foi concluída. Veja os detalhes antes de executar novamente.",
+    noticeCleanupWarning: "A limpeza dos dados temporários não foi concluída. Veja os detalhes.",
+    errorOutputUnconfirmed: "Não foi possível confirmar o resultado da gravação. Verifique o destino antes de executar novamente.",
     dialogExportDirectory: "Escolher pasta de saída",
     ribbonTooltip: "Iniciar DocWen",
     commandLaunch: "Iniciar DocWen",
@@ -1523,6 +1544,9 @@ export const translations: Record<string, Translations> = {
 
   // Japanese
   "ja": {
+    noticeCompletedWithWarnings: "結果は保持されていますが、後片付けまたは後続処理が完了していません。再実行する前に詳細を確認してください。",
+    noticeCleanupWarning: "一時データの削除が完了していません。詳細を確認してください。",
+    errorOutputUnconfirmed: "書き込み結果を確認できませんでした。再実行する前に保存先を確認してください。",
     dialogExportDirectory: "出力フォルダーを選択",
     ribbonTooltip: "DocWen を起動",
     commandLaunch: "DocWen を起動",
@@ -1739,6 +1763,9 @@ export const translations: Record<string, Translations> = {
   },
 
   "ko": {
+    noticeCompletedWithWarnings: "결과는 보존되었지만 정리 또는 후속 작업이 완료되지 않았습니다. 다시 실행하기 전에 자세한 내용을 확인하세요.",
+    noticeCleanupWarning: "임시 데이터 정리가 완료되지 않았습니다. 자세한 내용을 확인하세요.",
+    errorOutputUnconfirmed: "쓰기 결과를 확인할 수 없습니다. 다시 실행하기 전에 대상을 확인하세요.",
     dialogExportDirectory: "출력 폴더 선택",
     ribbonTooltip: "DocWen 실행",
     commandLaunch: "DocWen 실행",
@@ -1955,6 +1982,9 @@ export const translations: Record<string, Translations> = {
   },
 
   "es": {
+    noticeCompletedWithWarnings: "El resultado está disponible, pero la limpieza o un paso posterior no ha finalizado. Revise los detalles antes de volver a ejecutar.",
+    noticeCleanupWarning: "La limpieza de los datos temporales no ha finalizado. Consulte los detalles.",
+    errorOutputUnconfirmed: "No se pudo confirmar el resultado de la escritura. Revise el destino antes de volver a ejecutar.",
     dialogExportDirectory: "Elegir carpeta de salida",
     ribbonTooltip: "Iniciar DocWen",
     commandLaunch: "Iniciar DocWen",
@@ -2171,6 +2201,9 @@ export const translations: Record<string, Translations> = {
   },
 
   "vi": {
+    noticeCompletedWithWarnings: "Kết quả đã được giữ lại, nhưng việc dọn dẹp hoặc bước tiếp theo chưa hoàn tất. Hãy xem chi tiết trước khi chạy lại.",
+    noticeCleanupWarning: "Việc dọn dẹp dữ liệu tạm thời chưa hoàn tất. Hãy xem chi tiết.",
+    errorOutputUnconfirmed: "Không thể xác nhận kết quả ghi. Hãy kiểm tra đích trước khi chạy lại.",
     dialogExportDirectory: "Chọn thư mục đầu ra",
     ribbonTooltip: "Khởi chạy DocWen",
     commandLaunch: "Khởi chạy DocWen",

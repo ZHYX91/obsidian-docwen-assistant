@@ -26,6 +26,8 @@ describe("NumberingActions", () => {
   it("treats a successful empty scheme list as empty without a fallback", async () => {
     const { NumberingActions } = await import("../src/actions/numbering-actions");
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal: new AbortController().signal, isCurrent: () => true }),
     };
@@ -42,10 +44,12 @@ describe("NumberingActions", () => {
     const { NumberingActions } = await import("../src/actions/numbering-actions");
     const signal = new AbortController().signal;
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal, isCurrent: () => true }),
     };
-    const docwen = { numberMarkdown: vi.fn().mockResolvedValue({}) };
+    const docwen = { numberMarkdown: vi.fn().mockResolvedValue({ warnings: [] }) };
     const capabilities = {
       requireAction: vi.fn().mockResolvedValue({ inspection: { contentSha256: "snapshot-sha" } }),
     };

@@ -59,7 +59,7 @@ export class ExportActions {
       { key: `export-prepare:${file.path}:${target}`, kind: "export" },
       "noticeExportFailed",
       async ({ signal }) => {
-        const selection = await this.snapshots.run(file, signal, async (snapshot) => {
+        const prepared = await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
           const route = this.capabilities.requireConversionRoute(capability, target);
@@ -73,6 +73,8 @@ export class ExportActions {
             items: this.capabilities.findApplicableOptimizations(capability, resources, target),
           };
         });
+        this.runner.presentWarnings(prepared.warnings);
+        const selection = prepared.value;
         if (selection.kind === "template") {
           if (target === "xlsx") {
             if (selection.items.length === 0) {
@@ -147,7 +149,7 @@ export class ExportActions {
         if (!outputDirectory) return;
 
         const destination = await captureExportTarget(this.app, outputDirectory, signal);
-        await this.snapshots.run(file, signal, async (snapshot) => {
+        const completed = await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
           const route = this.capabilities.requireConversionRoute(capability, target);
@@ -193,7 +195,7 @@ export class ExportActions {
             : snapshot.inputs;
           this.capabilities.requireTaskInputs(route, taskInputs);
 
-          const outcome = await this.docwen.convert({
+          return this.docwen.convert({
             ...options,
             inputs: taskInputs,
             sourceInput,
@@ -201,8 +203,15 @@ export class ExportActions {
             capabilityId: route.capabilityId,
             publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
           }, signal);
-          showNotice(t("noticeExportSuccess", { filename: portableBasename(outcome.output) }));
         });
+        if (completed.value) {
+          this.runner.presentCompletion(
+            t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
+            [...completed.value.warnings, ...completed.warnings],
+          );
+        } else {
+          this.runner.presentWarnings(completed.warnings);
+        }
       },
     );
   }
@@ -219,7 +228,7 @@ export class ExportActions {
         buildProofreadChecks(settings),
         signal,
       );
-      showNotice(t("noticeProofreadSuccess", { count: String(report.issues.length) }));
+      this.runner.presentCompletion(t("noticeProofreadSuccess", { count: String(report.issues.length) }), report.warnings);
     } catch (error) {
       if (isCancellationError(error)) throw error;
       this.runner.presentFailure("noticeProofreadFailed", error);

@@ -218,7 +218,7 @@ describe("VaultWriteTransaction", () => {
     expect(vault.process).toHaveBeenCalledOnce();
   });
 
-  it("revalidates file identity after Vault.process", async () => {
+  it("reports a post-publication identity change as a warning without retrying", async () => {
     const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
     const file = { path: "note.md", name: "note.md" };
     const replacement = { path: "note.md", name: "note.md" };
@@ -240,7 +240,9 @@ describe("VaultWriteTransaction", () => {
       new AbortController().signal,
     );
 
-    await expect(operation).rejects.toMatchObject({ code: "vault_target_changed" });
+    await expect(operation).resolves.toEqual([
+      { code: "post_publish_failed", phase: "post_publish", detailCode: "vault_target_changed" },
+    ]);
     expect(vault.process).toHaveBeenCalledOnce();
   });
 });

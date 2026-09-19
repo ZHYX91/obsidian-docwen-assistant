@@ -1,5 +1,8 @@
 /** Translation keys shared by every supported locale. */
 export interface Translations {
+  noticeCompletedWithWarnings: string;
+  noticeCleanupWarning: string;
+  errorOutputUnconfirmed: string;
   // Ribbon & Commands
   ribbonTooltip: string;
   commandLaunch: string;

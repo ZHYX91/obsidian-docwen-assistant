@@ -42,11 +42,15 @@ DocWen writes only to a request-owned staging directory. Assistant validates Bun
 
 Resolved Markdown-to-DOCX contains one preferred DOCX and one primary entry with size and SHA-256 in the validated Bundle. Ordinary conversion does not require a node JSON. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
 
+`output-files` owns file publication and rollback; `output-directory` owns complete result directories. `operation-outcome` permits one owned commit attempt. A host callback cannot report success without committing, trigger another commit, or turn an established publication into rollback. Backup, lock, task-staging and input-snapshot cleanup failures accompany the completed result as structured warnings. Changed cleanup targets are preserved. Cleanup never replaces the primary failure before publication.
+
 ## Vault writes
 
 Export captures the chosen parent directory identity before conversion. Publication rechecks the parent, source snapshot and prepared bytes, rejects an existing result root or an editor open inside that root, and checks cancellation before rename. Unrelated files and editors in the chosen parent do not block export.
 
 Proofreading only reads a report. Numbering is generated in an isolated file, and `VaultWriteTransaction` compares the original snapshot with the uniquely path-matched Markdown leaf, view, and editor state. It commits once through the Editor or Vault API only when all still match. A second matching view, an open/closed transition, plugin unload, view closure, or a conflict cancels or refuses the write.
+
+Once the editor buffer or Vault API confirms the expected content, save scheduling or subsequent identity changes produce warnings. If the host accepts content but does not confirm the write, the result is explicitly unconfirmed and is never retried automatically. This does not claim that an editor buffer has already been persisted to disk.
 
 ## Lifecycle and resources
 
