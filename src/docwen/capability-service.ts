@@ -91,18 +91,21 @@ export class DocWenCapabilityService {
     return capability;
   }
 
-  findConversionRoute(capability: FileCapability, target: ConvertTarget): RuntimeRoute | null {
-    return capability.source.routes.find((route) =>
-      route.operation === "conversion" && route.target === target && route.available) ?? null;
+  findConversionRoute(capability: FileCapability, target: ConvertTarget, optimizationId?: string): RuntimeRoute | null {
+    const matches = capability.source.routes.filter((route) =>
+      route.target === target && route.available && (optimizationId === undefined
+        ? route.operation === "conversion" && route.optimizationId === undefined
+        : route.optimizationId === optimizationId));
+    return matches.length === 1 ? matches[0] : null;
   }
 
-  requireConversionRoute(capability: FileCapability, target: ConvertTarget): RuntimeRoute {
-    const route = this.findConversionRoute(capability, target);
+  requireConversionRoute(capability: FileCapability, target: ConvertTarget, optimizationId?: string): RuntimeRoute {
+    const route = this.findConversionRoute(capability, target, optimizationId);
     if (!route) {
       throw new LocalCliError(
         "cli_invalid_envelope",
         `DocWen does not advertise a Machine conversion capability to ${target} for this file.`,
-        { source: capability.source.id, target },
+        { source: capability.source.id, target, optimizationId },
       );
     }
     return route;
@@ -155,11 +158,10 @@ export class DocWenCapabilityService {
     return resources.filter((resource) => actionIds.has(resource.id));
   }
 
-  optimizationActionIds(_capability: FileCapability, _target: ConvertTarget): string[] {
-    // Machine v2 exposes only consumer-neutral conversion capabilities. Route-
-    // specific optimizer actions are intentionally absent until promoted to a
-    // versioned capability with normalized options.
-    return [];
+  optimizationActionIds(capability: FileCapability, target: ConvertTarget): string[] {
+    const ids = capability.source.routes.flatMap((route) =>
+      route.optimizationId !== undefined && route.target === target && route.available ? [route.optimizationId] : []);
+    return [...new Set(ids)].filter((id) => this.findConversionRoute(capability, target, id) !== null);
   }
 
   requiresDetectedFormatAcceptance(inspection: FileInspection): boolean {
@@ -250,6 +252,9 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
     : capability.capability_id === "transform.markdown.heading_numbering"
       ? "number markdown"
       : null;
+  const optimizationId = capability.optimization_id;
+  if (optimizationId !== undefined && capability.operation !== "transform") return null;
+  if (!action && optimizationId === undefined && !["convert", "render"].includes(capability.operation)) return null;
   const target = action ? "md" : targetForMediaTypes(capability.output_media_types);
   if (!target) return null;
   const properties = isObject(capability.options_schema.properties)
@@ -259,12 +264,14 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
     source: capability.input_shape.slots.find((slot) =>
       slot.role === "source" || slot.role === "neutral_document")?.media_types[0] || "",
     target,
-    operation: action ? "action" : "conversion",
+    operation: action || optimizationId !== undefined ? "action" : "conversion",
     action,
     available: capability.availability !== "unavailable",
     state: capability.availability,
     options: properties,
     capabilityId: capability.capability_id,
+    ...(optimizationId === undefined ? {} : { optimizationId }),
+    capability,
     inputShape: capability.input_shape,
   };
 }

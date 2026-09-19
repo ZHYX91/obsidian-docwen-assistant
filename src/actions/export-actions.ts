@@ -122,7 +122,7 @@ export class ExportActions {
     const completed = await this.snapshots.run(file, signal, async (snapshot) => {
       const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
-      const route = this.capabilities.requireConversionRoute(capability, target);
+      const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
       if (useDetectedFormat) {
         const accepted = await confirmDetectedFormat(this.app, signal);
@@ -167,6 +167,7 @@ export class ExportActions {
         sourceInput,
         outputDirectory,
         capabilityId: route.capabilityId,
+        selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
       }, signal);
     });

@@ -19,6 +19,7 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 
 import { LocalCliError } from "./errors";
+import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
 import { atomicCommitDirectory, captureOutputDirectory, type DirectoryPublication } from "./output-directory";
@@ -75,6 +76,8 @@ export interface ConvertRequest extends ConvertOptions {
   sourceInput?: TaskInput;
   outputDirectory: string;
   capabilityId?: string;
+  /** Capability already selected during this operation's discovery. Core rechecks it at acceptance. */
+  selectedCapability?: MachineCapability;
   /** Host-owned source validation around the final output commit. */
   publish?: DirectoryPublication;
 }
@@ -178,6 +181,8 @@ export interface RuntimeRoute {
   state: string;
   options: string[];
   capabilityId: string;
+  optimizationId?: string;
+  capability: MachineCapability;
   inputShape: MachineCapability["input_shape"];
 }
 
@@ -304,22 +309,23 @@ export class DocWenClient {
   }
 
   async convert(request: ConvertRequest, signal?: AbortSignal): Promise<ConversionOutcome> {
-    if (request.optimization) {
-      throw new LocalCliError(
-        "cli_invalid_envelope",
-        "The selected optimization is not exposed by the Machine capability contract.",
-      );
-    }
     const destination = await captureOutputDirectory(request.outputDirectory, signal);
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
     const inspection = await this.inspect(source, signal);
-    const capabilityId = request.capabilityId ?? conversionCapabilityId(inspection.mediaType, request.target);
-    const options = buildConversionMachineOptions(request, inspection.mediaType);
     return this.withTaskStaging(async (stagingRoot) => {
-      const result = await this.machine.runTask(
-        await taskRequest(capabilityId, request.inputs, stagingRoot, options, signal), signal,
+      const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
+      const capabilities = request.selectedCapability
+        ? [request.selectedCapability]
+        : (await this.runtimeCapabilities(signal)).capabilities;
+      const selected = selectConversionCapability(
+        capabilities, prepared.inputs, request.target, request.optimization, request.capabilityId,
       );
-      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      prepared.capability_id = selected.capability_id;
+      prepared.options = buildConversionMachineOptions({
+        ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
+      }, inspection.mediaType);
+      const result = await this.machine.runTask(prepared, signal);
+      if (selected.capability_id === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
       return { ...outputs, bundleId: result.bundle.bundle_id };
     });
@@ -651,24 +657,6 @@ export function normalizeLogicalPath(value: string): string {
   return value;
 }
 
-function conversionCapabilityId(inputMediaType: string, target: ConvertTarget): string {
-  const key = `${inputMediaType}->${target}`;
-  const mapping: Record<string, string> = {
-    "text/markdown->docx": "convert.markdown.to_docx",
-    "text/markdown->xlsx": "convert.markdown.to_xlsx",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document->md": "convert.docx.to_markdown",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet->md": "convert.xlsx.to_markdown",
-  };
-  const capabilityId = mapping[key];
-  if (!capabilityId) {
-    throw new LocalCliError("cli_invalid_envelope", "No Machine conversion capability matches this request.", {
-      inputMediaType,
-      target,
-    });
-  }
-  return capabilityId;
-}
-
 export function buildConversionMachineOptions(request: ConvertRequest, inputMediaType: string): JsonObject {
   const options: JsonObject = {};
   const supported = request.supportedOptions ? new Set(request.supportedOptions) : null;
@@ -916,6 +904,10 @@ function parseProofreadPosition(value: unknown, field: string): ProofreadPositio
 }
 
 function normalizeCapability(item: JsonObject): MachineCapability {
+  const operation = requiredStringValue(item.operation, "capability.operation");
+  const optimizationId = item.optimization_id === undefined
+    ? undefined : requiredStringValue(item.optimization_id, "capability.optimization_id");
+  if (optimizationId !== undefined && operation !== "transform") throw invalidResponse("capability.optimization_id");
   const availability = item.availability;
   if (availability !== "available" && availability !== "limited" && availability !== "unavailable") {
     throw invalidResponse("capability.availability");
@@ -962,7 +954,8 @@ function normalizeCapability(item: JsonObject): MachineCapability {
   if (cardinality !== "one" && cardinality !== "many") throw invalidResponse("capability.output_shape.cardinality");
   return {
     capability_id: requiredStringValue(item.capability_id, "capability.capability_id"),
-    operation: requiredStringValue(item.operation, "capability.operation"),
+    operation,
+    ...(optimizationId === undefined ? {} : { optimization_id: optimizationId }),
     input_shape: { slots, undeclared_roles: "reject" },
     output_media_types: stringArray(item.output_media_types),
     output_shape: {

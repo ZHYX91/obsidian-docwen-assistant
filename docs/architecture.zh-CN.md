@@ -19,6 +19,11 @@ translation_status: source
 
 ## 请求数据流
 
+优化选择通过 `optimization_id`、输入形状、输出媒体类型与可用性，把资源 ID 绑定到可执行的
+`transform` 能力。`conversion-selection.ts` 按已准备的输入 handle 核验选定能力；动作把已发现能力
+传入执行，不重复发现查询。优化不可用或存在歧义时不能退回普通转换。参数集合由选定能力定义，
+完整预转换链则由 Core 在接受任务时再次核验。
+
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
 Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。Assistant 通过 Obsidian metadata cache 解析该笔记明确写出的图片嵌入，支持 PNG、JPEG、GIF、BMP 与 WebP；短 Wiki 链接、跨目录链接和带空格文件名都遵循 Obsidian 自己的解析结果。Assistant 不枚举 Vault，也不扫描同名文件。它把每个出现位置、原始 token、媒体类型、字节、大小和 SHA-256 封装进 `resolved_document`。同时，它认证 DocWen 的完整 1 至 9 级标题清单，并在中性的 `numbering_export_plan` 中把这些标题显式标为未启用编号；这不会猜测或增加编号。DocWen 不读取 Vault，也不二次寻找图片。

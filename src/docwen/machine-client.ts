@@ -70,6 +70,7 @@ export type MachineTaskRequest = {
 export type MachineCapability = {
   capability_id: string;
   operation: string;
+  optimization_id?: string;
   input_shape: {
     slots: Array<{
       role:

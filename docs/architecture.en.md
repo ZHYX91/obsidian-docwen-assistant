@@ -20,6 +20,12 @@ Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps
 
 ## Request data flow
 
+Optimizer selection joins resource IDs to executable `transform` capabilities by `optimization_id`,
+typed input shape, output media type, and availability. `conversion-selection.ts` validates the exact
+selected capability against the prepared input handles. Actions pass their discovered capability to
+execution; unavailable or ambiguous optimizers cannot fall back to ordinary conversion. The selected
+capability owns its option set, while Core rechecks the complete preconversion chain at acceptance.
+
 An action first captures an isolated snapshot from the uniquely path-matched open Markdown editor, including a background split, or from the Vault file when no such editor is open. More than one open editor for the same path fails closed. The action then creates input handles with kind, media type, canonical logical path, size, and SHA-256. Inspection and capability facts decide whether an action is supported. Plan and execute use the same capability and input facts without inferring support from extensions or route IDs.
 
 For Markdown-to-DOCX, the original snapshot is used only for inspection, proofreading, and conflict validation. The Assistant resolves images explicitly embedded by that note through Obsidian's metadata cache and supports PNG, JPEG, GIF, BMP, and WebP. Short Wiki links, cross-folder links, and filenames containing spaces follow Obsidian's own resolution result. The Assistant neither enumerates the Vault nor scans for same-named files. It packages each occurrence, authored token, media type, bytes, size, and SHA-256 into a `resolved_document`. It also authenticates DocWen's complete heading inventory, levels 1 through 9, and marks those headings explicitly unnumbered in the consumer-neutral `numbering_export_plan`; it neither guesses nor adds numbering. DocWen does not read the Vault or search for the image again.

@@ -188,6 +188,40 @@ describe("ExportActions optimization discovery", () => {
     await pending;
   });
 
+  it.each([false, true])("executes the selected optimizer and rejects a vanished route (unavailable=%s)", async (unavailable) => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const signal = new AbortController().signal;
+    const runner = advisoryRunner(signal);
+    const selectedCapability = { capability_id: "opaque.gongwen", operation: "transform", optimization_id: "gongwen" };
+    const capability = { inspection: { decision: "allow" }, source: { id: "docx", category: "document", routes: [] } };
+    const resources = [{ id: "gongwen", name: "Gongwen", scopes: [] }];
+    const capabilities = {
+      requireAction: vi.fn().mockResolvedValue(capability),
+      requireConversionRoute: vi.fn((_file, _target, optimization?: string) => {
+        if (optimization === "gongwen" && unavailable) throw new Error("Optimizer unavailable");
+        return optimization === "gongwen"
+          ? { capabilityId: "opaque.gongwen", capability: selectedCapability, options: ["recognize_text"] }
+          : { capabilityId: "ordinary", options: [] };
+      }),
+      requireTaskInputs: vi.fn(), optimizationActionIds: vi.fn().mockReturnValue(["gongwen"]),
+      findApplicableOptimizations: vi.fn().mockReturnValue(resources),
+      requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
+    };
+    const docwen = { optimizations: vi.fn().mockResolvedValue(resources), convert: vi.fn().mockResolvedValue({ output: "letter.md", outputs: [], bundleId: "bundle.1", warnings: [] }) };
+    const actions = new ExportActions({} as never, docwen as never, capabilities as never, () => DEFAULT_SETTINGS, runner as never);
+    const pending = actions.toMarkdown({ path: "letter.docx", name: "letter.docx" } as never);
+    await vi.waitFor(() => expect(state.choose).toBeDefined());
+    state.choose!({ id: "gongwen" });
+    if (unavailable) {
+      await expect(pending).rejects.toThrow("Optimizer unavailable");
+      expect(docwen.convert).not.toHaveBeenCalled();
+    } else {
+      await pending;
+      expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ optimization: "gongwen", capabilityId: "opaque.gongwen", selectedCapability, supportedOptions: ["recognize_text"] }), signal);
+    }
+    expect(capabilities.requireConversionRoute).toHaveBeenLastCalledWith(capability, "md", "gongwen");
+  });
+
   it("carries the exact route option set into Markdown conversion", async () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const signal = new AbortController().signal;

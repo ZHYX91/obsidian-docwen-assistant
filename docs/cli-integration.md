@@ -16,6 +16,14 @@ DocWen Assistant consumes `docwen.machine.v2` and Artifact Bundle v3 from a veri
 
 ## Methods used
 
+Optimization choices join `resource/list` IDs to available `transform` capabilities through
+`optimization_id`. Input slots and output media types must match, and the match must be unique.
+Ordinary conversion excludes optimizer capabilities. The chosen capability and its supported options
+are passed into execution, avoiding a second discovery query; a missing or unavailable optimizer fails
+without falling back to ordinary conversion. Core checks the full Office preconversion chain again at
+planning and acceptance. Global settings contribute only options exposed by the chosen capability.
+
+
 | Plugin behavior | Machine method/capability |
 |---|---|
 | Diagnostics | `health/check` |
