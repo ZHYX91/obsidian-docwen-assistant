@@ -16,6 +16,8 @@ Users can start actions from the ribbon icon, the file explorer **DocWen** subme
 
 Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
 
+Template, optimization and numbering choices remain part of the active operation and can be cancelled. Cancelling or replacing that operation closes its plugin picker; an old choice cannot start a conversion. Detected-format confirmation uses localized Cancel and Continue controls and closes when its operation is cancelled.
+
 ## Numbering and proofreading
 
 Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation observed by that view.

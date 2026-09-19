@@ -19,7 +19,7 @@ import { VaultReadSnapshot } from "../host/vault-read-snapshot";
 import { resolveAbsoluteFilePath } from "../host/vault-files";
 import { t } from "../i18n";
 import type { PluginSettings } from "../settings-model";
-import { ItemPickerModal, type PickerItem } from "../utils/suggest-modal";
+import { pickItem, type PickerItem } from "../utils/suggest-modal";
 import { isCancellationError } from "./action-errors";
 import { ActionRunner } from "./action-runner";
 import {
@@ -56,9 +56,10 @@ export class ExportActions {
 
   private async prepare(file: TFile, target: ConvertTarget): Promise<void> {
     await this.runner.run(
-      { key: `export-prepare:${file.path}:${target}`, kind: "export" },
+      { key: `export:${file.path}`, kind: "export" },
       "noticeExportFailed",
-      async ({ signal }) => {
+      async (lease) => {
+        const { signal } = lease;
         const prepared = await this.snapshots.run(file, signal, async (snapshot) => {
           const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
           const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
@@ -73,149 +74,111 @@ export class ExportActions {
             items: this.capabilities.findApplicableOptimizations(capability, resources, target),
           };
         });
+        if (!lease.isCurrent()) return;
         this.runner.presentWarnings(prepared.warnings);
         const selection = prepared.value;
+        const selected: Pick<ConvertOptions, "template" | "optimization"> = {};
         if (selection.kind === "template") {
-          if (target === "xlsx") {
-            if (selection.items.length === 0) {
-              await this.execute(file, target);
-              return;
-            }
-            const direct: PickerItem = { id: "", label: t("pickerNoSpreadsheetTemplate") };
-            new ItemPickerModal(
-              this.app,
-              [direct, ...selection.items.map(templatePickerItem)],
-              t("pickerTemplatePlaceholder"),
-              (chosen) => {
-                void this.execute(file, target, chosen === direct ? {} : { template: chosen.id });
-              },
-            ).open();
-            return;
-          }
-          if (selection.items.length === 0) {
+          if (selection.items.length === 0 && target !== "xlsx") {
             showNotice(t("noticeNoTemplatesAvailable"));
             return;
           }
-          this.openTemplatePicker(selection.items, (template) => {
-            void this.execute(file, target, { template: template.id });
-          });
-          return;
+          if (selection.items.length > 0) {
+            const direct: PickerItem = { id: "", label: t("pickerNoSpreadsheetTemplate") };
+            const items = selection.items.map(templatePickerItem);
+            if (target === "xlsx") items.unshift(direct);
+            const chosen = await pickItem(this.app, items, t("pickerTemplatePlaceholder"), signal);
+            if (!chosen || !lease.isCurrent()) return;
+            if (chosen !== direct) selected.template = chosen.id;
+          }
+        } else if (selection.items.length > 0) {
+          const items: PickerItem[] = [
+            { id: "__none__", label: t("pickerNoOptimization") },
+            ...selection.items.map((item) => ({ id: item.id, label: item.name, description: item.description })),
+          ];
+          const chosen = await pickItem(this.app, items, t("pickerOptimizationPlaceholder"), signal);
+          if (!chosen || !lease.isCurrent()) return;
+          if (chosen.id !== "__none__") selected.optimization = chosen.id;
         }
-        if (selection.items.length === 0) {
-          await this.execute(file, target);
-          return;
-        }
-        const items: PickerItem[] = [
-          { id: "__none__", label: t("pickerNoOptimization") },
-          ...selection.items.map((item) => ({ id: item.id, label: item.name, description: item.description })),
-        ];
-        new ItemPickerModal(
-          this.app,
-          items,
-          t("pickerOptimizationPlaceholder"),
-          (chosen) => {
-            void this.execute(file, target, {
-              optimization: chosen.id === "__none__" ? undefined : chosen.id,
-            });
-          },
-        ).open();
+        if (lease.isCurrent()) await this.execute(file, target, selected, signal);
       },
     );
-  }
-
-  private openTemplatePicker(items: TemplateItem[], select: (item: { id: string }) => void): void {
-    new ItemPickerModal(
-      this.app,
-      items.map(templatePickerItem),
-      t("pickerTemplatePlaceholder"),
-      select,
-    ).open();
   }
 
   private async execute(
     file: TFile,
     target: ConvertTarget,
-    selected: Pick<ConvertOptions, "template" | "optimization"> = {},
+    selected: Pick<ConvertOptions, "template" | "optimization">,
+    signal: AbortSignal,
   ): Promise<void> {
-    await this.runner.run(
-      { key: `export:${file.path}`, kind: "export" },
-      "noticeExportFailed",
-      async ({ signal }) => {
-        const filePath = resolveAbsoluteFilePath(this.app.vault, file);
-        if (!filePath) {
-          throw new LocalCliError("cli_not_file", "The selected Vault file has no local filesystem path.");
-        }
-        const outputDirectory = await pickExportOutput(filePath, target);
-        if (!outputDirectory) return;
+    const filePath = resolveAbsoluteFilePath(this.app.vault, file);
+    if (!filePath) {
+      throw new LocalCliError("cli_not_file", "The selected Vault file has no local filesystem path.");
+    }
+    const outputDirectory = await pickExportOutput(filePath, target);
+    if (!outputDirectory || signal.aborted) return;
 
-        const destination = await captureExportTarget(this.app, outputDirectory, signal);
-        const completed = await this.snapshots.run(file, signal, async (snapshot) => {
-          const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
-          const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
-          const route = this.capabilities.requireConversionRoute(capability, target);
-          const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
-          if (useDetectedFormat) {
-            const accepted = await confirmDetectedFormat(
-              this.app,
-              capability.inspection.reasonCode || capability.inspection.warningCode ||
-                "DocWen detected content that differs from the filename. Continue with detected content?",
-            );
-            if (!accepted) return;
-          }
+    const destination = await captureExportTarget(this.app, outputDirectory, signal);
+    const completed = await this.snapshots.run(file, signal, async (snapshot) => {
+      const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
+      const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
+      const route = this.capabilities.requireConversionRoute(capability, target);
+      const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
+      if (useDetectedFormat) {
+        const accepted = await confirmDetectedFormat(this.app, signal);
+        if (!accepted || signal.aborted) return;
+      }
 
-          const settings = this.getSettings();
-          const options: ConvertOptions = {
-            target,
-            ...selected,
-            useDetectedFormat,
-            supportedOptions: route.options,
-          };
-          if (target === "md") {
-            Object.assign(options, buildMarkdownExportOptions(settings));
-            if (route.options.some((name) => ["remove_numbering", "add_numbering", "numbering_scheme"].includes(name))) {
-              Object.assign(
-                options,
-                buildNumberingOptions(
-                  settings,
-                  settings.docToMdCleanNumbering,
-                  settings.docToMdAddNumbering,
-                ),
-              );
-            }
-          }
-          if (capability.source.category === "markdown") {
-            if (settings.proofreadOnConvert) {
-              await this.runAdvisoryProofread(sourceInput, settings, signal);
-            }
-            Object.assign(options, buildHeadingMergeOptions(settings));
-          }
-
-          const taskInputs = target === "docx"
-            ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
-            : snapshot.inputs;
-          this.capabilities.requireTaskInputs(route, taskInputs);
-
-          return this.docwen.convert({
-            ...options,
-            inputs: taskInputs,
-            sourceInput,
-            outputDirectory,
-            capabilityId: route.capabilityId,
-            publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
-          }, signal);
-        });
-        if (completed.value) {
-          this.runner.presentCompletion(
-            t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
-            [...completed.value.warnings, ...completed.warnings],
+      const settings = this.getSettings();
+      const options: ConvertOptions = {
+        target,
+        ...selected,
+        useDetectedFormat,
+        supportedOptions: route.options,
+      };
+      if (target === "md") {
+        Object.assign(options, buildMarkdownExportOptions(settings));
+        if (route.options.some((name) => ["remove_numbering", "add_numbering", "numbering_scheme"].includes(name))) {
+          Object.assign(
+            options,
+            buildNumberingOptions(
+              settings,
+              settings.docToMdCleanNumbering,
+              settings.docToMdAddNumbering,
+            ),
           );
-        } else {
-          this.runner.presentWarnings(completed.warnings);
         }
-      },
-    );
-  }
+      }
+      if (capability.source.category === "markdown") {
+        if (settings.proofreadOnConvert) {
+          await this.runAdvisoryProofread(sourceInput, settings, signal);
+        }
+        Object.assign(options, buildHeadingMergeOptions(settings));
+      }
 
+      const taskInputs = target === "docx"
+        ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
+        : snapshot.inputs;
+      this.capabilities.requireTaskInputs(route, taskInputs);
+
+      return this.docwen.convert({
+        ...options,
+        inputs: taskInputs,
+        sourceInput,
+        outputDirectory,
+        capabilityId: route.capabilityId,
+        publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
+      }, signal);
+    });
+    if (completed.value) {
+      this.runner.presentCompletion(
+        t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
+        [...completed.value.warnings, ...completed.warnings],
+      );
+    } else {
+      this.runner.presentWarnings(completed.warnings);
+    }
+  }
   private async runAdvisoryProofread(
     input: TaskInput,
     settings: PluginSettings,

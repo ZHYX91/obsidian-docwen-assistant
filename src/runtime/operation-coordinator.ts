@@ -1,6 +1,6 @@
 import { LocalCliError } from "../docwen";
 
-export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control";
+export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control" | "choose-action";
 export type OperationState = "running" | "cancelling";
 
 export interface OperationRequest {

@@ -378,6 +378,7 @@ export default class DocWenPlugin extends Plugin {
 
     // Register file-menu (right-click) context menu
     registerFileMenu(this, {
+      runner: this.actionRunner,
       exports: this.exportActions,
       gui: this.guiActions,
       numbering: this.numberingActions,

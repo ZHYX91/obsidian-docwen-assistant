@@ -9,15 +9,15 @@ const menuState = vi.hoisted(() => ({
 vi.mock("obsidian", () => ({}));
 vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => menuState.notices.push(message) }));
 vi.mock("../src/utils/suggest-modal", () => ({
-  ItemPickerModal: class {
-    constructor(
-      _app: unknown,
-      private items: Array<{ id: string; label: string }>,
-      _placeholder: string,
-      private choose: (item: { id: string }) => void,
-    ) {}
-    open() { menuState.pickers.push({ items: this.items, choose: this.choose }); }
-  },
+  pickItem: (_app: unknown, items: Array<{ id: string; label: string }>, _placeholder: string, signal: AbortSignal) =>
+    new Promise((resolve) => {
+      const cancel = () => resolve(null);
+      signal.addEventListener("abort", cancel, { once: true });
+      menuState.pickers.push({ items, choose: (item) => {
+        signal.removeEventListener("abort", cancel);
+        resolve(item);
+      } });
+    }),
 }));
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { path?: string }) => values?.path ? `${key}:${values.path}` : key,
@@ -145,6 +145,7 @@ describe("file menu capability states", () => {
     await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
     expect(menuState.pickers[0].items.map((item) => item.label)).toEqual(["contextMenuConvertToMd"]);
     menuState.pickers[0].choose({ id: "0" });
+    await Promise.resolve();
     expect(actions.exports.toMarkdown).toHaveBeenCalledWith({ path: "note.docx" });
   });
 
@@ -204,6 +205,26 @@ describe("file menu capability states", () => {
     expectValidSections(submenu);
   });
 
+  it.each([true, false])("does not invoke cached menu actions after unload (submenu=%s)", async (submenu) => {
+    const { handler, actions, dispose } = await register({
+      peek: () => ({ inspection: { supportedActions: ["convert", "number markdown", "validate"] } }),
+      findConversionRoute: () => ({}),
+    });
+    const menu = new FakeMenu(submenu);
+    handler(menu, { path: "note.md" });
+    const items = submenu ? menu.items[0].submenu!.items : menu.items;
+    dispose();
+    for (const item of items) item.click?.();
+    await Promise.resolve();
+    expect(actions.exports.toDocx).not.toHaveBeenCalled();
+    expect(actions.exports.toMarkdown).not.toHaveBeenCalled();
+    expect(actions.exports.toXlsx).not.toHaveBeenCalled();
+    expect(actions.numbering.add).not.toHaveBeenCalled();
+    expect(actions.numbering.remove).not.toHaveBeenCalled();
+    expect(actions.proofread.activateView).not.toHaveBeenCalled();
+    expect(actions.gui.open).not.toHaveBeenCalled();
+  });
+
   it("labels the Markdown file inferred from a folder context", async () => {
     menuState.target = { path: "Project/Project.md" };
     const { handler } = await register({ peek: () => null, preload: vi.fn() });
@@ -248,6 +269,7 @@ async function register(
   const { registerFileMenu } = await import("../src/app/register-file-menu");
   let handler!: (menu: FakeMenu, file: { path: string }) => void;
   let dispose!: () => void;
+  const controller = new AbortController();
   const plugin = {
     app: {
       workspace: {
@@ -259,9 +281,13 @@ async function register(
       vault: {},
     },
     registerEvent: () => undefined,
-    register: (cleanup: () => void) => { dispose = cleanup; },
+    register: (cleanup: () => void) => { dispose = () => { controller.abort(); cleanup(); }; },
   };
   const actions = {
+    runner: {
+      run: async (_request: unknown, _failure: unknown, work: (lease: { signal: AbortSignal; isCurrent(): boolean }) => Promise<unknown>) =>
+        work({ signal: controller.signal, isCurrent: () => !controller.signal.aborted }),
+    },
     exports: {
       toMarkdown: vi.fn().mockResolvedValue(undefined),
       toDocx: vi.fn().mockResolvedValue(undefined),

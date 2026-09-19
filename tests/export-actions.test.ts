@@ -5,10 +5,11 @@ import { DEFAULT_SETTINGS } from "../src/settings-model";
 const state = vi.hoisted(() => ({
   notices: [] as string[],
   pickerItems: [] as Array<{ id: string }>,
-  choose: undefined as ((item: { id: string }) => void) | undefined,
+  choose: undefined as ((item: { id: string } | null) => void) | undefined,
+  openDialog: vi.fn(),
 }));
 
-vi.mock("obsidian", () => ({ TFile: class TFile {} }));
+vi.mock("obsidian", () => ({ TFile: class TFile {}, Modal: class Modal {} }));
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { count?: string; filename?: string }) => {
     if (values?.filename) return `${key}:${values.filename}`;
@@ -27,7 +28,7 @@ vi.mock("../src/host/vault-files", () => ({ resolveAbsoluteFilePath: () => "D:\\
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: vi.fn().mockResolvedValue(true) }));
 vi.mock("../src/host/electron-dialogs", () => ({
   getElectronOpenDialog: () => ({
-    showOpenDialog: vi.fn().mockResolvedValue({ canceled: false, filePaths: ["D:\\Vault"] }),
+    showOpenDialog: state.openDialog,
   }),
 }));
 vi.mock("../src/host/vault-read-snapshot", () => ({
@@ -79,13 +80,16 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
   },
 }));
 vi.mock("../src/utils/suggest-modal", () => ({
-  ItemPickerModal: class ItemPickerModal {
-    constructor(_app: unknown, items: Array<{ id: string }>, _placeholder: string, choose: (item: { id: string }) => void) {
+  pickItem: (_app: unknown, items: Array<{ id: string }>, _placeholder: string, signal: AbortSignal) =>
+    new Promise((resolve) => {
       state.pickerItems = items;
-      state.choose = choose;
-    }
-    open(): void {}
-  },
+      const cancel = () => resolve(null);
+      signal.addEventListener("abort", cancel, { once: true });
+      state.choose = (item) => {
+        signal.removeEventListener("abort", cancel);
+        resolve(item);
+      };
+    }),
 }));
 
 describe("ExportActions optimization discovery", () => {
@@ -170,7 +174,8 @@ describe("ExportActions optimization discovery", () => {
       runner as never,
     );
 
-    await actions.toMarkdown({ path: "note.docx", name: "note.docx" } as never);
+    const pending = actions.toMarkdown({ path: "note.docx", name: "note.docx" } as never);
+    await vi.waitFor(() => expect(state.choose).toBeDefined());
 
     expect(docwen.optimizations).toHaveBeenCalledWith(signal);
     expect(capabilities.findApplicableOptimizations).toHaveBeenCalledWith(
@@ -179,6 +184,8 @@ describe("ExportActions optimization discovery", () => {
       "md",
     );
     expect(state.pickerItems.map((item) => item.id)).toEqual(["__none__", "gongwen"]);
+    state.choose!(null);
+    await pending;
   });
 
   it("carries the exact route option set into Markdown conversion", async () => {
@@ -411,6 +418,7 @@ function resetState(): void {
   state.notices.length = 0;
   state.pickerItems = [];
   state.choose = undefined;
+  state.openDialog.mockReset().mockResolvedValue({ canceled: false, filePaths: ["D:\\Vault"] });
 }
 
 function advisoryRunner(signal: AbortSignal) {
@@ -470,16 +478,71 @@ describe("Excel template choice", () => {
       {} as never, docwen as never, capabilities as never,
       () => DEFAULT_SETTINGS, advisoryRunner(new AbortController().signal) as never,
     );
-    await actions.toXlsx({ path: "note.md", name: "note.md" } as never);
+    const pending = actions.toXlsx({ path: "note.md", name: "note.md" } as never);
     if (choice !== "empty") {
+      await vi.waitFor(() => expect(state.choose).toBeDefined());
       expect(docwen.convert).not.toHaveBeenCalled();
       expect(state.pickerItems.map((item) => item.id)).toEqual(["", "sheet-template"]);
       state.choose!(state.pickerItems[choice === "direct" ? 0 : 1]);
     }
-    await vi.waitFor(() => expect(docwen.convert).toHaveBeenCalledOnce());
+    await pending;
+    expect(docwen.convert).toHaveBeenCalledOnce();
     const options = docwen.convert.mock.calls[0][0];
     if (choice === "template") expect(options.template).toBe("sheet-template");
     else expect(options.template).toBeUndefined();
     expect(state.notices).not.toContain("noticeNoTemplatesAvailable");
+  });
+});
+
+
+describe("export operation ownership", () => {
+  beforeEach(resetState);
+
+  it.each(["cancel", "unload", "replacement", "queued-choice"])("rejects a stale template choice after %s", async (action) => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const operations = new OperationCoordinator();
+    const runner = new ActionRunner({} as never, operations);
+    const capabilities = advisoryCapabilities(markdownCapability());
+    capabilities.requireConversionRoute.mockReturnValue({ options: ["template_name"] });
+    const docwen = {
+      templates: vi.fn().mockResolvedValue([{ id: "template.one", name: "One", origin: "builtin", isDefault: true }]),
+      convert: vi.fn(),
+    };
+    const actions = new ExportActions({} as never, docwen as never, capabilities as never, () => DEFAULT_SETTINGS, runner);
+    const pending = actions.toDocx({ path: "note.md", name: "note.md" } as never);
+    await vi.waitFor(() => expect(state.choose).toBeDefined());
+    expect(operations.getSnapshot().operations).toHaveLength(1);
+    const lateChoose = state.choose!;
+    if (action === "queued-choice") lateChoose(state.pickerItems[0]);
+    if (action === "unload") operations.dispose();
+    else if (action === "replacement") operations.begin({ key: "export:note.md", kind: "export" }).finish();
+    else operations.cancelAll();
+    lateChoose(state.pickerItems[0]);
+    await pending;
+    expect(docwen.convert).not.toHaveBeenCalled();
+    expect(state.openDialog).not.toHaveBeenCalled();
+    expect(operations.getSnapshot().operations).toEqual([]);
+  });
+
+  it("ignores a native directory selection returned after cancellation", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const operations = new OperationCoordinator();
+    const runner = new ActionRunner({} as never, operations);
+    const capabilities = advisoryCapabilities(markdownCapability());
+    let settle!: (result: { canceled: boolean; filePaths: string[] }) => void;
+    state.openDialog.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
+    const docwen = { convert: vi.fn() };
+    const actions = new ExportActions({} as never, docwen as never, capabilities as never, () => DEFAULT_SETTINGS, runner);
+    const pending = actions.toMarkdown({ path: "note.md", name: "note.md" } as never);
+    await vi.waitFor(() => expect(state.openDialog).toHaveBeenCalledOnce());
+    operations.cancelAll();
+    settle({ canceled: false, filePaths: ["ignored-output"] });
+    await pending;
+    expect(docwen.convert).not.toHaveBeenCalled();
+    expect(operations.getSnapshot().operations).toEqual([]);
   });
 });

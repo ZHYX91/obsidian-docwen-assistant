@@ -12,6 +12,7 @@ const OPERATION_LABELS: Record<OperationKind, keyof Translations> = {
   numbering: "operationNumbering",
   doctor: "operationDoctor",
   "gui-control": "operationGuiControl",
+  "choose-action": "contextMenuChooseAction",
 };
 
 /** Renders safe operation categories only; internal keys and Vault paths never enter the DOM. */

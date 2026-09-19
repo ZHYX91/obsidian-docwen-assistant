@@ -56,6 +56,8 @@ Once the editor buffer or Vault API confirms the expected content, save scheduli
 
 Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. Changing the DocWen target cancels active work and resets connection checks, capability projection, file caches, and pending preloads as one generation; invalidated requests cannot restore stale state. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
 
+An export or numbering operation owns its picker through the eventual write; selecting an item never starts a detached task. Cancellation, replacement and unload close plugin pickers and format confirmations and invalidate queued choices. Native directory dialogs may stay open until dismissed, but their returned paths are ignored after cancellation. File-menu discovery uses the same coordinator, and menu callbacks cannot invoke actions after unload.
+
 ## Trust boundaries
 
 Obsidian documents, user paths, Machine messages, staging files, and GitHub release assets are all untrusted inputs. The product does not trust extensions, relative paths, symlinks, existing targets, unbound diagnostics, or a version string shown only in the UI. Release construction and publication are outside the product runtime: a thin repository adapter pins a self-contained vendored core by exact version and SHA-256, while acceptance and manual authorization remain external evidence. The public repository never imports its parent workspace or a sibling path.
