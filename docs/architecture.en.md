@@ -36,7 +36,7 @@ text is never used to guess a number.
 
 ## Artifacts and commit
 
-DocWen writes only to a request-owned staging directory. Assistant validates Bundle v3 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory, including its bound `docwen-node.json`, is prepared beside the chosen parent and published in one directory rename. Existing result roots are rejected. The UI lists business outputs and excludes the manifest from its output count.
+DocWen writes only to a request-owned staging directory. Assistant validates Bundle v3 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory is prepared beside the chosen parent and published in one directory rename. Ordinary conversion requires no node JSON; sizes, hashes and relations come from the validated Bundle. Existing result roots are rejected. The UI lists business outputs and excludes bound layout manifests and image resources from its output count.
 
 Resolved Markdown-to-DOCX contains one preferred DOCX, one primary entry and one manifest resource bound through `resource_of`. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
 

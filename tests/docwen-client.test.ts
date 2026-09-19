@@ -99,16 +99,6 @@ async function groupedDocxBundle(taskId: string, artifactPath: string): Promise<
   bundle.layout_schema = "docwen.document_node.v1";
   bundle.artifacts[0]!.logical_path = `${node}/${node}.docx`;
   bundle.artifacts[0]!.suggested_name = `${node}.docx`;
-  const manifestPath = path.join(path.dirname(artifactPath), "docwen-node.json");
-  const bytes = Buffer.from("{}");
-  await writeFile(manifestPath, bytes);
-  bundle.artifacts.push({
-    artifact_id: "manifest", kind: "resource", locator: "docwen-node.json",
-    logical_path: `${node}/docwen-node.json`, suggested_name: "docwen-node.json",
-    media_type: "application/vnd.docwen.document-node+json", size_bytes: bytes.length,
-    sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath: manifestPath,
-  });
-  bundle.relations.push({ type: "resource_of", source_artifact_id: "manifest", target_artifact_id: "artifact.1", role: "manifest", ordinal: 0 });
   return bundle;
 }
 

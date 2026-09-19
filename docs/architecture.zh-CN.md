@@ -31,7 +31,7 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 ## 产物与提交
 
-DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，连同绑定的 `docwen-node.json` 一次重命名发布；已有结果目录一律拒绝覆盖。界面只列业务输出，清单不计入输出数量。
+DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录并一次重命名发布；普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle；已有结果目录一律拒绝覆盖。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
 
 resolved-document 转 DOCX 包含一个首选 DOCX、一个 primary entry 和通过 `resource_of` 绑定的清单资源，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 

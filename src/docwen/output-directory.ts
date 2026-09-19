@@ -80,13 +80,9 @@ export async function atomicCommitDirectory(
   if (!rootName || roots.size !== 1) throw new LocalCliError("cli_integrity_error", "A conversion must have one result root.");
   const names = paths.map(({ parts }) => parts.join("/").toLowerCase());
   if (new Set(names).size !== names.length) throw new LocalCliError("cli_integrity_error", "Artifact output paths collide.");
-  const manifests = bundle.relations.filter((r) => r.type === "resource_of" && r.role === "manifest");
-  const manifest = paths.find(({ artifact }) => artifact.artifact_id === manifests[0]?.source_artifact_id);
-  if (manifests.length !== 1 || manifests[0].target_artifact_id !== preferred.artifact_id
-    || manifest?.parts.join("/") !== `${rootName}/docwen-node.json`
-    || manifest.artifact.media_type !== "application/vnd.docwen.document-node+json") {
-    throw new LocalCliError("cli_integrity_error", "The result directory requires its bound manifest.");
-  }
+  const manifestIds = new Set(bundle.relations
+    .filter((relation) => relation.type === "resource_of" && relation.role === "manifest")
+    .map((relation) => relation.source_artifact_id));
   await parent.assertCurrent();
   const finalRoot = path.join(parent.path, rootName);
   await requireAbsent(finalRoot);
@@ -143,7 +139,7 @@ export async function atomicCommitDirectory(
       }
       const output = path.join(parent.path, ...logicalParts(preferred.logical_path));
       const outputs = [output, ...paths.filter(({ artifact }) =>
-        artifact !== preferred && artifact !== manifest.artifact
+        artifact !== preferred && !manifestIds.has(artifact.artifact_id)
         && (artifact.kind !== "resource" || bundle.entries.some((entry) => entry.artifact_id === artifact.artifact_id)))
         .map(({ parts }) => path.join(parent.path, ...parts))];
       return { output, outputs };

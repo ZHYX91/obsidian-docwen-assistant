@@ -29,14 +29,12 @@ async function fixture() {
     relations: [
       { type: "attachment_of", source_artifact_id: "attachment", target_artifact_id: "main", role: "attachment", ordinal: 0 },
       { type: "resource_of", source_artifact_id: "image", target_artifact_id: "main", role: "image", ordinal: 0 },
-      { type: "resource_of", source_artifact_id: "manifest", target_artifact_id: "main", role: "manifest", ordinal: 1 },
     ],
   };
   const files = [
     { id: "attachment", name: `${child}/${child}.md`, type: "text/markdown", kind: "document" as const, text: "![image](../seal.png)" },
     { id: "main", name: `${node}.md`, type: "text/markdown", kind: "document" as const, text: `[附件](${child}/${child}.md)` },
     { id: "image", name: "seal.png", type: "image/png", kind: "resource" as const, text: "png" },
-    { id: "manifest", name: "docwen-node.json", type: "application/vnd.docwen.document-node+json", kind: "resource" as const, text: "{}" },
   ];
   for (const file of files) {
     const absolutePath = path.join(source, file.id);
@@ -52,7 +50,7 @@ async function fixture() {
 }
 
 describe("conversion directory publication", () => {
-  it("keeps nested links, resources and manifest and chooses the preferred output explicitly", async () => {
+  it("publishes nested links and resources without a node manifest and chooses the preferred output explicitly", async () => {
     const f = await fixture();
     const result = await atomicCommitDirectory(f.bundle, f.parent);
     expect(result.output).toBe(path.join(f.output, f.node, `${f.node}.md`));
@@ -60,6 +58,7 @@ describe("conversion directory publication", () => {
     expect(await readFile(result.output, "utf8")).toBe(`[附件](${f.child}/${f.child}.md)`);
     expect(await readFile(path.join(f.output, f.node, "seal.png"), "utf8")).toBe("png");
     expect(await readdir(f.output)).toEqual([f.node]);
+    expect(await readdir(path.join(f.output, f.node))).not.toContain("docwen-node.json");
   });
 
   it.each(["file", "directory"])("preserves a pre-existing %s with the chosen root name", async (kind) => {
