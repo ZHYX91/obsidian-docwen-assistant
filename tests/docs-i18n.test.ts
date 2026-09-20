@@ -85,7 +85,7 @@ describe("stable documentation contract", () => {
 
     await replaceInDocument(
       "docs/product-requirements.en.md",
-      "docwen.machine.v1",
+      "docwen.machine.v2",
       "machine protocol",
     );
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/critical token/u);

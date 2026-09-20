@@ -4,11 +4,12 @@ import type { ExportActions } from "../actions/export-actions";
 import type { GuiActions } from "../actions/gui-actions";
 import type { NumberingActions } from "../actions/numbering-actions";
 import type { ProofreadActions } from "../actions/proofread-actions";
+import type { ActionRunner } from "../actions/action-runner";
 import { type DocWenCapabilityService, type FileCapability } from "../docwen";
 import { resolveAbsoluteFilePath, resolveTargetFile } from "../host/vault-files";
 import { showNotice } from "../host/notices";
 import { t } from "../i18n";
-import { ItemPickerModal } from "../utils/suggest-modal";
+import { pickItem } from "../utils/suggest-modal";
 
 type MenuItemWithOptionalSubmenu = { setSubmenu?: () => Menu };
 
@@ -19,6 +20,7 @@ type MenuEntry = {
 };
 
 export interface FileMenuActions {
+  readonly runner: ActionRunner;
   readonly exports: ExportActions;
   readonly gui: GuiActions;
   readonly numbering: NumberingActions;
@@ -29,6 +31,7 @@ export interface FileMenuActions {
 
 export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void {
   let disposed = false;
+  const isActive = () => !disposed;
   plugin.register(() => { disposed = true; });
   plugin.registerEvent(
     plugin.app.workspace.on("file-menu", (menu: Menu, abstractFile: TAbstractFile) => {
@@ -41,35 +44,33 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       if (!cached || cached instanceof Error) void actions.capabilities.preload(filePath);
       const folderTargetPath = targetFile === abstractFile ? null : targetFile.path;
       const chooseActions = async (): Promise<void> => {
-        showNotice(t("contextMenuLoading"));
-        try {
+        if (disposed) return;
+        await actions.runner.run({ key: `file-menu:${filePath}`, kind: "choose-action" }, "noticeCapabilityFailed", async (lease) => {
+          showNotice(t("contextMenuLoading"));
           await actions.capabilities.preload(filePath);
-          if (disposed) return;
+          if (disposed || !lease.isCurrent()) return;
           const current = actions.capabilities.peek(filePath);
           if (current instanceof Error) {
             actions.presentCapabilityFailure(current);
             return;
           }
           if (!current) return;
-          const available = actionSections(current, targetFile, folderTargetPath, actions, chooseActions)
+          const available = actionSections(current, targetFile, folderTargetPath, actions, chooseActions, isActive)
             .flat().filter((entry) => entry.action !== undefined);
           if (available.length === 0) {
             showNotice(t("contextMenuNoActions"));
             return;
           }
-          new ItemPickerModal(
+          const chosen = await pickItem(
             plugin.app,
             available.map((entry, index) => ({
               id: String(index), label: entry.title, description: targetFile.path,
             })),
             t("contextMenuChooseAction"),
-            ({ id }) => {
-              if (!disposed) void available[Number(id)]?.action?.();
-            },
-          ).open();
-        } catch (error) {
-          if (!disposed) actions.presentCapabilityFailure(error instanceof Error ? error : new Error(String(error)));
-        }
+            lease.signal,
+          );
+          if (chosen && !disposed && lease.isCurrent()) await available[Number(chosen.id)]?.action?.();
+        });
       };
       let usedFallback = false;
 
@@ -77,7 +78,7 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
         const optional = item as unknown as MenuItemWithOptionalSubmenu;
         if (typeof optional.setSubmenu === "function") {
           item.setTitle(t("contextMenuSubmenuTitle")).setIcon("file-text");
-          renderSubmenu(optional.setSubmenu(), cached, targetFile, filePath, folderTargetPath, actions, chooseActions);
+          renderSubmenu(optional.setSubmenu(), cached, targetFile, filePath, folderTargetPath, actions, chooseActions, isActive);
           return;
         }
 
@@ -85,12 +86,12 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
         item
           .setTitle(prefixed(t("contextMenuOpenInDocWen")))
           .setIcon("external-link")
-          .onClick(() => void actions.gui.open(filePath));
+          .onClick(() => { if (isActive()) void actions.gui.open(filePath); });
       });
 
       if (usedFallback) {
-        for (const section of actionSections(cached, targetFile, folderTargetPath, actions, chooseActions)) {
-          for (const action of section) addEntry(menu, action, true);
+        for (const section of actionSections(cached, targetFile, folderTargetPath, actions, chooseActions, isActive)) {
+          for (const action of section) addEntry(menu, action, true, isActive);
         }
       }
     }),
@@ -105,8 +106,9 @@ function renderSubmenu(
   folderTargetPath: string | null,
   actions: FileMenuActions,
   chooseActions: () => Promise<void>,
+  isActive: () => boolean,
 ): void {
-  const sections = actionSections(cached, file, folderTargetPath, actions, chooseActions);
+  const sections = actionSections(cached, file, folderTargetPath, actions, chooseActions, isActive);
   sections.push([{
     title: t("contextMenuOpenInDocWen"),
     icon: "external-link",
@@ -114,7 +116,7 @@ function renderSubmenu(
   }]);
   sections.forEach((section, index) => {
     if (index > 0) menu.addSeparator();
-    for (const action of section) addEntry(menu, action, false);
+    for (const action of section) addEntry(menu, action, false, isActive);
   });
 }
 
@@ -124,6 +126,7 @@ function actionSections(
   folderTargetPath: string | null,
   actions: FileMenuActions,
   chooseActions: () => Promise<void>,
+  isActive: () => boolean,
 ): MenuEntry[][] {
   const sections: MenuEntry[][] = [];
   if (folderTargetPath !== null) {
@@ -171,7 +174,7 @@ function actionSections(
   if (cached.inspection.supportedActions.includes("validate")) {
     editing.push(actionEntry("contextMenuProofread", "check-circle", async () => {
       await actions.proofread.activateView();
-      await actions.proofread.run(file);
+      if (isActive()) await actions.proofread.run(file);
     }));
   }
   if (editing.length > 0) sections.push(editing);
@@ -186,10 +189,10 @@ function actionEntry(
   return { title: t(title), icon, action };
 }
 
-function addEntry(menu: Menu, entry: MenuEntry, withPrefix: boolean): void {
+function addEntry(menu: Menu, entry: MenuEntry, withPrefix: boolean, isActive: () => boolean): void {
   menu.addItem((item) => {
     item.setTitle(withPrefix ? prefixed(entry.title) : entry.title).setIcon(entry.icon);
-    if (entry.action) item.onClick(() => void entry.action?.());
+    if (entry.action) item.onClick(() => { if (isActive()) void entry.action?.(); });
     else item.setDisabled(true);
   });
 }

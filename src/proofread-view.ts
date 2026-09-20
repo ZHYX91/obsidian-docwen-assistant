@@ -8,9 +8,11 @@
  */
 
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
+import { createHash } from "node:crypto";
 import { t } from "./i18n";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
+import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
   type OperationCoordinator,
   type OperationItem,
@@ -33,6 +35,9 @@ export class ProofreadView extends ItemView {
   private sortMode: SortMode = "line";
   private fileName = "";
   private vaultPath = "";
+  private sourceSha256 = "";
+  private resultsRevision = 0;
+  private stale = false;
   private activeOperation: OperationItem | null = null;
   private cancelled = false;
   private unsubscribeOperations: (() => void) | null = null;
@@ -66,6 +71,7 @@ export class ProofreadView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.resultsRevision += 1;
     const generation = this.activeOperation?.generation;
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
@@ -74,11 +80,14 @@ export class ProofreadView extends ItemView {
     if (generation !== undefined) this.operations.cancelGeneration(generation);
   }
 
-  updateResults(issues: ProofreadIssue[], fileName: string, vaultPath?: string): void {
+  updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
+    this.resultsRevision += 1;
     this.cancelled = false;
+    this.stale = false;
     this.issues = issues;
     this.fileName = fileName;
-    this.vaultPath = vaultPath ?? "";
+    this.vaultPath = vaultPath;
+    this.sourceSha256 = sourceSha256;
     this.render();
   }
 
@@ -87,6 +96,9 @@ export class ProofreadView extends ItemView {
     this.activeOperation = [...snapshot.operations]
       .reverse()
       .find(({ kind }) => kind === "proofread") ?? null;
+    if (this.activeOperation && this.activeOperation.generation !== previousOperation?.generation) {
+      this.resultsRevision += 1;
+    }
     if (this.activeOperation) this.cancelled = false;
     else if (previousOperation?.state === "cancelling") this.cancelled = true;
     this.render();
@@ -188,6 +200,15 @@ export class ProofreadView extends ItemView {
       return;
     }
 
+    if (this.stale) {
+      container.createDiv({
+        cls: "docwen-proofread-status",
+        text: t("proofreadSourceChanged"),
+        attr: { role: "status", "aria-live": "polite" },
+      });
+      return;
+    }
+
     if (this.issues.length === 0) {
       container.createDiv({ cls: "docwen-proofread-status", text: t("proofreadNoIssues") });
       return;
@@ -196,6 +217,7 @@ export class ProofreadView extends ItemView {
     // Issue list
     const list = container.createDiv({ cls: "docwen-proofread-list" });
     const sorted = this.getSortedIssues();
+    const revision = this.resultsRevision;
 
     for (const issue of sorted) {
       const displayLine = issue.range.start.line + 1;
@@ -212,7 +234,7 @@ export class ProofreadView extends ItemView {
         },
       });
       item.addEventListener("click", () => {
-        this.navigateToIssue(issue);
+        void this.navigateToIssue(issue, revision);
       });
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
@@ -228,20 +250,41 @@ export class ProofreadView extends ItemView {
     }
   }
 
-  private navigateToIssue(issue: ProofreadIssue): void {
-    const file = this.vaultPath
-      ? this.app.vault.getAbstractFileByPath(this.vaultPath)
-      : this.app.workspace.getActiveFile();
-    if (!file) return;
-
-    const leaf = this.app.workspace.getLeaf(false);
-    if (!leaf) return;
-
-    if (!(file instanceof TFile)) return;
-
-    void leaf.openFile(file).then(() => {
+  private async navigateToIssue(issue: ProofreadIssue, revision: number): Promise<void> {
+    const sourceSha256 = this.sourceSha256;
+    const vaultPath = this.vaultPath;
+    const isCurrent = (): boolean => revision === this.resultsRevision && !this.activeOperation;
+    const invalidate = (): void => {
+      if (!isCurrent()) return;
+      this.stale = true;
+      this.render();
+    };
+    if (!isCurrent() || this.stale) return;
+    try {
+      const file = this.app.vault.getAbstractFileByPath(vaultPath);
+      if (!(file instanceof TFile) || !/^[a-f0-9]{64}$/u.test(sourceSha256)) {
+        invalidate();
+        return;
+      }
+      const target = locateOpenMarkdownTarget(this.app.workspace, vaultPath);
+      if (target.kind === "ambiguous"
+        || (target.kind === "open" && !matchesSource(target.target.editor.getValue(), sourceSha256))) {
+        invalidate();
+        return;
+      }
+      const leaf = target.kind === "open" ? target.target.leaf : this.app.workspace.getLeaf(false);
+      if (!leaf) return;
+      await leaf.openFile(file);
+      if (!isCurrent()) return;
       const view = leaf.view;
-      if (!(view instanceof MarkdownView)) return;
+      if (!(view instanceof MarkdownView) || view.file !== file || file.path !== vaultPath
+        || this.app.vault.getAbstractFileByPath(vaultPath) !== file
+        || (target.kind === "open" && !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, target.target))
+        || !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, { leaf, view, editor: view.editor })
+        || !matchesSource(view.editor.getValue(), sourceSha256)) {
+        invalidate();
+        return;
+      }
       const editor = view.editor;
 
       const start = issue.range.start;
@@ -256,8 +299,14 @@ export class ProofreadView extends ItemView {
       };
       editor.setSelection(from, to);
       editor.scrollIntoView({ from, to }, true);
-    });
+    } catch {
+      invalidate();
+    }
   }
+}
+
+function matchesSource(content: string, sourceSha256: string): boolean {
+  return createHash("sha256").update(content, "utf8").digest("hex") === sourceSha256;
 }
 
 export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {

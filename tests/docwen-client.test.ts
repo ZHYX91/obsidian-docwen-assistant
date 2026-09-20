@@ -5,15 +5,16 @@ import * as path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { atomicCommitBundle } from "../src/docwen/output-files";
 import { DocWenClient } from "../src/docwen";
 import {
-  atomicCommitBundle,
   INPUT_HANDLE_LIMITS,
   mediaTypeForPath,
   PROOFREAD_REPORT_LIMIT_BYTES,
 } from "../src/docwen/client";
 import type {
   DocWenMachineClient,
+  MachineCapability,
   MachineTaskRequest,
   ValidatedArtifactBundle,
 } from "../src/docwen";
@@ -31,7 +32,7 @@ async function temporaryRoot(): Promise<string> {
 }
 
 function inspection(filePath: string, format = "markdown") {
-  const mediaType = format === "markdown"
+  const mediaType = format === "rtf" ? "application/rtf" : format === "markdown"
     ? "text/markdown"
     : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   return {
@@ -67,10 +68,10 @@ function bundleFor(
   bytes = Buffer.from("fixture"),
 ): ValidatedArtifactBundle {
   return {
-    schema: "docwen.artifact_bundle.v2",
+    schema: "docwen.artifact_bundle.v3",
     bundle_id: "bundle.1",
     task_id: taskId,
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [{
       artifact_id: "artifact.1",
@@ -99,16 +100,6 @@ async function groupedDocxBundle(taskId: string, artifactPath: string): Promise<
   bundle.layout_schema = "docwen.document_node.v1";
   bundle.artifacts[0]!.logical_path = `${node}/${node}.docx`;
   bundle.artifacts[0]!.suggested_name = `${node}.docx`;
-  const manifestPath = path.join(path.dirname(artifactPath), "docwen-node.json");
-  const bytes = Buffer.from("{}");
-  await writeFile(manifestPath, bytes);
-  bundle.artifacts.push({
-    artifact_id: "manifest", kind: "resource", locator: "docwen-node.json",
-    logical_path: `${node}/docwen-node.json`, suggested_name: "docwen-node.json",
-    media_type: "application/vnd.docwen.document-node+json", size_bytes: bytes.length,
-    sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath: manifestPath,
-  });
-  bundle.relations.push({ type: "resource_of", source_artifact_id: "manifest", target_artifact_id: "artifact.1", role: "manifest", ordinal: 0 });
   return bundle;
 }
 
@@ -119,10 +110,10 @@ function bundleWithRelated(
   relatedBytes: Buffer,
 ): ValidatedArtifactBundle {
   return {
-    schema: "docwen.artifact_bundle.v2",
+    schema: "docwen.artifact_bundle.v3",
     bundle_id: "bundle.related",
     task_id: "task.related",
-    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v1" },
+    producer: { name: "DocWen", product_version: "0.10.0", machine_protocol: "docwen.machine.v2" },
     layout_schema: "docwen.artifact_layout.v1",
     artifacts: [
       {
@@ -162,32 +153,162 @@ async function transactionResidue(root: string): Promise<string[]> {
 }
 
 function machine(query: ReturnType<typeof vi.fn>, runTask = vi.fn()): DocWenMachineClient {
+  const executeQuery = query as unknown as DocWenMachineClient["query"];
   return {
     query,
-    runTask,
+    runTask: async (request: Parameters<DocWenMachineClient["runTask"]>[0], signal?: AbortSignal) =>
+      runTask(typeof request === "function" ? await request((method, params) => executeQuery(method, params, signal)) : request, signal),
     locale: () => "en_US",
     dispose: vi.fn(),
   } as unknown as DocWenMachineClient;
 }
 
+function conversionCapability(): MachineCapability {
+  return {
+    capability_id: "convert.markdown.to_docx", operation: "convert",
+    input_shape: {
+      slots: [
+        { role: "neutral_document", kind: "document", media_types: ["application/vnd.docwen.resolved-document+json"], min_items: 1, max_items: 1 },
+        { role: "numbering_export_plan", kind: "resource", media_types: ["application/vnd.docwen.numbering-export-plan+json"], min_items: 1, max_items: 1 },
+      ], undeclared_roles: "reject",
+    },
+    output_media_types: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    output_shape: { cardinality: "one", artifact_kinds: ["document"], relation_types: [], atomic_bundle: true },
+    options_schema: { type: "object", properties: { template_name: { type: "string" }, heading_merge_mode: { type: "string", enum: ["always", "never"] } }, additionalProperties: false },
+    availability: "available", dependencies: [], limitations: [],
+  };
+}
+
+function conversionQuery(file: string, capability = conversionCapability(), format = "markdown") {
+  return vi.fn(async (method: string) => {
+    if (method === "file/inspect") return inspection(file, format);
+    if (method === "capability/list") return { capabilities: [capability] };
+    throw new Error(`Unexpected query: ${method}`);
+  });
+}
+
 describe("DocWenClient Machine semantics", () => {
+  it.each([false, true])("executes a discovered legacy Word optimizer with its own capability and options (prepared=%s)", async (prepared) => {
+    const root = await temporaryRoot();
+    const source = path.join(root, "letter.rtf");
+    await writeFile(source, "RTF fixture");
+    const optimized: MachineCapability = {
+      ...conversionCapability(), capability_id: "opaque.gongwen", operation: "transform", optimization_id: "gongwen",
+      input_shape: { slots: [{ role: "source", kind: "document", media_types: ["application/rtf"], min_items: 1, max_items: 1 }], undeclared_roles: "reject" },
+      output_media_types: ["text/markdown"],
+      options_schema: { type: "object", properties: { recognize_text: { type: "boolean" }, preserve_resources: { type: "boolean" } }, additionalProperties: false },
+    };
+    const query = conversionQuery(source, optimized, "rtf");
+    const runTask = vi.fn(async (request: MachineTaskRequest) => {
+      const artifactPath = path.join(request.output.staging_root.path, "letter.md");
+      const bytes = Buffer.from("# Optimized\n");
+      await writeFile(artifactPath, bytes);
+      const bundle = bundleFor("task.1", artifactPath, "text/markdown", "document", bytes);
+      bundle.layout_schema = "docwen.document_node.v1";
+      bundle.artifacts[0].logical_path = "letter-result/letter.md";
+      return { taskId: "task.1", plan: {}, bundle, diagnostics: [], metrics: {} };
+    });
+    const client = new DocWenClient(machine(query, runTask));
+    const result = await client.convert({
+      inputs: [{ path: source, kind: "document", role: "source", logicalPath: "letters/source.rtf", mediaType: "application/rtf" }],
+      target: "md", optimization: "gongwen", enableOcr: true, extractImages: false,
+      ...(prepared ? { selectedCapability: optimized, capabilityId: optimized.capability_id } : {}),
+      ocrPlacement: "main_md", outputDirectory: root,
+    });
+    expect(runTask.mock.calls[0][0]).toMatchObject({ capability_id: "opaque.gongwen", options: { recognize_text: true, preserve_resources: false } });
+    expect(runTask.mock.calls[0][0].options).not.toHaveProperty("ocr_placement");
+    expect(query.mock.calls.map(([method]) => method)).toEqual(prepared ? ["file/inspect"] : ["file/inspect", "capability/list"]);
+    expect(await readFile(result.output, "utf8")).toBe("# Optimized\n");
+    expect(await readFile(source, "utf8")).toBe("RTF fixture");
+  });
+
+  it.each(["unknown", "unavailable", "ordinary", "wrong-input", "ambiguous"])("rejects %s optimizer without publishing or falling back", async (reason) => {
+    const root = await temporaryRoot();
+    const source = path.join(root, "letter.rtf");
+    await writeFile(source, "RTF fixture");
+    const optimized: MachineCapability = {
+      ...conversionCapability(), capability_id: "opaque", operation: "transform", optimization_id: "gongwen",
+      input_shape: { slots: [{ role: "source", kind: "document", media_types: ["application/rtf"], min_items: 1, max_items: 1 }], undeclared_roles: "reject" },
+      output_media_types: ["text/markdown"],
+    };
+    if (reason === "unavailable") optimized.availability = "unavailable";
+    if (reason === "ordinary") { optimized.operation = "convert"; delete optimized.optimization_id; }
+    if (reason === "wrong-input") optimized.input_shape.slots[0].media_types = ["application/pdf"];
+    const query = vi.fn(async (method: string) => method === "file/inspect" ? inspection(source, "rtf") : {
+      capabilities: [optimized, ...(reason === "ambiguous" ? [{ ...optimized, capability_id: "second" }] : [])],
+    });
+    const runTask = vi.fn();
+    const client = new DocWenClient(machine(query, runTask));
+    await expect(client.convert({ inputs: [{ path: source, kind: "document", role: "source", logicalPath: "letter.rtf" }], target: "md", optimization: reason === "unknown" ? "missing" : "gongwen", outputDirectory: root }))
+      .rejects.toMatchObject({ code: "cli_invalid_envelope" });
+    expect(runTask).not.toHaveBeenCalled();
+    expect(await readdir(root)).toEqual(["letter.rtf"]);
+  });
+
+  it.each([
+    { optimization_id: "gongwen", operation: "convert" },
+    { optimization_id: "", operation: "transform" },
+    { optimization_id: null, operation: "transform" },
+  ])("rejects malformed optimizer metadata: %j", async (change) => {
+    const query = vi.fn().mockResolvedValue({ capabilities: [{ ...conversionCapability(), ...change }] });
+    await expect(new DocWenClient(machine(query)).runtimeCapabilities()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+  });
+
   it("maps GUI and resource queries without argv", async () => {
     const query = vi.fn()
       .mockResolvedValueOnce({ state: "opened" })
       .mockResolvedValueOnce({
         kind: "templates",
-        resources: [{ id: "template.1", name: "Standard", target: "docx" }],
+        resources: [
+          {
+            id: `template.docx.${"a".repeat(64)}`,
+            name: "Standard",
+            description: "",
+            target: "docx",
+            origin: "builtin",
+            is_default: true,
+          },
+        ],
       });
     const client = new DocWenClient(machine(query));
 
     await client.guiOpen("D:\\Vault\\note.md");
     await expect(client.templates("docx")).resolves.toEqual([
-      { id: "template.1", name: "Standard", target: "docx", description: undefined },
+      {
+        id: `template.docx.${"a".repeat(64)}`,
+        name: "Standard",
+        target: "docx",
+        description: undefined,
+        origin: "builtin",
+        isDefault: true,
+      },
     ]);
     expect(query.mock.calls).toEqual([
       ["gui/open", { timeout_seconds: 10, file_path: "D:\\Vault\\note.md" }, undefined],
       ["resource/list", { kind: "templates", locale: "en_US", target: "docx" }, undefined],
     ]);
+  });
+
+  it.each([
+    ["origin", undefined], ["origin", "local"], ["is_default", undefined], ["is_default", "false"],
+    ["id", "Standard"], ["target", "odt"], ["target", "xlsx"],
+    ["description", undefined], ["description", 42], ["consumer_private", true],
+  ])("rejects malformed template %s metadata", async (field, value) => {
+    const item = { id: `template.docx.${"a".repeat(64)}`, name: "Standard", description: "", target: "docx", origin: "builtin", is_default: false, [field as string]: value };
+    const client = new DocWenClient(machine(vi.fn().mockResolvedValue({ kind: "templates", resources: [item] })));
+    await expect(client.templates("docx")).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+  });
+
+  it("keeps template server order and rejects ambiguous identities/defaults", async () => {
+    const first = { id: `template.docx.${"b".repeat(64)}`, name: "Standard", description: "", target: "docx", origin: "custom", is_default: true };
+    const second = { ...first, id: `template.docx.${"a".repeat(64)}`, origin: "builtin", is_default: false };
+    const query = vi.fn().mockResolvedValue({ kind: "templates", resources: [first, second] });
+    const client = new DocWenClient(machine(query));
+    expect((await client.templates("docx")).map((item) => item.id)).toEqual([first.id, second.id]);
+    query.mockResolvedValue({ kind: "templates", resources: [first, first] });
+    await expect(client.templates()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+    query.mockResolvedValue({ kind: "templates", resources: [first, { ...second, is_default: true }] });
+    await expect(client.templates()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
   });
 
   it("parses only D2 capability input_shape slots", async () => {
@@ -285,7 +406,7 @@ describe("DocWenClient Machine semantics", () => {
     await writeFile(input, "# note\n", "utf8");
     await writeFile(neutral, "{}", "utf8");
     await writeFile(numberingPlan, "{}", "utf8");
-    const query = vi.fn().mockResolvedValue(inspection(input));
+    const query = conversionQuery(input);
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const artifactPath = path.join(request.output.staging_root.path, "note.docx");
       const docxBytes = Buffer.from("fixture", "utf8");
@@ -326,6 +447,7 @@ describe("DocWenClient Machine semantics", () => {
       output,
       outputs: [output],
       bundleId: "bundle.1",
+      warnings: [],
     });
     expect(await readFile(output, "utf8")).toBe("fixture");
     await expect(lstat(`${output}.docwen`)).rejects.toMatchObject({ code: "ENOENT" });
@@ -377,7 +499,7 @@ describe("DocWenClient Machine semantics", () => {
         mediaType: "application/vnd.docwen.numbering-export-plan+json",
       },
     ];
-    const query = vi.fn().mockResolvedValue(inspection(input));
+    const query = conversionQuery(input);
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const artifactPath = path.join(request.output.staging_root.path, "note.docx");
       await writeFile(artifactPath, "fixture", "utf8");
@@ -426,7 +548,13 @@ describe("DocWenClient Machine semantics", () => {
         metrics: {},
       };
     });
-    const client = new DocWenClient(machine(vi.fn().mockResolvedValue(inspection(source)), runTask));
+    const declared = conversionCapability();
+    declared.capability_id = "convert.test.with_assets";
+    declared.input_shape.slots = [
+      { role: "source", kind: "document", media_types: ["text/markdown"], min_items: 1, max_items: 1 },
+      { role: "linked_resource", kind: "resource", media_types: ["image/png"], min_items: 0 },
+    ];
+    const client = new DocWenClient(machine(conversionQuery(source, declared), runTask));
 
     await client.convert({
       inputs: [
@@ -680,7 +808,7 @@ describe("DocWenClient Machine semantics", () => {
     bundle.relations = [{ type: "resource_of", role: "manifest", source_artifact_id: "artifact.related", target_artifact_id: "artifact.primary", ordinal: 0 }];
     for (const name of ["first.md", "second.md"]) {
       const output = path.join(destination, name);
-      expect(await atomicCommitBundle(bundle, output, false)).toEqual([output]);
+      expect(await atomicCommitBundle(bundle, output, false)).toEqual({ outputs: [output], warnings: [] });
       expect(await readFile(output, "utf8")).toBe("# Document\n");
     }
     expect(await readFile(path.join(destination, "docwen-node.json"), "utf8")).toBe("user data");
@@ -702,7 +830,7 @@ describe("DocWenClient Machine semantics", () => {
 
     await expect(atomicCommitBundle(validated, outputPath, false)).rejects.toMatchObject({ code: "cli_commit_failed" });
     expect(await readFile(outputPath, "utf8")).toBe("old-docx");
-    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual([outputPath]);
+    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual({ outputs: [outputPath], warnings: [] });
     expect(await readFile(outputPath)).toEqual(docxBytes);
     expect(await readFile(oldCompanion, "utf8")).toBe("keep-old-companion");
     expect(await transactionResidue(destination)).toEqual([]);
@@ -760,7 +888,7 @@ describe("DocWenClient Machine semantics", () => {
     expect(await transactionResidue(destination)).toEqual([]);
 
     await rm(relatedOutput);
-    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual([outputPath, relatedOutput]);
+    await expect(atomicCommitBundle(validated, outputPath, true)).resolves.toEqual({ outputs: [outputPath, relatedOutput], warnings: [] });
     expect(await readFile(outputPath)).toEqual(primaryBytes);
     expect(await readFile(relatedOutput)).toEqual(relatedBytes);
     expect(await transactionResidue(destination)).toEqual([]);

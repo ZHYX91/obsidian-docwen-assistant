@@ -1,11 +1,26 @@
 import { LocalCliError, RemoteMachineError } from "../docwen";
+import { getFailureWarnings } from "../docwen/operation-outcome";
 import { VaultWriteError } from "../host/vault-write-transaction";
 import { t } from "../i18n";
+import { diagnosticCode, diagnosticDetails } from "./diagnostic-details";
 
 export function getErrorMessage(error: unknown): string {
   const code = getLocalErrorCode(error);
+  const details = getErrorDetails(error);
+  if (typeof details === "object" && details !== null && "outputState" in details && details.outputState === "unconfirmed") {
+    return t("errorOutputUnconfirmed");
+  }
+  if (error instanceof RemoteMachineError) {
+    if (error.category === "internal") return t("errorDocWenInternal");
+    if (["unsupported", "unavailable", "dependency"].includes(error.category)) {
+      return t("errorCapabilityUnavailable");
+    }
+    if (error.category === "timeout") return t("errorOperationTimeout");
+    if (error.category === "conflict") return t("errorContentConflict");
+  }
   if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
+  if (code === "cli_capability_unavailable") return t("errorCapabilityUnavailable");
   if (code === "cli_timeout") return t("errorOperationTimeout");
   if (["vault_target_changed", "vault_content_conflict"].includes(code)) {
     return t("errorContentConflict");
@@ -15,9 +30,11 @@ export function getErrorMessage(error: unknown): string {
 
 export function getErrorDiagnostics(error: unknown): Record<string, unknown> {
   return {
-    code: getLocalErrorCode(error),
-    message: error instanceof Error ? error.message : String(error),
-    details: getErrorDetails(error),
+    redacted: true,
+    code: diagnosticCode(getLocalErrorCode(error)),
+    message: getErrorMessage(error),
+    details: diagnosticDetails(getErrorDetails(error)),
+    warnings: getFailureWarnings(error),
   };
 }
 

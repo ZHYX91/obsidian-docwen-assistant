@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   copied: [] as string[],
   modals: [] as Array<{ contentEl: FakeElement; titleEl: FakeElement }>,
   notices: [] as string[],
+  noticeActions: [] as Array<() => void>,
 }));
 
 class FakeElement {
@@ -53,7 +54,13 @@ vi.mock("obsidian", () => ({
     }
   },
 }));
-vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.notices.push(message) }));
+vi.mock("../src/host/notices", () => ({
+  showNotice: (message: string) => state.notices.push(message),
+  showNoticeWithAction: (message: string, _label: string, selected: () => void) => {
+    state.notices.push(message);
+    state.noticeActions.push(selected);
+  },
+}));
 vi.mock("../src/host/clipboard", () => ({
   copyTextToClipboard: async (text: string) => {
     state.copied.push(text);
@@ -62,7 +69,49 @@ vi.mock("../src/host/clipboard", () => ({
 }));
 
 describe("ActionRunner", () => {
-  beforeEach(() => initI18n("en"));
+  beforeEach(() => {
+    initI18n("en");
+    state.copied.length = 0;
+    state.modals.length = 0;
+    state.notices.length = 0;
+    state.noticeActions.length = 0;
+  });
+
+  it("offers warning details and copying only when requested", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    runner.presentCompletion("Exported result.md", [{ code: "output_cleanup_failed", phase: "cleanup", detailCode: "EACCES" }]);
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain("Exported result.md");
+    expect(state.notices[0]).toContain("result is available");
+    expect(state.modals).toHaveLength(0);
+    expect(state.copied).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("completed_with_warnings");
+    state.modals[0].contentEl.children.at(-1)?.listeners.get("click")?.();
+    await vi.waitFor(() => expect(state.copied).toHaveLength(1));
+    expect(JSON.parse(state.copied[0])).toMatchObject({ warnings: [{ detailCode: "EACCES" }] });
+  });
+
+  it("shows cleanup warnings on cancellation without claiming a result exists", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { recordFailureWarning } = await import("../src/docwen/operation-outcome");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    await runner.run({ key: "proofread", kind: "proofread" }, "noticeProofreadFailed", async () => {
+      throw recordFailureWarning(new LocalCliError("cli_cancelled", "cancelled"), {
+        code: "input_cleanup_failed", phase: "cleanup", detailCode: "EACCES",
+      });
+    });
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain("Temporary data cleanup");
+    expect(state.notices[0]).not.toContain("result is available");
+    state.noticeActions[0]();
+    expect(allText(state.modals[0].contentEl)).toContain('"status": "cancelled"');
+  });
 
   it("localizes incompatible-version failures while preserving their technical identity", async () => {
     const { LocalCliError } = await import("../src/docwen");
@@ -76,11 +125,39 @@ describe("ActionRunner", () => {
       "cli_incompatible_version", "A stable DocWen 0.10.x version is required.",
       { actualProductVersion: "0.9.0" },
     ));
-    expect(state.notices[0]).toContain("版本不兼容");
-    expect(state.notices[0]).not.toContain("A stable");
-    expect(state.modals[0].contentEl.children[0].text).toContain("请更新 DocWen");
+    expect(state.notices).toHaveLength(0);
+    expect(state.modals).toHaveLength(1);
+    expect(state.modals[0].contentEl.children[0].text).toContain("版本不兼容");
     expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
     expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
+  });
+
+  it("identifies an unconfirmed write and does not suggest automatic retry", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const { VaultWriteError } = await import("../src/host/vault-write-transaction");
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure("noticeNumberingFailed",
+      new VaultWriteError("vault_reconciliation_failed", "write result unknown", { outputState: "unconfirmed" }));
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("Check the destination before running again");
+  });
+
+  it.each([
+    ["en", "unsupported or currently unavailable"],
+    ["zh-cn", "不支持或暂时无法使用"],
+  ])("explains unavailable local capabilities in %s without opening a protocol-error modal", async (locale, expected) => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    initI18n(locale);
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure("noticeCapabilityFailed",
+      new LocalCliError("cli_capability_unavailable", "private raw detail", { mediaType: "text/plain" }));
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain(expected);
+    expect(state.modals).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(allText(state.modals[0].contentEl)).toContain("cli_capability_unavailable");
+    expect(allText(state.modals[0].contentEl)).not.toContain("private raw detail");
   });
 
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {
@@ -97,12 +174,69 @@ describe("ActionRunner", () => {
       new LocalCliError("cli_invalid_envelope", "Invalid response", { reason: "bad" }),
     );
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
+    expect(state.modals).toHaveLength(1);
     expect(state.copied).toHaveLength(0);
     const button = state.modals[0].contentEl.children.at(-1);
     button?.listeners.get("click")?.();
     await vi.waitFor(() => expect(state.copied).toHaveLength(1));
     expect(button?.text).toBe("Copied");
+  });
+
+  it("uses one redacted snapshot for preview and copying without serializing private details", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const secret = "private-note token-example /home/user/notes/private.md";
+    const details: Record<string, unknown> = {
+      outputState: "unconfirmed", actualProductVersion: "0.11.0", expectedProductVersion: "0.12.0",
+      exitCode: 7, timeoutMs: 2500, primaryCode: "cli_cancelled",
+      path: "C:\\private\\note.md", stdout: secret, stderr: secret,
+      cause: secret, config: { password: secret }, command: ["DocWenCLI", secret],
+    };
+    details.cycle = details;
+    Object.defineProperty(details, "maxBytes", { get: () => { throw new Error(secret); } });
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure(
+      "noticeDoctorFailed", new LocalCliError("cli_protocol_error", secret, details),
+    );
+    expect(state.modals).toHaveLength(1);
+    const preview = allText(state.modals[0].contentEl);
+    expect(preview).not.toContain(secret);
+    expect(preview).not.toContain("private");
+    expect(preview).toContain("local paths and credentials are omitted");
+    expect(state.copied).toHaveLength(0);
+    state.modals[0].contentEl.children.at(-1)?.listeners.get("click")?.();
+    await vi.waitFor(() => expect(state.copied).toHaveLength(1));
+    const copied = JSON.parse(state.copied[0]);
+    expect(copied).toMatchObject({ redacted: true, code: "cli_protocol_error", details: {
+      outputState: "unconfirmed", actualProductVersion: "0.11.0", expectedProductVersion: "0.12.0",
+      exitCode: 7, timeoutMs: 2500, primaryCode: "cli_cancelled",
+    } });
+    expect(Object.keys(copied.details)).toHaveLength(6);
+    expect(state.copied[0]).not.toContain(secret);
+    expect(details.cause).toBe(secret);
+  });
+
+  it("offers diagnostics for ordinary failures from the existing notice", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure(
+      "noticeExportFailed", new LocalCliError("cli_input_invalid", "private document contents"),
+    );
+    expect(state.notices).toHaveLength(1);
+    expect(state.modals).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(state.modals).toHaveLength(1);
+    expect(allText(state.modals[0].contentEl)).toContain("cli_input_invalid");
+    expect(allText(state.modals[0].contentEl)).not.toContain("private document contents");
+  });
+
+  it("does not stringify unknown thrown values", async () => {
+    const { getErrorDiagnostics } = await import("../src/actions/action-errors");
+    const throwing = { toString: () => { throw new Error("must not serialize"); } };
+    expect(getErrorDiagnostics(throwing)).toMatchObject({ code: "", redacted: true, details: {} });
+    expect(JSON.stringify(getErrorDiagnostics("private note text"))).not.toContain("private note text");
   });
 
   it("suppresses user-facing failures for cancelled operations", async () => {
@@ -133,7 +267,7 @@ describe("ActionRunner", () => {
       });
     });
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
   });
 
@@ -169,7 +303,7 @@ describe("ActionRunner", () => {
     expect(allText(state.modals[0].contentEl)).toContain("portable ZIP");
   });
 
-  it("preserves an error code and message even without extra diagnostic fields", async () => {
+  it("preserves the error code and localized summary without raw exception text", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
@@ -182,10 +316,11 @@ describe("ActionRunner", () => {
       new LocalCliError("cli_invalid_envelope", "Invalid response"),
     );
 
-    expect(state.notices).toHaveLength(1);
+    expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
     expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
-    expect(allText(state.modals[0].contentEl)).toContain("Invalid response");
+    expect(allText(state.modals[0].contentEl)).not.toContain("Invalid response");
+    expect(allText(state.modals[0].contentEl)).toContain("cli_invalid_envelope");
   });
 });
 

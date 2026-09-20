@@ -50,6 +50,7 @@ describe("architecture boundaries", () => {
 
   it("keeps Machine framing and Electron fallbacks inside their adapters", () => {
     const client = source("src/docwen/client.ts");
+    const outputFiles = source("src/docwen/output-files.ts");
     const machine = source("src/docwen/machine-client.ts");
     const main = source("src/main.ts");
     const settings = source("src/settings.ts");
@@ -62,10 +63,11 @@ describe("architecture boundaries", () => {
     expect(machine).toContain('process.kill(-pid, force ? "SIGKILL" : "SIGTERM")');
     expect(machine).toContain('detached: process.platform !== "win32"');
     expect(machine).toContain("ARTIFACT_BUNDLE_LIMITS");
-    expect(machine).toContain('"docwen.artifact_bundle.v2"');
+    expect(machine).toContain('"docwen.artifact_bundle.v3"');
     expect(machine).not.toContain('shell: true');
-    expect(client).toContain("await link(item.temporary, item.target)");
-    expect(client).not.toContain("await rename(item.temporary, item.target)");
+    expect(client).toContain('from "./output-files"');
+    expect(client).not.toContain("await link(");
+    expect(outputFiles).not.toContain('from "obsidian"');
     expect(client).not.toContain("const bytes = await readFile(filePath)");
     expect(main).not.toContain("--output");
     expect(settings).not.toContain('require("electron")');

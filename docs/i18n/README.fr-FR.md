@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://github.com/ZHYX91/docwen). Il nécessite Windows, Obsidian 1.12.7 ou ultérieur et une version stable de DocWen 0.10.x.
+DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://github.com/ZHYX91/docwen). Il nécessite Windows, Obsidian 1.12.7 ou ultérieur et une version stable de DocWen 0.12.0 ou ultérieure.
 
 > **DocWen est requis.** Installez une version compatible depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez entièrement le ZIP portable proposé dans [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,8 +35,10 @@ Le plugin ouvre les fichiers dans DocWen, exporte vers Word/Excel/Markdown avec 
 ## Configuration requise et compatibilité
 
 - Windows et Obsidian 1.12.7 ou ultérieur ; le plugin fonctionne uniquement sur ordinateur.
-- Un paquet Windows complet d'une version stable de DocWen 0.10.x, entièrement extrait ; le plugin ne télécharge pas DocWen automatiquement.
-- Le plugin exige `docwen.machine.v1` et `docwen.artifact_bundle.v2` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
+- Un paquet Windows complet d'une version stable de DocWen 0.12.0 ou ultérieure, entièrement extrait ; le plugin ne télécharge pas DocWen automatiquement.
+- Le plugin exige `docwen.machine.v2` et `docwen.artifact_bundle.v3` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
+
+Si la version du Store ne répond pas à ces exigences, utilisez un paquet portable compatible et sélectionnez-le avec l’installation manuelle.
 
 La détection automatique utilise par défaut l’alias enregistré `docwen.exe` et reste valide après les mises à jour Microsoft Store. Pour le ZIP portable, passez à l’installation manuelle et choisissez le dossier DocWen extrait. Le plugin ne parcourt ni `WindowsApps` ni des dossiers arbitraires et ne télécharge aucun logiciel automatiquement.
 
@@ -54,7 +56,7 @@ Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styl
 
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et d'exécuter doctor.
 
-Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de résultats avec le nom source, l’horodatage et le format d’entrée. Les noms, ressources liées et manifeste de disposition sont conservés ; aucun dossier existant n’est remplacé.
+Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de résultats avec le nom source, l’horodatage et le format d’entrée. Les noms et ressources liées sont conservés ; aucun dossier existant n’est remplacé.
 
 L’export Word produit un DOCX autonome dans le dossier de résultats. Conservez le Markdown original. La conversion inverse lit le contenu et la structure du DOCX sans fichier compagnon de la source ; une écriture ou des espaces identiques ne sont pas garantis. Choisissez les extensions dans les paramètres DocWen.
 

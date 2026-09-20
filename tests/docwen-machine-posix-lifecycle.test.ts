@@ -79,8 +79,8 @@ process.stdin.on("data", (chunk) => {
     buffered = buffered.subarray(frameEnd);
     if (message.method === "initialize") {
       reply(message.id, {
-        protocol: { name: "docwen.machine", major: 1, minor: 0 },
-        artifact_bundle_schema: "docwen.artifact_bundle.v2",
+        protocol: { name: "docwen.machine", major: 2, minor: 0 },
+        artifact_bundle_schema: "docwen.artifact_bundle.v3",
         server: { name: "DocWen", version: "0.10.0" },
         methods: [],
         features: { progress: true, cancellation: true },

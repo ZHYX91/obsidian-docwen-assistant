@@ -2,7 +2,7 @@
  * DocWen Assistant - Obsidian Plugin
  *
  * Launch DocWen converter from Obsidian and pass the current file path.
- * Uses DocWen Machine Protocol v1 for every DocWen operation.
+ * Uses DocWen Machine Protocol v2 for every DocWen operation.
  */
 
 import { Plugin, TFile, type Command } from "obsidian";
@@ -159,7 +159,7 @@ export default class DocWenPlugin extends Plugin {
     if (epoch !== this.runtimeEpoch) return;
     initializePluginI18n(this.settings.language);
 
-    // Create the single Machine v1 boundary used by control and business calls.
+    // Create the single Machine v2 boundary used by control and business calls.
     this.docwen = new DocWenClient(
       new DocWenMachineClient(
         () => this.resolveCliExecutable(),
@@ -175,6 +175,14 @@ export default class DocWenPlugin extends Plugin {
     this.runtimeDisposer.add(() => this.resetDocWenRuntime());
     this.operations = new OperationCoordinator();
     this.runtimeDisposer.add(() => this.operations.dispose());
+    this.registerEvent(this.app.workspace.on("quit", (tasks) => {
+      const pending = this.operations.hasPendingWork;
+      const settling = this.operations.shutdown();
+      this.onunload();
+      if (pending) tasks.addPromise(settling.then((settled) => {
+        if (!settled) console.warn("[DocWen Assistant] Host quit cleanup deadline exceeded.");
+      }));
+    }));
     this.actionRunner = new ActionRunner(
       this.app,
       this.operations,
@@ -378,6 +386,7 @@ export default class DocWenPlugin extends Plugin {
 
     // Register file-menu (right-click) context menu
     registerFileMenu(this, {
+      runner: this.actionRunner,
       exports: this.exportActions,
       gui: this.guiActions,
       numbering: this.numberingActions,

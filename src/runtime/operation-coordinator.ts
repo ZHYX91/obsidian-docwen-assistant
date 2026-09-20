@@ -1,6 +1,6 @@
 import { LocalCliError } from "../docwen";
 
-export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control";
+export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control" | "choose-action";
 export type OperationState = "running" | "cancelling";
 
 export interface OperationRequest {
@@ -42,6 +42,7 @@ export class OperationCoordinator {
   private readonly active = new Map<number, ActiveOperation>();
   private readonly latestByKey = new Map<string, number>();
   private readonly listeners = new Set<OperationListener>();
+  private readonly settlements = new Map<number, Promise<void>>();
   private generation = 0;
   private disposed = false;
 
@@ -57,6 +58,8 @@ export class OperationCoordinator {
 
     const controller = new AbortController();
     const generation = ++this.generation;
+    let settle!: () => void;
+    this.settlements.set(generation, new Promise<void>((resolve) => { settle = resolve; }));
     const operation: ActiveOperation = {
       key: request.key,
       kind: request.kind,
@@ -77,6 +80,8 @@ export class OperationCoordinator {
         if (finished) return;
         finished = true;
         this.active.delete(generation);
+        this.settlements.delete(generation);
+        settle();
         if (this.latestByKey.get(request.key) === generation) this.latestByKey.delete(request.key);
         this.notify();
       },
@@ -132,6 +137,25 @@ export class OperationCoordinator {
     this.latestByKey.clear();
     this.notify();
     this.listeners.clear();
+  }
+
+  /** Host quit may wait for finally blocks, including operations already cancelled or disposed. */
+  get hasPendingWork(): boolean {
+    return this.settlements.size > 0;
+  }
+
+  async shutdown(timeoutMs = 10_000): Promise<boolean> {
+    this.dispose();
+    if (this.settlements.size === 0) return true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        Promise.all(this.settlements.values()).then(() => true),
+        new Promise<boolean>((resolve) => { timer = setTimeout(() => resolve(false), timeoutMs); }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private cancelActive(generation: number, reason: LocalCliError): boolean {

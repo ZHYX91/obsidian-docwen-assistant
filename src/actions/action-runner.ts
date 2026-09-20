@@ -2,7 +2,8 @@ import { type App, Modal } from "obsidian";
 
 import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../docwen/links";
 import { copyTextToClipboard } from "../host/clipboard";
-import { showNotice } from "../host/notices";
+import { showNotice, showNoticeWithAction } from "../host/notices";
+import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
 import { t, type Translations } from "../i18n";
 import {
   OperationCoordinator,
@@ -14,6 +15,27 @@ import { getErrorDiagnostics, getErrorMessage, getLocalErrorCode, isCancellation
 type FailureNoticeKey = {
   [K in keyof Translations]: K extends `notice${string}Failed` ? K : never;
 }[keyof Translations];
+
+const SETUP_ERROR_CODES = new Set([
+  "cli_path_not_configured",
+  "cli_alias_not_found",
+  "cli_platform_unsupported",
+  "cli_not_found",
+  "cli_not_file",
+  "cli_not_executable",
+  "cli_wrong_filename",
+]);
+
+const TECHNICAL_DETAIL_CODES = new Set([
+  "cli_incompatible_version",
+  "cli_integrity_error",
+  "cli_invalid_envelope",
+  "cli_invalid_response",
+  "cli_machine_protocol_error",
+  "cli_protocol_error",
+  "cli_cleanup_failed",
+  "vault_reconciliation_failed",
+]);
 
 export class ActionRunner {
   constructor(
@@ -27,35 +49,60 @@ export class ActionRunner {
     failureNotice: FailureNoticeKey,
     work: (lease: OperationLease) => Promise<T>,
   ): Promise<T | undefined> {
-    const lease = this.operations.begin(operation);
+    let lease: OperationLease | null = null;
     try {
+      lease = this.operations.begin(operation);
       const result = await work(lease);
       return lease.isCurrent() ? result : undefined;
     } catch (error) {
       if (!isCancellationError(error)) this.presentFailure(failureNotice, error);
+      else this.presentWarnings(getFailureWarnings(error), "", "cancelled");
       return undefined;
     } finally {
-      lease.finish();
+      lease?.finish();
     }
   }
 
   presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
-    if ([
-      "cli_path_not_configured",
-      "cli_alias_not_found",
-      "cli_platform_unsupported",
-      "cli_not_found",
-      "cli_not_file",
-      "cli_not_executable",
-      "cli_wrong_filename",
-    ].includes(getLocalErrorCode(error) ?? "")) {
+    const code = getLocalErrorCode(error) ?? "";
+    if (SETUP_ERROR_CODES.has(code)) {
       new DocWenSetupModal(this.app, this.openSettings).open();
       return;
     }
+
     const summary = getErrorMessage(error);
-    showNotice(t(failureNotice, { error: summary }));
+    const notice = t(failureNotice, { error: summary });
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
-    new FailureDetailsModal(this.app, summary, detailsText).open();
+    const showTechnicalDetails = code === "" || TECHNICAL_DETAIL_CODES.has(code);
+    if (getFailureWarnings(error).length > 0 || !showTechnicalDetails) {
+      showNoticeWithAction(notice, t("dialogDetails"), () => {
+        new OperationDetailsModal(this.app, notice, detailsText).open();
+      });
+      return;
+    }
+
+    // Internal/protocol failures get one detailed surface instead of a notice
+    // immediately followed by a second modal for the same event.
+    new OperationDetailsModal(this.app, notice, detailsText).open();
+  }
+
+  presentCompletion(summary: string, warnings: readonly OperationWarning[]): void {
+    if (warnings.length === 0) showNotice(summary);
+    else this.presentWarnings(warnings, summary, "completed_with_warnings");
+  }
+
+  presentWarnings(
+    warnings: readonly OperationWarning[],
+    summary = "",
+    status: "prepared_with_warnings" | "completed_with_warnings" | "cancelled" = "prepared_with_warnings",
+  ): void {
+    if (warnings.length === 0) return;
+    const message = [summary, t(status === "completed_with_warnings" ? "noticeCompletedWithWarnings" : "noticeCleanupWarning")]
+      .filter(Boolean).join("\n");
+    const details = JSON.stringify({ status, warnings }, null, 2);
+    showNoticeWithAction(message, t("dialogDetails"), () => {
+      new OperationDetailsModal(this.app, message, details).open();
+    });
   }
 }
 
@@ -95,7 +142,7 @@ class DocWenSetupModal extends Modal {
   }
 }
 
-class FailureDetailsModal extends Modal {
+class OperationDetailsModal extends Modal {
   constructor(
     app: App,
     private readonly summary: string,
@@ -109,6 +156,7 @@ class FailureDetailsModal extends Modal {
     this.contentEl.createEl("p", { text: this.summary });
     const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
     details.createEl("summary", { text: t("dialogDetails") });
+    details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
     details.createEl("pre", { text: this.detailsText });
     const copy = this.contentEl.createEl("button", {
       text: t("dialogCopyDetails"),

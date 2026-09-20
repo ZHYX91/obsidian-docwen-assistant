@@ -84,7 +84,7 @@ describe("VaultReadSnapshot", () => {
       async (snapshot) => snapshot.publish(async () => {
         buffer = "# Later edit after the publication boundary\n";
         return "published";
-      }))).resolves.toBe("published");
+      }))).resolves.toEqual({ value: "published", warnings: [] });
   });
 
   it("copies an unsaved editor buffer from a background Markdown split", async () => {
@@ -104,7 +104,7 @@ describe("VaultReadSnapshot", () => {
       async ({ inputPath }) => readFile(inputPath, "utf8"),
     );
 
-    expect(content).toBe("# Unsaved\n");
+    expect(content.value).toBe("# Unsaved\n");
     expect(app.vault.readBinary).not.toHaveBeenCalled();
   });
 
@@ -191,7 +191,7 @@ describe("VaultReadSnapshot", () => {
       },
     };
 
-    const captured = await new VaultReadSnapshot(app as never).run(
+    const { value: captured } = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
       async (snapshot) => {
@@ -256,7 +256,7 @@ describe("VaultReadSnapshot", () => {
       },
     };
 
-    const captured = await new VaultReadSnapshot(app as never).run(
+    const { value: captured } = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
       async (snapshot) => {
@@ -399,7 +399,7 @@ describe("VaultReadSnapshot", () => {
       },
     };
 
-    const captured = await new VaultReadSnapshot(app as never).run(
+    const { value: captured } = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
       async (snapshot) => {
@@ -629,7 +629,7 @@ describe("VaultReadSnapshot", () => {
       },
     };
 
-    const captured = await new VaultReadSnapshot(app as never).run(
+    const { value: captured } = await new VaultReadSnapshot(app as never).run(
       file as never,
       new AbortController().signal,
       async (snapshot) => {
@@ -683,7 +683,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       headings: [headingFact(0, heading.length, 0, "Scope", { targetId: null, enabled: false })],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot, [{
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot, [{
       heading: "Scope",
       level: 1,
       position: { start: { offset: 0 }, end: { offset: heading.length } },
@@ -707,7 +707,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       ],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot, [
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot, [
       {
         heading: "One",
         level: 1,
@@ -759,7 +759,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       }],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot, [{
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot, [{
       heading: "Scope",
       level: 1,
       position: { start: { offset: 0 }, end: { offset: heading.length } },
@@ -788,7 +788,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       }],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot, [{
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot, [{
       heading: "Scope",
       level: 1,
       position: { start: { offset: 0 }, end: { offset: heading.length } },
@@ -839,7 +839,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       }],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot);
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot);
 
     expect(captured.neutral.document.targets).toMatchObject([{
       source_start: Array.from(source.slice(0, captionStart)).length,
@@ -1040,7 +1040,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       }],
     });
 
-    const captured = await captureNumberSuiteProjection(source, snapshot);
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot);
 
     expect(captured.inputs).toHaveLength(2);
     expect(captured.neutral.document.authored_markdown).toBe(source);

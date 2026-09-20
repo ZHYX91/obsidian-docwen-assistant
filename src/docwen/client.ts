@@ -2,21 +2,15 @@ import {
   type FileIdentity,
   preferredArtifact,
   verifyArtifactIdentity,
-  regularFileIdentity,
   fileIdentity,
   sameFileIdentity,
   samePath,
   sha256File,
   throwIfAborted,
-  isErrno,
 } from "./output-integrity";
-import { randomUUID } from "node:crypto";
-import { constants as fsConstants, createReadStream } from "node:fs";
+import { createReadStream } from "node:fs";
 import {
-  copyFile,
-  link,
   lstat,
-  mkdir,
   mkdtemp,
   realpath,
   rm,
@@ -25,6 +19,9 @@ import * as path from "node:path";
 import { tmpdir } from "node:os";
 
 import { LocalCliError } from "./errors";
+import { selectConversionCapability } from "./conversion-selection";
+import { atomicCommitBundle } from "./output-files";
+import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
 import { atomicCommitDirectory, captureOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
@@ -79,6 +76,8 @@ export interface ConvertRequest extends ConvertOptions {
   sourceInput?: TaskInput;
   outputDirectory: string;
   capabilityId?: string;
+  /** Capability already selected during this operation's discovery. Core rechecks it at acceptance. */
+  selectedCapability?: MachineCapability;
   /** Host-owned source validation around the final output commit. */
   publish?: DirectoryPublication;
 }
@@ -104,6 +103,7 @@ export interface ConversionOutcome {
   output: string;
   outputs: string[];
   bundleId: string;
+  warnings: OperationWarning[];
 }
 
 export interface TemplateItem {
@@ -111,6 +111,8 @@ export interface TemplateItem {
   name: string;
   target: string;
   description?: string;
+  origin: "builtin" | "custom";
+  isDefault: boolean;
 }
 
 export interface OptimizationItem {
@@ -153,6 +155,7 @@ export interface ProofreadPosition {
 export interface ValidateReport {
   file: string;
   issues: ProofreadIssue[];
+  warnings: OperationWarning[];
 }
 
 export interface FileInspection {
@@ -178,6 +181,8 @@ export interface RuntimeRoute {
   state: string;
   options: string[];
   capabilityId: string;
+  optimizationId?: string;
+  capability: MachineCapability;
   inputShape: MachineCapability["input_shape"];
 }
 
@@ -189,7 +194,7 @@ export interface RuntimeSource {
 }
 
 export interface RuntimeCapabilityProjection {
-  contractId: "docwen.machine.v1";
+  contractId: "docwen.machine.v2";
   capabilities: MachineCapability[];
 }
 
@@ -236,35 +241,45 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const handle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     const result = await this.machine.query("file/inspect", { input: handle }, signal);
-    return {
-      filePath: stringValue(result.file_path) || source.path,
-      contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
-      sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
-      decision: requiredStringValue(result.decision, "file/inspect.decision"),
-      supportedActions: stringArray(result.supported_actions),
-      declaredFormat: requiredStringValue(result.declared_format, "file/inspect.declared_format"),
-      detectedFormat: requiredStringValue(result.detected_format, "file/inspect.detected_format"),
-      warningCode: stringValue(result.warning_code),
-      reasonCode: stringValue(result.reason_code),
-      workflowCategory: requiredStringValue(result.workflow_category, "file/inspect.workflow_category"),
-      mediaType: mediaTypeForFormat(requiredStringValue(result.detected_format, "file/inspect.detected_format")),
-    };
+    return normalizeFileInspection(result, source.path);
   }
 
   async runtimeCapabilities(signal?: AbortSignal): Promise<RuntimeCapabilityProjection> {
     const result = await this.machine.query("capability/list", {}, signal);
     const capabilities = objectArray(result.capabilities, "capability/list.capabilities").map(normalizeCapability);
-    return { contractId: "docwen.machine.v1", capabilities };
+    return { contractId: "docwen.machine.v2", capabilities };
   }
 
   async templates(target?: string, signal?: AbortSignal): Promise<TemplateItem[]> {
     const resources = await this.listResources("templates", target, signal);
-    return resources.map((item) => ({
-      id: requiredStringValue(item.id, "template.id"),
-      name: requiredStringValue(item.name, "template.name"),
-      target: stringValue(item.target),
-      description: stringValue(item.description) || undefined,
-    }));
+    const ids = new Set<string>();
+    const defaults = new Set<string>();
+    return resources.map((item) => {
+      if (Object.keys(item).some((key) => !["id", "name", "description", "target", "origin", "is_default"].includes(key))
+        || typeof item.name !== "string" || typeof item.description !== "string") {
+        throw invalidResponse("template.fields");
+      }
+      const id = requiredTemplateId(item.id);
+      const itemTarget = requiredTemplateTarget(item.target);
+      if (!id.startsWith(`template.${itemTarget}.`) || (target !== undefined && target !== itemTarget)) {
+        throw invalidResponse("template.target");
+      }
+      if (ids.has(id)) throw invalidResponse("template.id.unique");
+      ids.add(id);
+      const isDefault = requiredBoolean(item.is_default, "template.is_default");
+      if (isDefault) {
+        if (defaults.has(itemTarget)) throw invalidResponse("template.is_default.unique");
+        defaults.add(itemTarget);
+      }
+      return {
+        id,
+        name: item.name,
+        target: itemTarget,
+        description: item.description || undefined,
+        origin: requiredTemplateOrigin(item.origin),
+        isDefault,
+      };
+    });
   }
 
   async optimizations(signal?: AbortSignal): Promise<OptimizationItem[]> {
@@ -287,21 +302,26 @@ export class DocWenClient {
   }
 
   async convert(request: ConvertRequest, signal?: AbortSignal): Promise<ConversionOutcome> {
-    if (request.optimization) {
-      throw new LocalCliError(
-        "cli_invalid_envelope",
-        "The selected optimization is not exposed by the Machine capability contract.",
-      );
-    }
     const destination = await captureOutputDirectory(request.outputDirectory, signal);
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
-    const inspection = await this.inspect(source, signal);
-    const capabilityId = request.capabilityId ?? conversionCapabilityId(inspection.mediaType, request.target);
-    const options = buildConversionMachineOptions(request, inspection.mediaType);
+    const inspectionHandle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     return this.withTaskStaging(async (stagingRoot) => {
-      const result = await this.machine.runTask(
-        await taskRequest(capabilityId, request.inputs, stagingRoot, options, signal), signal,
-      );
+      let capabilityId = "";
+      const result = await this.machine.runTask(async (query) => {
+        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }), source.path);
+        const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
+        const capabilities = request.selectedCapability
+          ? [request.selectedCapability]
+          : objectArray((await query("capability/list", {})).capabilities, "capability/list.capabilities").map(normalizeCapability);
+        const selected = selectConversionCapability(
+          capabilities, prepared.inputs, request.target, request.optimization, request.capabilityId,
+        );
+        capabilityId = prepared.capability_id = selected.capability_id;
+        prepared.options = buildConversionMachineOptions({
+          ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
+        }, inspection.mediaType);
+        return prepared;
+      }, signal);
       if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
       return { ...outputs, bundleId: result.bundle.bundle_id };
@@ -316,7 +336,7 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const inspection = await this.inspect(source, signal);
     if (inspection.mediaType !== "text/markdown") {
-      throw new LocalCliError("cli_invalid_envelope", "Machine v1 proofreading currently accepts Markdown input.");
+      throw new LocalCliError("cli_invalid_envelope", "Machine v2 proofreading currently accepts Markdown input.");
     }
     return this.withTaskStaging(async (stagingRoot) => {
       const request = await taskRequest(
@@ -385,7 +405,9 @@ export class DocWenClient {
       { kind, locale: this.machine.locale(), ...(target ? { target } : {}) },
       signal,
     );
-    if (result.kind !== kind) throw invalidResponse("resource/list.kind");
+    if (result.kind !== kind || Object.keys(result).some((key) => !["kind", "resources"].includes(key))) {
+      throw invalidResponse("resource/list.kind");
+    }
     return objectArray(result.resources, "resource/list.resources");
   }
 
@@ -403,221 +425,48 @@ export class DocWenClient {
         await taskRequest(capabilityId, inputs, stagingRoot, options, signal),
         signal,
       );
-      const outputs = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
-      return { output: outputs[0], outputs, bundleId: result.bundle.bundle_id };
+      const committed = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
+      return { output: committed.outputs[0], ...committed, bundleId: result.bundle.bundle_id };
     });
   }
 
-  private async withTaskStaging<T>(body: (stagingRoot: string) => Promise<T>): Promise<T> {
+  private async withTaskStaging<T extends { warnings: OperationWarning[] }>(
+    body: (stagingRoot: string) => Promise<T>,
+  ): Promise<T> {
     const stagingRoot = await mkdtemp(path.join(tmpdir(), "docwen-assistant-machine-"));
-    let bodyCompleted = false;
+    let result: T;
     try {
-      const result = await body(stagingRoot);
-      bodyCompleted = true;
-      try {
-        await rm(stagingRoot, { recursive: true, force: true });
-      } catch (error) {
-        throw new LocalCliError("cli_cleanup_failed", "Unable to remove DocWen task staging.", {
-          stagingRoot,
-          cause: errorMessage(error),
-        });
-      }
-      return result;
+      result = await body(stagingRoot);
     } catch (error) {
-      if (!bodyCompleted) await rm(stagingRoot, { recursive: true, force: true }).catch(() => undefined);
+      await rm(stagingRoot, { recursive: true, force: true }).catch((cleanupError: unknown) => {
+        recordFailureWarning(error, operationWarning("task_cleanup_failed", cleanupError));
+      });
       throw error;
     }
+    try {
+      await rm(stagingRoot, { recursive: true, force: true });
+    } catch (error) {
+      result.warnings.push(operationWarning("task_cleanup_failed", error));
+    }
+    return result;
   }
+
 }
 
-type PreparedOutput = {
-  backup: string | null;
-  expectedTarget: FileIdentity | null;
-  target: string;
-  temporary: string;
-  temporaryIdentity: FileIdentity;
-};
-
-/** Capture the user-selected destination before conversion or other preparation. */
-export async function captureOutputTarget(outputPath: string, signal?: AbortSignal) {
-  const target = path.resolve(outputPath);
-  const expected = await inspectCommitTarget(target, true);
-  const contentSha256 = expected ? await sha256File(target, expected.size, signal) : null;
-  await assertCommitTargetUnchanged(target, expected);
+function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {
   return {
-    existed: expected !== null,
-    contentSha256,
-    async assertCurrent(): Promise<void> {
-      throwIfAborted(signal);
-      await assertCommitTargetUnchanged(target, expected);
-      if (expected && await sha256File(target, expected.size, signal) !== contentSha256) {
-        throw new LocalCliError("cli_commit_failed", "The selected output changed during conversion.");
-      }
-      await assertCommitTargetUnchanged(target, expected);
-      throwIfAborted(signal);
-    },
+    filePath: stringValue(result.file_path) || sourcePath,
+    contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
+    sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
+    decision: requiredStringValue(result.decision, "file/inspect.decision"),
+    supportedActions: stringArray(result.supported_actions),
+    declaredFormat: requiredStringValue(result.declared_format, "file/inspect.declared_format"),
+    detectedFormat: requiredStringValue(result.detected_format, "file/inspect.detected_format"),
+    warningCode: stringValue(result.warning_code),
+    reasonCode: stringValue(result.reason_code),
+    workflowCategory: requiredStringValue(result.workflow_category, "file/inspect.workflow_category"),
+    mediaType: mediaTypeForFormat(requiredStringValue(result.detected_format, "file/inspect.detected_format")),
   };
-}
-
-export async function atomicCommitBundle(
-  bundle: ValidatedArtifactBundle,
-  outputPath: string,
-  overwrite: boolean,
-  signal?: AbortSignal,
-  publish?: <T>(commit: () => Promise<T>) => Promise<T>,
-): Promise<string[]> {
-  throwIfAborted(signal);
-  const preferred = preferredArtifact(bundle);
-  const destinationRoot = path.dirname(path.resolve(outputPath));
-  await mkdir(destinationRoot, { recursive: true });
-  const manifestIds = new Set(bundle.relations
-    .filter((relation) => relation.type === "resource_of" && relation.role === "manifest")
-    .map((relation) => relation.source_artifact_id));
-  const orderedArtifacts = [preferred, ...bundle.artifacts.filter((artifact) =>
-    artifact !== preferred && !manifestIds.has(artifact.artifact_id))];
-  const targets = orderedArtifacts.map((artifact) => ({
-    artifact,
-    allowOverwrite: artifact.artifact_id === preferred.artifact_id && overwrite,
-    target: artifact.artifact_id === preferred.artifact_id
-      ? path.resolve(outputPath)
-      : path.join(destinationRoot, artifact.suggested_name),
-  }));
-  const normalizedTargets = targets.map(({ target }) => target.toLowerCase());
-  if (new Set(normalizedTargets).size !== targets.length) {
-    throw new LocalCliError("cli_commit_failed", "Artifact Bundle maps multiple artifacts to the same output path.");
-  }
-  const transactionId = randomUUID();
-  const prepared: PreparedOutput[] = [];
-  const committed: Array<{ identity: FileIdentity; target: string }> = [];
-  let checkingPublication = false;
-  let commitStarted = false;
-  try {
-    for (let index = 0; index < targets.length; index += 1) {
-      throwIfAborted(signal);
-      const { allowOverwrite, artifact, target } = targets[index];
-      const expectedTarget = await inspectCommitTarget(target, allowOverwrite);
-      const temporary = path.join(destinationRoot, `.docwen-${transactionId}-${index}.new`);
-      await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-      await copyFile(artifact.absolutePath, temporary, fsConstants.COPYFILE_EXCL);
-      const initialTemporaryIdentity = await regularFileIdentity(temporary);
-      const preparedOutput: PreparedOutput = {
-        backup: null,
-        expectedTarget,
-        target,
-        temporary,
-        temporaryIdentity: initialTemporaryIdentity,
-      };
-      prepared.push(preparedOutput);
-      preparedOutput.temporaryIdentity = await verifyArtifactIdentity(artifact, temporary, false);
-      await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    }
-    const commit = async (): Promise<string[]> => {
-      throwIfAborted(signal);
-      commitStarted = true;
-      for (let index = 0; index < prepared.length; index += 1) {
-        const item = prepared[index];
-        await assertCommitTargetUnchanged(item.target, item.expectedTarget);
-        if (item.expectedTarget) {
-          item.backup = path.join(destinationRoot, `.docwen-${transactionId}-${index}.bak`);
-          await link(item.target, item.backup);
-          const backupIdentity = await regularFileIdentity(item.backup);
-          if (!sameFileIdentity(backupIdentity, item.expectedTarget)) {
-            throw new Error(`Output target changed while its backup was being created: ${item.target}`);
-          }
-          await rm(item.target);
-          const retainedIdentity = await regularFileIdentity(item.backup);
-          if (!sameFileIdentity(retainedIdentity, item.expectedTarget)) {
-            throw new Error(`Output backup changed while its target was being removed: ${item.target}`);
-          }
-        }
-      }
-      for (const item of prepared) {
-        await link(item.temporary, item.target);
-        const [targetIdentity, temporaryIdentity] = await Promise.all([
-          regularFileIdentity(item.target),
-          regularFileIdentity(item.temporary),
-        ]);
-        item.temporaryIdentity = temporaryIdentity;
-        if (!sameFileIdentity(targetIdentity, temporaryIdentity)) {
-          throw new Error(`Committed output identity does not match its prepared artifact: ${item.target}`);
-        }
-        committed.push({ identity: targetIdentity, target: item.target });
-        await rm(item.temporary);
-      }
-      for (const item of prepared) {
-        if (!item.backup) continue;
-        const backupIdentity = await regularFileIdentity(item.backup);
-        if (!sameFileIdentity(backupIdentity, item.expectedTarget!)) {
-          throw new Error(`Output backup identity changed before cleanup: ${item.backup}`);
-        }
-        await rm(item.backup);
-      }
-      return targets.map(({ target }) => target);
-    };
-    checkingPublication = publish !== undefined;
-    return await (publish ? publish(commit) : commit());
-  } catch (error) {
-    const cleanupFailures: string[] = [];
-    for (const item of committed.reverse()) {
-      try {
-        const current = await regularFileIdentity(item.target);
-        if (!sameFileIdentity(current, item.identity)) {
-          cleanupFailures.push(`committed output changed and was preserved: ${item.target}`);
-          continue;
-        }
-        await rm(item.target);
-      } catch (cleanupError) {
-        if (!isErrno(cleanupError, "ENOENT")) cleanupFailures.push(errorMessage(cleanupError));
-      }
-    }
-    for (const item of prepared.slice().reverse()) {
-      try {
-        const temporaryIdentity = await regularFileIdentity(item.temporary);
-        if (sameFileIdentity(temporaryIdentity, item.temporaryIdentity)) await rm(item.temporary);
-        else cleanupFailures.push(`prepared output changed and was preserved: ${item.temporary}`);
-      } catch (cleanupError) {
-        if (!isErrno(cleanupError, "ENOENT")) cleanupFailures.push(errorMessage(cleanupError));
-      }
-      if (item.backup) {
-        try {
-          const backupIdentity = await regularFileIdentity(item.backup);
-          if (!sameFileIdentity(backupIdentity, item.expectedTarget!)) {
-            cleanupFailures.push(`backup changed and was preserved: ${item.backup}`);
-            continue;
-          }
-          let targetIdentity: FileIdentity | null;
-          try {
-            targetIdentity = await regularFileIdentity(item.target);
-          } catch (targetError) {
-            if (!isErrno(targetError, "ENOENT")) throw targetError;
-            targetIdentity = null;
-          }
-          if (targetIdentity) {
-            if (!sameFileIdentity(targetIdentity, item.expectedTarget!)) {
-              cleanupFailures.push(`target changed and backup was preserved: ${item.target}`);
-              continue;
-            }
-          } else {
-            await link(item.backup, item.target);
-            targetIdentity = await regularFileIdentity(item.target);
-            if (!sameFileIdentity(targetIdentity, item.expectedTarget!)) {
-              cleanupFailures.push(`restored target identity mismatch; backup preserved: ${item.target}`);
-              continue;
-            }
-          }
-          await rm(item.backup);
-        } catch (cleanupError) {
-          cleanupFailures.push(`backup retained at ${item.backup}: ${errorMessage(cleanupError)}`);
-        }
-      }
-    }
-    if (!commitStarted && cleanupFailures.length === 0
-      && (checkingPublication || (error instanceof LocalCliError && error.code === "cli_cancelled"))) throw error;
-    throw new LocalCliError("cli_commit_failed", "Unable to commit the DocWen Artifact Bundle.", {
-      cause: errorMessage(error),
-      ...(cleanupFailures.length > 0 ? { cleanupFailures } : {}),
-    });
-  }
 }
 
 async function taskRequest(
@@ -823,24 +672,6 @@ export function normalizeLogicalPath(value: string): string {
   return value;
 }
 
-function conversionCapabilityId(inputMediaType: string, target: ConvertTarget): string {
-  const key = `${inputMediaType}->${target}`;
-  const mapping: Record<string, string> = {
-    "text/markdown->docx": "convert.markdown.to_docx",
-    "text/markdown->xlsx": "convert.markdown.to_xlsx",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document->md": "convert.docx.to_markdown",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet->md": "convert.xlsx.to_markdown",
-  };
-  const capabilityId = mapping[key];
-  if (!capabilityId) {
-    throw new LocalCliError("cli_invalid_envelope", "No Machine conversion capability matches this request.", {
-      inputMediaType,
-      target,
-    });
-  }
-  return capabilityId;
-}
-
 export function buildConversionMachineOptions(request: ConvertRequest, inputMediaType: string): JsonObject {
   const options: JsonObject = {};
   const supported = request.supportedOptions ? new Set(request.supportedOptions) : null;
@@ -890,6 +721,26 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
   return options;
 }
 
+function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
+  if (value === "builtin" || value === "custom") return value;
+  throw invalidResponse("template.origin");
+}
+
+function requiredTemplateId(value: unknown): string {
+  if (typeof value === "string" && /^template\.(?:docx|xlsx)\.[0-9a-f]{64}$/.test(value)) return value;
+  throw invalidResponse("template.id");
+}
+
+function requiredTemplateTarget(value: unknown): "docx" | "xlsx" {
+  if (value === "docx" || value === "xlsx") return value;
+  throw invalidResponse("template.target");
+}
+
+function requiredBoolean(value: unknown, field: string): boolean {
+  if (typeof value === "boolean") return value;
+  throw invalidResponse(field);
+}
+
 function preferredSupportedOption(
   supported: ReadonlySet<string> | null,
   candidates: readonly string[],
@@ -922,17 +773,8 @@ function proofreadOptions(checks: readonly ProofreadCheck[]): JsonObject {
 function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
   const preferred = preferredArtifact(bundle);
   const entry = bundle.entries[0];
-  const manifests = bundle.relations.filter((relation) =>
-    relation.type === "resource_of" && relation.role === "manifest"
-    && relation.target_artifact_id === preferred.artifact_id);
-  const manifest = bundle.artifacts.find((artifact) => artifact.artifact_id === manifests[0]?.source_artifact_id);
   if (
-    bundle.artifacts.length !== 2
-    || bundle.entries.length !== 1
-    || bundle.relations.length !== 1
-    || manifests.length !== 1
-    || manifest?.kind !== "resource"
-    || manifest.media_type !== "application/vnd.docwen.document-node+json"
+    bundle.entries.length !== 1
     || preferred.kind !== "document"
     || preferred.media_type !== DOCX_MEDIA_TYPE
     || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
@@ -1002,6 +844,7 @@ function parseReport(value: unknown, expectedSourceSha256: string): ValidateRepo
   return {
     file: requiredStringValue(value.file, "proofread report file"),
     issues: rawIssues.map(parseProofreadIssue),
+    warnings: [],
   };
 }
 
@@ -1076,6 +919,10 @@ function parseProofreadPosition(value: unknown, field: string): ProofreadPositio
 }
 
 function normalizeCapability(item: JsonObject): MachineCapability {
+  const operation = requiredStringValue(item.operation, "capability.operation");
+  const optimizationId = item.optimization_id === undefined
+    ? undefined : requiredStringValue(item.optimization_id, "capability.optimization_id");
+  if (optimizationId !== undefined && operation !== "transform") throw invalidResponse("capability.optimization_id");
   const availability = item.availability;
   if (availability !== "available" && availability !== "limited" && availability !== "unavailable") {
     throw invalidResponse("capability.availability");
@@ -1122,7 +969,8 @@ function normalizeCapability(item: JsonObject): MachineCapability {
   if (cardinality !== "one" && cardinality !== "many") throw invalidResponse("capability.output_shape.cardinality");
   return {
     capability_id: requiredStringValue(item.capability_id, "capability.capability_id"),
-    operation: requiredStringValue(item.operation, "capability.operation"),
+    operation,
+    ...(optimizationId === undefined ? {} : { optimization_id: optimizationId }),
     input_shape: { slots, undeclared_roles: "reject" },
     output_media_types: stringArray(item.output_media_types),
     output_shape: {
@@ -1182,39 +1030,6 @@ function mediaTypeForFormat(format: string): string {
     ppt: "application/vnd.ms-powerpoint",
   };
   return mapping[normalized] || "application/octet-stream";
-}
-
-async function inspectCommitTarget(target: string, allowOverwrite: boolean): Promise<FileIdentity | null> {
-  if (!path.basename(target)) {
-    throw new LocalCliError("cli_commit_failed", "The output target must be a file path.", { target });
-  }
-  let identity: FileIdentity;
-  try {
-    identity = await regularFileIdentity(target);
-  } catch (error) {
-    if (isErrno(error, "ENOENT")) return null;
-    throw error;
-  }
-  if (!allowOverwrite) {
-    throw new LocalCliError("cli_commit_failed", "An output artifact already exists.", { target });
-  }
-  return identity;
-}
-
-async function assertCommitTargetUnchanged(target: string, expected: FileIdentity | null): Promise<void> {
-  let current: FileIdentity | null;
-  try {
-    current = await regularFileIdentity(target);
-  } catch (error) {
-    if (!isErrno(error, "ENOENT")) throw error;
-    current = null;
-  }
-  if (
-    (expected === null && current !== null)
-    || (expected !== null && (current === null || !sameFileIdentity(current, expected)))
-  ) {
-    throw new LocalCliError("cli_commit_failed", "An output target changed before commit.", { target });
-  }
 }
 
 async function readValidatedArtifactText(

@@ -6,7 +6,7 @@ export const PUBLIC_DOCWEN_REPOSITORY = "ZHYX91/docwen";
 export const PUBLIC_DOCWEN_ASSET = "DocWen-windows-x64.zip";
 const API_ROOT = "https://api.github.com";
 const API_VERSION = "2026-03-10";
-const MINIMUM_DOCWEN_VERSION = Object.freeze(["0", "10", "0"]);
+const MINIMUM_DOCWEN_VERSION = Object.freeze(["0", "12", "0"]);
 const RELEASE_TAG_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
 
 export function selectPublicDocWenRelease(releases) {
@@ -15,19 +15,12 @@ export function selectPublicDocWenRelease(releases) {
     validateReleaseRecord(release);
     if (release.draft || release.prerelease) return [];
     const version = parseStableTag(release.tag_name);
-    if (
-      version === null ||
-      version[0] !== "0" ||
-      version[1] !== "10" ||
-      compareVersion(version, MINIMUM_DOCWEN_VERSION) < 0
-    ) {
-      return [];
-    }
+    if (version === null || compareVersion(version, MINIMUM_DOCWEN_VERSION) < 0) return [];
     return [{ release, version }];
   }).sort((left, right) => compareVersion(right.version, left.version));
 
   if (eligible.length === 0) {
-    throw new Error("No public stable DocWen 0.10.x Release exists");
+    throw new Error(`No public stable DocWen Release at or above ${MINIMUM_DOCWEN_VERSION.join(".")} exists`);
   }
   const selected = eligible[0];
   const { release } = selected;
@@ -174,7 +167,7 @@ async function main() {
   writeOutput("docwen_version", selected.version.join("."));
   writeOutput("docwen_asset_digest", selected.asset.digest);
   console.log(
-    `Public DocWen compatibility verified: ${selected.release.tag_name} ` +
+    `Public DocWen compatibility candidate verified: ${selected.release.tag_name} ` +
       `${PUBLIC_DOCWEN_ASSET} ${selected.asset.digest}`,
   );
 }

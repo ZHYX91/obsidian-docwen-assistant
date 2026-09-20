@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   notices: [] as string[],
   writerRun: vi.fn(),
+  pick: vi.fn(),
 }));
 
 vi.mock("obsidian", () => ({ TFile: class TFile {} }));
@@ -10,7 +11,7 @@ vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.n
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { filename?: string }) => values?.filename ? `${key}:${values.filename}` : key,
 }));
-vi.mock("../src/utils/suggest-modal", () => ({ ItemPickerModal: class ItemPickerModal {} }));
+vi.mock("../src/utils/suggest-modal", () => ({ pickItem: state.pick }));
 vi.mock("../src/host/vault-write-transaction", () => ({
   VaultWriteTransaction: class VaultWriteTransaction {
     run = state.writerRun;
@@ -21,11 +22,32 @@ describe("NumberingActions", () => {
   beforeEach(() => {
     state.notices.length = 0;
     state.writerRun.mockReset();
+    state.pick.mockReset();
+  });
+
+  it("rejects a numbering choice queued just before cancellation", async () => {
+    const { NumberingActions } = await import("../src/actions/numbering-actions");
+    const controller = new AbortController();
+    const runner = {
+      run: async (_request: unknown, _message: string, work: (lease: unknown) => Promise<void>) =>
+        work({ signal: controller.signal, isCurrent: () => !controller.signal.aborted }),
+    };
+    const docwen = { numberingSchemes: vi.fn().mockResolvedValue([{ id: "scheme.one", name: "One" }]) };
+    state.pick.mockImplementation(async () => {
+      controller.abort();
+      return { id: "scheme.one" };
+    });
+    await new NumberingActions({} as never, docwen as never, {} as never, runner as never)
+      .add({ path: "note.md", name: "note.md" } as never);
+    expect(state.pick).toHaveBeenCalledOnce();
+    expect(state.writerRun).not.toHaveBeenCalled();
   });
 
   it("treats a successful empty scheme list as empty without a fallback", async () => {
     const { NumberingActions } = await import("../src/actions/numbering-actions");
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal: new AbortController().signal, isCurrent: () => true }),
     };
@@ -42,10 +64,12 @@ describe("NumberingActions", () => {
     const { NumberingActions } = await import("../src/actions/numbering-actions");
     const signal = new AbortController().signal;
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (_key: string, _message: string, action: (context: unknown) => Promise<void>) =>
         action({ signal, isCurrent: () => true }),
     };
-    const docwen = { numberMarkdown: vi.fn().mockResolvedValue({}) };
+    const docwen = { numberMarkdown: vi.fn().mockResolvedValue({ warnings: [] }) };
     const capabilities = {
       requireAction: vi.fn().mockResolvedValue({ inspection: { contentSha256: "snapshot-sha" } }),
     };

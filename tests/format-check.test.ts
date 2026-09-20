@@ -17,6 +17,17 @@ afterEach(async () => {
 });
 
 describe("format contract", () => {
+  it("preserves exact int64 tokens only in vendored upstream schemas", async () => {
+    const root = await createWorkspace();
+    const directory = path.join(root, "contracts", "docwen", "schemas");
+    await mkdir(directory, { recursive: true });
+    const schema = "{\n  \"maximum\": 9223372036854775807\n}\n";
+    await writeFile(path.join(directory, "schema.json"), schema);
+    await expect(checkFormatting(root)).resolves.toBe(1);
+    await writeFile(path.join(root, "package.json"), schema);
+    await expect(checkFormatting(root)).rejects.toThrow(/canonical 2-space formatting/u);
+  });
+
   it("accepts UTF-8 text and canonical two-space JSON", async () => {
     const root = await createWorkspace();
     await writeFile(path.join(root, "source.ts"), "export const value = true;\n");

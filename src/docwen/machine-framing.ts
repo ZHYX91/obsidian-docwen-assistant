@@ -1,3 +1,6 @@
+import { TextDecoder } from "node:util";
+
+const UTF8_DECODER = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
 const HEADER_LIMIT_BYTES = 64;
 const HEADER_PATTERN = /^Content-Length: ([1-9][0-9]*)\r\n\r\n$/;
@@ -26,7 +29,7 @@ export class MachineFrameDecoder {
       }
       const header = this.buffer.subarray(0, headerEnd + 4);
       if (header.length > HEADER_LIMIT_BYTES) throw new Error("docwen_machine_invalid_frame_header");
-      const match = HEADER_PATTERN.exec(header.toString("ascii"));
+      const match = HEADER_PATTERN.exec(header.toString("latin1"));
       if (!match?.[1]) throw new Error("docwen_machine_invalid_frame_header");
       const contentLength = Number(match[1]);
       if (!Number.isSafeInteger(contentLength) || contentLength > MAX_MESSAGE_BYTES) {
@@ -38,7 +41,7 @@ export class MachineFrameDecoder {
       this.buffer = this.buffer.subarray(frameEnd);
       let value: unknown;
       try {
-        value = JSON.parse(body.toString("utf8"));
+        value = JSON.parse(UTF8_DECODER.decode(body));
       } catch {
         throw new Error("docwen_machine_invalid_frame_payload");
       }

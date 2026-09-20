@@ -1,6 +1,6 @@
 {
   "name": "docwen-assistant",
-  "version": "2.4.0",
+  "version": "3.0.0",
   "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "main": "dist/main.js",
   "scripts": {
@@ -55,6 +55,7 @@
     "@eslint/json": "0.14.0",
     "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^4.1.11",
+    "ajv": "8.20.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "eslint-plugin-obsidianmd": "^0.4.2",

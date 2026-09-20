@@ -1,19 +1,29 @@
 # Machine integration contract
 
-DocWen Assistant consumes `docwen.machine.v1` and Artifact Bundle v2 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
+DocWen Assistant consumes `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
 
 ## Process boundary
 
 - Automatic mode is the default. It constructs and directly launches the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` application execution alias from a safe temporary working directory. It never resolves a bare command through `PATH` and never reads or stores the versioned `WindowsApps` package path.
 - Manual mode accepts an extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`, then resolves exactly one sibling `DocWenCLI.exe` and keeps the previous validated absolute-path behavior.
 - Every operation spawns the selected launch target with `serve --stdio`, `shell: false`, a hidden Windows console, a bounded environment, and canonical `Content-Length` framing. A missing automatic alias is a typed setup failure; no shell or recursive fallback is allowed.
+- Conversion inspection, capability discovery when needed, planning and execution share one initialized process. Preparation queries keep their 30-second response deadline inside the ten-minute operation budget. The process closes after validation; no process is cached between operations, and input/output integrity checks remain in place.
 - Changing the connection mode or manual path cancels active work and atomically resets connection checks, the runtime capability projection, file capability caches, and pending preloads. Request generations and entry identity prevent invalidated work from restoring stale results.
-- The client initializes JSON-RPC 2.0 as `docwen.machine` major 1, requires `server.name` to be exactly `DocWen`, and accepts only a stable DocWen 0.10.x product version. Prereleases and 0.10-or-newer versions fail closed. Package acceptance additionally pins an exact product version. Every Artifact Bundle must repeat the exact product version returned by that session's initialize response; a mismatch fails closed.
+- The client initializes JSON-RPC 2.0 as `docwen.machine` 2.0, requires `server.name` to be exactly `DocWen`, and requires Artifact Bundle v3. Protocol compatibility is checked independently of the product version. Package acceptance additionally pins an exact product version. Every Artifact Bundle must repeat the exact product version returned by that session's initialize response; a mismatch fails closed.
+- The bounded child environment preserves the relevant platform home and profile-directory variables, temporary directories, `DOCWEN_DATA_DIR`, `DOCWEN_CONFIG_DIR`, `DOCWEN_LOG_DIR` and truthy `DOCWEN_LOG_TO_TEMP`. DATA selects a whole profile; CONFIG and LOG override only their components. Relative selectors are resolved before changing the child working directory. No unrelated `DOCWEN_*` variables, credentials or Node options are forwarded. Start Obsidian with the intended profile selection; changing the DocWen executable alone does not override it.
 - Queries and tasks have timeouts. Cancellation sends `task/cancel` after task acceptance, then terminates the owned process tree if the server does not settle within two seconds; cancellation before acceptance and plugin unload also settle waiting callers and terminate every owned process tree. Stderr is capped at 256 KiB, protocol frames at 16 MiB, and queued/deferred messages at 64 each.
 - Every file handle contains an absolute local locator, immutable `kind`/`role`, a unique normalized relative-POSIX `logical_path`, media type, byte length, and SHA-256. Inputs are preflighted before hashing, limited to 256 files, 512 MiB per file and 1 GiB total, then hashed sequentially with identity revalidation. Capability `input_shape` declares role/kind/media-type slots and rejects undeclared roles; DocWen rechecks handles at plan and execute boundaries.
 - Markdown-to-DOCX keeps the source snapshot for inspection and advisory proofreading, but the task itself has exactly two inputs: one `neutral_document` and one `numbering_export_plan`. The neutral document authenticates DocWen heading levels 1 through 9, including extended levels that Obsidian's standard heading cache can omit. Obsidian's metadata cache resolves only image embeds explicitly present in the note. PNG, JPEG, GIF, BMP, and WebP bytes are deduplicated by Vault path, authenticated, embedded in the neutral document, and bound to every authored occurrence by Unicode-code-point range. The Assistant never discovers sibling files or scans the Vault/CWD. Missing, unsupported, stale-cache, empty, or over-budget images fail before task planning.
 
 ## Methods used
+
+Optimization choices join `resource/list` IDs to available `transform` capabilities through
+`optimization_id`. Input slots and output media types must match, and the match must be unique.
+Ordinary conversion excludes optimizer capabilities. The chosen capability and its supported options
+are passed into execution, avoiding a second discovery query; a missing or unavailable optimizer fails
+without falling back to ordinary conversion. Core checks the full Office preconversion chain again at
+planning and acceptance. Global settings contribute only options exposed by the chosen capability.
+
 
 | Plugin behavior | Machine method/capability |
 |---|---|
@@ -44,7 +54,7 @@ DocWen writes only to a request-owned staging directory. Before using a complete
 
 Validation accepts at most 1,024 artifacts, 1,024 entries and 4,096 relations, with a 512 MiB per-artifact and 1 GiB total artifact budget. Proofreading JSON is additionally capped at 16 MiB before it is read into memory.
 
-Conversion selects an existing output parent and preserves every validated `logical_path` inside one `docwen.document_node.v1` result directory, including the bound layout manifest. Resolved Markdown-to-DOCX requires one preferred DOCX, one primary entry and exactly one manifest resource with a `resource_of` relation. The preferred output is selected by the entry, not artifact ordering; manifests are excluded from the business output list. Names retain the producer's source stem, timestamp and admitted input format. Staged and prepared bytes are revalidated before a single directory rename. Existing result roots, changed parents, source conflicts and cancellation before commit prevent publication; cancellation after publication does not turn a completed export into failure. The CLI never receives the user's destination path.
+Conversion selects an existing output parent and preserves every validated `logical_path` inside one `docwen.document_node.v1` result directory, without requiring a node JSON. Resolved Markdown-to-DOCX requires one preferred DOCX and one primary entry, with exact size and SHA-256 in the Bundle. The preferred output is selected by the entry, not artifact ordering; manifests are excluded from the business output list. Names retain the producer's source stem, timestamp and admitted input format. Staged and prepared bytes are revalidated before a single directory rename. Existing result roots, changed parents, source conflicts and cancellation before commit prevent publication; cancellation after publication does not turn a completed export into failure. The CLI never receives the user's destination path.
 
 Proofreading reads the preferred JSON report resource and never commits it. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
 

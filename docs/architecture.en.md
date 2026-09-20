@@ -14,9 +14,17 @@ translation_status: synced
 
 ## DocWen process boundary
 
-Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine v1, server identity, and a stable 0.10.x product version.
+The child inherits the platform profile-directory variables and explicit `DOCWEN_DATA_DIR`, `DOCWEN_CONFIG_DIR`, `DOCWEN_LOG_DIR` and truthy `DOCWEN_LOG_TO_TEMP` within a bounded environment. DATA selects a whole profile; CONFIG and LOG are component overrides. Relative selectors resolve against the parent working directory before spawning. Unrelated variables and credentials are excluded.
+
+Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine Protocol 2.0, Artifact Bundle v3 and server identity. Product versions are bound to their session and separately pinned for candidate acceptance.
 
 ## Request data flow
+
+Optimizer selection joins resource IDs to executable `transform` capabilities by `optimization_id`,
+typed input shape, output media type, and availability. `conversion-selection.ts` validates the exact
+selected capability against the prepared input handles. Actions pass their discovered capability to
+execution; unavailable or ambiguous optimizers cannot fall back to ordinary conversion. The selected
+capability owns its option set, while Core rechecks the complete preconversion chain at acceptance.
 
 An action first captures an isolated snapshot from the uniquely path-matched open Markdown editor, including a background split, or from the Vault file when no such editor is open. More than one open editor for the same path fails closed. The action then creates input handles with kind, media type, canonical logical path, size, and SHA-256. Inspection and capability facts decide whether an action is supported. Plan and execute use the same capability and input facts without inferring support from extensions or route IDs.
 
@@ -36,9 +44,11 @@ text is never used to guess a number.
 
 ## Artifacts and commit
 
-DocWen writes only to a request-owned staging directory. Assistant validates Bundle v2 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory, including its bound `docwen-node.json`, is prepared beside the chosen parent and published in one directory rename. Existing result roots are rejected. The UI lists business outputs and excludes the manifest from its output count.
+DocWen writes only to a request-owned staging directory. Assistant validates Bundle v3 identity, graph, logical paths, roles, relations, regular-file identity, sizes and SHA-256 hashes. Conversion requires `docwen.document_node.v1`. The complete logical directory is prepared beside the chosen parent and published in one directory rename. Ordinary conversion requires no node JSON; sizes, hashes and relations come from the validated Bundle. Existing result roots are rejected. The UI lists business outputs and excludes bound layout manifests and image resources from its output count.
 
-Resolved Markdown-to-DOCX contains one preferred DOCX, one primary entry and one manifest resource bound through `resource_of`. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
+Resolved Markdown-to-DOCX contains one preferred DOCX and one primary entry with size and SHA-256 in the validated Bundle. Ordinary conversion does not require a node JSON. No original-source companion is used. Reverse conversion reads the independent DOCX. Valid unnumbered references retain their resolved target with an empty cached_number, displaying Alias or the current title.
+
+`output-files` owns file publication and rollback; `output-directory` owns complete result directories. `operation-outcome` permits one owned commit attempt. A host callback cannot report success without committing, trigger another commit, or turn an established publication into rollback. Backup, lock, task-staging and input-snapshot cleanup failures accompany the completed result as structured warnings. Changed cleanup targets are preserved. Cleanup never replaces the primary failure before publication.
 
 ## Vault writes
 
@@ -46,9 +56,17 @@ Export captures the chosen parent directory identity before conversion. Publicat
 
 Proofreading only reads a report. Numbering is generated in an isolated file, and `VaultWriteTransaction` compares the original snapshot with the uniquely path-matched Markdown leaf, view, and editor state. It commits once through the Editor or Vault API only when all still match. A second matching view, an open/closed transition, plugin unload, view closure, or a conflict cancels or refuses the write.
 
+Once the editor buffer or Vault API confirms the expected content, save scheduling or subsequent identity changes produce warnings. If the host accepts content but does not confirm the write, the result is explicitly unconfirmed and is never retried automatically. This does not claim that an editor buffer has already been persisted to disk.
+
 ## Lifecycle and resources
 
+Conversion inspection, capability discovery when needed, planning and execution share one initialized process. Preparation queries retain a 30-second response deadline within the ten-minute operation budget. The process closes after validation and is not cached across operations; input and publication integrity checks remain in place.
+
 Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. Changing the DocWen target cancels active work and resets connection checks, capability projection, file caches, and pending preloads as one generation; invalidated requests cannot restore stale state. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
+
+An export or numbering operation owns its picker through the eventual write; selecting an item never starts a detached task. Cancellation, replacement and unload close plugin pickers and format confirmations and invalidate queued choices. Native directory dialogs may stay open until dismissed, but their returned paths are ignored after cancellation. File-menu discovery uses the same coordinator, and menu callbacks cannot invoke actions after unload.
+
+Normal host exit registers cancelled-operation settlement with Obsidian's public `Workspace.quit` task collector. Settlement is tracked until each action's `finally` completes, including superseded operations and leases cancelled by earlier disposal. The wait is bounded to ten seconds so an unresolved native dialog or filesystem operation cannot hold the host indefinitely. Exceeding that deadline is logged; forced termination, a missing quit event or power loss cannot guarantee temporary-file cleanup.
 
 ## Trust boundaries
 

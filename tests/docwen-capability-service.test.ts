@@ -89,7 +89,7 @@ function resolvedMarkdownDocxCapability(): MachineCapability {
 
 function projection() {
   return {
-    contractId: "docwen.machine.v1" as const,
+    contractId: "docwen.machine.v2" as const,
     capabilities: [
       resolvedMarkdownDocxCapability(),
       capability("validate.markdown", "validate", "application/json"),
@@ -109,6 +109,40 @@ function deferred<T>() {
 }
 
 describe("DocWenCapabilityService", () => {
+  it("joins optimizer resources by declared identity and keeps ordinary conversion separate", async () => {
+    const ordinary = capability("ordinary", "convert", "text/markdown");
+    const optimized = { ...capability("opaque-capability", "transform", "text/markdown", { recognize_text: { type: "boolean" } }), optimization_id: "gongwen" };
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection()),
+      runtimeCapabilities: vi.fn().mockResolvedValue({ contractId: "docwen.machine.v2", capabilities: [optimized, ordinary] }),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+    const file = await service.forFile("D:\\note.md");
+    const resources = [{ id: "gongwen", name: "Gongwen", scopes: ["opaque"] }, { id: "another", name: "Another", scopes: [] }];
+    expect(service.findConversionRoute(file, "md")?.capabilityId).toBe("ordinary");
+    expect(service.optimizationActionIds(file, "md")).toEqual(["gongwen"]);
+    expect(service.findApplicableOptimizations(file, resources, "md")).toEqual([resources[0]]);
+    expect(service.requireConversionRoute(file, "md", "gongwen")).toMatchObject({ capabilityId: "opaque-capability", capability: optimized, options: ["recognize_text"] });
+    expect(() => service.requireConversionRoute(file, "md", "unknown")).toThrow();
+  });
+
+  it.each(["unavailable", "ambiguous", "wrong-operation", "wrong-input"])("does not offer %s optimization", async (reason) => {
+    const ordinary = capability("ordinary", "convert", "text/markdown");
+    const optimized = { ...capability("opaque", "transform", "text/markdown"), optimization_id: "gongwen" };
+    if (reason === "unavailable") optimized.availability = "unavailable";
+    if (reason === "wrong-operation") optimized.operation = "convert";
+    if (reason === "wrong-input") optimized.input_shape.slots[0].media_types = ["application/pdf"];
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection()),
+      runtimeCapabilities: vi.fn().mockResolvedValue({ contractId: "docwen.machine.v2", capabilities: [ordinary, optimized, ...(reason === "ambiguous" ? [{ ...optimized, capability_id: "duplicate" }] : [])] }),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+    const file = await service.forFile("D:\\note.md");
+    expect(service.optimizationActionIds(file, "md")).toEqual([]);
+    expect(service.findConversionRoute(file, "md", "gongwen")).toBeNull();
+    expect(service.findConversionRoute(file, "md")?.capabilityId).toBe("ordinary");
+  });
+
   it("joins Markdown inspection to the exact resolved-document Word capability", async () => {
     const client = {
       inspect: vi.fn().mockResolvedValue(inspection()),
@@ -143,7 +177,7 @@ describe("DocWenCapabilityService", () => {
     const client = {
       inspect: vi.fn().mockResolvedValue(inspection({ supportedActions: ["inspect", "validate"] })),
       runtimeCapabilities: vi.fn().mockResolvedValue({
-        contractId: "docwen.machine.v1",
+        contractId: "docwen.machine.v2",
         capabilities: [retired, capability("validate.markdown", "validate", "application/json")],
       }),
     } as unknown as DocWenClient;
@@ -153,15 +187,35 @@ describe("DocWenCapabilityService", () => {
     expect(service.findConversionRoute(file, "docx")).toBeNull();
   });
 
-  it("does not turn inspection or discovery failure into empty support", async () => {
+  it.each(["inspect", "runtimeCapabilities"] as const)("preserves %s failure without classifying it as unsupported", async (method) => {
     const failure = new Error("unavailable");
     const client = {
-      inspect: vi.fn().mockRejectedValue(failure),
+      inspect: vi.fn().mockResolvedValue(inspection()),
       runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
     } as unknown as DocWenClient;
+    vi.mocked(client[method]).mockRejectedValue(failure);
     const service = new DocWenCapabilityService(client);
 
     await expect(service.forFile("D:\\note.md")).rejects.toBe(failure);
+  });
+
+  it.each(["unadvertised", "unavailable"])("reports %s media capabilities without claiming a malformed response", async (reason) => {
+    const advertised = projection();
+    if (reason === "unavailable") {
+      for (const item of advertised.capabilities) item.availability = "unavailable";
+    }
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection({
+        mediaType: reason === "unadvertised" ? "text/plain" : "text/markdown",
+      })),
+      runtimeCapabilities: vi.fn().mockResolvedValue(advertised),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    await expect(service.forFile("D:\\note.txt")).rejects.toMatchObject({ code: "cli_capability_unavailable" });
+    await service.preload("D:\\note.txt");
+    expect(service.peek("D:\\note.txt")).toMatchObject({ code: "cli_capability_unavailable" });
+    await expect(service.requireAction("D:\\note.txt", "convert")).rejects.toMatchObject({ code: "cli_capability_unavailable" });
   });
 
   it("requires both inspection action support and a matching Machine capability", async () => {

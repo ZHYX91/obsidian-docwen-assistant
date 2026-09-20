@@ -1,5 +1,11 @@
 /** Translation keys shared by every supported locale. */
 export interface Translations {
+  noticeCompletedWithWarnings: string;
+  noticeCleanupWarning: string;
+  errorOutputUnconfirmed: string;
+  dialogDiagnosticsPrivacy: string;
+  dialogContinue: string;
+  dialogDetectedFormat: string;
   // Ribbon & Commands
   ribbonTooltip: string;
   commandLaunch: string;
@@ -74,6 +80,8 @@ export interface Translations {
   dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
+  errorDocWenInternal: string;
+  errorCapabilityUnavailable: string;
   errorContentConflict: string;
   errorOperationTimeout: string;
   dialogDocWenSetupTitle: string;
@@ -96,6 +104,9 @@ export interface Translations {
 
   // Picker
   pickerTemplatePlaceholder: string;
+  pickerTemplateBuiltin: string;
+  pickerTemplateCustom: string;
+  pickerTemplateDefault: string;
   pickerNoSpreadsheetTemplate: string;
   pickerOptimizationPlaceholder: string;
   pickerNoOptimization: string;
@@ -198,6 +209,7 @@ export interface Translations {
   proofreadSortByLine: string;
   proofreadSortByRule: string;
   proofreadRefresh: string;
+  proofreadSourceChanged: string;
   operationProofread: string;
   operationExport: string;
   operationNumbering: string;

@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.10.x.
+DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.12.0 или новее.
 
 > **Требуется DocWen.** Установите совместимую версию из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) либо полностью распакуйте переносимый ZIP со страницы [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,8 +35,10 @@ DocWen Assistant связывает Obsidian с локальной устано�
 ## Требования и совместимость
 
 - Windows и Obsidian 1.12.7 или новее; плагин работает только на компьютере.
-- Полностью распакованный пакет стабильной версии DocWen 0.10.x для Windows; плагин не загружает DocWen автоматически.
-- Плагину требуются `docwen.machine.v1` и `docwen.artifact_bundle.v2`; несовместимая версия DocWen отклоняется без перехода на другой протокол.
+- Полностью распакованный пакет стабильной версии DocWen 0.12.0 или новее для Windows; плагин не загружает DocWen автоматически.
+- Плагину требуются `docwen.machine.v2` и `docwen.artifact_bundle.v3`; несовместимая версия DocWen отклоняется без перехода на другой протокол.
+
+Если установленная версия из Store не соответствует этим требованиям, используйте совместимый переносимый пакет и выберите его в режиме ручной установки.
 
 По умолчанию автоматическое обнаружение использует зарегистрированный псевдоним `docwen.exe`, который сохраняется после обновлений Microsoft Store. Для переносимого ZIP выберите ручную установку и распакованную папку DocWen. Плагин не просматривает `WindowsApps` или произвольные папки и не загружает программы автоматически.
 
@@ -54,7 +56,7 @@ DocWen Assistant связывает Obsidian с локальной устано�
 
 Значок, подменю **DocWen** и палитра команд позволяют запустить DocWen, экспортировать Word/Excel/Markdown, изменить нумерацию заголовков, проверить Markdown и выполнить doctor.
 
-Выберите папку вывода. Для каждого преобразования создаётся отдельная папка результатов с исходным именем, датой, временем и входным форматом. Имена, связанные ресурсы и манифест структуры сохраняются; существующие папки результатов не перезаписываются.
+Выберите папку вывода. Для каждого преобразования создаётся отдельная папка результатов с исходным именем, датой, временем и входным форматом. Имена и связанные ресурсы сохраняются; существующие папки результатов не перезаписываются.
 
 Экспорт в Word создаёт независимый DOCX в папке результатов. Сохраняйте исходный Markdown самостоятельно. Обратное преобразование читает содержимое и структуру DOCX без файла с исходным текстом; точное совпадение записи и пробелов не гарантируется. Расширения выбираются в настройках DocWen.
 

@@ -20,10 +20,11 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
       _signal: AbortSignal,
       work: (snapshot: {
         inputs: Array<{ path: string }>;
+        contentSha256: string;
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
       }) => Promise<T>,
-    ): Promise<T> {
-      return work({ inputs: [{ path: "D:\\Temp\\source.md" }], publish: async (commit) => commit() });
+    ): Promise<{ value: T; warnings: [] }> {
+      return { value: await work({ inputs: [{ path: "D:\\Temp\\source.md" }], contentSha256: "a".repeat(64), publish: async (commit) => commit() }), warnings: [] };
     }
   },
 }));
@@ -42,6 +43,8 @@ describe("ProofreadActions", () => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
     const signal = new AbortController().signal;
     const runner = {
+      presentCompletion: (summary: string) => state.notices.push(summary),
+      presentWarnings: vi.fn(),
       run: async (
         _operation: unknown,
         _failureKey: string,
@@ -58,7 +61,7 @@ describe("ProofreadActions", () => {
     const docwen = {
       validate: vi.fn().mockResolvedValue({
         file: "source.md",
-        issues,
+        issues, warnings: [],
       }),
     };
     const actions = new ProofreadActions(
@@ -81,6 +84,7 @@ describe("ProofreadActions", () => {
       issues,
       "Proofread example.md",
       "Examples/Proofread example.md",
+      "a".repeat(64),
     );
     expect(state.notices).toEqual(["noticeProofreadSuccess:1"]);
   });

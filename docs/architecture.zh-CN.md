@@ -13,9 +13,16 @@ translation_status: source
 
 ## DocWen 进程边界
 
-自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine v1、服务身份和稳定 0.10.x 产品版本。
+子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
+
+自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收另外固定精确产品版本。
 
 ## 请求数据流
+
+优化选择通过 `optimization_id`、输入形状、输出媒体类型与可用性，把资源 ID 绑定到可执行的
+`transform` 能力。`conversion-selection.ts` 按已准备的输入 handle 核验选定能力；动作把已发现能力
+传入执行，不重复发现查询。优化不可用或存在歧义时不能退回普通转换。参数集合由选定能力定义，
+完整预转换链则由 Core 在接受任务时再次核验。
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
@@ -31,9 +38,11 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 
 ## 产物与提交
 
-DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v2 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，连同绑定的 `docwen-node.json` 一次重命名发布；已有结果目录一律拒绝覆盖。界面只列业务输出，清单不计入输出数量。
+DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录并一次重命名发布；普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle；已有结果目录一律拒绝覆盖。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
 
-resolved-document 转 DOCX 包含一个首选 DOCX、一个 primary entry 和通过 `resource_of` 绑定的清单资源，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
+resolved-document 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
+
+`output-files` 负责文件发布和回滚，`output-directory` 负责完整结果目录，`operation-outcome` 限定每次操作只能尝试一次实际提交。宿主回调不能不提交就报告成功、重复提交，或让已经完成的发布进入回滚。备份、锁、任务 staging 和输入快照清理失败随结果返回结构化警告；清理对象身份变化时保留对象。提交前清理失败不能覆盖原始错误。
 
 ## Vault 写入
 
@@ -41,9 +50,17 @@ resolved-document 转 DOCX 包含一个首选 DOCX、一个 primary entry 和通
 
 校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
 
+编辑器缓冲区或 Vault API 确认预期内容后，保存调度失败或后续身份变化返回警告。宿主已接收内容但未确认写入时，结果明确为未确认，不自动重试；编辑器缓冲区确认不代表内容已经持久化到磁盘。
+
 ## 生命周期与资源
 
+一次转换的文件识别、必要的能力发现、计划与执行共用一个已初始化进程。准备阶段查询保留 30 秒响应期限，整个操作仍受十分钟预算约束。校验结束后关闭进程，不跨操作缓存进程；输入和发布完整性检查保留。
+
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
+
+导出和编号任务持续拥有选择窗口直至写入结束，选中条目不会启动脱离当前生命周期的任务。取消、新任务替换和卸载会关闭插件选择窗口及格式确认框，已排队的旧选择也失效。系统目录对话框可能保持打开直至用户关闭，但取消后返回的路径不会继续执行。文件菜单能力发现也由同一协调器管理，卸载后的菜单回调不能再调用操作。
+
+宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
 
 ## 信任边界
 

@@ -9,7 +9,7 @@ import {
 import { showNotice } from "../host/notices";
 import { VaultWriteTransaction } from "../host/vault-write-transaction";
 import { t } from "../i18n";
-import { ItemPickerModal, type PickerItem } from "../utils/suggest-modal";
+import { pickItem, type PickerItem } from "../utils/suggest-modal";
 import { ActionRunner } from "./action-runner";
 
 export class NumberingActions {
@@ -30,7 +30,7 @@ export class NumberingActions {
 
   async add(file: TFile): Promise<void> {
     await this.runner.run(
-      { key: "numbering-schemes", kind: "numbering" },
+      { key: `numbering:${file.path}`, kind: "numbering" },
       "noticeNumberingFailed",
       async (lease) => {
         const schemes = await this.docwen.numberingSchemes(lease.signal);
@@ -44,62 +44,56 @@ export class NumberingActions {
           label: scheme.name,
           description: scheme.description,
         }));
-        new ItemPickerModal(
-          this.app,
-          items,
-          t("pickerNumberingSchemePlaceholder"),
-          (chosen) => {
-            void this.execute(file, "add", chosen.id);
-          },
-        ).open();
+        const chosen = await pickItem(this.app, items, t("pickerNumberingSchemePlaceholder"), lease.signal);
+        if (chosen && lease.isCurrent()) await this.execute(file, "add", lease.signal, chosen.id);
       },
     );
   }
 
   async remove(file: TFile): Promise<void> {
-    await this.execute(file, "remove");
+    await this.runner.run(
+      { key: `numbering:${file.path}`, kind: "numbering" },
+      "noticeNumberingFailed",
+      async (lease) => this.execute(file, "remove", lease.signal),
+    );
   }
 
   private async execute(
     file: TFile,
     operation: "add" | "remove",
+    signal: AbortSignal,
     scheme?: string,
   ): Promise<void> {
-    await this.runner.run(
-      { key: `numbering:${file.path}`, kind: "numbering" },
-      "noticeNumberingFailed",
-      async ({ signal }) => {
-        await this.writer.run(
-          file,
-          async (inputPath, outputPath, originalSha256, transformSignal) => {
-            const capability = await this.capabilities.requireAction(
-              inputPath,
-              "number markdown",
-              transformSignal,
-            );
-            if (capability.inspection.contentSha256 !== originalSha256) {
-              throw new LocalCliError(
-                "cli_invalid_envelope",
-                "DocWen inspection hash does not match the isolated editor snapshot.",
-                {
-                  expected: originalSha256,
-                  actual: capability.inspection.contentSha256,
-                },
-              );
-            }
-            await this.docwen.numberMarkdown(
-              inputPath,
-              outputPath,
-              operation,
-              scheme,
-              transformSignal,
-              file.path,
-            );
-          },
-          signal,
+    const warnings = await this.writer.run(
+      file,
+      async (inputPath, outputPath, originalSha256, transformSignal) => {
+        const capability = await this.capabilities.requireAction(
+          inputPath,
+          "number markdown",
+          transformSignal,
         );
-        showNotice(t("noticeNumberingSuccess", { filename: file.name }));
+        if (capability.inspection.contentSha256 !== originalSha256) {
+          throw new LocalCliError(
+            "cli_invalid_envelope",
+            "DocWen inspection hash does not match the isolated editor snapshot.",
+            {
+              expected: originalSha256,
+              actual: capability.inspection.contentSha256,
+            },
+          );
+        }
+        const outcome = await this.docwen.numberMarkdown(
+          inputPath,
+          outputPath,
+          operation,
+          scheme,
+          transformSignal,
+          file.path,
+        );
+        return outcome.warnings;
       },
+      signal,
     );
+    this.runner.presentCompletion(t("noticeNumberingSuccess", { filename: file.name }), warnings);
   }
 }
