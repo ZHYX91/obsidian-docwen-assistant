@@ -11,7 +11,7 @@ The acceptance matrix uses two packaged-DocWen evidence layers and keeps their c
    the exact locally built `DocWenCLI.exe`. Set `DOCWEN_TEST_BINARY` to its absolute path and set
    `DOCWEN_TEST_SHA256`, `DOCWEN_TEST_SIZE_BYTES`, and `DOCWEN_TEST_VERSION` to the candidate's exact
    immutable identity. The gate refuses missing inputs, a relative/non-file/link/wrong-name path,
-   digest or size drift, a version outside stable DocWen 0.10.x, a wrong Machine server identity/version, or a Bundle
+   digest or size drift, a non-stable version or a version below DocWen 0.12.0, a wrong Machine server identity/version, or a Bundle
    producer version that differs from initialization. This proves only that pre-push checkpoint.
 2. **Public distribution verification.** After publication, download the canonical immutable Release
    asset into a fresh location, independently verify its published digest and size, and repeat the same
