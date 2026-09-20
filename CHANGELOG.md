@@ -4,6 +4,22 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-09-20
+
+### Breaking changes
+
+- Require DocWen 0.12.0 or later with Machine Protocol v2 and Artifact Bundle v3. Update DocWen before using this plugin version; an incompatible Store installation can be replaced in plugin settings by a compatible, fully extracted portable package.
+
+### Changed
+
+- Discover templates by canonical ID with their origin, default state and server order, and validate options against the selected conversion or optimization capability.
+- Share one initialized DocWen process across discovery, planning and execution within an operation; close it afterward while retaining query deadlines, task cancellation and source checks.
+- Preserve the selected DocWen profile and publish complete result directories without node JSON or hidden layout manifests. Keep valid outputs and report cleanup warnings after the commit boundary.
+- Reject malformed framing, invalid UTF-8, mismatched task events and incomplete or contradictory Bundle graphs using the shared, provenance-bound conformance fixtures.
+- Preserve editor/Vault snapshots, destination identity and output conflicts across conversion, cancellation and numbering commits. Dispose of superseded action pickers and requests without starting late operations.
+- Add localized diagnostic details and a bounded sharing preview with recovery advice. Keep raw paths, document text and producer errors out of copied summaries.
+- Synchronize the 11-language compatibility and output documentation, and remove the temporary workflow that modified product source remotely.
+
 ## [2.4.0] - 2026-09-07
 
 ### Changed
