@@ -20,10 +20,11 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
       _signal: AbortSignal,
       work: (snapshot: {
         inputs: Array<{ path: string }>;
+        contentSha256: string;
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
       }) => Promise<T>,
     ): Promise<{ value: T; warnings: [] }> {
-      return { value: await work({ inputs: [{ path: "D:\\Temp\\source.md" }], publish: async (commit) => commit() }), warnings: [] };
+      return { value: await work({ inputs: [{ path: "D:\\Temp\\source.md" }], contentSha256: "a".repeat(64), publish: async (commit) => commit() }), warnings: [] };
     }
   },
 }));
@@ -83,6 +84,7 @@ describe("ProofreadActions", () => {
       issues,
       "Proofread example.md",
       "Examples/Proofread example.md",
+      "a".repeat(64),
     );
     expect(state.notices).toEqual(["noticeProofreadSuccess:1"]);
   });

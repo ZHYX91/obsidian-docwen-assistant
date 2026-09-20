@@ -209,6 +209,7 @@ export interface Translations {
   proofreadSortByLine: string;
   proofreadSortByRule: string;
   proofreadRefresh: string;
+  proofreadSourceChanged: string;
   operationProofread: string;
   operationExport: string;
   operationNumbering: string;

@@ -17,6 +17,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Preserve the selected DocWen profile and publish complete result directories without node JSON or hidden layout manifests. Keep valid outputs and report cleanup warnings after the commit boundary.
 - Reject malformed framing, invalid UTF-8, mismatched task events and incomplete or contradictory Bundle graphs using the shared, provenance-bound conformance fixtures.
 - Preserve editor/Vault snapshots, destination identity and output conflicts across conversion, cancellation and numbering commits. Dispose of superseded action pickers and requests without starting late operations.
+- Bind proofreading navigation to the checked source version; request a refresh when the note or editor changes, and discard navigation from superseded reports or closed views.
 - Add localized diagnostic details and a bounded sharing preview with recovery advice. Keep raw paths, document text and producer errors out of copied summaries.
 - Synchronize the 11-language compatibility and output documentation, and remove the temporary workflow that modified product source remotely.
 

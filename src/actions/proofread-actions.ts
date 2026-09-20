@@ -47,7 +47,7 @@ export class ProofreadActions {
           if (!lease.isCurrent()) return null;
           return snapshot.publish(async () => {
             if (!lease.isCurrent()) return null;
-            view?.updateResults(report.issues, file.name, file.path);
+            view?.updateResults(report.issues, file.name, file.path, snapshot.contentSha256);
             return report;
           });
         });

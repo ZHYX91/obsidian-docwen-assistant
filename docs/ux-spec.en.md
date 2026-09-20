@@ -20,7 +20,7 @@ Template, optimization and numbering choices remain part of the active operation
 
 ## Numbering and proofreading
 
-Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation observed by that view.
+Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation observed by that view. Issue navigation is bound to the source digest captured for the report; content and editor identity are checked around file opening, and changes or ambiguity require a refresh instead of applying old positions. A new report, view closure, or new proofreading operation invalidates pending navigation from the old report.
 
 ## States and recovery
 
