@@ -187,15 +187,35 @@ describe("DocWenCapabilityService", () => {
     expect(service.findConversionRoute(file, "docx")).toBeNull();
   });
 
-  it("does not turn inspection or discovery failure into empty support", async () => {
+  it.each(["inspect", "runtimeCapabilities"] as const)("preserves %s failure without classifying it as unsupported", async (method) => {
     const failure = new Error("unavailable");
     const client = {
-      inspect: vi.fn().mockRejectedValue(failure),
+      inspect: vi.fn().mockResolvedValue(inspection()),
       runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
     } as unknown as DocWenClient;
+    vi.mocked(client[method]).mockRejectedValue(failure);
     const service = new DocWenCapabilityService(client);
 
     await expect(service.forFile("D:\\note.md")).rejects.toBe(failure);
+  });
+
+  it.each(["unadvertised", "unavailable"])("reports %s media capabilities without claiming a malformed response", async (reason) => {
+    const advertised = projection();
+    if (reason === "unavailable") {
+      for (const item of advertised.capabilities) item.availability = "unavailable";
+    }
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection({
+        mediaType: reason === "unadvertised" ? "text/plain" : "text/markdown",
+      })),
+      runtimeCapabilities: vi.fn().mockResolvedValue(advertised),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+
+    await expect(service.forFile("D:\\note.txt")).rejects.toMatchObject({ code: "cli_capability_unavailable" });
+    await service.preload("D:\\note.txt");
+    expect(service.peek("D:\\note.txt")).toMatchObject({ code: "cli_capability_unavailable" });
+    await expect(service.requireAction("D:\\note.txt", "convert")).rejects.toMatchObject({ code: "cli_capability_unavailable" });
   });
 
   it("requires both inspection action support and a matching Machine capability", async () => {

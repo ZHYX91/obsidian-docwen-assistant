@@ -58,7 +58,7 @@ export class DocWenCapabilityService {
       && capability.availability !== "unavailable");
     if (machineCapabilities.length === 0) {
       throw new LocalCliError(
-        "cli_invalid_envelope",
+        "cli_capability_unavailable",
         "DocWen does not expose a Machine capability for the inspected media type.",
         { mediaType: inspection.mediaType },
       );

@@ -12,6 +12,7 @@ export type LocalCliErrorCode =
   | "cli_cleanup_failed"
   | "cli_output_limit"
   | "cli_invalid_envelope"
+  | "cli_capability_unavailable"
   | "cli_incompatible_version"
   | "cli_protocol_error"
   | "cli_integrity_error"

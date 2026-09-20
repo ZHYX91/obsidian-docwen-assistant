@@ -19,6 +19,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Preserve editor/Vault snapshots, destination identity and output conflicts across conversion, cancellation and numbering commits. Dispose of superseded action pickers and requests without starting late operations.
 - Bind proofreading navigation to the checked source version; request a refresh when the note or editor changes, and discard navigation from superseded reports or closed views.
 - Add localized diagnostic details and a bounded sharing preview with recovery advice. Keep raw paths, document text and producer errors out of copied summaries.
+- Report files without an available Machine capability as unsupported or unavailable, rather than as malformed responses; preserve actual discovery failures.
 - Synchronize the 11-language compatibility and output documentation, and remove the temporary workflow that modified product source remotely.
 
 ## [2.4.0] - 2026-09-07

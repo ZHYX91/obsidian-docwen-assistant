@@ -142,6 +142,24 @@ describe("ActionRunner", () => {
     expect(allText(state.modals[0].contentEl)).toContain("Check the destination before running again");
   });
 
+  it.each([
+    ["en", "unsupported or currently unavailable"],
+    ["zh-cn", "不支持或暂时无法使用"],
+  ])("explains unavailable local capabilities in %s without opening a protocol-error modal", async (locale, expected) => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    initI18n(locale);
+    new ActionRunner({} as never, new OperationCoordinator()).presentFailure("noticeCapabilityFailed",
+      new LocalCliError("cli_capability_unavailable", "private raw detail", { mediaType: "text/plain" }));
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain(expected);
+    expect(state.modals).toHaveLength(0);
+    state.noticeActions[0]();
+    expect(allText(state.modals[0].contentEl)).toContain("cli_capability_unavailable");
+    expect(allText(state.modals[0].contentEl)).not.toContain("private raw detail");
+  });
+
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");

@@ -20,6 +20,7 @@ export function getErrorMessage(error: unknown): string {
   }
   if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
+  if (code === "cli_capability_unavailable") return t("errorCapabilityUnavailable");
   if (code === "cli_timeout") return t("errorOperationTimeout");
   if (["vault_target_changed", "vault_content_conflict"].includes(code)) {
     return t("errorContentConflict");

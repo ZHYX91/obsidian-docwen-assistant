@@ -12,6 +12,8 @@ translation_status: synced
 
 Users can start actions from the ribbon icon, the file explorer **DocWen** submenu, and the Command Palette. Menu availability follows current-file inspection and Machine capabilities rather than extension guesses.
 
+When inspection and discovery succeed but no available Machine capability matches the file, explain that the feature is unsupported or unavailable in the current environment, rather than reporting a malformed response. Actual query failures remain failures and are never disguised as an empty capability list.
+
 ## Export flow
 
 Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.

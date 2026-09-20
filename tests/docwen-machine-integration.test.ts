@@ -75,7 +75,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
           || (inspection.mediaType === "text/markdown" && capability.capability_id === "convert.markdown.to_docx")));
       if (advertised.length === 0) {
         await expect(service.forFile(source), name).rejects.toMatchObject({
-          code: "cli_invalid_envelope", details: { mediaType: inspection.mediaType },
+          code: "cli_capability_unavailable", details: { mediaType: inspection.mediaType },
         });
       } else {
         const file = await service.forFile(source);
