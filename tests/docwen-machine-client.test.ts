@@ -30,6 +30,7 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     protocolMinor: 0,
     rejectInitialize: false,
     requests: [] as JsonObject[],
+    notificationFault: "",
   },
 }));
 
@@ -216,7 +217,7 @@ class FakeChild extends EventEmitter {
     if (message.method === "task/cancel") {
       serverState.cancelRequested = true;
       if (!serverState.ignoreCancellation) {
-        queueMicrotask(() => this.notify("task/cancelled", { task_id: "task.1" }));
+        queueMicrotask(() => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 }));
       }
     }
   }
@@ -226,7 +227,21 @@ class FakeChild extends EventEmitter {
   }
 
   private notify(method: string, params: JsonObject): void {
-    this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", method, params }));
+    const fault = serverState.notificationFault;
+    const completed = method === "task/completed";
+    if (completed && (fault === "nonmonotonic" || fault === "wrong_progress_task")) {
+      this.stdout.write(encodeMachineFrame({
+        jsonrpc: "2.0", method: "task/progress",
+        params: { task_id: fault === "wrong_progress_task" ? "task.other" : "task.1", sequence: 2 },
+      }));
+    }
+    const frame = encodeMachineFrame({ jsonrpc: completed && fault === "wrong_jsonrpc" ? "1.0" : "2.0", method, params });
+    this.stdout.write(frame);
+    if (completed && fault === "duplicate_terminal") this.stdout.write(frame);
+    if (completed && fault === "progress_after_terminal") {
+      this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", method: "task/progress", params: { task_id: "task.1", sequence: 2 } }));
+    }
+    if (completed && fault === "truncated_after_terminal") this.stdout.write(Buffer.from("Content-Length: 2\r\n\r\n{"));
   }
 }
 
@@ -250,6 +265,7 @@ describe("DocWenMachineClient", () => {
     serverState.protocolMinor = 0;
     serverState.rejectInitialize = false;
     serverState.requests = [];
+    serverState.notificationFault = "";
     spawnMock.mockImplementation(() => new FakeChild());
   });
 
@@ -265,6 +281,16 @@ describe("DocWenMachineClient", () => {
       ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
+  });
+
+  it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal"])("rejects %s without returning a task result", async (fault) => {
+    serverState.notificationFault = fault;
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# Input\n");
+    writeFileSync(input, bytes);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    await expect(client.runTask(taskRequest(root, input, bytes))).rejects.toMatchObject({ code: "cli_protocol_error" });
   });
 
   it.each([[1, 0, false], [2, 1, false], [2, 0, true]])("rejects incompatible negotiation before querying (%s.%s, rejected=%s)", async (major, minor, rejected) => {

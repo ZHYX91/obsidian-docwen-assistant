@@ -172,6 +172,11 @@ class MessageQueue {
     return new Promise((resolve, reject) => this.readers.push({ resolve, reject }));
   }
 
+  drain(): JsonObject[] {
+    if (this.failure) throw this.failure;
+    return this.messages.splice(0);
+  }
+
   failureError(): Error | null {
     return this.failure;
   }
@@ -337,6 +342,9 @@ class MachineSession {
     const code = closeResult;
     const terminalFailure = this.queue.failureError();
     if (terminalFailure) throw terminalFailure;
+    if (this.queue.drain().length > 0 || this.deferred.length > 0) {
+      throw protocolError("unexpected messages after the operation completed");
+    }
     let stderrText = Buffer.concat(this.stderr).toString("utf8");
     if (this.stderrBytes > STDERR_LIMIT_BYTES) stderrText += "\n<truncated>";
     if (code !== 0) {
@@ -472,12 +480,17 @@ export class DocWenMachineClient {
       const taskId = requiredString(acceptance.task_id, "task/execute.task_id");
       if (acceptance.state !== "accepted") throw protocolError("task/execute did not accept the task");
       setTaskId(taskId);
+      let lastSequence = -1;
       while (true) {
         const message = await session.nextMessage();
         if (message.id !== undefined) continue;
-        if (message.method === "task/progress") continue;
+        if (message.jsonrpc !== "2.0") throw protocolError("invalid JSON-RPC task notification");
         const params = requiredObject(message.params, "terminal.params");
         if (params.task_id !== taskId) throw protocolError("terminal task id does not match acceptance");
+        const sequence = requiredInteger(params.sequence, "notification.sequence");
+        if (sequence <= lastSequence) throw protocolError("notification sequence is not strictly monotonic");
+        lastSequence = sequence;
+        if (message.method === "task/progress") continue;
         if (message.method === "task/failed") throw remoteTaskError(params);
         if (message.method === "task/cancelled") {
           throw new LocalCliError("cli_cancelled", "DocWen task was cancelled.");

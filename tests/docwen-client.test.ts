@@ -261,6 +261,7 @@ describe("DocWenClient Machine semantics", () => {
           {
             id: `template.docx.${"a".repeat(64)}`,
             name: "Standard",
+            description: "",
             target: "docx",
             origin: "builtin",
             is_default: true,
@@ -289,14 +290,15 @@ describe("DocWenClient Machine semantics", () => {
   it.each([
     ["origin", undefined], ["origin", "local"], ["is_default", undefined], ["is_default", "false"],
     ["id", "Standard"], ["target", "odt"], ["target", "xlsx"],
+    ["description", undefined], ["description", 42], ["consumer_private", true],
   ])("rejects malformed template %s metadata", async (field, value) => {
-    const item = { id: `template.docx.${"a".repeat(64)}`, name: "Standard", target: "docx", origin: "builtin", is_default: false, [field as string]: value };
+    const item = { id: `template.docx.${"a".repeat(64)}`, name: "Standard", description: "", target: "docx", origin: "builtin", is_default: false, [field as string]: value };
     const client = new DocWenClient(machine(vi.fn().mockResolvedValue({ kind: "templates", resources: [item] })));
     await expect(client.templates("docx")).rejects.toMatchObject({ code: "cli_invalid_envelope" });
   });
 
   it("keeps template server order and rejects ambiguous identities/defaults", async () => {
-    const first = { id: `template.docx.${"b".repeat(64)}`, name: "Standard", target: "docx", origin: "custom", is_default: true };
+    const first = { id: `template.docx.${"b".repeat(64)}`, name: "Standard", description: "", target: "docx", origin: "custom", is_default: true };
     const second = { ...first, id: `template.docx.${"a".repeat(64)}`, origin: "builtin", is_default: false };
     const query = vi.fn().mockResolvedValue({ kind: "templates", resources: [first, second] });
     const client = new DocWenClient(machine(query));

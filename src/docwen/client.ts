@@ -266,7 +266,11 @@ export class DocWenClient {
     const resources = await this.listResources("templates", target, signal);
     const ids = new Set<string>();
     const defaults = new Set<string>();
-    for (const item of resources) {
+    return resources.map((item) => {
+      if (Object.keys(item).some((key) => !["id", "name", "description", "target", "origin", "is_default"].includes(key))
+        || typeof item.name !== "string" || typeof item.description !== "string") {
+        throw invalidResponse("template.fields");
+      }
       const id = requiredTemplateId(item.id);
       const itemTarget = requiredTemplateTarget(item.target);
       if (!id.startsWith(`template.${itemTarget}.`) || (target !== undefined && target !== itemTarget)) {
@@ -274,19 +278,20 @@ export class DocWenClient {
       }
       if (ids.has(id)) throw invalidResponse("template.id.unique");
       ids.add(id);
-      if (requiredBoolean(item.is_default, "template.is_default")) {
+      const isDefault = requiredBoolean(item.is_default, "template.is_default");
+      if (isDefault) {
         if (defaults.has(itemTarget)) throw invalidResponse("template.is_default.unique");
         defaults.add(itemTarget);
       }
-    }
-    return resources.map((item) => ({
-      id: requiredTemplateId(item.id),
-      name: requiredStringValue(item.name, "template.name"),
-      target: requiredTemplateTarget(item.target),
-      description: stringValue(item.description) || undefined,
-      origin: requiredTemplateOrigin(item.origin),
-      isDefault: requiredBoolean(item.is_default, "template.is_default"),
-    }));
+      return {
+        id,
+        name: item.name,
+        target: itemTarget,
+        description: item.description || undefined,
+        origin: requiredTemplateOrigin(item.origin),
+        isDefault,
+      };
+    });
   }
 
   async optimizations(signal?: AbortSignal): Promise<OptimizationItem[]> {
@@ -408,7 +413,9 @@ export class DocWenClient {
       { kind, locale: this.machine.locale(), ...(target ? { target } : {}) },
       signal,
     );
-    if (result.kind !== kind) throw invalidResponse("resource/list.kind");
+    if (result.kind !== kind || Object.keys(result).some((key) => !["kind", "resources"].includes(key))) {
+      throw invalidResponse("resource/list.kind");
+    }
     return objectArray(result.resources, "resource/list.resources");
   }
 
