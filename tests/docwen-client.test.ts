@@ -153,9 +153,11 @@ async function transactionResidue(root: string): Promise<string[]> {
 }
 
 function machine(query: ReturnType<typeof vi.fn>, runTask = vi.fn()): DocWenMachineClient {
+  const executeQuery = query as unknown as DocWenMachineClient["query"];
   return {
     query,
-    runTask,
+    runTask: async (request: Parameters<DocWenMachineClient["runTask"]>[0], signal?: AbortSignal) =>
+      runTask(typeof request === "function" ? await request((method, params) => executeQuery(method, params, signal)) : request, signal),
     locale: () => "en_US",
     dispose: vi.fn(),
   } as unknown as DocWenMachineClient;

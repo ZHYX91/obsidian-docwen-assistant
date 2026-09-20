@@ -283,6 +283,58 @@ describe("DocWenMachineClient", () => {
     );
   });
 
+  it("prepares and validates a task in one process without caching the next operation", async () => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# Input\n");
+    writeFileSync(input, bytes);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const result = await client.runTask(async (query) => {
+      expect(await query("health/check", {})).toMatchObject({ all_ok: true });
+      await query("health/check", {});
+      return taskRequest(root, input, bytes);
+    });
+    expect(result.bundle.artifacts[0].sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize", "health/check", "health/check", "task/plan", "task/execute"]);
+    await client.query("health/check", {});
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["cancel", "unload", "reject"])("does not plan a task after %s during preparation", async (reason) => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# Input\n");
+    writeFileSync(input, bytes);
+    const controller = new AbortController();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const failure = new Error("preparation rejected");
+    const operation = client.runTask(async (query) => {
+      await query("health/check", {});
+      if (reason === "reject") throw failure;
+      if (reason === "cancel") controller.abort();
+      else client.dispose();
+      return taskRequest(root, input, bytes);
+    }, controller.signal);
+    if (reason === "reject") await expect(operation).rejects.toBe(failure);
+    else await expect(operation).rejects.toMatchObject({ code: "cli_cancelled" });
+    expect(serverState.taskAccepted).toBe(false);
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize", "health/check"]);
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
+  });
+
+  it("bounds a stalled preparation query by the operation deadline", async () => {
+    const root = await temporaryRoot();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    serverState.holdHealth = true;
+    await expect(client.runTask(async (query) => {
+      await query("health/check", {});
+      return taskRequest(root, path.join(root, "unused.md"), Buffer.from("unused"));
+    }, undefined, 20)).rejects.toMatchObject({ code: "cli_timeout", details: { timeoutMs: 20 } });
+    expect(serverState.taskAccepted).toBe(false);
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
+  });
+
   it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal"])("rejects %s without returning a task result", async (fault) => {
     serverState.notificationFault = fault;
     const root = await temporaryRoot();

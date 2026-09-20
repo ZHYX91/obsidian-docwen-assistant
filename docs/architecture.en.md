@@ -60,6 +60,8 @@ Once the editor buffer or Vault API confirms the expected content, save scheduli
 
 ## Lifecycle and resources
 
+Conversion inspection, capability discovery when needed, planning and execution share one initialized process. Preparation queries retain a 30-second response deadline within the ten-minute operation budget. The process closes after validation and is not cached across operations; input and publication integrity checks remain in place.
+
 Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. Changing the DocWen target cancels active work and resets connection checks, capability projection, file caches, and pending preloads as one generation; invalidated requests cannot restore stale state. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
 
 An export or numbering operation owns its picker through the eventual write; selecting an item never starts a detached task. Cancellation, replacement and unload close plugin pickers and format confirmations and invalidate queued choices. Native directory dialogs may stay open until dismissed, but their returned paths are ignored after cancellation. File-menu discovery uses the same coordinator, and menu callbacks cannot invoke actions after unload.

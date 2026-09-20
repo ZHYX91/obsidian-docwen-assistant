@@ -68,6 +68,8 @@ export type MachineTaskRequest = {
   options: JsonObject;
 };
 
+export type MachineQuery = (method: string, params: JsonObject) => Promise<JsonObject>;
+
 export type MachineCapability = {
   capability_id: string;
   operation: string;
@@ -285,6 +287,18 @@ class MachineSession {
     return productVersion;
   }
 
+  async query(method: string, params: JsonObject): Promise<JsonObject> {
+    const timer = scheduleTimeout(() => {
+      this.fail(new LocalCliError("cli_timeout", "DocWen Machine query timed out.", { timeoutMs: DEFAULT_QUERY_TIMEOUT_MS }));
+      void this.terminate().catch(() => undefined);
+    }, DEFAULT_QUERY_TIMEOUT_MS);
+    try {
+      return await this.rpc(method, params);
+    } finally {
+      cancelTimeout(timer);
+    }
+  }
+
   async rpc(method: string, params: JsonObject): Promise<JsonObject> {
     const id = ++this.nextRequestId;
     this.send({ jsonrpc: "2.0", id, method, params });
@@ -472,8 +486,15 @@ export class DocWenMachineClient {
     }));
   }
 
-  runTask(request: MachineTaskRequest, signal?: AbortSignal, timeoutMs = 10 * 60_000): Promise<MachineTaskCompleted> {
+  runTask(
+    requestOrPrepare: MachineTaskRequest | ((query: MachineQuery) => Promise<MachineTaskRequest>),
+    signal?: AbortSignal,
+    timeoutMs = 10 * 60_000,
+  ): Promise<MachineTaskCompleted> {
     return this.withSession(signal, timeoutMs, async (session, setTaskId, productVersion) => {
+      const request = typeof requestOrPrepare === "function"
+        ? await requestOrPrepare((method, params) => session.query(method, params))
+        : requestOrPrepare;
       const plan = await session.rpc("task/plan", request);
       const planId = requiredString(plan.plan_id, "task/plan.plan_id");
       const acceptance = await session.rpc("task/execute", { plan_id: planId });

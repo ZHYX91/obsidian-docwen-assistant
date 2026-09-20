@@ -241,19 +241,7 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const handle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     const result = await this.machine.query("file/inspect", { input: handle }, signal);
-    return {
-      filePath: stringValue(result.file_path) || source.path,
-      contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
-      sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
-      decision: requiredStringValue(result.decision, "file/inspect.decision"),
-      supportedActions: stringArray(result.supported_actions),
-      declaredFormat: requiredStringValue(result.declared_format, "file/inspect.declared_format"),
-      detectedFormat: requiredStringValue(result.detected_format, "file/inspect.detected_format"),
-      warningCode: stringValue(result.warning_code),
-      reasonCode: stringValue(result.reason_code),
-      workflowCategory: requiredStringValue(result.workflow_category, "file/inspect.workflow_category"),
-      mediaType: mediaTypeForFormat(requiredStringValue(result.detected_format, "file/inspect.detected_format")),
-    };
+    return normalizeFileInspection(result, source.path);
   }
 
   async runtimeCapabilities(signal?: AbortSignal): Promise<RuntimeCapabilityProjection> {
@@ -316,21 +304,25 @@ export class DocWenClient {
   async convert(request: ConvertRequest, signal?: AbortSignal): Promise<ConversionOutcome> {
     const destination = await captureOutputDirectory(request.outputDirectory, signal);
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
-    const inspection = await this.inspect(source, signal);
+    const inspectionHandle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     return this.withTaskStaging(async (stagingRoot) => {
-      const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
-      const capabilities = request.selectedCapability
-        ? [request.selectedCapability]
-        : (await this.runtimeCapabilities(signal)).capabilities;
-      const selected = selectConversionCapability(
-        capabilities, prepared.inputs, request.target, request.optimization, request.capabilityId,
-      );
-      prepared.capability_id = selected.capability_id;
-      prepared.options = buildConversionMachineOptions({
-        ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
-      }, inspection.mediaType);
-      const result = await this.machine.runTask(prepared, signal);
-      if (selected.capability_id === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      let capabilityId = "";
+      const result = await this.machine.runTask(async (query) => {
+        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }), source.path);
+        const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
+        const capabilities = request.selectedCapability
+          ? [request.selectedCapability]
+          : objectArray((await query("capability/list", {})).capabilities, "capability/list.capabilities").map(normalizeCapability);
+        const selected = selectConversionCapability(
+          capabilities, prepared.inputs, request.target, request.optimization, request.capabilityId,
+        );
+        capabilityId = prepared.capability_id = selected.capability_id;
+        prepared.options = buildConversionMachineOptions({
+          ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
+        }, inspection.mediaType);
+        return prepared;
+      }, signal);
+      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
       return { ...outputs, bundleId: result.bundle.bundle_id };
     });
@@ -459,6 +451,22 @@ export class DocWenClient {
     return result;
   }
 
+}
+
+function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {
+  return {
+    filePath: stringValue(result.file_path) || sourcePath,
+    contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
+    sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
+    decision: requiredStringValue(result.decision, "file/inspect.decision"),
+    supportedActions: stringArray(result.supported_actions),
+    declaredFormat: requiredStringValue(result.declared_format, "file/inspect.declared_format"),
+    detectedFormat: requiredStringValue(result.detected_format, "file/inspect.detected_format"),
+    warningCode: stringValue(result.warning_code),
+    reasonCode: stringValue(result.reason_code),
+    workflowCategory: requiredStringValue(result.workflow_category, "file/inspect.workflow_category"),
+    mediaType: mediaTypeForFormat(requiredStringValue(result.detected_format, "file/inspect.detected_format")),
+  };
 }
 
 async function taskRequest(
