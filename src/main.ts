@@ -175,6 +175,14 @@ export default class DocWenPlugin extends Plugin {
     this.runtimeDisposer.add(() => this.resetDocWenRuntime());
     this.operations = new OperationCoordinator();
     this.runtimeDisposer.add(() => this.operations.dispose());
+    this.registerEvent(this.app.workspace.on("quit", (tasks) => {
+      const pending = this.operations.hasPendingWork;
+      const settling = this.operations.shutdown();
+      this.onunload();
+      if (pending) tasks.addPromise(settling.then((settled) => {
+        if (!settled) console.warn("[DocWen Assistant] Host quit cleanup deadline exceeded.");
+      }));
+    }));
     this.actionRunner = new ActionRunner(
       this.app,
       this.operations,

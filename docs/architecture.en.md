@@ -66,6 +66,8 @@ Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit
 
 An export or numbering operation owns its picker through the eventual write; selecting an item never starts a detached task. Cancellation, replacement and unload close plugin pickers and format confirmations and invalidate queued choices. Native directory dialogs may stay open until dismissed, but their returned paths are ignored after cancellation. File-menu discovery uses the same coordinator, and menu callbacks cannot invoke actions after unload.
 
+Normal host exit registers cancelled-operation settlement with Obsidian's public `Workspace.quit` task collector. Settlement is tracked until each action's `finally` completes, including superseded operations and leases cancelled by earlier disposal. The wait is bounded to ten seconds so an unresolved native dialog or filesystem operation cannot hold the host indefinitely. Exceeding that deadline is logged; forced termination, a missing quit event or power loss cannot guarantee temporary-file cleanup.
+
 ## Trust boundaries
 
 Obsidian documents, user paths, Machine messages, staging files, and GitHub release assets are all untrusted inputs. The product does not trust extensions, relative paths, symlinks, existing targets, unbound diagnostics, or a version string shown only in the UI. Release construction and publication are outside the product runtime: a thin repository adapter pins a self-contained vendored core by exact version and SHA-256, while acceptance and manual authorization remain external evidence. The public repository never imports its parent workspace or a sibling path.

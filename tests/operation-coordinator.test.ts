@@ -75,4 +75,53 @@ describe("OperationCoordinator", () => {
     expect(owner.getSnapshot().operations).toEqual([]);
     expect(() => owner.begin({ key: "three", kind: "export" })).toThrow(/unloading/u);
   });
+
+  it("holds host quit until both superseded and current operations finish cleanup", async () => {
+    const owner = new OperationCoordinator();
+    const first = owner.begin({ key: "same", kind: "numbering" });
+    const second = owner.begin({ key: "same", kind: "numbering" });
+    expect(owner.hasPendingWork).toBe(true);
+    const finished = vi.fn();
+    const quitting = owner.shutdown().then(finished);
+    expect(second.signal.aborted).toBe(true);
+    expect(() => owner.begin({ key: "late", kind: "export" })).toThrow(/unloading/u);
+    second.finish();
+    await Promise.resolve();
+    expect(finished).not.toHaveBeenCalled();
+    first.finish();
+    first.finish();
+    await quitting;
+    expect(finished).toHaveBeenCalledWith(true);
+    expect(owner.hasPendingWork).toBe(false);
+    await expect(owner.shutdown()).resolves.toBe(true);
+  });
+
+  it("waits for pending cleanup even when plugin disposal happened before quit", async () => {
+    const owner = new OperationCoordinator();
+    const lease = owner.begin({ key: "export", kind: "export" });
+    owner.dispose();
+    const finished = vi.fn();
+    const quitting = owner.shutdown().then(finished);
+    await Promise.resolve();
+    expect(finished).not.toHaveBeenCalled();
+    lease.finish();
+    await quitting;
+    expect(finished).toHaveBeenCalledWith(true);
+  });
+
+  it("bounds host exit when an external operation cannot settle", async () => {
+    vi.useFakeTimers();
+    try {
+      const owner = new OperationCoordinator();
+      const lease = owner.begin({ key: "external-dialog", kind: "export" });
+      const quitting = owner.shutdown();
+      await vi.advanceTimersByTimeAsync(10_000);
+      await expect(quitting).resolves.toBe(false);
+      lease.finish();
+      await expect(owner.shutdown()).resolves.toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

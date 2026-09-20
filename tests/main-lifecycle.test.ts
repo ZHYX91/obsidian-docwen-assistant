@@ -14,6 +14,9 @@ const state = vi.hoisted(() => ({
   monitorResetCalls: 0,
   savedData: [] as unknown[],
   throwFromRibbon: false,
+  workspaceEvents: new Map<string, (...args: unknown[]) => unknown>(),
+  shutdown: async (): Promise<boolean> => true,
+  hasPendingWork: false,
 }));
 
 class FakeElement {
@@ -26,7 +29,10 @@ vi.mock("obsidian", () => ({
     app = {
       workspace: {
         getActiveFile: () => state.activeFile,
-        on: () => ({ unload: () => undefined }),
+        on: (name: string, callback: (...args: unknown[]) => unknown) => {
+          state.workspaceEvents.set(name, callback);
+          return { unload: () => undefined };
+        },
         detachLeavesOfType: () => state.cleanup.push("view"),
       },
       vault: {
@@ -108,6 +114,8 @@ vi.mock("../src/docwen/connection-monitor", () => ({
 }));
 vi.mock("../src/runtime/operation-coordinator", () => ({
   OperationCoordinator: class OperationCoordinator {
+    get hasPendingWork(): boolean { return state.hasPendingWork; }
+    shutdown(): Promise<boolean> { return state.shutdown(); }
     getSnapshot(): { operations: typeof state.operationItems } {
       return { operations: [...state.operationItems] };
     }
@@ -142,7 +150,40 @@ describe("DocWenPlugin lifecycle", () => {
     state.monitorResetCalls = 0;
     state.savedData.length = 0;
     state.throwFromRibbon = false;
+    state.workspaceEvents.clear();
+    state.shutdown = async () => true;
+    state.hasPendingWork = false;
     state.loadData = async () => createSettingsSnapshot(normalizeSettings(null));
+  });
+
+  it("registers cancelled operation settlement with the host quit task collector", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    let settle!: (value: boolean) => void;
+    state.hasPendingWork = true;
+    state.shutdown = () => new Promise<boolean>((resolve) => { settle = resolve; });
+    const promises: Promise<void>[] = [];
+    state.workspaceEvents.get("quit")?.({ addPromise: (promise: Promise<void>) => promises.push(promise) });
+    expect(promises).toHaveLength(1);
+    expect(state.cleanup).toContain("client");
+    const finished = vi.fn();
+    const waiting = promises[0].then(finished);
+    await Promise.resolve();
+    expect(finished).not.toHaveBeenCalled();
+    settle(true);
+    await waiting;
+    expect(finished).toHaveBeenCalledOnce();
+  });
+
+  it("does not add an empty quit task when no operation needs cleanup", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    const addPromise = vi.fn();
+    state.workspaceEvents.get("quit")?.({ addPromise });
+    expect(addPromise).not.toHaveBeenCalled();
+    expect(state.cleanup).toContain("client");
   });
 
   it("rolls back partially initialized resources in reverse order", async () => {
