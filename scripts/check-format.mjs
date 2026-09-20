@@ -44,7 +44,10 @@ export async function checkFormatting(projectRoot = process.cwd()) {
     if (path.extname(filePath) === ".json") {
       try {
         const parsed = JSON.parse(source);
-        if (`${JSON.stringify(parsed, null, 2)}\n` !== source) {
+        // Upstream schemas include exact int64 bounds that JSON.parse rounds in JavaScript.
+        // Preserve their numeric tokens; conformance tests verify the export inventory and digests.
+        const vendoredSchema = relativePath.startsWith("contracts/docwen/schemas/");
+        if (!vendoredSchema && `${JSON.stringify(parsed, null, 2)}\n` !== source) {
           failures.push(`${relativePath}: JSON must use canonical 2-space formatting`);
         }
       } catch {

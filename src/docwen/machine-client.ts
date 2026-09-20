@@ -1,5 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createHash } from "node:crypto";
+import { validateBundleFields, validateBundlePages } from "./bundle-metadata";
 import { createReadStream } from "node:fs";
 import { lstat, realpath, stat } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -619,6 +620,7 @@ export async function validateArtifactBundle(
 ): Promise<ValidatedArtifactBundle> {
   assertActive?.();
   const bundle = requiredObject(value, "bundle");
+  validateBundleFields(bundle, protocolError);
   if (
     bundle.schema !== "docwen.artifact_bundle.v3"
     || bundle.task_id !== taskId
@@ -641,7 +643,6 @@ export async function validateArtifactBundle(
   ) {
     throw integrityError("Artifact Bundle producer identity is invalid.");
   }
-  const root = await realpath(stagingRoot);
   const rawArtifacts = objectArray(bundle.artifacts, "bundle.artifacts");
   if (rawArtifacts.length === 0) throw integrityError("Artifact Bundle is empty.");
   if (rawArtifacts.length > ARTIFACT_BUNDLE_LIMITS.artifacts) {
@@ -668,6 +669,8 @@ export async function validateArtifactBundle(
     }
     totalArtifactBytes += sizeBytes;
   }
+  validateBundlePages(bundle, integrityError);
+  const root = await realpath(stagingRoot);
   const artifactIds = new Set<string>();
   const artifactLocators = new Set<string>();
   const artifacts: ValidatedBundleArtifact[] = [];
@@ -817,7 +820,7 @@ export async function validateArtifactBundle(
       }
       structuralOwners.add(sourceId);
     }
-    if (ordinal !== null) {
+    if (ordinal !== null && !(type === "fragment_of" && role === "ocr_page")) {
       const slot = `${type}\u0000${targetId}\u0000${ordinal}`;
       if (orderedSlots.has(slot)) throw integrityError("Bundle relation ordinal is duplicated.");
       orderedSlots.add(slot);
