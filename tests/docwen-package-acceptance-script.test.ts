@@ -32,7 +32,7 @@ async function fixture(): Promise<{ environment: Record<string, string>; binary:
       DOCWEN_TEST_BINARY: binary,
       DOCWEN_TEST_SHA256: createHash("sha256").update(bytes).digest("hex"),
       DOCWEN_TEST_SIZE_BYTES: String(bytes.length),
-      DOCWEN_TEST_VERSION: "0.11.0",
+      DOCWEN_TEST_VERSION: "0.13.0",
     },
   };
 }
@@ -95,25 +95,33 @@ describe("packaged DocWen acceptance input gate", () => {
     })).rejects.toThrow("candidate SHA-256 mismatch");
   });
 
-  it("requires an exact stable semantic product version without pinning a minor series", async () => {
+  it("requires an exact stable product version at or above DocWen 0.13.0", async () => {
     const { environment } = await fixture();
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "0.11.x",
+      DOCWEN_TEST_VERSION: "0.13.x",
     })).rejects.toThrow("exact stable semantic DocWen version");
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "0.11.0-rc.1",
+      DOCWEN_TEST_VERSION: "0.13.0-rc.1",
     })).rejects.toThrow("exact stable semantic DocWen version");
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "v0.12.0",
+      DOCWEN_TEST_VERSION: "v0.13.0",
     })).rejects.toThrow("exact stable semantic DocWen version");
+    await expect(validateDocWenPackageCandidate({
+      ...environment,
+      DOCWEN_TEST_VERSION: "0.12.1",
+    })).rejects.toThrow("DocWen 0.13.0 or later");
 
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "0.12.3",
-    })).resolves.toMatchObject({ productVersion: "0.12.3" });
+      DOCWEN_TEST_VERSION: "0.13.0",
+    })).resolves.toMatchObject({ productVersion: "0.13.0" });
+    await expect(validateDocWenPackageCandidate({
+      ...environment,
+      DOCWEN_TEST_VERSION: "0.14.0",
+    })).resolves.toMatchObject({ productVersion: "0.14.0" });
   });
 
   it("accepts only a regular file and rejects a symlink when the host supports creating one", async () => {
@@ -121,7 +129,7 @@ describe("packaged DocWen acceptance input gate", () => {
     await expect(validateDocWenPackageCandidate(environment)).resolves.toMatchObject({
       sizeBytes: Number(environment.DOCWEN_TEST_SIZE_BYTES),
       sha256: environment.DOCWEN_TEST_SHA256,
-      productVersion: "0.11.0",
+      productVersion: "0.13.0",
     });
 
     const linkRoot = await mkdtemp(path.join(tmpdir(), "assistant-package-link-"));
@@ -143,7 +151,7 @@ describe("packaged DocWen acceptance input gate", () => {
     await expect(loadPackageAcceptanceReceipt({
       DOCWEN_PACKAGE_ACCEPTANCE: "1",
       DOCWEN_TEST_BINARY: "C:\\unbound\\DocWenCLI.exe",
-      DOCWEN_TEST_VERSION: "0.11.0",
+      DOCWEN_TEST_VERSION: "0.13.0",
     })).resolves.toBeNull();
 
     const { environment } = await fixture();
@@ -172,7 +180,7 @@ describe("packaged DocWen acceptance input gate", () => {
     const receipt = JSON.parse(canonicalReceipt) as {
       candidate: { product_version: string };
     };
-    receipt.candidate.product_version = "0.11.1";
+    receipt.candidate.product_version = "0.13.1";
     await writeFile(binding.receiptPath, `${JSON.stringify(receipt)}\n`, "utf8");
     await expect(loadPackageAcceptanceReceipt({
       DOCWEN_PACKAGE_ACCEPTANCE_RECEIPT: binding.receiptPath,
