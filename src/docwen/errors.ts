@@ -18,6 +18,7 @@ export type LocalCliErrorCode =
   | "cli_integrity_error"
   | "cli_input_invalid"
   | "cli_health_failed"
+  | "cli_gui_control_failed"
   | "cli_commit_failed";
 
 export class LocalCliError extends Error {
