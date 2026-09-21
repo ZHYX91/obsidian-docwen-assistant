@@ -10,7 +10,7 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
     const descriptor = Object.getOwnPropertyDescriptor(value, key);
     return descriptor && "value" in descriptor ? descriptor.value : undefined;
   };
-  for (const key of ["actualProductVersion", "expectedProductVersion"]) {
+  for (const key of ["actualProductVersion", "expectedProductVersion", "minimumProductVersion"]) {
     const version = read(key);
     if (typeof version === "string" && /^\d{1,8}(?:\.\d{1,8}){1,3}(?:[-+][a-zA-Z0-9.-]{1,32})?$/u.test(version)) {
       details[key] = version;
@@ -21,7 +21,12 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
     if (typeof count === "number" && Number.isSafeInteger(count)) details[key] = count;
   }
   const incompatibility = read("incompatibility");
-  if (incompatibility === "machine_protocol" || incompatibility === "artifact_bundle") {
+  if (
+    incompatibility === "machine_protocol"
+    || incompatibility === "artifact_bundle"
+    || incompatibility === "product_version"
+    || incompatibility === "server_identity"
+  ) {
     details.incompatibility = incompatibility;
   }
   for (const key of ["sentProtocol", "receivedProtocol", "supportedProtocol", "received_protocol", "supported_protocol"]) {
