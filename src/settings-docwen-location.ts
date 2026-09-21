@@ -128,6 +128,14 @@ function incompatibleConnectionMessage(details: Record<string, unknown> | undefi
     }
   }
 
+  if (details.incompatibility === "product_version") {
+    const minimum = boundedVersion(details.minimumProductVersion);
+    const actual = boundedVersion(details.actualProductVersion);
+    if (minimum || actual) {
+      return `${base} Assistant requires DocWen ${minimum ?? "?"} or later; found ${actual ?? "?"}.`;
+    }
+  }
+
   if (details.incompatibility === "artifact_bundle") {
     const expected = boundedContract(details.expectedArtifactBundleSchema);
     const actual = boundedContract(details.actualArtifactBundleSchema);
@@ -145,6 +153,13 @@ function protocolVersion(value: unknown): string | null {
   const name = typeof item.name === "string" && item.name.length <= 128 ? item.name : "";
   const version = `${String(item.major)}.${String(item.minor)}`;
   return !name || name === "docwen.machine" ? version : `${name} ${version}`;
+}
+
+function boundedVersion(value: unknown): string | null {
+  return typeof value === "string"
+    && /^\d{1,8}(?:\.\d{1,8}){2}$/u.test(value)
+    ? value
+    : null;
 }
 
 function boundedContract(value: unknown): string | null {
