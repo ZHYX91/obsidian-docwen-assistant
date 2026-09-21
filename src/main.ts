@@ -2,7 +2,8 @@
  * DocWen Assistant - Obsidian Plugin
  *
  * Launch DocWen converter from Obsidian and pass the current file path.
- * Uses DocWen Machine Protocol v2 for every DocWen operation.
+ * Uses Machine Protocol v2 for content operations and the public local GUI
+ * control command for launch/open so window access is not gated by conversion negotiation.
  */
 
 import { Plugin, TFile, type Command } from "obsidian";
@@ -35,6 +36,7 @@ import {
   DocWenMachineClient,
   DocWenCapabilityService,
   DocWenClient,
+  DocWenGuiControlClient,
   resolveDocWenLaunchTarget,
   type DocWenConnectionStatus,
   type FileCapability,
@@ -53,6 +55,7 @@ import { DocWenConnectionMonitor } from "./docwen/connection-monitor";
 export default class DocWenPlugin extends Plugin {
   settings!: PluginSettings;
   private docwen!: DocWenClient;
+  private guiControl!: DocWenGuiControlClient;
   private exportActions!: ExportActions;
   private guiActions!: GuiActions;
   private numberingActions!: NumberingActions;
@@ -159,12 +162,16 @@ export default class DocWenPlugin extends Plugin {
     if (epoch !== this.runtimeEpoch) return;
     initializePluginI18n(this.settings.language);
 
-    // Create the single Machine v2 boundary used by control and business calls.
+    // Content operations use one Machine v2 boundary. GUI opening is a
+    // separate local control surface so protocol negotiation cannot hide the app.
     this.docwen = new DocWenClient(
       new DocWenMachineClient(
         () => this.resolveCliExecutable(),
         () => this.getDocwenLangCode(),
       ),
+    );
+    this.guiControl = new DocWenGuiControlClient(
+      () => this.resolveCliExecutable(),
     );
     this.connectionMonitor = new DocWenConnectionMonitor(
       () => this.settings.docwenConnectionMode,
@@ -225,7 +232,7 @@ export default class DocWenPlugin extends Plugin {
       this.actionRunner,
     );
     this.guiActions = new GuiActions(
-      this.docwen,
+      this.guiControl,
       this.actionRunner,
     );
     this.proofreadActions = new ProofreadActions(
