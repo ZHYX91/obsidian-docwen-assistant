@@ -34,7 +34,7 @@ An operation fails closed when the registered DocWen alias or manual location, t
 
 ## Non-goals
 
-The plugin does not download DocWen, inspect the versioned Microsoft Store package path, recursively search for executables, support mobile, provide an alternate process protocol, or treat the Vault as a bulk-scan directory. It does not define cross-file composition numbering. Markdown-to-DOCX exposes no source heading-number controls; users use the separate numbering action when they need to change source Markdown heading numbers. There is no special Markdown syntax for starting, stopping, or resetting numbering within one file; embedded files retain their own real numbering; and the plugin adds no numbering- or OCR-specific YAML fields.
+The plugin does not download DocWen, inspect the versioned Microsoft Store package path, recursively search for executables, support mobile, provide a second content-processing protocol, or treat the Vault as a bulk-scan directory. The independent `gui open` path is local desktop-app control only and carries no conversion data. It does not define cross-file composition numbering. Markdown-to-DOCX exposes no source heading-number controls; users use the separate numbering action when they need to change source Markdown heading numbers. There is no special Markdown syntax for starting, stopping, or resetting numbering within one file; embedded files retain their own real numbering; and the plugin adds no numbering- or OCR-specific YAML fields.
 
 ## Acceptance boundary
 
