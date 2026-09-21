@@ -624,22 +624,31 @@ describe("DocWenMachineClient", () => {
     expect(child.killed).toBe(true);
   });
 
-  it("uses protocol identity for runtime compatibility and exact product identity only for package acceptance", async () => {
+  it("requires the supported product line while exact identity remains package-acceptance-only", async () => {
     serverState.serverName = "NotDocWen";
     const wrongName = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
     await expect(wrongName.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
+      details: expect.objectContaining({ incompatibility: "server_identity" }),
     });
 
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.9.1";
+    serverState.serverVersion = "0.12.1";
     const oldProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
     );
-    await expect(oldProductWithCurrentProtocol.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+    await expect(oldProductWithCurrentProtocol.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: expect.objectContaining({
+        incompatibility: "product_version",
+        minimumProductVersion: "0.13.0",
+        actualProductVersion: "0.12.1",
+      }),
+    });
 
-    serverState.serverVersion = "0.12.0";
+    serverState.serverVersion = "0.14.0";
+    serverState.bundleVersion = "0.14.0";
     const futureProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
@@ -649,17 +658,17 @@ describe("DocWenMachineClient", () => {
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.11.0",
+      "0.13.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.11.0", actualProductVersion: "0.12.0" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.13.0", actualProductVersion: "0.14.0" }),
     });
 
     const matchingCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.12.0",
+      "0.14.0",
     );
     await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });
