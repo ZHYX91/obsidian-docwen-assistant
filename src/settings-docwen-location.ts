@@ -92,7 +92,10 @@ export function getDocWenConnectionDisplay(
       return { message: t("settingsPlatformUnsupported"), state: "error" };
     }
     if (connection.code === "cli_incompatible_version") {
-      return { message: t("settingsConnectionIncompatible"), state: "error" };
+      return {
+        message: incompatibleConnectionMessage(connection.details),
+        state: "error",
+      };
     }
     if (connection.code === "cli_health_failed") {
       return { message: t("settingsConnectionHealthFailed"), state: "error" };
@@ -109,6 +112,43 @@ export function getDocWenConnectionDisplay(
   const manualStatus = getDocWenPathStatus(manualPath, platform);
   if (manualStatus.state !== "valid") return manualStatus;
   return { message: t("settingsConnectionManualReady"), state: "empty" };
+}
+
+function incompatibleConnectionMessage(details: Record<string, unknown> | undefined): string {
+  const base = t("settingsConnectionIncompatible");
+  if (!details) return base;
+
+  if (details.incompatibility === "machine_protocol") {
+    const sent = protocolVersion(details.sentProtocol);
+    const supported = protocolVersion(details.supported_protocol)
+      ?? protocolVersion(details.supportedProtocol)
+      ?? protocolVersion(details.receivedProtocol);
+    if (sent || supported) {
+      return `${base} Assistant: Machine ${sent ?? "?"}; DocWen: Machine ${supported ?? "?"}.`;
+    }
+  }
+
+  if (details.incompatibility === "artifact_bundle") {
+    const expected = boundedContract(details.expectedArtifactBundleSchema);
+    const actual = boundedContract(details.actualArtifactBundleSchema);
+    if (expected || actual) {
+      return `${base} Assistant: ${expected ?? "?"}; DocWen: ${actual ?? "?"}.`;
+    }
+  }
+  return base;
+}
+
+function protocolVersion(value: unknown): string | null {
+  if (typeof value !== "object" || value === null) return null;
+  const item = value as Record<string, unknown>;
+  if (!Number.isSafeInteger(item.major) || !Number.isSafeInteger(item.minor)) return null;
+  const name = typeof item.name === "string" && item.name.length <= 128 ? item.name : "";
+  const version = `${String(item.major)}.${String(item.minor)}`;
+  return !name || name === "docwen.machine" ? version : `${name} ${version}`;
+}
+
+function boundedContract(value: unknown): string | null {
+  return typeof value === "string" && /^[a-zA-Z0-9._-]{1,128}$/u.test(value) ? value : null;
 }
 
 export function getDocWenPathStatus(
