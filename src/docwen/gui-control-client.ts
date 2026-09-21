@@ -49,11 +49,12 @@ export class DocWenGuiControlClient {
     await new Promise<void>((resolve, reject) => {
       let settled = false;
       let outputBytes = 0;
+      let timer: ReturnType<typeof scheduleTimeout> | null = null;
       const stdout: Buffer[] = [];
       const finish = (error?: Error): void => {
         if (settled) return;
         settled = true;
-        cancelTimeout(timer);
+        if (timer) cancelTimeout(timer);
         signal?.removeEventListener("abort", onAbort);
         if (error) reject(error);
         else resolve();
@@ -114,7 +115,7 @@ export class DocWenGuiControlClient {
         finish();
       });
 
-      const timer = scheduleTimeout(() => {
+      timer = scheduleTimeout(() => {
         terminate();
         finish(new LocalCliError("cli_timeout", "DocWen GUI control timed out.", {
           timeoutMs: PROCESS_TIMEOUT_MS,
