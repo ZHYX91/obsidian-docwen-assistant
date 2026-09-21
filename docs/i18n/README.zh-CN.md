@@ -93,7 +93,7 @@ Word 导出在结果文件夹中生成独立 DOCX，请自行保留原始 Markdo
 
 插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 DocWen。它仅为启动系统注册的 DocWen 执行别名或用户手动选择的便携版程序、管理隔离的临时输入和已验证产物，以及写入用户明确选择的输出路径而访问 Vault 外部文件；不会打开或保存版本化的 Microsoft Store 包路径。转换会在所选目录内发布完整且经过验证的结果文件夹，保持相对路径，并单独标识主输出文件。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
-CLI 边界使用 JSON-RPC 2.0 和规范的 `Content-Length` framing。所有输入均固定大小与 SHA-256，所有 Artifact Bundle 在原子提交前都要校验图、路径、大小和哈希；调用具有超时、任务取消、输出上限和子进程清理。
+内容操作通过 Machine Protocol 的 JSON-RPC 2.0 和规范 `Content-Length` framing 执行；所有输入均固定大小与 SHA-256，所有 Artifact Bundle 在原子提交前都要校验图、路径、大小和哈希。启动或打开 DocWen 则使用独立且有界的本机 `gui open --json` 控制命令，不先协商 Machine。两条路径都使用固定启动目标、受限环境、超时、输出上限和子进程清理。
 
 ## 开发
 
