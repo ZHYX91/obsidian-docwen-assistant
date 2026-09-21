@@ -14,7 +14,7 @@ DocWen Assistant is a Windows desktop Obsidian plugin that connects the current 
 
 ## Compatibility prerequisites
 
-The plugin requires Windows, Obsidian 1.12.7 or later, and either a Microsoft Store installation or a fully extracted portable DocWen package supporting the current Machine and Bundle contracts. It accepts `docwen.machine.v2` and `docwen.artifact_bundle.v3`; other Bundle schemas and incompatible process envelopes fail closed.
+The plugin requires Windows, Obsidian 1.12.7 or later, and DocWen 0.13.0 or later from Microsoft Store or a fully extracted portable package. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
 
 ## Core capabilities
 
@@ -30,7 +30,7 @@ The plugin creates an isolated snapshot only for a user-selected file, using its
 
 ## Failure semantics
 
-An operation fails closed when the registered DocWen alias or manual location, Machine response, input snapshot, Artifact Bundle, editor state, or target identity cannot be verified. Capability-query failures never masquerade as an empty supported set, and existing outputs are never silently replaced without confirmation.
+An operation fails closed when the registered DocWen alias or manual location, the relevant CLI/Machine response, input snapshot, Artifact Bundle, editor state, or target identity cannot be verified. Capability-query failures never masquerade as an empty supported set, and existing outputs are never silently replaced without confirmation.
 
 ## Non-goals
 
