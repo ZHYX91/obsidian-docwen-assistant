@@ -14,6 +14,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Open or activate the DocWen desktop app through the public local `gui open` CLI control command instead of first negotiating the conversion Machine session. A Machine incompatibility can therefore disable background integration without preventing the user from opening DocWen.
 - Preserve the exact Machine protocol sent by Assistant plus the received/supported protocol and server identity returned by DocWen. Generic initialize parameter failures are no longer mislabeled as version mismatches, and the settings row shows both sides of a protocol conflict.
+- Show application control and background integration separately, with a direct application launch button and bounded copyable diagnostics including manifest/runtime identities.
 - Validate the independent GUI-control CLI success envelope, bound its output and timeout, and reuse the same fixed launch target and bounded child environment as Machine startup without sharing process ownership.
 - Keep direct Markdown proofreading on the dedicated `validate.markdown` Machine capability and `docwen.proofread_report.v2`; it does not pass through Markdown→DOCX conversion or the new DocWen post-conversion proofreading pipeline.
 - Update compatibility and integration documentation for the DocWen 0.13.0 / Assistant 3.1.0 pairing.

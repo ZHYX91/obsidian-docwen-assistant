@@ -181,6 +181,7 @@ class FakeToggle {
 }
 
 vi.mock("obsidian", () => ({
+  Modal: class Modal {},
   PluginSettingTab: class PluginSettingTab {
     readonly containerEl = new FakeElement();
     constructor(readonly app: unknown, readonly plugin: unknown) {}
@@ -635,6 +636,8 @@ function settingsPlugin(
     getSettingsCompatibility: vi.fn(() => compatibility),
     retrySettingsSave: vi.fn().mockResolvedValue(undefined),
     runDoctorCheck: vi.fn().mockResolvedValue(undefined),
+    getGuiConnectionStatus: vi.fn(() => ({ state: "unchecked" })),
+    openDocWenApplication: vi.fn(async () => undefined),
     getDocWenConnectionStatus: vi.fn(() => connectionStatus),
     resetDocWenRuntime: vi.fn(() => { connectionStatus = { state: "unchecked" }; }),
     checkDocWenConnectionSilently: vi.fn(async () => {

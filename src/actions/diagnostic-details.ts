@@ -21,6 +21,7 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
     if (typeof count === "number" && Number.isSafeInteger(count)) details[key] = count;
   }
   const incompatibility = read("incompatibility");
+  if (read("phase") === "initialize") details.phase = "initialize";
   if (
     incompatibility === "machine_protocol"
     || incompatibility === "artifact_bundle"

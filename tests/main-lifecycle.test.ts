@@ -221,7 +221,7 @@ describe("DocWenPlugin lifecycle", () => {
     plugin.resetDocWenRuntime();
 
     expect(state.cancelAllCalls).toBe(1);
-    expect(state.monitorResetCalls).toBe(1);
+    expect(state.monitorResetCalls).toBe(2);
     expect(state.capabilityResetCalls).toBe(1);
     plugin.onunload();
   });

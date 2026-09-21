@@ -52,6 +52,8 @@ export interface Translations {
   settingsGetFromStore: string;
   settingsDownloadPortable: string;
   settingsCliPathStatus: string;
+  settingsApplicationControl: string;
+  settingsBackgroundIntegration: string;
   settingsConnectionChecking: string;
   settingsConnectionConnected: string;
   settingsConnectionAutomaticReady: string;

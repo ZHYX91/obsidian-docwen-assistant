@@ -1,10 +1,14 @@
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawn: spawnMock }));
+vi.mock("node:timers", () => ({
+  setTimeout: (callback: () => void, delay: number) => globalThis.setTimeout(callback, delay),
+  clearTimeout: (timer: ReturnType<typeof setTimeout>) => globalThis.clearTimeout(timer),
+}));
 
 import { DocWenGuiControlClient } from "../src/docwen/gui-control-client";
 
@@ -44,6 +48,7 @@ class FakeChild extends EventEmitter {
 }
 
 describe("DocWenGuiControlClient", () => {
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     spawnMock.mockReset();
     spawnMock.mockImplementation(() => new FakeChild());
@@ -148,5 +153,59 @@ describe("DocWenGuiControlClient", () => {
 
     await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(child.killed).toBe(true);
+  });
+
+  it("checks application control without opening a window or negotiating Machine", async () => {
+    spawnMock.mockImplementation(() => new FakeChild(0, true, JSON.stringify({
+      protocol_version: 3, product_version: "0.13.0", command: "gui status", success: true,
+      data: { running: false, available: true }, error: null,
+    })));
+    const client = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe");
+    await expect(client.status()).resolves.toEqual({ productVersion: "0.13.0", running: false });
+    expect(spawnMock.mock.calls[0][1]).toContain("status");
+    expect(spawnMock.mock.calls[0][1]).not.toContain("open");
+  });
+
+  it("bounds combined output and waits for the CLI to close", async () => {
+    const child = new FakeChild(0, false);
+    spawnMock.mockReturnValue(child);
+    const pending = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open();
+    const failure = expect(pending).rejects.toMatchObject({ code: "cli_output_limit" });
+    child.stdout.write(Buffer.alloc(128 * 1024));
+    child.stderr.write(Buffer.alloc(129 * 1024));
+    await failure;
+    expect(child.killed).toBe(true);
+  });
+
+  it("times out a stuck CLI and escalates only its own process", async () => {
+    vi.useFakeTimers();
+    const child = new FakeChild(0, false);
+    const signals: string[] = [];
+    child.kill = (signal?: string) => {
+      signals.push(signal ?? "SIGTERM");
+      if (signal === "SIGKILL") queueMicrotask(() => child.emit("close", null));
+      return true;
+    };
+    spawnMock.mockReturnValue(child);
+    const pending = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open();
+    const failure = expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
+    await vi.advanceTimersByTimeAsync(15_500);
+    await failure;
+    expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
+  });
+
+  it("reports a cleanup failure when the CLI never closes", async () => {
+    vi.useFakeTimers();
+    const child = new FakeChild(0, false);
+    child.kill = () => true;
+    spawnMock.mockReturnValue(child);
+    const abort = new AbortController();
+    const pending = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open(undefined, abort.signal);
+    const failure = expect(pending).rejects.toMatchObject({
+      code: "cli_cleanup_failed", details: { primaryCode: "cli_cancelled" },
+    });
+    abort.abort();
+    await vi.advanceTimersByTimeAsync(1000);
+    await failure;
   });
 });

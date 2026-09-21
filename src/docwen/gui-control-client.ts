@@ -13,6 +13,7 @@ import {
 const GUI_OPEN_TIMEOUT_SECONDS = 10;
 const PROCESS_TIMEOUT_MS = 15_000;
 const OUTPUT_LIMIT_BYTES = 256 * 1024;
+const TERMINATE_GRACE_MS = 500;
 
 export class DocWenGuiControlClient {
   constructor(
@@ -20,6 +21,15 @@ export class DocWenGuiControlClient {
   ) {}
 
   async open(filePath?: string, signal?: AbortSignal): Promise<void> {
+    await this.execute("open", filePath, signal);
+  }
+
+  async status(signal?: AbortSignal): Promise<{ productVersion: string; running: boolean }> {
+    const envelope = await this.execute("status", undefined, signal);
+    return { productVersion: envelope.productVersion, running: envelope.running === true };
+  }
+
+  private async execute(command: "open" | "status", filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
     if (signal?.aborted) {
       throw new LocalCliError("cli_cancelled", "DocWen GUI open was cancelled.");
     }
@@ -30,7 +40,7 @@ export class DocWenGuiControlClient {
     const target = normalizeDocWenLaunchTarget(this.resolveLaunchTarget());
     const args = [
       "gui",
-      "open",
+      command,
       "--json",
       "--quiet",
       "--timeout",
@@ -46,36 +56,46 @@ export class DocWenGuiControlClient {
       stdio: ["ignore", "pipe", "pipe"],
     });
 
-    await new Promise<void>((resolve, reject) => {
+    return await new Promise<GuiResult>((resolve, reject) => {
       let settled = false;
+      let stopping: LocalCliError | null = null;
       let outputBytes = 0;
       let timer: ReturnType<typeof scheduleTimeout> | null = null;
       const stdout: Buffer[] = [];
-      const finish = (error?: Error): void => {
+      const finish = (error?: Error, result?: GuiResult): void => {
         if (settled) return;
         settled = true;
         if (timer) cancelTimeout(timer);
         signal?.removeEventListener("abort", onAbort);
         if (error) reject(error);
-        else resolve();
+        else if (result) resolve(result);
       };
-      const terminate = (): void => {
+      const terminate = (error: LocalCliError): void => {
+        if (settled || stopping) return;
+        stopping = error;
+        if (timer) cancelTimeout(timer);
         try {
           child.kill("SIGTERM");
         } catch {
-          // The close/error event remains authoritative.
+          // Still wait for close and escalate only this owned CLI process.
         }
+        timer = scheduleTimeout(() => {
+          try { child.kill("SIGKILL"); } catch { /* Wait for close until the deadline. */ }
+          timer = scheduleTimeout(() => finish(new LocalCliError(
+            "cli_cleanup_failed", "DocWen GUI control process did not close.",
+            { primaryCode: error.code, timeoutMs: TERMINATE_GRACE_MS * 2 },
+          )), TERMINATE_GRACE_MS);
+        }, TERMINATE_GRACE_MS);
       };
       const onAbort = (): void => {
-        terminate();
-        finish(new LocalCliError("cli_cancelled", "DocWen GUI open was cancelled."));
+        terminate(new LocalCliError("cli_cancelled", "DocWen GUI control was cancelled."));
       };
       const countOutput = (chunk: Buffer, capture: boolean): void => {
+        if (settled || stopping) return;
         const bytes = Buffer.from(chunk);
         outputBytes += bytes.length;
         if (outputBytes > OUTPUT_LIMIT_BYTES) {
-          terminate();
-          finish(new LocalCliError("cli_output_limit", "DocWen GUI control output exceeded its limit.", {
+          terminate(new LocalCliError("cli_output_limit", "DocWen GUI control output exceeded its limit.", {
             limitBytes: OUTPUT_LIMIT_BYTES,
           }));
           return;
@@ -96,6 +116,7 @@ export class DocWenGuiControlClient {
       });
       child.once("close", (code) => {
         if (settled) return;
+        if (stopping) { finish(stopping); return; }
         if (code !== 0) {
           finish(new LocalCliError(
             "cli_gui_control_failed",
@@ -105,19 +126,17 @@ export class DocWenGuiControlClient {
           return;
         }
         try {
-          validateGuiOpenEnvelope(Buffer.concat(stdout));
+          finish(undefined, validateGuiEnvelope(Buffer.concat(stdout), command));
         } catch (error) {
           finish(error instanceof LocalCliError
             ? error
             : new LocalCliError("cli_invalid_response", "DocWen GUI control returned invalid JSON."));
           return;
         }
-        finish();
       });
 
       timer = scheduleTimeout(() => {
-        terminate();
-        finish(new LocalCliError("cli_timeout", "DocWen GUI control timed out.", {
+        terminate(new LocalCliError("cli_timeout", "DocWen GUI control timed out.", {
           timeoutMs: PROCESS_TIMEOUT_MS,
         }));
       }, PROCESS_TIMEOUT_MS);
@@ -136,7 +155,9 @@ function isAbsolutePlatformPath(value: string): boolean {
 }
 
 
-function validateGuiOpenEnvelope(bytes: Buffer): void {
+type GuiResult = { productVersion: string; running?: boolean };
+
+function validateGuiEnvelope(bytes: Buffer, command: "open" | "status"): GuiResult {
   let value: unknown;
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -151,12 +172,21 @@ function validateGuiOpenEnvelope(bytes: Buffer): void {
   if (
     envelope.protocol_version !== 3
     || envelope.success !== true
-    || envelope.command !== "gui open"
+    || envelope.command !== `gui ${command}`
     || envelope.error !== null
+    || typeof envelope.product_version !== "string"
+    || !/^\d{1,8}\.\d{1,8}\.\d{1,8}(?:[-+][a-zA-Z0-9.-]{1,32})?$/u.test(envelope.product_version)
   ) {
     throw new LocalCliError("cli_invalid_response", "DocWen GUI control returned an incompatible envelope.", {
       protocolVersion: Number.isSafeInteger(envelope.protocol_version) ? envelope.protocol_version : undefined,
       command: envelope.command === "gui open" ? "gui open" : undefined,
     });
   }
+  const data = envelope.data;
+  if (typeof data !== "object" || data === null || Array.isArray(data)
+    || (command === "status" ? typeof (data as Record<string, unknown>).running !== "boolean"
+      : (data as Record<string, unknown>).accepted !== true)) {
+    throw new LocalCliError("cli_invalid_response", "DocWen GUI control returned invalid result data.");
+  }
+  return { productVersion: envelope.product_version, running: (data as Record<string, unknown>).running === true };
 }

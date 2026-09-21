@@ -267,6 +267,7 @@ class MachineSession {
       client: { name: CLIENT_NAME, version: CLIENT_VERSION },
       features: { progress: true, cancellation: true },
     });
+    const identity = { phase: "initialize", client: { name: CLIENT_NAME, version: CLIENT_VERSION }, server: result.server };
     const protocol = requiredObject(result.protocol, "initialize.protocol");
     if (
       protocol.name !== MACHINE_PROTOCOL.name
@@ -274,6 +275,7 @@ class MachineSession {
       || protocol.minor !== MACHINE_PROTOCOL.minor
     ) {
       throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+        ...identity,
         incompatibility: "machine_protocol",
         sentProtocol: { ...MACHINE_PROTOCOL },
         receivedProtocol: protocolIdentity(protocol),
@@ -282,6 +284,7 @@ class MachineSession {
     }
     if (result.artifact_bundle_schema !== ARTIFACT_BUNDLE_SCHEMA) {
       throw new LocalCliError("cli_incompatible_version", "DocWen Artifact Bundle contract is incompatible.", {
+        ...identity,
         incompatibility: "artifact_bundle",
         expectedArtifactBundleSchema: ARTIFACT_BUNDLE_SCHEMA,
         actualArtifactBundleSchema: result.artifact_bundle_schema,
@@ -292,11 +295,13 @@ class MachineSession {
     const productVersion = requiredString(server.version, "initialize.server.version");
     if (server.name !== "DocWen") {
       throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.", {
+        ...identity,
         incompatibility: "server_identity",
       });
     }
     if (!meetsMinimumStableVersion(productVersion, MINIMUM_DOCWEN_VERSION)) {
       throw new LocalCliError("cli_incompatible_version", "This DocWen version is older than the supported minimum.", {
+        ...identity,
         incompatibility: "product_version",
         minimumProductVersion: MINIMUM_DOCWEN_VERSION,
         actualProductVersion: productVersion,
@@ -304,6 +309,8 @@ class MachineSession {
     }
     if (expectedProductVersion !== undefined && productVersion !== expectedProductVersion) {
       throw new LocalCliError("cli_incompatible_version", "The DocWen product version does not match the expected candidate.", {
+        ...identity,
+        incompatibility: "product_version",
         expectedProductVersion,
         actualProductVersion: productVersion,
       });
@@ -341,6 +348,7 @@ class MachineSession {
         if (method === "initialize" && remote.code === "incompatible_protocol") {
           throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
             ...remote.details,
+            phase: "initialize",
             incompatibility: "machine_protocol",
             sentProtocol: { ...MACHINE_PROTOCOL },
             client: { name: CLIENT_NAME, version: CLIENT_VERSION },
