@@ -29,6 +29,7 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     protocolMajor: 2,
     protocolMinor: 0,
     rejectInitialize: false,
+    initializeErrorData: null as JsonObject | null,
     requests: [] as JsonObject[],
     notificationFault: "",
   },
@@ -135,7 +136,15 @@ class FakeChild extends EventEmitter {
     serverState.requests.push(message);
     if (message.method === "initialize") {
       if (serverState.rejectInitialize) {
-        queueMicrotask(() => this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", id, error: { code: -32602, message: "Invalid params" } })));
+        queueMicrotask(() => this.stdout.write(encodeMachineFrame({
+          jsonrpc: "2.0",
+          id,
+          error: {
+            code: -32602,
+            message: "Invalid params",
+            ...(serverState.initializeErrorData ? { data: serverState.initializeErrorData } : {}),
+          },
+        })));
         return;
       }
       this.reply(id, {
@@ -264,6 +273,7 @@ describe("DocWenMachineClient", () => {
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
     serverState.rejectInitialize = false;
+    serverState.initializeErrorData = null;
     serverState.requests = [];
     serverState.notificationFault = "";
     spawnMock.mockImplementation(() => new FakeChild());
@@ -345,17 +355,52 @@ describe("DocWenMachineClient", () => {
     await expect(client.runTask(taskRequest(root, input, bytes))).rejects.toMatchObject({ code: "cli_protocol_error" });
   });
 
-  it.each([[1, 0, false], [2, 1, false], [2, 0, true]])("rejects incompatible negotiation before querying (%s.%s, rejected=%s)", async (major, minor, rejected) => {
+  it.each([[1, 0], [2, 1]])("rejects incompatible negotiated protocol before querying (%s.%s)", async (major, minor) => {
     serverState.protocolMajor = major as number;
     serverState.protocolMinor = minor as number;
-    serverState.rejectInitialize = rejected as boolean;
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
-    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_incompatible_version" });
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "machine_protocol",
+        sentProtocol: { name: "docwen.machine", major: 2, minor: 0 },
+        receivedProtocol: { name: "docwen.machine", major, minor },
+      },
+    });
     expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
-    expect(serverState.requests[0].params).toMatchObject({
-      protocol: { name: "docwen.machine", major: 2, minor: 0 },
-      client: { version: packageJson.version },
+  });
+
+  it("does not misclassify a generic initialize parameter error as a protocol version mismatch", async () => {
+    serverState.rejectInitialize = true;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "rpc.-32602",
+      category: "protocol",
+    });
+  });
+
+  it("preserves the protocol actually sent, received, and supported on handshake rejection", async () => {
+    serverState.rejectInitialize = true;
+    serverState.initializeErrorData = {
+      code: "incompatible_protocol",
+      received_protocol: { name: "docwen.machine", major: 1, minor: 0 },
+      supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      server: { name: "DocWen", version: "0.12.1" },
+    };
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "machine_protocol",
+        sentProtocol: { name: "docwen.machine", major: 2, minor: 0 },
+        received_protocol: { name: "docwen.machine", major: 1, minor: 0 },
+        supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+        client: { name: "DocWen Obsidian Assistant", version: packageJson.version },
+        server: { name: "DocWen", version: "0.12.1" },
+      },
     });
   });
 
