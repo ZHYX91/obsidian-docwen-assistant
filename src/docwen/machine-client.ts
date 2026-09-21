@@ -22,6 +22,7 @@ const CLIENT_NAME = "DocWen Obsidian Assistant";
 const CLIENT_VERSION = packageJson.version;
 export const MACHINE_PROTOCOL = Object.freeze({ name: "docwen.machine", major: 2, minor: 0 });
 export const ARTIFACT_BUNDLE_SCHEMA = "docwen.artifact_bundle.v3";
+export const MINIMUM_DOCWEN_VERSION = "0.13.0";
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
@@ -290,7 +291,16 @@ class MachineSession {
     const server = requiredObject(result.server, "initialize.server");
     const productVersion = requiredString(server.version, "initialize.server.version");
     if (server.name !== "DocWen") {
-      throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.");
+      throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.", {
+        incompatibility: "server_identity",
+      });
+    }
+    if (!meetsMinimumStableVersion(productVersion, MINIMUM_DOCWEN_VERSION)) {
+      throw new LocalCliError("cli_incompatible_version", "This DocWen version is older than the supported minimum.", {
+        incompatibility: "product_version",
+        minimumProductVersion: MINIMUM_DOCWEN_VERSION,
+        actualProductVersion: productVersion,
+      });
     }
     if (expectedProductVersion !== undefined && productVersion !== expectedProductVersion) {
       throw new LocalCliError("cli_incompatible_version", "The DocWen product version does not match the expected candidate.", {
@@ -1070,6 +1080,21 @@ function waitForExit(
       resolve(code);
     });
   });
+}
+
+function meetsMinimumStableVersion(actual: string, minimum: string): boolean {
+  const parse = (value: string): [number, number, number] | null => {
+    const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.exec(value);
+    return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+  };
+  const actualParts = parse(actual);
+  const minimumParts = parse(minimum);
+  if (!actualParts || !minimumParts) return false;
+  for (let index = 0; index < 3; index += 1) {
+    if (actualParts[index] > minimumParts[index]) return true;
+    if (actualParts[index] < minimumParts[index]) return false;
+  }
+  return true;
 }
 
 function errorMessage(error: unknown): string {
