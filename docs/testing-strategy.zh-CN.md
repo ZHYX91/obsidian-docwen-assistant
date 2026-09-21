@@ -13,7 +13,7 @@ translation_status: source
 
 ## 源码自动测试
 
-Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、连接取消与去重、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。
+Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。
 
 ## 仓库质量门
 
