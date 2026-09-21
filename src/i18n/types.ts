@@ -58,6 +58,9 @@ export interface Translations {
   settingsConnectionManualReady: string;
   settingsConnectionStoreMissing: string;
   settingsConnectionIncompatible: string;
+  settingsConnectionProtocolMismatch: string;
+  settingsConnectionProductMismatch: string;
+  settingsConnectionBundleMismatch: string;
   settingsConnectionHealthFailed: string;
   settingsConnectionFailed: string;
   settingsPlatformUnsupported: string;
