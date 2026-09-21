@@ -4,7 +4,7 @@
 
 DocWen Assistant connects Obsidian to the local [DocWen](https://github.com/ZHYX91/docwen) desktop application for conversion, proofreading, numbering, and file opening.
 
-> **DocWen is required.** Install a compatible DocWen 0.12.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+> **DocWen is required.** Install a compatible DocWen 0.13.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Screenshots
 
@@ -41,8 +41,9 @@ Choose an available conversion route and an explicit output location while keepi
 ## Requirements and compatibility
 
 - Windows and Obsidian 1.12.7 or later. The plugin is desktop-only.
-- A compatible DocWen 0.12.0 or later installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
-- The plugin requires `docwen.machine.v2` and `docwen.artifact_bundle.v3`; incompatible DocWen versions fail validation instead of using a fallback protocol.
+- A compatible DocWen 0.13.0 or later installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
+- Background conversion, proofreading, numbering, discovery, and connection checks require `docwen.machine.v2` and `docwen.artifact_bundle.v3`; incompatible DocWen versions fail validation instead of using a fallback protocol.
+- Launching/opening the DocWen desktop app uses the public local `gui open` CLI control surface, so a Machine negotiation failure does not prevent opening DocWen itself.
 
 If the Store installation does not meet these requirements, use a compatible portable package and select it with Manual installation.
 
@@ -52,7 +53,7 @@ Automatic detection is the default and uses the registered `docwen.exe` applicat
 
 ### Install DocWen and the plugin
 
-1. Install a compatible DocWen 0.12.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97). Alternatively, download `DocWen-windows-x64.zip` from [DocWen Releases](https://github.com/ZHYX91/docwen/releases) and extract it completely.
+1. Install a compatible DocWen 0.13.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97). Alternatively, download `DocWen-windows-x64.zip` from [DocWen Releases](https://github.com/ZHYX91/docwen/releases) and extract it completely.
 2. Install DocWen Assistant from Obsidian Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases), then copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Reload Community plugins and enable DocWen Assistant.
 4. Automatic detection needs no file selection. If you use the portable ZIP, open **Settings → DocWen Assistant → General**, choose **Manual installation**, and select the extracted DocWen folder.
@@ -84,7 +85,7 @@ With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite
 
 - Obsidian 1.12.7 or later uses four horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Contextual help appears on the relevant tab instead of a separate Usage page.
 - Plugin language defaults to **Follow Obsidian** and can be overridden with any of DocWen Assistant's 11 languages. Resource discovery receives the same resolved locale.
-- **Connection method** defaults to **Detect automatically**, which supports Microsoft Store. **Manual installation** reveals the portable-folder picker. The status row checks the product identity, version, protocol, and health without exposing package paths.
+- **Connection method** defaults to **Detect automatically**, which supports Microsoft Store. **Manual installation** reveals the portable-folder picker. The status row checks the product identity, minimum supported version, Machine protocol, Bundle contract, and health without exposing package paths; protocol conflicts show the Assistant request and DocWen-supported versions separately.
 - Tabs support arrow keys (including RTL direction), Home/End, visible keyboard focus, 20 px UI text, and coarse-pointer targets. Runtime numbering schemes are queried only when their tab is rendered.
 
 ## Limitations
@@ -98,7 +99,7 @@ With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite
 
 The plugin takes a snapshot of the current Obsidian editor buffer (including unsaved text) or Vault file and gives DocWen only isolated temporary inputs. It intentionally accesses files outside the Vault only to start the registered DocWen execution alias or the manually selected portable executable, manage isolated temporary inputs and validated artifacts, and write to an output path explicitly chosen by the user; this access is required for local conversion and export. It never opens or stores the versioned Microsoft Store package path. For Markdown-to-DOCX, Obsidian resolves image embeds explicitly present in that note, including cross-folder short Wiki links and filenames with spaces; the plugin authenticates and embeds those bytes in a neutral request. It never scans the Vault for matching filenames. Conversion publishes the complete validated result folder inside the selected directory. It preserves the producer's relative paths and identifies the main output separately from its linked resources. Proofreading is read-only. Numbering is produced in an isolated output, then committed once through the current Obsidian editor or Vault API only if the source snapshot still matches. The plugin does not upload documents or enumerate the Vault for DocWen operations.
 
-The CLI boundary uses JSON-RPC 2.0 with canonical `Content-Length` framing. Every task uses integrity-pinned input handles and a request-owned staging directory; every returned Artifact Bundle is graph-, path-, size-, and SHA-256-validated before the plugin commits outputs atomically. Calls have timeouts, task cancellation, output limits, and child-process cleanup.
+Content operations use JSON-RPC 2.0 Machine Protocol with canonical `Content-Length` framing. Every task uses integrity-pinned input handles and a request-owned staging directory; every returned Artifact Bundle is graph-, path-, size-, and SHA-256-validated before the plugin commits outputs atomically. Launch/open is intentionally separate: the plugin runs the fixed local `gui open --json` control command and validates its bounded CLI protocol-3 success envelope without negotiating Machine first. Both process paths use fixed launch targets, bounded environments, timeouts, output limits, and cleanup.
 
 See [Machine integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md) for the exact methods, capabilities, and Bundle rules.
 
