@@ -13,9 +13,27 @@ class FakeChild extends EventEmitter {
   readonly stderr = new PassThrough();
   killed = false;
 
-  constructor(private readonly closeCode: number | null = 0, private readonly autoClose = true) {
+  constructor(
+    private readonly closeCode: number | null = 0,
+    private readonly autoClose = true,
+    private readonly stdoutPayload = JSON.stringify({
+      protocol_version: 3,
+      product_version: "0.13.0",
+      success: true,
+      command: "gui open",
+      data: { accepted: true },
+      error: null,
+      warnings: [],
+      meta: {},
+    }),
+  ) {
     super();
-    if (autoClose) queueMicrotask(() => this.emit("close", closeCode));
+    if (autoClose) {
+      queueMicrotask(() => {
+        if (stdoutPayload) this.stdout.write(stdoutPayload);
+        this.emit("close", closeCode);
+      });
+    }
   }
 
   kill(): boolean {
@@ -70,6 +88,17 @@ describe("DocWenGuiControlClient", () => {
       "--timeout",
       "10",
     ]);
+  });
+
+  it("rejects a successful exit with an invalid CLI envelope", async () => {
+    spawnMock.mockImplementation(() => new FakeChild(0, true, "{not-json"));
+    const client = new DocWenGuiControlClient(() => ({
+      executable: "C:\\DocWen\\DocWenCLI.exe",
+      cwd: "C:\\DocWen",
+      mode: "manual",
+    }));
+
+    await expect(client.open()).rejects.toMatchObject({ code: "cli_invalid_response" });
   });
 
   it("preserves a typed failure when GUI control exits unsuccessfully", async () => {
