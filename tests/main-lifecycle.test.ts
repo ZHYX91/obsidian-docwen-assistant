@@ -85,6 +85,7 @@ vi.mock("../src/docwen", () => ({
       state.cleanup.push("client");
     }
   },
+  DocWenGuiControlClient: class DocWenGuiControlClient {},
   DocWenClient: class DocWenClient {
     constructor(private readonly client: { dispose: () => void }) {}
     dispose(): void {
