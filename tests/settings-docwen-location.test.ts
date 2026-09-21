@@ -44,6 +44,19 @@ describe("DocWen settings location picker", () => {
       mode: "automatic",
       code: "cli_alias_not_found",
     })).toMatchObject({ state: "error", message: expect.stringContaining("not found") });
+    const incompatible = getDocWenConnectionDisplay("automatic", "", {
+      state: "error",
+      mode: "automatic",
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "machine_protocol",
+        sentProtocol: { name: "docwen.machine", major: 1, minor: 0 },
+        supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      },
+    });
+    expect(incompatible).toMatchObject({ state: "error" });
+    expect(incompatible.message).toContain("Assistant: Machine 1.0");
+    expect(incompatible.message).toContain("DocWen: Machine 2.0");
   });
 
   it("accepts the visible GUI and returns only its sibling CLI", async () => {
