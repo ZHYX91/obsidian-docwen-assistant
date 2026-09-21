@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.12.0 trở lên ổn định.
+DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.13.0 trở lên ổn định.
 
 > **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP di động trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,7 +35,7 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích �
 ## Yêu cầu và khả năng tương thích
 
 - Windows và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
-- Gói Windows đầy đủ của một bản DocWen từ 0.12.0 trở lên ổn định đã được giải nén hoàn toàn; plugin không tự động tải DocWen.
+- Gói Windows đầy đủ của một bản DocWen từ 0.13.0 trở lên ổn định đã được giải nén hoàn toàn; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
 
 Nếu bản cài đặt từ Store không đáp ứng các yêu cầu này, hãy dùng gói di động tương thích và chọn gói đó trong chế độ cài đặt thủ công.
