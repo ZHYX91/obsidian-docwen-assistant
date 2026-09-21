@@ -20,6 +20,8 @@ export type { JsonObject } from "./machine-framing";
 
 const CLIENT_NAME = "DocWen Obsidian Assistant";
 const CLIENT_VERSION = packageJson.version;
+export const MACHINE_PROTOCOL = Object.freeze({ name: "docwen.machine", major: 2, minor: 0 });
+export const ARTIFACT_BUNDLE_SCHEMA = "docwen.artifact_bundle.v3";
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
@@ -260,16 +262,30 @@ class MachineSession {
 
   async initialize(expectedProductVersion?: string): Promise<string> {
     const result = await this.rpc("initialize", {
-      protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      protocol: { ...MACHINE_PROTOCOL },
       client: { name: CLIENT_NAME, version: CLIENT_VERSION },
       features: { progress: true, cancellation: true },
     });
     const protocol = requiredObject(result.protocol, "initialize.protocol");
-    if (protocol.name !== "docwen.machine" || protocol.major !== 2 || protocol.minor !== 0) {
-      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol v2 is required.");
+    if (
+      protocol.name !== MACHINE_PROTOCOL.name
+      || protocol.major !== MACHINE_PROTOCOL.major
+      || protocol.minor !== MACHINE_PROTOCOL.minor
+    ) {
+      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+        incompatibility: "machine_protocol",
+        sentProtocol: { ...MACHINE_PROTOCOL },
+        receivedProtocol: protocolIdentity(protocol),
+        client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+      });
     }
-    if (result.artifact_bundle_schema !== "docwen.artifact_bundle.v3") {
-      throw new LocalCliError("cli_incompatible_version", "Artifact Bundle v3 is required.");
+    if (result.artifact_bundle_schema !== ARTIFACT_BUNDLE_SCHEMA) {
+      throw new LocalCliError("cli_incompatible_version", "DocWen Artifact Bundle contract is incompatible.", {
+        incompatibility: "artifact_bundle",
+        expectedArtifactBundleSchema: ARTIFACT_BUNDLE_SCHEMA,
+        actualArtifactBundleSchema: result.artifact_bundle_schema,
+        client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+      });
     }
     const server = requiredObject(result.server, "initialize.server");
     const productVersion = requiredString(server.version, "initialize.server.version");
@@ -311,10 +327,16 @@ class MachineSession {
       }
       if (message.jsonrpc !== "2.0") throw protocolError(`invalid JSON-RPC response for ${method}`);
       if (isJsonObject(message.error)) {
-        if (method === "initialize" && message.error.code === -32602) {
-          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol 2.0 is required. Update DocWen and its client together.");
+        const remote = remoteRpcError(message.error);
+        if (method === "initialize" && remote.code === "incompatible_protocol") {
+          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+            ...remote.details,
+            incompatibility: "machine_protocol",
+            sentProtocol: { ...MACHINE_PROTOCOL },
+            client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+          });
         }
-        throw remoteRpcError(message.error);
+        throw remote;
       }
       return requiredObject(message.result, `${method}.result`);
     }
@@ -939,6 +961,15 @@ function isSafePortableFilenameSegment(segment: string): boolean {
     && segment.length <= 240
     && Buffer.byteLength(segment, "utf8") <= 240
     && !windowsDevice.test(segment);
+}
+
+function protocolIdentity(value: unknown): JsonObject {
+  if (!isJsonObject(value)) return {};
+  const identity: JsonObject = {};
+  if (typeof value.name === "string" && value.name.length <= 128) identity.name = value.name;
+  if (Number.isSafeInteger(value.major)) identity.major = value.major;
+  if (Number.isSafeInteger(value.minor)) identity.minor = value.minor;
+  return identity;
 }
 
 function requiredObject(value: unknown, field: string): JsonObject {
