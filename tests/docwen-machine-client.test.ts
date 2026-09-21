@@ -21,10 +21,10 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     holdTask: false,
     ignoreCancellation: false,
     serverName: "DocWen",
-    serverVersion: "0.10.0",
+    serverVersion: "0.13.0",
     stderrOverflow: false,
     taskAccepted: false,
-    bundleVersion: "0.10.0",
+    bundleVersion: "0.13.0",
     artifactBundleSchema: "docwen.artifact_bundle.v3",
     protocolMajor: 2,
     protocolMinor: 0,
@@ -265,10 +265,10 @@ describe("DocWenMachineClient", () => {
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.10.0";
+    serverState.serverVersion = "0.13.0";
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
-    serverState.bundleVersion = "0.10.0";
+    serverState.bundleVersion = "0.13.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v3";
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
@@ -402,6 +402,22 @@ describe("DocWenMachineClient", () => {
         server: { name: "DocWen", version: "0.12.1" },
       },
     });
+  });
+
+  it("rejects DocWen product versions older than 0.13.0 while preserving GUI-independent compatibility facts", async () => {
+    serverState.serverVersion = "0.12.1";
+    serverState.bundleVersion = "0.12.1";
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "product_version",
+        minimumProductVersion: "0.13.0",
+        actualProductVersion: "0.12.1",
+      },
+    });
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
   });
 
   it("waits for a slow normal exit without killing a successful server", async () => {
@@ -709,7 +725,7 @@ describe("DocWenMachineClient", () => {
   });
 
   it("binds every Bundle producer version to the initialized Machine server", async () => {
-    serverState.bundleVersion = "0.10.1";
+    serverState.bundleVersion = "0.13.1";
     const root = await temporaryRoot();
     const input = path.join(root, "input.md");
     const bytes = Buffer.from("# input\n", "utf8");
