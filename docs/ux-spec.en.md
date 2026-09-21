@@ -26,7 +26,7 @@ Heading numbering runs against an isolated copy and rechecks the uniquely path-m
 
 ## States and recovery
 
-Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result.
+Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result. A Machine mismatch names the protocol actually sent by Assistant and the protocol supported by DocWen; an old product shows both the minimum and actual version. Background integration failure must not incorrectly disable the independent Launch/Open DocWen entry point.
 
 Completion waits for owned cleanup. If a result was published but cleanup or a follow-up step fails, one notice retains the successful result and offers Details; it does not open a second error dialog automatically. Details can be inspected and copied on request. Preparation and cancelled-operation cleanup warnings do not claim that a result exists. An unconfirmed write asks the user to check the destination before running again. Warning diagnostics contain codes and phases, not raw exception text or document content.
 
