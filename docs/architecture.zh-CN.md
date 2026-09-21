@@ -15,7 +15,7 @@ translation_status: source
 
 子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
 
-自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。每次操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收另外固定精确产品版本。
+自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.13.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。仅“启动/打开 DocWen”走独立的本机 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
 
 ## 请求数据流
 
@@ -54,7 +54,7 @@ resolved-document 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大
 
 ## 生命周期与资源
 
-一次转换的文件识别、必要的能力发现、计划与执行共用一个已初始化进程。准备阶段查询保留 30 秒响应期限，整个操作仍受十分钟预算约束。校验结束后关闭进程，不跨操作缓存进程；输入和发布完整性检查保留。
+一次内容操作的文件识别、必要的能力发现、计划与执行共用一个已初始化 Machine 进程。准备阶段查询保留 30 秒响应期限，整个操作仍受十分钟预算约束。校验结束后关闭进程，不跨操作缓存进程；输入和发布完整性检查保留。
 
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
