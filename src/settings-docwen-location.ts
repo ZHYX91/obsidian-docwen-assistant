@@ -115,8 +115,7 @@ export function getDocWenConnectionDisplay(
 }
 
 function incompatibleConnectionMessage(details: Record<string, unknown> | undefined): string {
-  const base = t("settingsConnectionIncompatible");
-  if (!details) return base;
+  if (!details) return t("settingsConnectionIncompatible");
 
   if (details.incompatibility === "machine_protocol") {
     const sent = protocolVersion(details.sentProtocol);
@@ -124,7 +123,10 @@ function incompatibleConnectionMessage(details: Record<string, unknown> | undefi
       ?? protocolVersion(details.supportedProtocol)
       ?? protocolVersion(details.receivedProtocol);
     if (sent || supported) {
-      return `${base} Assistant: Machine ${sent ?? "?"}; DocWen: Machine ${supported ?? "?"}.`;
+      return t("settingsConnectionProtocolMismatch", {
+        sent: sent ?? "?",
+        supported: supported ?? "?",
+      });
     }
   }
 
@@ -132,7 +134,10 @@ function incompatibleConnectionMessage(details: Record<string, unknown> | undefi
     const minimum = boundedVersion(details.minimumProductVersion);
     const actual = boundedVersion(details.actualProductVersion);
     if (minimum || actual) {
-      return `${base} Assistant requires DocWen ${minimum ?? "?"} or later; found ${actual ?? "?"}.`;
+      return t("settingsConnectionProductMismatch", {
+        minimum: minimum ?? "?",
+        actual: actual ?? "?",
+      });
     }
   }
 
@@ -140,10 +145,13 @@ function incompatibleConnectionMessage(details: Record<string, unknown> | undefi
     const expected = boundedContract(details.expectedArtifactBundleSchema);
     const actual = boundedContract(details.actualArtifactBundleSchema);
     if (expected || actual) {
-      return `${base} Assistant: ${expected ?? "?"}; DocWen: ${actual ?? "?"}.`;
+      return t("settingsConnectionBundleMismatch", {
+        expected: expected ?? "?",
+        actual: actual ?? "?",
+      });
     }
   }
-  return base;
+  return t("settingsConnectionIncompatible");
 }
 
 function protocolVersion(value: unknown): string | null {
