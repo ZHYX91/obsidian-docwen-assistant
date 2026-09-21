@@ -4,11 +4,25 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-09-21
+
+### Breaking changes
+
+- Require DocWen 0.13.0 or later. Content operations continue to require Machine Protocol v2 and Artifact Bundle v3; older product releases are rejected even when they expose the same protocol identity.
+
+### Changed
+
+- Open or activate the DocWen desktop app through the public local `gui open` CLI control command instead of first negotiating the conversion Machine session. A Machine incompatibility can therefore disable background integration without preventing the user from opening DocWen.
+- Preserve the exact Machine protocol sent by Assistant plus the received/supported protocol and server identity returned by DocWen. Generic initialize parameter failures are no longer mislabeled as version mismatches, and the settings row shows both sides of a protocol conflict.
+- Validate the independent GUI-control CLI success envelope, bound its output and timeout, and reuse the same fixed launch target and bounded child environment as Machine startup without sharing process ownership.
+- Keep direct Markdown proofreading on the dedicated `validate.markdown` Machine capability and `docwen.proofread_report.v2`; it does not pass through Markdown→DOCX conversion or the new DocWen post-conversion proofreading pipeline.
+- Update compatibility and integration documentation for the DocWen 0.13.0 / Assistant 3.1.0 pairing.
+
 ## [3.0.0] - 2026-09-20
 
 ### Breaking changes
 
-- Require DocWen 0.12.0 or later with Machine Protocol v2 and Artifact Bundle v3. Update DocWen before using this plugin version; an incompatible Store installation can be replaced in plugin settings by a compatible, fully extracted portable package.
+- Require DocWen 0.12.1 or later with Machine Protocol v2 and Artifact Bundle v3. Update DocWen before using this plugin version; an incompatible Store installation can be replaced in plugin settings by a compatible, fully extracted portable package.
 
 ### Changed
 
@@ -168,7 +182,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.3...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.1.0...HEAD
+[3.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.0.0...3.1.0
+[3.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.4.0...3.0.0
+[2.4.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.3.0...2.4.0
+[2.3.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.3...2.3.0
 [2.2.3]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.2...2.2.3
 [2.2.2]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.2.0...2.2.1
