@@ -80,6 +80,16 @@ describe("ProofreadActions", () => {
 
     await actions.run(file as never);
 
+    expect(capabilities.requireAction).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "D:\\Temp\\source.md" }),
+      "validate",
+      signal,
+    );
+    expect(docwen.validate).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "D:\\Temp\\source.md" }),
+      ["all"],
+      signal,
+    );
     expect(state.updateResults).toHaveBeenCalledWith(
       issues,
       "Proofread example.md",
