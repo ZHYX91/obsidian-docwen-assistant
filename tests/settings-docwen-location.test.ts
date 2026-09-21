@@ -55,8 +55,8 @@ describe("DocWen settings location picker", () => {
       },
     });
     expect(incompatible).toMatchObject({ state: "error" });
-    expect(incompatible.message).toContain("Assistant: Machine 1.0");
-    expect(incompatible.message).toContain("DocWen: Machine 2.0");
+    expect(incompatible.message).toContain("Assistant sent 1.0");
+    expect(incompatible.message).toContain("DocWen supports 2.0");
     const oldProduct = getDocWenConnectionDisplay("automatic", "", {
       state: "error",
       mode: "automatic",
@@ -69,6 +69,18 @@ describe("DocWen settings location picker", () => {
     });
     expect(oldProduct.message).toContain("0.13.0");
     expect(oldProduct.message).toContain("0.12.1");
+    const bundleMismatch = getDocWenConnectionDisplay("automatic", "", {
+      state: "error",
+      mode: "automatic",
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "artifact_bundle",
+        expectedArtifactBundleSchema: "docwen.artifact_bundle.v3",
+        actualArtifactBundleSchema: "docwen.artifact_bundle.v2",
+      },
+    });
+    expect(bundleMismatch.message).toContain("docwen.artifact_bundle.v3");
+    expect(bundleMismatch.message).toContain("docwen.artifact_bundle.v2");
   });
 
   it("accepts the visible GUI and returns only its sibling CLI", async () => {
