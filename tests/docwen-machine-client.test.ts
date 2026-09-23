@@ -21,14 +21,15 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     holdTask: false,
     ignoreCancellation: false,
     serverName: "DocWen",
-    serverVersion: "0.10.0",
+    serverVersion: "0.13.0",
     stderrOverflow: false,
     taskAccepted: false,
-    bundleVersion: "0.10.0",
+    bundleVersion: "0.13.0",
     artifactBundleSchema: "docwen.artifact_bundle.v3",
     protocolMajor: 2,
     protocolMinor: 0,
     rejectInitialize: false,
+    initializeErrorData: null as JsonObject | null,
     requests: [] as JsonObject[],
     notificationFault: "",
   },
@@ -135,7 +136,15 @@ class FakeChild extends EventEmitter {
     serverState.requests.push(message);
     if (message.method === "initialize") {
       if (serverState.rejectInitialize) {
-        queueMicrotask(() => this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", id, error: { code: -32602, message: "Invalid params" } })));
+        queueMicrotask(() => this.stdout.write(encodeMachineFrame({
+          jsonrpc: "2.0",
+          id,
+          error: {
+            code: -32602,
+            message: "Invalid params",
+            ...(serverState.initializeErrorData ? { data: serverState.initializeErrorData } : {}),
+          },
+        })));
         return;
       }
       this.reply(id, {
@@ -256,14 +265,15 @@ describe("DocWenMachineClient", () => {
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.10.0";
+    serverState.serverVersion = "0.13.0";
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
-    serverState.bundleVersion = "0.10.0";
+    serverState.bundleVersion = "0.13.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v3";
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
     serverState.rejectInitialize = false;
+    serverState.initializeErrorData = null;
     serverState.requests = [];
     serverState.notificationFault = "";
     spawnMock.mockImplementation(() => new FakeChild());
@@ -345,18 +355,69 @@ describe("DocWenMachineClient", () => {
     await expect(client.runTask(taskRequest(root, input, bytes))).rejects.toMatchObject({ code: "cli_protocol_error" });
   });
 
-  it.each([[1, 0, false], [2, 1, false], [2, 0, true]])("rejects incompatible negotiation before querying (%s.%s, rejected=%s)", async (major, minor, rejected) => {
+  it.each([[1, 0], [2, 1]])("rejects incompatible negotiated protocol before querying (%s.%s)", async (major, minor) => {
     serverState.protocolMajor = major as number;
     serverState.protocolMinor = minor as number;
-    serverState.rejectInitialize = rejected as boolean;
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
-    await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_incompatible_version" });
-    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
-    expect(serverState.requests[0].params).toMatchObject({
-      protocol: { name: "docwen.machine", major: 2, minor: 0 },
-      client: { version: packageJson.version },
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "machine_protocol",
+        sentProtocol: { name: "docwen.machine", major: 2, minor: 0 },
+        receivedProtocol: { name: "docwen.machine", major, minor },
+      },
     });
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
+  });
+
+  it("does not misclassify a generic initialize parameter error as a protocol version mismatch", async () => {
+    serverState.rejectInitialize = true;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "rpc.-32602",
+      category: "protocol",
+    });
+  });
+
+  it("preserves the protocol actually sent, received, and supported on handshake rejection", async () => {
+    serverState.rejectInitialize = true;
+    serverState.initializeErrorData = {
+      code: "incompatible_protocol",
+      received_protocol: { name: "docwen.machine", major: 1, minor: 0 },
+      supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      server: { name: "DocWen", version: "0.12.1" },
+    };
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "machine_protocol",
+        sentProtocol: { name: "docwen.machine", major: 2, minor: 0 },
+        received_protocol: { name: "docwen.machine", major: 1, minor: 0 },
+        supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+        client: { name: "DocWen Obsidian Assistant", version: packageJson.version },
+        server: { name: "DocWen", version: "0.12.1" },
+      },
+    });
+  });
+
+  it("rejects DocWen product versions older than 0.13.0 while preserving GUI-independent compatibility facts", async () => {
+    serverState.serverVersion = "0.12.1";
+    serverState.bundleVersion = "0.12.1";
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: {
+        incompatibility: "product_version",
+        minimumProductVersion: "0.13.0",
+        actualProductVersion: "0.12.1",
+      },
+    });
+    expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
   });
 
   it("waits for a slow normal exit without killing a successful server", async () => {
@@ -563,22 +624,31 @@ describe("DocWenMachineClient", () => {
     expect(child.killed).toBe(true);
   });
 
-  it("uses protocol identity for runtime compatibility and exact product identity only for package acceptance", async () => {
+  it("requires the supported product line while exact identity remains package-acceptance-only", async () => {
     serverState.serverName = "NotDocWen";
     const wrongName = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
     await expect(wrongName.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
+      details: expect.objectContaining({ incompatibility: "server_identity" }),
     });
 
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.9.1";
+    serverState.serverVersion = "0.12.1";
     const oldProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
     );
-    await expect(oldProductWithCurrentProtocol.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
+    await expect(oldProductWithCurrentProtocol.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: expect.objectContaining({
+        incompatibility: "product_version",
+        minimumProductVersion: "0.13.0",
+        actualProductVersion: "0.12.1",
+      }),
+    });
 
-    serverState.serverVersion = "0.12.0";
+    serverState.serverVersion = "0.14.0";
+    serverState.bundleVersion = "0.14.0";
     const futureProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
@@ -588,17 +658,17 @@ describe("DocWenMachineClient", () => {
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.11.0",
+      "0.13.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.11.0", actualProductVersion: "0.12.0" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.13.0", actualProductVersion: "0.14.0" }),
     });
 
     const matchingCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.12.0",
+      "0.14.0",
     );
     await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });
@@ -664,7 +734,7 @@ describe("DocWenMachineClient", () => {
   });
 
   it("binds every Bundle producer version to the initialized Machine server", async () => {
-    serverState.bundleVersion = "0.10.1";
+    serverState.bundleVersion = "0.13.1";
     const root = await temporaryRoot();
     const input = path.join(root, "input.md");
     const bytes = Buffer.from("# input\n", "utf8");

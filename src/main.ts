@@ -2,7 +2,8 @@
  * DocWen Assistant - Obsidian Plugin
  *
  * Launch DocWen converter from Obsidian and pass the current file path.
- * Uses DocWen Machine Protocol v2 for every DocWen operation.
+ * Uses Machine Protocol v2 for content operations and the public local GUI
+ * control command for launch/open so window access is not gated by conversion negotiation.
  */
 
 import { Plugin, TFile, type Command } from "obsidian";
@@ -22,6 +23,7 @@ import { ExportActions } from "./actions/export-actions";
 import { GuiActions } from "./actions/gui-actions";
 import { NumberingActions } from "./actions/numbering-actions";
 import { ProofreadActions } from "./actions/proofread-actions";
+import { registerCommands } from "./app/register-commands";
 import { registerFileMenu } from "./app/register-file-menu";
 import { showNotice } from "./host/notices";
 import { openPluginSettings } from "./host/settings-navigation";
@@ -35,6 +37,7 @@ import {
   DocWenMachineClient,
   DocWenCapabilityService,
   DocWenClient,
+  DocWenGuiControlClient,
   resolveDocWenLaunchTarget,
   type DocWenConnectionStatus,
   type FileCapability,
@@ -53,6 +56,7 @@ import { DocWenConnectionMonitor } from "./docwen/connection-monitor";
 export default class DocWenPlugin extends Plugin {
   settings!: PluginSettings;
   private docwen!: DocWenClient;
+  private guiControl!: DocWenGuiControlClient;
   private exportActions!: ExportActions;
   private guiActions!: GuiActions;
   private numberingActions!: NumberingActions;
@@ -72,6 +76,7 @@ export default class DocWenPlugin extends Plugin {
   private readonly localizedCommands: Array<{ command: Command; key: keyof Translations }> = [];
   private runtimeDisposer = new RuntimeDisposer();
   private connectionMonitor!: DocWenConnectionMonitor;
+  private guiConnectionMonitor!: DocWenConnectionMonitor;
 
   private getDocwenLangCode(): string {
     return getDocWenLanguage(this.settings.language);
@@ -122,6 +127,7 @@ export default class DocWenPlugin extends Plugin {
    */
   public async runDoctorCheck(): Promise<void> {
     await this.actionRunner.run({ key: "doctor", kind: "doctor" }, "noticeDoctorFailed", async ({ signal }) => {
+      await this.checkGuiConnectionSilently(signal);
       const report = await this.connectionMonitor.check(signal);
       showNotice(t("noticeDoctorSuccess", { version: report.productVersion }), 8000);
     });
@@ -131,19 +137,38 @@ export default class DocWenPlugin extends Plugin {
     return this.connectionMonitor.getStatus();
   }
 
+  public getGuiConnectionStatus(): DocWenConnectionStatus {
+    return this.guiConnectionMonitor.getStatus();
+  }
+
+  public async openDocWenApplication(): Promise<void> {
+    await this.actionRunner.run({ key: "gui-settings", kind: "gui-control" }, "noticeLaunchFailed", async ({ signal }) => {
+      await this.guiControl.open(undefined, signal);
+      await this.guiConnectionMonitor.check(signal);
+    });
+  }
+
+  private async checkGuiConnectionSilently(signal?: AbortSignal): Promise<void> {
+    try { await this.guiConnectionMonitor.check(signal); } catch { /* Shown independently in settings. */ }
+  }
+
   public resetDocWenRuntime(): void {
     this.operations?.cancelAll();
     this.connectionMonitor.reset();
+    this.guiConnectionMonitor?.reset();
     this.capabilities.reset();
   }
 
   public async checkDocWenConnectionSilently(): Promise<void> {
-    if (this.connectionMonitor.getStatus().state !== "unchecked") return;
+    const guiCheck = this.getGuiConnectionStatus().state === "unchecked"
+      ? this.checkGuiConnectionSilently() : Promise.resolve();
+    if (this.connectionMonitor.getStatus().state !== "unchecked") { await guiCheck; return; }
     try {
       await this.connectionMonitor.check();
     } catch {
       // The settings status row presents the typed failure without a popup.
     }
+    await guiCheck;
   }
 
   /**
@@ -159,12 +184,23 @@ export default class DocWenPlugin extends Plugin {
     if (epoch !== this.runtimeEpoch) return;
     initializePluginI18n(this.settings.language);
 
-    // Create the single Machine v2 boundary used by control and business calls.
+    // Content operations use one Machine v2 boundary. GUI opening is a
+    // separate local control surface so protocol negotiation cannot hide the app.
     this.docwen = new DocWenClient(
       new DocWenMachineClient(
         () => this.resolveCliExecutable(),
         () => this.getDocwenLangCode(),
       ),
+    );
+    this.guiControl = new DocWenGuiControlClient(
+      () => this.resolveCliExecutable(),
+    );
+    this.guiConnectionMonitor = new DocWenConnectionMonitor(
+      () => this.settings.docwenConnectionMode,
+      async (signal) => {
+        const report = await this.guiControl.status(signal);
+        return { allOk: true, productVersion: report.productVersion, checks: [] };
+      },
     );
     this.connectionMonitor = new DocWenConnectionMonitor(
       () => this.settings.docwenConnectionMode,
@@ -225,7 +261,7 @@ export default class DocWenPlugin extends Plugin {
       this.actionRunner,
     );
     this.guiActions = new GuiActions(
-      this.docwen,
+      this.guiControl,
       this.actionRunner,
     );
     this.proofreadActions = new ProofreadActions(
@@ -263,125 +299,19 @@ export default class DocWenPlugin extends Plugin {
       ),
     );
 
-    // Add command palette commands
-    this.addLocalizedCommand("commandLaunch", {
-      id: "launch-docwen",
-      callback: () => {
-        void this.launchOrSendFile();
-      },
-    });
-
-    this.addLocalizedCommand("commandLaunchWithFile", {
-      id: "launch-docwen-with-file",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile) {
-          if (!checking) {
-            void this.launchOrSendFile();
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandExportDocx", {
-      id: "export-docx-background",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          this.capabilities.findConversionRoute(capability, "docx") !== null)) {
-          if (!checking) {
-            void this.exportCurrentFileToDocx();
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandExportXlsx", {
-      id: "export-xlsx-background",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          this.capabilities.findConversionRoute(capability, "xlsx") !== null)) {
-          if (!checking) {
-            void this.exportCurrentFileToXlsx();
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandExportMd", {
-      id: "export-md-background",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          this.capabilities.findConversionRoute(capability, "md") !== null)) {
-          if (!checking) {
-            void this.exportCurrentFileToMarkdown();
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandAddNumbering", {
-      id: "add-numbering",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          capability.inspection.supportedActions.includes("number markdown"))) {
-          if (!checking) {
-            void this.numberingActions.add(activeFile);
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandRemoveNumbering", {
-      id: "remove-numbering",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          capability.inspection.supportedActions.includes("number markdown"))) {
-          if (!checking) {
-            void this.numberingActions.remove(activeFile);
-          }
-          return true;
-        }
-        return false;
-      },
-    });
-
-    this.addLocalizedCommand("commandDoctor", {
-      id: "doctor-check",
-      callback: () => {
-        void this.runDoctorCheck();
-      },
-    });
-
-    this.addLocalizedCommand("commandProofread", {
-      id: "proofread-md",
-      checkCallback: (checking: boolean) => {
-        const activeFile = this.app.workspace.getActiveFile();
-        if (activeFile && this.activeFileSupports((capability) =>
-          capability.inspection.supportedActions.includes("validate"))) {
-          if (!checking) {
-            void this.proofreadActions.activateView().then(() => {
-              void this.proofreadActions.runActive();
-            });
-          }
-          return true;
-        }
-        return false;
-      },
+    registerCommands({
+      app: this.app,
+      addLocalizedCommand: (key, command) => this.addLocalizedCommand(key, command),
+      launchOrSendFile: () => this.launchOrSendFile(),
+      activeFileSupports: (predicate) => this.activeFileSupports(predicate),
+      capabilities: this.capabilities,
+      exportCurrentFileToDocx: () => this.exportCurrentFileToDocx(),
+      exportCurrentFileToXlsx: () => this.exportCurrentFileToXlsx(),
+      exportCurrentFileToMarkdown: () => this.exportCurrentFileToMarkdown(),
+      numberingActions: this.numberingActions,
+      runDoctorCheck: () => this.runDoctorCheck(),
+      proofreadActions: this.proofreadActions,
+      operations: this.operations,
     });
 
     // Register file-menu (right-click) context menu
@@ -396,25 +326,6 @@ export default class DocWenPlugin extends Plugin {
         this.actionRunner.presentFailure("noticeCapabilityFailed", error),
     });
 
-    this.addLocalizedCommand("operationCancel", {
-      id: "cancel-active-operation",
-      checkCallback: (checking: boolean) => {
-        const active = this.operations.getSnapshot().operations;
-        const latest = active[active.length - 1];
-        if (!latest) return false;
-        if (!checking) this.operations.cancelGeneration(latest.generation);
-        return true;
-      },
-    });
-
-    this.addLocalizedCommand("operationCancelAll", {
-      id: "cancel-all-operations",
-      checkCallback: (checking: boolean) => {
-        if (this.operations.getSnapshot().operations.length === 0) return false;
-        if (!checking) this.operations.cancelAll();
-        return true;
-      },
-    });
     } catch (error) {
       this.runtimeDisposer.dispose();
       throw error;

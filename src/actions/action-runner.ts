@@ -142,7 +142,7 @@ class DocWenSetupModal extends Modal {
   }
 }
 
-class OperationDetailsModal extends Modal {
+export class OperationDetailsModal extends Modal {
   constructor(
     app: App,
     private readonly summary: string,

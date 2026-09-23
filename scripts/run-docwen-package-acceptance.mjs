@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const DOCWEN_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
+const MINIMUM_DOCWEN_VERSION = "0.13.0";
 const ACCEPTANCE_RECEIPT_SCHEMA = "docwen.assistant.package_acceptance.v1";
 const ACCEPTANCE_RECEIPT_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_RECEIPT";
 const ACCEPTANCE_TOKEN_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_TOKEN";
@@ -47,6 +48,9 @@ export async function validateDocWenPackageCandidate(environment) {
   if (!DOCWEN_VERSION_PATTERN.test(expectedVersion)) {
     throw new Error("DOCWEN_TEST_VERSION must be an exact stable semantic DocWen version.");
   }
+  if (compareStableVersions(expectedVersion, MINIMUM_DOCWEN_VERSION) < 0) {
+    throw new Error(`DOCWEN_TEST_VERSION must be DocWen ${MINIMUM_DOCWEN_VERSION} or later.`);
+  }
 
   let candidateInfo;
   try {
@@ -83,6 +87,16 @@ export async function validateDocWenPackageCandidate(environment) {
     sha256: actualSha256,
     productVersion: expectedVersion,
   });
+}
+
+function compareStableVersions(left, right) {
+  const leftParts = left.split(".").map(Number);
+  const rightParts = right.split(".").map(Number);
+  for (let index = 0; index < 3; index += 1) {
+    if (leftParts[index] < rightParts[index]) return -1;
+    if (leftParts[index] > rightParts[index]) return 1;
+  }
+  return 0;
 }
 
 function packagedCliFilename() {

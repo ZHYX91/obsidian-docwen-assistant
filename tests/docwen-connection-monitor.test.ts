@@ -36,6 +36,30 @@ describe("DocWen connection monitor", () => {
     expect(unhealthy.getStatus()).toMatchObject({ state: "error", mode: "manual" });
   });
 
+  it("retains bounded compatibility evidence for the settings row", async () => {
+    const details = {
+      incompatibility: "machine_protocol",
+      sentProtocol: { name: "docwen.machine", major: 1, minor: 0 },
+      supported_protocol: { name: "docwen.machine", major: 2, minor: 0 },
+    };
+    const monitor = new DocWenConnectionMonitor(
+      () => "manual",
+      vi.fn().mockRejectedValue(new LocalCliError(
+        "cli_incompatible_version",
+        "incompatible",
+        details,
+      )),
+    );
+
+    await expect(monitor.check()).rejects.toMatchObject({ code: "cli_incompatible_version" });
+    expect(monitor.getStatus()).toEqual({
+      state: "error",
+      mode: "manual",
+      code: "cli_incompatible_version",
+      details,
+    });
+  });
+
   it("invalidates an in-flight result when the connection setting changes", async () => {
     let release!: (value: { allOk: true; productVersion: string; checks: [] }) => void;
     let requestSignal: AbortSignal | undefined;

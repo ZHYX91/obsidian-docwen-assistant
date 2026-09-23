@@ -221,22 +221,6 @@ export class DocWenClient {
     return { allOk: result.all_ok === true, productVersion, checks };
   }
 
-  guiStatus(signal?: AbortSignal): Promise<JsonObject> {
-    return this.machine.query("gui/status", { timeout_seconds: 5 }, signal);
-  }
-
-  guiActivate(signal?: AbortSignal): Promise<JsonObject> {
-    return this.machine.query("gui/activate", { timeout_seconds: 5 }, signal);
-  }
-
-  guiOpen(filePath?: string, signal?: AbortSignal): Promise<JsonObject> {
-    return this.machine.query(
-      "gui/open",
-      { timeout_seconds: 10, ...(filePath ? { file_path: filePath } : {}) },
-      signal,
-    );
-  }
-
   async inspect(input: InputReference, signal?: AbortSignal): Promise<FileInspection> {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const handle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);

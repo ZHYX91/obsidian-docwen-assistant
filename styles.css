@@ -460,3 +460,7 @@ button.docwen-proofread-item {
 .docwen-proofread-suggestion {
   color: var(--text-success);
 }
+
+.docwen-cli-path-status {
+  white-space: pre-line;
+}

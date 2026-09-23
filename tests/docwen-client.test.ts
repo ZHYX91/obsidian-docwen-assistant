@@ -254,9 +254,8 @@ describe("DocWenClient Machine semantics", () => {
     await expect(new DocWenClient(machine(query)).runtimeCapabilities()).rejects.toMatchObject({ code: "cli_invalid_envelope" });
   });
 
-  it("maps GUI and resource queries without argv", async () => {
+  it("maps resource queries through Machine without GUI control", async () => {
     const query = vi.fn()
-      .mockResolvedValueOnce({ state: "opened" })
       .mockResolvedValueOnce({
         kind: "templates",
         resources: [
@@ -272,7 +271,6 @@ describe("DocWenClient Machine semantics", () => {
       });
     const client = new DocWenClient(machine(query));
 
-    await client.guiOpen("D:\\Vault\\note.md");
     await expect(client.templates("docx")).resolves.toEqual([
       {
         id: `template.docx.${"a".repeat(64)}`,
@@ -284,7 +282,6 @@ describe("DocWenClient Machine semantics", () => {
       },
     ]);
     expect(query.mock.calls).toEqual([
-      ["gui/open", { timeout_seconds: 10, file_path: "D:\\Vault\\note.md" }, undefined],
       ["resource/list", { kind: "templates", locale: "en_US", target: "docx" }, undefined],
     ]);
   });

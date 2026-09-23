@@ -12,7 +12,6 @@ import {
 import {
   configureDocWenDownloadSetting,
   configureDocWenLocationSetting,
-  getDocWenConnectionDisplay,
   getDocWenPathStatus,
   pickDocWenCliPath,
   type DocWenLocationKind,
@@ -29,6 +28,7 @@ import {
 } from "./settings-schema-compatibility";
 import { SettingsTabs } from "./settings-tabs";
 import { preserveSettingsView } from "./settings-view-state";
+import { configureConnectionActions, connectionDisplay } from "./settings-connection";
 
 export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
@@ -237,6 +237,7 @@ export class SettingTab extends PluginSettingTab {
     setting.descEl.setAttribute("role", "status");
     setting.descEl.setAttribute("aria-live", "polite");
     this.pathStatusElements.add(setting.descEl);
+    configureConnectionActions(setting, this.plugin, () => this.refreshPathStatus());
     if (
       this.plugin.getDocWenConnectionStatus().state === "unchecked"
       && (
@@ -271,11 +272,7 @@ export class SettingTab extends PluginSettingTab {
   }
 
   private currentConnectionDisplay(): DocWenPathStatus {
-    return getDocWenConnectionDisplay(
-      this.plugin.settings.docwenConnectionMode,
-      this.plugin.settings.docwenCliPath,
-      this.plugin.getDocWenConnectionStatus(),
-    );
+    return connectionDisplay(this.plugin);
   }
 
   private refreshSettingsUi(): void {

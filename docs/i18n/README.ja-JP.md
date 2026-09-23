@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.12.0 以降 が必要です。
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.13.0 以降 が必要です。
 
 > **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
 
@@ -35,7 +35,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 ## 要件と互換性
 
 - Windows と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
-- 完全に展開した安定版 DocWen 0.12.0 以降 の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
+- 完全に展開した安定版 DocWen 0.13.0 以降 の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 
 Store のインストールがこれらの要件を満たさない場合は、互換性のあるポータブル版を使用し、手動インストールで選択してください。

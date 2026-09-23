@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { isDirectory, isFile, pathExists } from "../host/file-system";
 import type { DocWenConnectionMode } from "../settings-model";
 import { LocalCliError } from "./errors";
-import type { DocWenLaunchTarget } from "./machine-client";
+import type { DocWenLaunchTarget } from "./process-launch";
 
 export const DOCWEN_EXECUTION_ALIAS = "docwen.exe";
 const WINDOWS_APPS_ALIAS_DIRECTORY = ["Microsoft", "WindowsApps"] as const;

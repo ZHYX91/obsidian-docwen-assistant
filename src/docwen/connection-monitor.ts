@@ -1,7 +1,7 @@
 import type { DocWenConnectionMode } from "../settings-model";
 import type { HealthReport } from "./client";
 import type { DocWenConnectionStatus } from "./connection-status";
-import { LocalCliError } from "./errors";
+import { LocalCliError, RemoteMachineError } from "./errors";
 
 type ConnectionCheckRequest = {
   readonly abortCleanups: Set<() => void>;
@@ -92,7 +92,12 @@ export class DocWenConnectionMonitor {
           : {
               state: "error",
               mode,
-              code: error instanceof LocalCliError ? error.code : "cli_spawn_failed",
+              code: error instanceof LocalCliError || error instanceof RemoteMachineError
+                ? error.code
+                : "cli_spawn_failed",
+              details: error instanceof LocalCliError || error instanceof RemoteMachineError
+                ? error.details
+                : undefined,
             };
       }
       throw error;

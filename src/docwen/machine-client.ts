@@ -3,12 +3,16 @@ import { createHash } from "node:crypto";
 import { validateBundleFields, validateBundlePages } from "./bundle-metadata";
 import { createReadStream } from "node:fs";
 import { lstat, realpath, stat } from "node:fs/promises";
-import { homedir } from "node:os";
 import * as path from "node:path";
 import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "node:timers";
 
 import packageJson from "../../package.json";
 import { LocalCliError, RemoteMachineError } from "./errors";
+import {
+  docWenChildEnvironment,
+  normalizeDocWenLaunchTarget,
+  type DocWenLaunchTarget,
+} from "./process-launch";
 import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
 import { fileIdentity, sameFileIdentity } from "./output-integrity";
 
@@ -16,6 +20,9 @@ export type { JsonObject } from "./machine-framing";
 
 const CLIENT_NAME = "DocWen Obsidian Assistant";
 const CLIENT_VERSION = packageJson.version;
+export const MACHINE_PROTOCOL = Object.freeze({ name: "docwen.machine", major: 2, minor: 0 });
+export const ARTIFACT_BUNDLE_SCHEMA = "docwen.artifact_bundle.v3";
+export const MINIMUM_DOCWEN_VERSION = "0.13.0";
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
@@ -26,12 +33,6 @@ const TERMINATION_GRACE_MS = 1_000;
 const FORCE_KILL_WAIT_MS = 2_000;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const EXIT_WAIT_EXPIRED = Symbol("exit_wait_expired");
-
-export type DocWenLaunchTarget = {
-  executable: string;
-  cwd: string;
-  mode: "automatic" | "manual";
-};
 
 export const ARTIFACT_BUNDLE_LIMITS = Object.freeze({
   artifacts: 1_024,
@@ -197,11 +198,11 @@ class MachineSession {
   readonly child: ChildProcessWithoutNullStreams;
 
   constructor(rawTarget: string | DocWenLaunchTarget) {
-    const target = normalizeLaunchTarget(rawTarget);
+    const target = normalizeDocWenLaunchTarget(rawTarget);
     try {
       this.child = spawn(target.executable, ["serve", "--stdio"], {
         cwd: target.cwd,
-        env: boundedEnvironment(),
+        env: docWenChildEnvironment(),
         detached: process.platform !== "win32",
         shell: false,
         windowsHide: true,
@@ -262,24 +263,54 @@ class MachineSession {
 
   async initialize(expectedProductVersion?: string): Promise<string> {
     const result = await this.rpc("initialize", {
-      protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      protocol: { ...MACHINE_PROTOCOL },
       client: { name: CLIENT_NAME, version: CLIENT_VERSION },
       features: { progress: true, cancellation: true },
     });
+    const identity = { phase: "initialize", client: { name: CLIENT_NAME, version: CLIENT_VERSION }, server: result.server };
     const protocol = requiredObject(result.protocol, "initialize.protocol");
-    if (protocol.name !== "docwen.machine" || protocol.major !== 2 || protocol.minor !== 0) {
-      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol v2 is required.");
+    if (
+      protocol.name !== MACHINE_PROTOCOL.name
+      || protocol.major !== MACHINE_PROTOCOL.major
+      || protocol.minor !== MACHINE_PROTOCOL.minor
+    ) {
+      throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+        ...identity,
+        incompatibility: "machine_protocol",
+        sentProtocol: { ...MACHINE_PROTOCOL },
+        receivedProtocol: protocolIdentity(protocol),
+        client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+      });
     }
-    if (result.artifact_bundle_schema !== "docwen.artifact_bundle.v3") {
-      throw new LocalCliError("cli_incompatible_version", "Artifact Bundle v3 is required.");
+    if (result.artifact_bundle_schema !== ARTIFACT_BUNDLE_SCHEMA) {
+      throw new LocalCliError("cli_incompatible_version", "DocWen Artifact Bundle contract is incompatible.", {
+        ...identity,
+        incompatibility: "artifact_bundle",
+        expectedArtifactBundleSchema: ARTIFACT_BUNDLE_SCHEMA,
+        actualArtifactBundleSchema: result.artifact_bundle_schema,
+        client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+      });
     }
     const server = requiredObject(result.server, "initialize.server");
     const productVersion = requiredString(server.version, "initialize.server.version");
     if (server.name !== "DocWen") {
-      throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.");
+      throw new LocalCliError("cli_incompatible_version", "The Machine server is not DocWen.", {
+        ...identity,
+        incompatibility: "server_identity",
+      });
+    }
+    if (!meetsMinimumStableVersion(productVersion, MINIMUM_DOCWEN_VERSION)) {
+      throw new LocalCliError("cli_incompatible_version", "This DocWen version is older than the supported minimum.", {
+        ...identity,
+        incompatibility: "product_version",
+        minimumProductVersion: MINIMUM_DOCWEN_VERSION,
+        actualProductVersion: productVersion,
+      });
     }
     if (expectedProductVersion !== undefined && productVersion !== expectedProductVersion) {
       throw new LocalCliError("cli_incompatible_version", "The DocWen product version does not match the expected candidate.", {
+        ...identity,
+        incompatibility: "product_version",
         expectedProductVersion,
         actualProductVersion: productVersion,
       });
@@ -313,10 +344,17 @@ class MachineSession {
       }
       if (message.jsonrpc !== "2.0") throw protocolError(`invalid JSON-RPC response for ${method}`);
       if (isJsonObject(message.error)) {
-        if (method === "initialize" && message.error.code === -32602) {
-          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol 2.0 is required. Update DocWen and its client together.");
+        const remote = remoteRpcError(message.error);
+        if (method === "initialize" && remote.code === "incompatible_protocol") {
+          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+            ...remote.details,
+            phase: "initialize",
+            incompatibility: "machine_protocol",
+            sentProtocol: { ...MACHINE_PROTOCOL },
+            client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+          });
         }
-        throw remoteRpcError(message.error);
+        throw remote;
       }
       return requiredObject(message.result, `${method}.result`);
     }
@@ -404,7 +442,7 @@ class MachineSession {
           ["/PID", String(pid), "/T", "/F"],
           {
             detached: false,
-            env: boundedEnvironment(),
+            env: docWenChildEnvironment(),
             shell: false,
             stdio: "ignore",
             timeout: TERMINATION_GRACE_MS,
@@ -625,24 +663,6 @@ export class DocWenMachineClient {
       this.activeSessions.delete(session);
     }
   }
-}
-
-function normalizeLaunchTarget(target: string | DocWenLaunchTarget): DocWenLaunchTarget {
-  const normalized = typeof target === "string"
-    ? {
-        executable: target,
-        cwd: path.win32.isAbsolute(target) ? path.win32.dirname(target) : path.dirname(target),
-        mode: "manual" as const,
-      }
-    : target;
-  if (!isAbsolutePlatformPath(normalized.executable) || !isAbsolutePlatformPath(normalized.cwd)) {
-    throw new LocalCliError(
-      "cli_spawn_failed",
-      "DocWen launch targets must use fixed absolute paths.",
-      { mode: normalized.mode },
-    );
-  }
-  return normalized;
 }
 
 export async function validateArtifactBundle(
@@ -961,6 +981,15 @@ function isSafePortableFilenameSegment(segment: string): boolean {
     && !windowsDevice.test(segment);
 }
 
+function protocolIdentity(value: unknown): JsonObject {
+  if (!isJsonObject(value)) return {};
+  const identity: JsonObject = {};
+  if (typeof value.name === "string" && value.name.length <= 128) identity.name = value.name;
+  if (Number.isSafeInteger(value.major)) identity.major = value.major;
+  if (Number.isSafeInteger(value.minor)) identity.minor = value.minor;
+  return identity;
+}
+
 function requiredObject(value: unknown, field: string): JsonObject {
   if (!isJsonObject(value)) throw protocolError(`DocWen response is missing ${field}.`);
   return value;
@@ -1061,47 +1090,19 @@ function waitForExit(
   });
 }
 
-function boundedEnvironment(): NodeJS.ProcessEnv {
-  const environment: NodeJS.ProcessEnv = {};
-  for (const key of ["SystemRoot", "WINDIR", "COMSPEC", "PATH", "PATHEXT", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"]) {
-    if (process.env[key]) environment[key] = process.env[key];
+function meetsMinimumStableVersion(actual: string, minimum: string): boolean {
+  const parse = (value: string): [number, number, number] | null => {
+    const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u.exec(value);
+    return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+  };
+  const actualParts = parse(actual);
+  const minimumParts = parse(minimum);
+  if (!actualParts || !minimumParts) return false;
+  for (let index = 0; index < 3; index += 1) {
+    if (actualParts[index] > minimumParts[index]) return true;
+    if (actualParts[index] < minimumParts[index]) return false;
   }
-  const profileKeys = process.platform === "win32"
-    ? ["USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
-    : ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"];
-  for (const key of profileKeys) {
-    if (process.env[key]) environment[key] = process.env[key];
-  }
-  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_DATA_DIR", "DOCWEN_LOG_DIR"]) {
-    const value = process.env[key]?.trim();
-    if (value) environment[key] = profileDirectory(value);
-  }
-  if (["1", "true", "yes", "on"].includes(process.env.DOCWEN_LOG_TO_TEMP?.trim().toLowerCase() ?? "")) {
-    environment.DOCWEN_LOG_TO_TEMP = "1";
-  }
-  if (process.platform === "linux") {
-    for (const key of [
-      "XDG_RUNTIME_DIR",
-      "DISPLAY",
-      "WAYLAND_DISPLAY",
-      "XAUTHORITY",
-      "DBUS_SESSION_BUS_ADDRESS",
-    ]) {
-      if (process.env[key]) environment[key] = process.env[key];
-    }
-  }
-  environment.NO_COLOR = "1";
-  environment.PYTHONIOENCODING = "utf-8";
-  environment.PYTHONUTF8 = "1";
-  return environment;
-}
-
-function profileDirectory(value: string): string {
-  if (value.includes("\u0000")) throw new Error("DocWen profile directory contains a NUL character.");
-  const expanded = value === "~" || value.startsWith("~/") || (process.platform === "win32" && value.startsWith("~\\"))
-    ? path.join(homedir(), value.slice(2))
-    : value;
-  return path.isAbsolute(expanded) || path.win32.isAbsolute(expanded) ? expanded : path.resolve(expanded);
+  return true;
 }
 
 function errorMessage(error: unknown): string {
@@ -1110,10 +1111,6 @@ function errorMessage(error: unknown): string {
 
 function isErrno(error: unknown, code: string): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === code;
-}
-
-function isAbsolutePlatformPath(value: string): boolean {
-  return path.isAbsolute(value) || path.win32.isAbsolute(value);
 }
 
 function sameCanonicalPath(left: string, right: string): boolean {

@@ -52,12 +52,17 @@ export interface Translations {
   settingsGetFromStore: string;
   settingsDownloadPortable: string;
   settingsCliPathStatus: string;
+  settingsApplicationControl: string;
+  settingsBackgroundIntegration: string;
   settingsConnectionChecking: string;
   settingsConnectionConnected: string;
   settingsConnectionAutomaticReady: string;
   settingsConnectionManualReady: string;
   settingsConnectionStoreMissing: string;
   settingsConnectionIncompatible: string;
+  settingsConnectionProtocolMismatch: string;
+  settingsConnectionProductMismatch: string;
+  settingsConnectionBundleMismatch: string;
   settingsConnectionHealthFailed: string;
   settingsConnectionFailed: string;
   settingsPlatformUnsupported: string;

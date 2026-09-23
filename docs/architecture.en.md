@@ -16,7 +16,7 @@ translation_status: synced
 
 The child inherits the platform profile-directory variables and explicit `DOCWEN_DATA_DIR`, `DOCWEN_CONFIG_DIR`, `DOCWEN_LOG_DIR` and truthy `DOCWEN_LOG_TO_TEMP` within a bounded environment. DATA selects a whole profile; CONFIG and LOG are component overrides. Relative selectors resolve against the parent working directory before spawning. Unrelated variables and credentials are excluded.
 
-Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Each operation starts `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verifies Machine Protocol 2.0, Artifact Bundle v3 and server identity. Product versions are bound to their session and separately pinned for candidate acceptance.
+Automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` execution alias from a safe temporary working directory; it never resolves a bare command through `PATH` or discovers or stores the versioned Microsoft Store package path. Manual mode resolves a selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` to the exact sibling CLI. Content operations such as conversion, proofreading, numbering, discovery, and connection checks start `serve --stdio` with `shell: false`, canonical `Content-Length` framing, and JSON-RPC 2.0, then verify DocWen 0.13.0 or later, Machine Protocol 2.0, Artifact Bundle v3, and server identity. Product versions are bound to their session and may be pinned exactly for candidate acceptance. Application status and launch/open use the independent local `gui status --json` and `gui open --json` control commands and validates its CLI protocol-3 success envelope without first negotiating Machine, so background protocol incompatibility cannot prevent opening the desktop app.
 
 ## Request data flow
 
@@ -60,7 +60,7 @@ Once the editor buffer or Vault API confirms the expected content, save scheduli
 
 ## Lifecycle and resources
 
-Conversion inspection, capability discovery when needed, planning and execution share one initialized process. Preparation queries retain a 30-second response deadline within the ten-minute operation budget. The process closes after validation and is not cached across operations; input and publication integrity checks remain in place.
+Content-operation inspection, capability discovery when needed, planning and execution share one initialized Machine process. Preparation queries retain a 30-second response deadline within the ten-minute operation budget. The process closes after validation and is not cached across operations; input and publication integrity checks remain in place.
 
 Tasks have timeouts, protocol frame and queue limits, a stderr cap, and explicit cancellation. Cancellation after task acceptance sends `task/cancel` and terminates the owned process tree when necessary. Changing the DocWen target cancels active work and resets connection checks, capability projection, file caches, and pending preloads as one generation; invalidated requests cannot restore stale state. The runtime disposer, operation coordinator, and settings-save queue stop observers, release views, and settle or terminate owned work during unload.
 
@@ -75,3 +75,5 @@ Obsidian documents, user paths, Machine messages, staging files, and GitHub rele
 ## Subordinate protocol contract
 
 The [Machine integration contract](cli-integration.md) freezes exact methods, capabilities, limits, and Bundle-consumption rules. This architecture document owns component boundaries; a change to either must keep both consistent in the same revision.
+
+Settings show application control and background integration separately. Details identify the loaded manifest and compiled runtime versions, the initialization phase, sent and received protocols, and bounded server identity. Cancelling GUI control waits for the owned CLI process to close, escalates only that process after a grace period, and reports unconfirmed cleanup; it never terminates the desktop application.

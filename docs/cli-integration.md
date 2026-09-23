@@ -1,15 +1,17 @@
 # Machine integration contract
 
-DocWen Assistant consumes `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target. Other Bundle schemas and incompatible process envelopes fail closed.
+DocWen Assistant 3.1 requires DocWen 0.13.0 or later. Content operations consume `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target; other Bundle schemas, older product releases, and incompatible process envelopes fail closed. GUI launch/open is intentionally a separate local control path described below.
 
 ## Process boundary
 
 - Automatic mode is the default. It constructs and directly launches the fixed `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` application execution alias from a safe temporary working directory. It never resolves a bare command through `PATH` and never reads or stores the versioned `WindowsApps` package path.
 - Manual mode accepts an extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`, then resolves exactly one sibling `DocWenCLI.exe` and keeps the previous validated absolute-path behavior.
-- Every operation spawns the selected launch target with `serve --stdio`, `shell: false`, a hidden Windows console, a bounded environment, and canonical `Content-Length` framing. A missing automatic alias is a typed setup failure; no shell or recursive fallback is allowed.
+- Every content operation spawns the selected launch target with `serve --stdio`, `shell: false`, a hidden Windows console, a bounded environment, and canonical `Content-Length` framing. A missing automatic alias is a typed setup failure; no shell or recursive fallback is allowed.
+- Launching DocWen or opening the active file does not start a Machine session. It runs the same fixed launch target as `gui open --json --quiet --timeout 10 [ABSOLUTE_FILE]`, validates the bounded CLI protocol-3 success envelope, and then exits the short-lived control process. Machine negotiation failure therefore cannot hide the desktop app. This path does not resolve a bare command, invoke a shell, or own/kill the GUI process tree.
 - Conversion inspection, capability discovery when needed, planning and execution share one initialized process. Preparation queries keep their 30-second response deadline inside the ten-minute operation budget. The process closes after validation; no process is cached between operations, and input/output integrity checks remain in place.
 - Changing the connection mode or manual path cancels active work and atomically resets connection checks, the runtime capability projection, file capability caches, and pending preloads. Request generations and entry identity prevent invalidated work from restoring stale results.
-- The client initializes JSON-RPC 2.0 as `docwen.machine` 2.0, requires `server.name` to be exactly `DocWen`, and requires Artifact Bundle v3. Protocol compatibility is checked independently of the product version. Package acceptance additionally pins an exact product version. Every Artifact Bundle must repeat the exact product version returned by that session's initialize response; a mismatch fails closed.
+- The client initializes JSON-RPC 2.0 as `docwen.machine` 2.0, requires `server.name` to be exactly `DocWen`, Artifact Bundle v3, and a stable DocWen product version at least 0.13.0. Machine/Bundle identities remain separate from the product-version gate; package acceptance can additionally pin an exact candidate version. Every Artifact Bundle must repeat the exact product version returned by that session's initialize response; a mismatch fails closed.
+- An `incompatible_protocol` response retains the protocol sent by Assistant plus the received/supported protocol and server identity returned by DocWen. A generic initialize `-32602` remains an invalid-parameter error and is never promoted to a version mismatch merely because of its JSON-RPC code.
 - The bounded child environment preserves the relevant platform home and profile-directory variables, temporary directories, `DOCWEN_DATA_DIR`, `DOCWEN_CONFIG_DIR`, `DOCWEN_LOG_DIR` and truthy `DOCWEN_LOG_TO_TEMP`. DATA selects a whole profile; CONFIG and LOG override only their components. Relative selectors are resolved before changing the child working directory. No unrelated `DOCWEN_*` variables, credentials or Node options are forwarded. Start Obsidian with the intended profile selection; changing the DocWen executable alone does not override it.
 - Queries and tasks have timeouts. Cancellation sends `task/cancel` after task acceptance, then terminates the owned process tree if the server does not settle within two seconds; cancellation before acceptance and plugin unload also settle waiting callers and terminate every owned process tree. Stderr is capped at 256 KiB, protocol frames at 16 MiB, and queued/deferred messages at 64 each.
 - Every file handle contains an absolute local locator, immutable `kind`/`role`, a unique normalized relative-POSIX `logical_path`, media type, byte length, and SHA-256. Inputs are preflighted before hashing, limited to 256 files, 512 MiB per file and 1 GiB total, then hashed sequentially with identity revalidation. Capability `input_shape` declares role/kind/media-type slots and rejects undeclared roles; DocWen rechecks handles at plan and execute boundaries.
@@ -25,19 +27,19 @@ without falling back to ordinary conversion. Core checks the full Office preconv
 planning and acceptance. Global settings contribute only options exposed by the chosen capability.
 
 
-| Plugin behavior | Machine method/capability |
+| Plugin behavior | Boundary |
 |---|---|
-| Diagnostics | `health/check` |
-| Start, activate, or open in DocWen | `gui/open`, `gui/activate`, `gui/status` |
-| Inspect an isolated input | `file/inspect` |
-| Discover stable capabilities | `capability/list` |
-| Discover templates, optimizations, numbering schemes | `resource/list` |
-| Markdown to DOCX | `convert.markdown.to_docx` |
-| Markdown to XLSX | `convert.markdown.to_xlsx` |
-| DOCX to Markdown | `convert.docx.to_markdown` |
-| XLSX to Markdown | `convert.xlsx.to_markdown` |
-| Markdown proofreading | `validate.markdown` |
-| Markdown heading numbering | `transform.markdown.heading_numbering` |
+| Diagnostics / connection check | Machine `health/check` |
+| Start, activate, or open in DocWen | Local CLI `gui open --json` (no Machine handshake) |
+| Inspect an isolated input | Machine `file/inspect` |
+| Discover stable capabilities | Machine `capability/list` |
+| Discover templates, optimizations, numbering schemes | Machine `resource/list` |
+| Markdown to DOCX | Machine `convert.markdown.to_docx` |
+| Markdown to XLSX | Machine `convert.markdown.to_xlsx` |
+| DOCX to Markdown | Machine `convert.docx.to_markdown` |
+| XLSX to Markdown | Machine `convert.xlsx.to_markdown` |
+| Markdown proofreading | Machine `validate.markdown` |
+| Markdown heading numbering | Machine `transform.markdown.heading_numbering` |
 
 Support comes from the conjunction of content-derived `file/inspect` results and available Machine capabilities for the detected media type. The Assistant does not infer conversion support from extensions or DocWen route IDs. Route-specific optimizers are not exposed until DocWen promotes them to a normalized Machine capability.
 
@@ -56,14 +58,16 @@ Validation accepts at most 1,024 artifacts, 1,024 entries and 4,096 relations, w
 
 Conversion selects an existing output parent and preserves every validated `logical_path` inside one `docwen.document_node.v1` result directory, without requiring a node JSON. Resolved Markdown-to-DOCX requires one preferred DOCX and one primary entry, with exact size and SHA-256 in the Bundle. The preferred output is selected by the entry, not artifact ordering; manifests are excluded from the business output list. Names retain the producer's source stem, timestamp and admitted input format. Staged and prepared bytes are revalidated before a single directory rename. Existing result roots, changed parents, source conflicts and cancellation before commit prevent publication; cancellation after publication does not turn a completed export into failure. The CLI never receives the user's destination path.
 
-Proofreading reads the preferred JSON report resource and never commits it. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
+Direct Markdown proofreading always selects the `validate.markdown` capability, reads the preferred `docwen.proofread_report.v2` JSON resource, and never commits that report. It does not invoke Markdown→DOCX conversion or DocWen's conversion post-processing pipeline. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
 
 ## Source ownership
 
 | File | Responsibility |
 |---|---|
 | `src/docwen/machine-framing.ts` | Canonical `Content-Length` encoder and incremental decoder |
-| `src/docwen/machine-client.ts` | Process lifecycle, JSON-RPC, cancellation, terminal state, and strict Bundle validation |
+| `src/docwen/process-launch.ts` | Shared fixed launch-target validation and bounded child environment |
+| `src/docwen/machine-client.ts` | Content-process lifecycle, JSON-RPC, negotiation, cancellation, terminal state, and strict Bundle validation |
+| `src/docwen/gui-control-client.ts` | Machine-independent `gui open` process, CLI envelope validation, timeout and output bounds |
 | `src/docwen/client.ts` | Consumer-neutral option mapping, report parsing, and atomic output commit |
 | `src/docwen/capability-service.ts` | Inspection plus Machine capability projection for Assistant use cases |
 | `src/docwen/path.ts` | Fixed execution-alias target plus deterministic manual `DocWenCLI.exe` validation |

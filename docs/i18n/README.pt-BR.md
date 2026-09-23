@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.12.0 ou posterior.
+O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.13.0 ou posterior.
 
 > **O DocWen é obrigatório.** Instale uma versão compatível pela [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extraia totalmente o ZIP portátil disponível em [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -35,7 +35,7 @@ O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino es
 ## Requisitos e compatibilidade
 
 - Windows e Obsidian 1.12.7 ou superior; o plugin funciona apenas no desktop.
-- Um pacote completo de uma versão estável do DocWen 0.12.0 ou posterior para Windows, totalmente extraído; o plugin não baixa o DocWen automaticamente.
+- Um pacote completo de uma versão estável do DocWen 0.13.0 ou posterior para Windows, totalmente extraído; o plugin não baixa o DocWen automaticamente.
 - O plugin exige `docwen.machine.v2` e `docwen.artifact_bundle.v3`; uma versão incompatível do DocWen é recusada em vez de usar outro protocolo.
 
 Se a instalação da Store não atender a esses requisitos, use um pacote portátil compatível e selecione-o na instalação manual.
