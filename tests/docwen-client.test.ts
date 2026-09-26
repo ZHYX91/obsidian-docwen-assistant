@@ -206,7 +206,13 @@ describe("DocWenClient Machine semantics", () => {
       const bundle = bundleFor("task.1", artifactPath, "text/markdown", "document", bytes);
       bundle.layout_schema = "docwen.document_node.v1";
       bundle.artifacts[0].logical_path = "letter-result/letter.md";
-      return { taskId: "task.1", plan: {}, bundle, diagnostics: [], metrics: {} };
+      return {
+        taskId: "task.1",
+        plan: {},
+        bundle,
+        diagnostics: [{ level: "warning", code: "audit.conversion_loss", message: "sensitive source detail" }],
+        metrics: {},
+      };
     });
     const client = new DocWenClient(machine(query, runTask));
     const result = await client.convert({
@@ -219,6 +225,9 @@ describe("DocWenClient Machine semantics", () => {
     expect(runTask.mock.calls[0][0].options).not.toHaveProperty("ocr_placement");
     expect(query.mock.calls.map(([method]) => method)).toEqual(prepared ? ["file/inspect"] : ["file/inspect", "capability/list"]);
     expect(await readFile(result.output, "utf8")).toBe("# Optimized\n");
+    expect(result.diagnostics).toEqual([
+      { level: "warning", code: "audit.conversion_loss", message: "sensitive source detail" },
+    ]);
     expect(await readFile(source, "utf8")).toBe("RTF fixture");
   });
 
@@ -445,6 +454,7 @@ describe("DocWenClient Machine semantics", () => {
       outputs: [output],
       bundleId: "bundle.1",
       warnings: [],
+      diagnostics: [],
     });
     expect(await readFile(output, "utf8")).toBe("fixture");
     await expect(lstat(`${output}.docwen`)).rejects.toMatchObject({ code: "ENOENT" });
