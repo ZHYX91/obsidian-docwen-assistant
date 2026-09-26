@@ -974,6 +974,22 @@ export function mediaTypeForPath(filePath: string): string {
   return mediaTypeForFormat(path.extname(filePath).slice(1));
 }
 
+const DOCUMENT_SOURCE_FORMATS = new Set([
+  "md",
+  "markdown",
+  "txt",
+  "docx",
+  "doc",
+  "odt",
+  "rtf",
+  "wps",
+]);
+
+export function sourceKindForPath(filePath: string): TaskInput["kind"] {
+  const format = path.extname(filePath).slice(1).toLowerCase();
+  return DOCUMENT_SOURCE_FORMATS.has(format) ? "document" : "resource";
+}
+
 function mediaTypeForFormat(format: string): string {
   const normalized = format.toLowerCase();
   const mapping: Record<string, string> = {
