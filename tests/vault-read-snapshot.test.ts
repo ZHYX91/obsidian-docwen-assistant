@@ -5,6 +5,71 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it.each([
+    ["note.md", "md", "document", "text/markdown"],
+    ["letter.docx", "docx", "document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    ["layout.pdf", "pdf", "resource", "application/pdf"],
+    ["table.xlsx", "xlsx", "resource", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    ["scan.png", "png", "resource", "image/png"],
+    ["pages.tiff", "tiff", "resource", "image/tiff"],
+  ])(
+    "builds %s with the Core-compatible source kind",
+    async (filePath, extension, expectedKind, expectedMediaType) => {
+      const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+      const file = { path: filePath, extension };
+      const app = {
+        workspace: { getLeavesOfType: () => [] },
+        vault: { readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
+      };
+
+      await new VaultReadSnapshot(app as never).run(
+        file as never,
+        new AbortController().signal,
+        async (snapshot) => {
+          expect(snapshot.sourceInput).toMatchObject({
+            kind: expectedKind,
+            role: "source",
+            logicalPath: filePath,
+            mediaType: expectedMediaType,
+          });
+        },
+      );
+    },
+  );
+
+  it.each([
+    ["layout.pdf", "pdf", "application/pdf"],
+    ["table.xlsx", "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    ["scan.png", "png", "image/png"],
+    ["pages.tiff", "tiff", "image/tiff"],
+  ])(
+    "passes the actual %s snapshot through the resource input-slot contract",
+    async (filePath, extension, mediaType) => {
+      const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+      const { DocWenCapabilityService } = await import("../src/docwen/capability-service");
+      const file = { path: filePath, extension };
+      const app = {
+        workspace: { getLeavesOfType: () => [] },
+        vault: { readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
+      };
+      const service = new DocWenCapabilityService({} as never);
+      const route = {
+        capabilityId: "probe",
+        inputShape: {
+          undeclared_roles: "reject",
+          slots: [{ role: "source", kind: "resource", media_types: [mediaType], min_items: 1, max_items: 1 }],
+        },
+      } as never;
+
+      await new VaultReadSnapshot(app as never).run(
+        file as never,
+        new AbortController().signal,
+        async (snapshot) => {
+          expect(() => service.requireTaskInputs(route, [snapshot.sourceInput])).not.toThrow();
+        },
+      );
+    },
+  );
   it("passes a long raw source to proofreading without reading semantic metadata or plugins", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const source = "# 中文标题😀\n\n正文。\n".repeat(4_000);
