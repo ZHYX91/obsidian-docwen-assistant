@@ -5,6 +5,7 @@ import { copyTextToClipboard } from "../host/clipboard";
 import { showNotice, showNoticeWithAction } from "../host/notices";
 import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
 import { t, type Translations } from "../i18n";
+import { diagnosticCode } from "./diagnostic-details";
 import {
   OperationCoordinator,
   type OperationLease,
@@ -86,25 +87,50 @@ export class ActionRunner {
     new OperationDetailsModal(this.app, notice, detailsText).open();
   }
 
-  presentCompletion(summary: string, warnings: readonly OperationWarning[]): void {
-    if (warnings.length === 0) showNotice(summary);
-    else this.presentWarnings(warnings, summary, "completed_with_warnings");
+  presentCompletion(
+    summary: string,
+    warnings: readonly OperationWarning[],
+    diagnostics: readonly unknown[] = [],
+  ): void {
+    const safeDiagnostics = safeCompletionDiagnostics(diagnostics);
+    if (warnings.length === 0 && safeDiagnostics.length === 0) showNotice(summary);
+    else this.presentWarnings(warnings, summary, "completed_with_warnings", safeDiagnostics);
   }
 
   presentWarnings(
     warnings: readonly OperationWarning[],
     summary = "",
     status: "prepared_with_warnings" | "completed_with_warnings" | "cancelled" = "prepared_with_warnings",
+    diagnostics: readonly SafeCompletionDiagnostic[] = [],
   ): void {
-    if (warnings.length === 0) return;
+    if (warnings.length === 0 && diagnostics.length === 0) return;
     const message = [summary, t(status === "completed_with_warnings" ? "noticeCompletedWithWarnings" : "noticeCleanupWarning")]
       .filter(Boolean).join("\n");
-    const details = JSON.stringify({ status, warnings }, null, 2);
+    const details = JSON.stringify({ status, warnings, diagnostics }, null, 2);
     showNoticeWithAction(message, t("dialogDetails"), () => {
       new OperationDetailsModal(this.app, message, details).open();
     });
   }
 }
+
+type SafeCompletionDiagnostic = {
+  level: "warning" | "error";
+  code: string;
+};
+
+function safeCompletionDiagnostics(diagnostics: readonly unknown[]): SafeCompletionDiagnostic[] {
+  const result: SafeCompletionDiagnostic[] = [];
+  for (const diagnostic of diagnostics) {
+    if (typeof diagnostic !== "object" || diagnostic === null || Array.isArray(diagnostic)) continue;
+    const item = diagnostic as Record<string, unknown>;
+    if (item.level !== "warning" && item.level !== "error") continue;
+    const code = diagnosticCode(item.code);
+    if (!code) continue;
+    result.push({ level: item.level, code });
+  }
+  return result;
+}
+
 
 class DocWenSetupModal extends Modal {
   constructor(app: App, private readonly openSettings: (() => void) | null) {
