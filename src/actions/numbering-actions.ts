@@ -64,6 +64,7 @@ export class NumberingActions {
     signal: AbortSignal,
     scheme?: string,
   ): Promise<void> {
+    let diagnostics: readonly unknown[] = [];
     const warnings = await this.writer.run(
       file,
       async (inputPath, outputPath, originalSha256, transformSignal) => {
@@ -90,10 +91,11 @@ export class NumberingActions {
           transformSignal,
           file.path,
         );
+        diagnostics = outcome.diagnostics;
         return outcome.warnings;
       },
       signal,
     );
-    this.runner.presentCompletion(t("noticeNumberingSuccess", { filename: file.name }), warnings);
+    this.runner.presentCompletion(t("noticeNumberingSuccess", { filename: file.name }), warnings, diagnostics);
   }
 }
