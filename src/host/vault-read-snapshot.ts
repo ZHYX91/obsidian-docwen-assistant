@@ -7,7 +7,7 @@ import { setTimeout as yieldToHost } from "node:timers/promises";
 
 import { TFile, type App } from "obsidian";
 
-import { mediaTypeForPath, normalizeLogicalPath, type TaskInput } from "../docwen";
+import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type TaskInput } from "../docwen";
 import {
   isSameOpenMarkdownTarget,
   locateOpenMarkdownTarget,
@@ -109,7 +109,7 @@ export class VaultReadSnapshot {
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
-        kind: "document",
+        kind: sourceKindForPath(file.path),
         role: "source",
         logicalPath: logicalPathFor(file.path),
         mediaType: mediaTypeForPath(file.path),
