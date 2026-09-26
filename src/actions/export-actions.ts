@@ -175,6 +175,7 @@ export class ExportActions {
       this.runner.presentCompletion(
         t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
         [...completed.value.warnings, ...completed.warnings],
+        completed.value.diagnostics,
       );
     } else {
       this.runner.presentWarnings(completed.warnings);
