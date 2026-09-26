@@ -95,6 +95,27 @@ describe("ActionRunner", () => {
     expect(JSON.parse(state.copied[0])).toMatchObject({ warnings: [{ detailCode: "EACCES" }] });
   });
 
+  it("shows successful Core diagnostic codes without exposing diagnostic messages", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    const secret = "private source text C:\\Vault\\secret.md";
+
+    runner.presentCompletion("Exported result.md", [], [
+      { level: "info", code: "conversion.ok", message: secret },
+      { level: "warning", code: "audit.conversion_loss", message: secret },
+    ]);
+
+    expect(state.notices).toHaveLength(1);
+    expect(state.notices[0]).toContain("Exported result.md");
+    expect(state.notices[0]).toContain("result is available");
+    state.noticeActions[0]();
+    const details = allText(state.modals[0].contentEl);
+    expect(details).toContain("audit.conversion_loss");
+    expect(details).not.toContain("conversion.ok");
+    expect(details).not.toContain(secret);
+  });
+
   it("shows cleanup warnings on cancellation without claiming a result exists", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { recordFailureWarning } = await import("../src/docwen/operation-outcome");
