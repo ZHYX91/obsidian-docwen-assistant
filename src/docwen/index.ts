@@ -9,7 +9,7 @@ export type {
   ValidatedArtifactBundle,
   ValidatedBundleArtifact,
 } from "./machine-client";
-export { DocWenClient, mediaTypeForPath, normalizeLogicalPath } from "./client";
+export { DocWenClient, mediaTypeForPath, normalizeLogicalPath, sourceKindForPath } from "./client";
 export { captureOutputTarget } from "./output-files";
 export type { OperationWarning } from "./operation-outcome";
 export { captureOutputDirectory } from "./output-directory";

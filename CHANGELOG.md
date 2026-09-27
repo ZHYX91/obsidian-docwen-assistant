@@ -4,6 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-09-27
+
+- Match Core source input kinds for PDF, spreadsheet and image snapshots.
+- Preserve conversion diagnostics using the Machine severity field, show warning/error counts and keep conversion notices separate from cleanup failures.
+- Keep bounded diagnostic details free of source text and private paths.
+
 ## [3.1.0] - 2026-09-21
 
 ### Breaking changes

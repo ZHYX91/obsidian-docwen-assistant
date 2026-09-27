@@ -1,6 +1,7 @@
 /** Translation keys shared by every supported locale. */
 export interface Translations {
   noticeCompletedWithWarnings: string;
+  noticeConversionDiagnostics: string;
   noticeCleanupWarning: string;
   errorOutputUnconfirmed: string;
   dialogDiagnosticsPrivacy: string;

@@ -104,6 +104,7 @@ export interface ConversionOutcome {
   outputs: string[];
   bundleId: string;
   warnings: OperationWarning[];
+  diagnostics: JsonObject[];
 }
 
 export interface TemplateItem {
@@ -308,7 +309,11 @@ export class DocWenClient {
       }, signal);
       if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
-      return { ...outputs, bundleId: result.bundle.bundle_id };
+      return {
+        ...outputs,
+        bundleId: result.bundle.bundle_id,
+        diagnostics: result.diagnostics,
+      };
     });
   }
 
@@ -410,7 +415,12 @@ export class DocWenClient {
         signal,
       );
       const committed = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
-      return { output: committed.outputs[0], ...committed, bundleId: result.bundle.bundle_id };
+      return {
+        output: committed.outputs[0],
+        ...committed,
+        bundleId: result.bundle.bundle_id,
+        diagnostics: result.diagnostics,
+      };
     });
   }
 
@@ -972,6 +982,22 @@ function normalizeCapability(item: JsonObject): MachineCapability {
 
 export function mediaTypeForPath(filePath: string): string {
   return mediaTypeForFormat(path.extname(filePath).slice(1));
+}
+
+const DOCUMENT_SOURCE_FORMATS = new Set([
+  "md",
+  "markdown",
+  "txt",
+  "docx",
+  "doc",
+  "odt",
+  "rtf",
+  "wps",
+]);
+
+export function sourceKindForPath(filePath: string): TaskInput["kind"] {
+  const format = path.extname(filePath).slice(1).toLowerCase();
+  return DOCUMENT_SOURCE_FORMATS.has(format) ? "document" : "resource";
 }
 
 function mediaTypeForFormat(format: string): string {
