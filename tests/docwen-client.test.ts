@@ -21,6 +21,8 @@ import type {
 
 const roots: string[] = [];
 
+vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
+
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
@@ -188,6 +190,54 @@ function conversionQuery(file: string, capability = conversionCapability(), form
 }
 
 describe("DocWenClient Machine semantics", () => {
+  it.each([
+    ["pdf", "application/pdf"],
+    ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    ["png", "image/png"],
+    ["tiff", "image/tiff"],
+  ])("submits an actual %s Vault snapshot through conversion and publication", async (extension, mediaType) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const root = await temporaryRoot();
+    const original = Buffer.from("snapshot bytes");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => Uint8Array.from(original).buffer },
+    };
+    const capability: MachineCapability = {
+      ...conversionCapability(), capability_id: "convert.resource.to_markdown",
+      input_shape: { slots: [{ role: "source", kind: "resource", media_types: [mediaType], min_items: 1, max_items: 1 }], undeclared_roles: "reject" },
+      output_media_types: ["text/markdown"], options_schema: { type: "object", properties: {}, additionalProperties: false },
+    };
+    await new VaultReadSnapshot(app as never).run(
+      { path: `inputs/source.${extension}`, extension } as never,
+      new AbortController().signal,
+      async (snapshot) => {
+        const query = vi.fn(async () => ({
+          ...inspection(snapshot.sourceInput.path), declared_format: extension, detected_format: extension,
+          media_type: mediaType, size_bytes: original.length,
+          content_sha256: createHash("sha256").update(original).digest("hex"),
+        }));
+        const runTask = vi.fn(async (request: MachineTaskRequest) => {
+          expect(request.inputs).toHaveLength(1);
+          expect(request.inputs[0]).toMatchObject({ kind: "resource", role: "source", media_type: mediaType });
+          expect(await readFile(snapshot.sourceInput.path)).toEqual(original);
+          const artifact = path.join(request.output.staging_root.path, "result.md");
+          const bytes = Buffer.from("# Converted\n");
+          await writeFile(artifact, bytes);
+          const bundle = bundleFor("snapshot-task", artifact, "text/markdown", "document", bytes);
+          bundle.layout_schema = "docwen.document_node.v1";
+          bundle.artifacts[0].logical_path = "result/result.md";
+          return { taskId: "snapshot-task", plan: {}, bundle, diagnostics: [], metrics: {} };
+        });
+        const result = await new DocWenClient(machine(query, runTask)).convert({
+          inputs: [snapshot.sourceInput], target: "md", selectedCapability: capability, outputDirectory: root,
+        });
+        expect(runTask).toHaveBeenCalledTimes(1);
+        expect(await readFile(result.output, "utf8")).toBe("# Converted\n");
+      },
+    );
+  });
+
   it.each([false, true])("executes a discovered legacy Word optimizer with its own capability and options (prepared=%s)", async (prepared) => {
     const root = await temporaryRoot();
     const source = path.join(root, "letter.rtf");
