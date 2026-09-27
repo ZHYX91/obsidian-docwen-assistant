@@ -102,18 +102,50 @@ describe("ActionRunner", () => {
     const secret = "private source text C:\\Vault\\secret.md";
 
     runner.presentCompletion("Exported result.md", [], [
-      { level: "info", code: "conversion.ok", message: secret },
-      { level: "warning", code: "audit.conversion_loss", message: secret },
+      { severity: "info", code: "conversion.ok", message: secret },
+      { severity: "warning", code: "audit.conversion_loss", message: secret },
     ]);
 
     expect(state.notices).toHaveLength(1);
     expect(state.notices[0]).toContain("Exported result.md");
-    expect(state.notices[0]).toContain("result is available");
+    expect(state.notices[0]).toContain("1 warning");
+    expect(state.notices[0]).not.toContain("cleanup");
     state.noticeActions[0]();
     const details = allText(state.modals[0].contentEl);
     expect(details).toContain("audit.conversion_loss");
     expect(details).not.toContain("conversion.ok");
     expect(details).not.toContain(secret);
+  });
+
+  it("counts wire diagnostics separately from cleanup warnings and redacts unsafe codes", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator());
+    runner.presentCompletion("Exported result.md", [
+      { code: "output_cleanup_failed", phase: "cleanup", detailCode: "EACCES" },
+    ], [
+      { severity: "warning", code: "conversion.loss", message: "private text" },
+      { severity: "warning", code: "C:\\private\\note.md", message: "private text" },
+      { severity: "error", code: "conversion.partial", message: "private text" },
+    ]);
+    expect(state.notices[0]).toContain("2 warning(s), 1 error(s)");
+    expect(state.notices[0]).toContain("cleanup");
+    state.noticeActions[0]();
+    const details = allText(state.modals[0].contentEl);
+    expect(details).toContain('"severity": "warning"');
+    expect(details).toContain("docwen.diagnostic");
+    expect(details).toContain("output_cleanup_failed");
+    expect(details).not.toContain("private");
+  });
+
+  it("does not label an informational wire diagnostic as a warning", async () => {
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    new ActionRunner({} as never, new OperationCoordinator()).presentCompletion("Exported result.md", [], [
+      { severity: "info", code: "conversion.ok", message: "Completed" },
+    ]);
+    expect(state.notices).toEqual(["Exported result.md"]);
+    expect(state.noticeActions).toHaveLength(0);
   });
 
   it("shows cleanup warnings on cancellation without claiming a result exists", async () => {

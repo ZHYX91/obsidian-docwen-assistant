@@ -210,7 +210,7 @@ describe("DocWenClient Machine semantics", () => {
         taskId: "task.1",
         plan: {},
         bundle,
-        diagnostics: [{ level: "warning", code: "audit.conversion_loss", message: "sensitive source detail" }],
+        diagnostics: [{ severity: "warning", code: "audit.conversion_loss", message: "sensitive source detail" }],
         metrics: {},
       };
     });
@@ -226,7 +226,7 @@ describe("DocWenClient Machine semantics", () => {
     expect(query.mock.calls.map(([method]) => method)).toEqual(prepared ? ["file/inspect"] : ["file/inspect", "capability/list"]);
     expect(await readFile(result.output, "utf8")).toBe("# Optimized\n");
     expect(result.diagnostics).toEqual([
-      { level: "warning", code: "audit.conversion_loss", message: "sensitive source detail" },
+      { severity: "warning", code: "audit.conversion_loss", message: "sensitive source detail" },
     ]);
     expect(await readFile(source, "utf8")).toBe("RTF fixture");
   });

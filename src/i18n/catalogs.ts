@@ -6,6 +6,7 @@ export const translations: Record<string, Translations> = {
   "zh-cn": {
     dialogDiagnosticsPrivacy: "诊断仅包含错误代码、状态和版本等信息；不包含原始异常、文档正文、本地路径或凭据。",
     noticeCompletedWithWarnings: "结果已保留，但清理或后续操作未完成。请先查看详情，避免重复执行。",
+    noticeConversionDiagnostics: "转换诊断：{warnings} 条警告，{errors} 条错误。请查看详情。",
     noticeCleanupWarning: "临时数据清理未完成，请查看详情。",
     errorOutputUnconfirmed: "无法确认写入结果。请先检查目标内容，避免重复执行。",
     dialogContinue: "继续",
@@ -235,6 +236,7 @@ export const translations: Record<string, Translations> = {
   "zh-tw": {
     dialogDiagnosticsPrivacy: "診斷僅包含錯誤代碼、狀態和版本等資訊；不包含原始例外、文件內文、本機路徑或憑證。",
     noticeCompletedWithWarnings: "結果已保留，但清理或後續操作未完成。請先查看詳情，避免重複執行。",
+    noticeConversionDiagnostics: "轉換診斷：{warnings} 則警告，{errors} 則錯誤。請查看詳情。",
     noticeCleanupWarning: "暫存資料清理未完成，請查看詳情。",
     errorOutputUnconfirmed: "無法確認寫入結果。請先檢查目標內容，避免重複執行。",
     dialogContinue: "繼續",
@@ -464,6 +466,7 @@ export const translations: Record<string, Translations> = {
   "en": {
     dialogDiagnosticsPrivacy: "Diagnostics include codes, states and versions. Raw exceptions, document text, local paths and credentials are omitted.",
     noticeCompletedWithWarnings: "The result is available, but cleanup or a follow-up step did not finish. View details before running again.",
+    noticeConversionDiagnostics: "Conversion diagnostics: {warnings} warning(s), {errors} error(s). View details.",
     noticeCleanupWarning: "Temporary data cleanup did not finish. View details.",
     errorOutputUnconfirmed: "The write result could not be confirmed. Check the destination before running again.",
     dialogContinue: "Continue",
@@ -693,6 +696,7 @@ export const translations: Record<string, Translations> = {
   "de": {
     dialogDiagnosticsPrivacy: "Die Diagnose enthält Codes, Status und Versionen. Rohe Fehlermeldungen, Dokumenttext, lokale Pfade und Zugangsdaten werden ausgelassen.",
     noticeCompletedWithWarnings: "Das Ergebnis ist verfügbar, aber die Bereinigung oder ein Folgeschritt wurde nicht abgeschlossen. Prüfen Sie die Details vor einer erneuten Ausführung.",
+    noticeConversionDiagnostics: "Konvertierungsdiagnosen: {warnings} Warnung(en), {errors} Fehler. Details anzeigen.",
     noticeCleanupWarning: "Temporäre Daten konnten nicht vollständig bereinigt werden. Details anzeigen.",
     errorOutputUnconfirmed: "Das Schreibergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel vor einer erneuten Ausführung.",
     dialogContinue: "Fortfahren",
@@ -922,6 +926,7 @@ export const translations: Record<string, Translations> = {
   "fr": {
     dialogDiagnosticsPrivacy: "Le diagnostic contient les codes, états et versions. Les exceptions brutes, le texte des documents, les chemins locaux et les identifiants sont omis.",
     noticeCompletedWithWarnings: "Le résultat est disponible, mais le nettoyage ou une étape suivante reste incomplet. Consultez les détails avant de relancer.",
+    noticeConversionDiagnostics: "Diagnostics de conversion : {warnings} avertissement(s), {errors} erreur(s). Consultez les détails.",
     noticeCleanupWarning: "Le nettoyage des données temporaires est incomplet. Consultez les détails.",
     errorOutputUnconfirmed: "Le résultat de l’écriture n’a pas pu être confirmé. Vérifiez la destination avant de relancer.",
     dialogContinue: "Continuer",
@@ -1151,6 +1156,7 @@ export const translations: Record<string, Translations> = {
   "ru": {
     dialogDiagnosticsPrivacy: "Диагностика содержит коды, состояния и версии. Исходные исключения, текст документов, локальные пути и учётные данные исключены.",
     noticeCompletedWithWarnings: "Результат сохранён, но очистка или последующее действие не завершены. Просмотрите сведения перед повторным запуском.",
+    noticeConversionDiagnostics: "Диагностика преобразования: предупреждений — {warnings}, ошибок — {errors}. Просмотрите сведения.",
     noticeCleanupWarning: "Очистка временных данных не завершена. Просмотрите сведения.",
     errorOutputUnconfirmed: "Не удалось подтвердить результат записи. Проверьте целевой файл перед повторным запуском.",
     dialogContinue: "Продолжить",
@@ -1380,6 +1386,7 @@ export const translations: Record<string, Translations> = {
   "pt": {
     dialogDiagnosticsPrivacy: "O diagnóstico inclui códigos, estados e versões. Exceções brutas, texto de documentos, caminhos locais e credenciais são omitidos.",
     noticeCompletedWithWarnings: "O resultado está disponível, mas a limpeza ou uma etapa posterior não foi concluída. Veja os detalhes antes de executar novamente.",
+    noticeConversionDiagnostics: "Diagnóstico da conversão: {warnings} aviso(s), {errors} erro(s). Veja os detalhes.",
     noticeCleanupWarning: "A limpeza dos dados temporários não foi concluída. Veja os detalhes.",
     errorOutputUnconfirmed: "Não foi possível confirmar o resultado da gravação. Verifique o destino antes de executar novamente.",
     dialogContinue: "Continuar",
@@ -1609,6 +1616,7 @@ export const translations: Record<string, Translations> = {
   "ja": {
     dialogDiagnosticsPrivacy: "診断にはコード、状態、バージョンが含まれます。例外の原文、文書本文、ローカルパス、認証情報は含まれません。",
     noticeCompletedWithWarnings: "結果は保持されていますが、後片付けまたは後続処理が完了していません。再実行する前に詳細を確認してください。",
+    noticeConversionDiagnostics: "変換診断：警告 {warnings} 件、エラー {errors} 件。詳細を確認してください。",
     noticeCleanupWarning: "一時データの削除が完了していません。詳細を確認してください。",
     errorOutputUnconfirmed: "書き込み結果を確認できませんでした。再実行する前に保存先を確認してください。",
     dialogContinue: "続行",
@@ -1837,6 +1845,7 @@ export const translations: Record<string, Translations> = {
   "ko": {
     dialogDiagnosticsPrivacy: "진단에는 코드, 상태 및 버전이 포함됩니다. 원본 예외, 문서 내용, 로컬 경로 및 자격 증명은 제외됩니다.",
     noticeCompletedWithWarnings: "결과는 보존되었지만 정리 또는 후속 작업이 완료되지 않았습니다. 다시 실행하기 전에 자세한 내용을 확인하세요.",
+    noticeConversionDiagnostics: "변환 진단: 경고 {warnings}개, 오류 {errors}개. 자세한 내용을 확인하세요.",
     noticeCleanupWarning: "임시 데이터 정리가 완료되지 않았습니다. 자세한 내용을 확인하세요.",
     errorOutputUnconfirmed: "쓰기 결과를 확인할 수 없습니다. 다시 실행하기 전에 대상을 확인하세요.",
     dialogContinue: "계속",
@@ -2065,6 +2074,7 @@ export const translations: Record<string, Translations> = {
   "es": {
     dialogDiagnosticsPrivacy: "El diagnóstico incluye códigos, estados y versiones. Se omiten las excepciones sin procesar, el texto de documentos, las rutas locales y las credenciales.",
     noticeCompletedWithWarnings: "El resultado está disponible, pero la limpieza o un paso posterior no ha finalizado. Revise los detalles antes de volver a ejecutar.",
+    noticeConversionDiagnostics: "Diagnóstico de conversión: {warnings} advertencia(s), {errors} error(es). Consulte los detalles.",
     noticeCleanupWarning: "La limpieza de los datos temporales no ha finalizado. Consulte los detalles.",
     errorOutputUnconfirmed: "No se pudo confirmar el resultado de la escritura. Revise el destino antes de volver a ejecutar.",
     dialogContinue: "Continuar",
@@ -2293,6 +2303,7 @@ export const translations: Record<string, Translations> = {
   "vi": {
     dialogDiagnosticsPrivacy: "Chẩn đoán gồm mã, trạng thái và phiên bản. Ngoại lệ thô, nội dung tài liệu, đường dẫn cục bộ và thông tin xác thực được lược bỏ.",
     noticeCompletedWithWarnings: "Kết quả đã được giữ lại, nhưng việc dọn dẹp hoặc bước tiếp theo chưa hoàn tất. Hãy xem chi tiết trước khi chạy lại.",
+    noticeConversionDiagnostics: "Chẩn đoán chuyển đổi: {warnings} cảnh báo, {errors} lỗi. Xem chi tiết.",
     noticeCleanupWarning: "Việc dọn dẹp dữ liệu tạm thời chưa hoàn tất. Hãy xem chi tiết.",
     errorOutputUnconfirmed: "Không thể xác nhận kết quả ghi. Hãy kiểm tra đích trước khi chạy lại.",
     dialogContinue: "Tiếp tục",

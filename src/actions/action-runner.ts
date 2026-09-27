@@ -104,7 +104,14 @@ export class ActionRunner {
     diagnostics: readonly SafeCompletionDiagnostic[] = [],
   ): void {
     if (warnings.length === 0 && diagnostics.length === 0) return;
-    const message = [summary, t(status === "completed_with_warnings" ? "noticeCompletedWithWarnings" : "noticeCleanupWarning")]
+    const message = [
+      summary,
+      diagnostics.length > 0 ? t("noticeConversionDiagnostics", {
+        warnings: String(diagnostics.filter((item) => item.severity === "warning").length),
+        errors: String(diagnostics.filter((item) => item.severity === "error").length),
+      }) : "",
+      warnings.length > 0 ? t(status === "completed_with_warnings" ? "noticeCompletedWithWarnings" : "noticeCleanupWarning") : "",
+    ]
       .filter(Boolean).join("\n");
     const details = JSON.stringify({ status, warnings, diagnostics }, null, 2);
     showNoticeWithAction(message, t("dialogDetails"), () => {
@@ -114,7 +121,7 @@ export class ActionRunner {
 }
 
 type SafeCompletionDiagnostic = {
-  level: "warning" | "error";
+  severity: "warning" | "error";
   code: string;
 };
 
@@ -123,10 +130,9 @@ function safeCompletionDiagnostics(diagnostics: readonly unknown[]): SafeComplet
   for (const diagnostic of diagnostics) {
     if (typeof diagnostic !== "object" || diagnostic === null || Array.isArray(diagnostic)) continue;
     const item = diagnostic as Record<string, unknown>;
-    if (item.level !== "warning" && item.level !== "error") continue;
+    if (item.severity !== "warning" && item.severity !== "error") continue;
     const code = diagnosticCode(item.code);
-    if (!code) continue;
-    result.push({ level: item.level, code });
+    result.push({ severity: item.severity, code: code || "docwen.diagnostic" });
   }
   return result;
 }
