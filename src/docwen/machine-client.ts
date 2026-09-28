@@ -449,12 +449,23 @@ class MachineSession {
     this.normalClose = true;
     if (this.ownedLinuxProcessGroupId !== null) {
       const groupId = this.ownedLinuxProcessGroupId;
+      const evidence: LinuxProcessGroupEvidence = { hardIssues: [] };
       await this.captureLinuxOwnership();
-      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, false);
+      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, evidence, false);
       this.child.stdin.destroy();
-      if (await waitForLinuxProcessGroupExit(groupId, this.knownLinuxProcesses, TERMINATION_GRACE_MS)) return;
-      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, true);
-      if (await waitForLinuxProcessGroupExit(groupId, this.knownLinuxProcesses, FORCE_KILL_WAIT_MS)) return;
+      if (await waitForLinuxProcessGroupExit(
+        groupId,
+        this.knownLinuxProcesses,
+        evidence,
+        TERMINATION_GRACE_MS,
+      )) return;
+      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, evidence, true);
+      if (await waitForLinuxProcessGroupExit(
+        groupId,
+        this.knownLinuxProcesses,
+        evidence,
+        FORCE_KILL_WAIT_MS,
+      )) return;
       throw new LocalCliError(
         "cli_cleanup_failed",
         "Unable to terminate every live member of the DocWen process group.",
@@ -507,7 +518,12 @@ class MachineSession {
       }
     }
     if (process.platform === "linux" && this.ownedLinuxProcessGroupId !== null) {
-      await signalLinuxProcessGroup(this.ownedLinuxProcessGroupId, this.knownLinuxProcesses, force);
+      await signalLinuxProcessGroup(
+        this.ownedLinuxProcessGroupId,
+        this.knownLinuxProcesses,
+        { hardIssues: [] },
+        force,
+      );
       return;
     }
     if (process.platform !== "win32" && typeof pid === "number" && pid > 0) {
@@ -1181,6 +1197,7 @@ type LinuxProcessIssueKind =
 type LinuxProcessGroupIssue = {
   kind: LinuxProcessIssueKind;
   systemCode?: string;
+  identity?: LinuxProcessIdentity;
 };
 
 type LinuxProcessIdentity = {
@@ -1197,6 +1214,10 @@ type LinuxProcessMetadata = LinuxProcessIdentity & {
 type LinuxProcessGroupInspection = {
   members: LinuxProcessIdentity[];
   issues: LinuxProcessGroupIssue[];
+};
+
+type LinuxProcessGroupEvidence = {
+  hardIssues: LinuxProcessGroupIssue[];
 };
 
 function bootstrapLinuxProcessIdentity(
@@ -1239,19 +1260,26 @@ async function captureLinuxProcessOwnership(
 async function signalLinuxProcessGroup(
   groupId: number,
   knownProcesses: Map<number, string>,
+  evidence: LinuxProcessGroupEvidence,
   force: boolean,
 ): Promise<void> {
   const inspection = await inspectLinuxProcessGroup(groupId, knownProcesses);
+  rememberHardLinuxIssues(evidence, inspection.issues);
+  const issues = mergeLinuxIssues(inspection.issues, evidence.hardIssues);
   if (inspection.members.length === 0) {
-    if (inspection.issues.length > 0) throw linuxProcessGroupUnconfirmed(inspection);
+    if (issues.length > 0) {
+      throw linuxProcessGroupUnconfirmed({ members: [], issues });
+    }
     return;
   }
 
   const anchor = await findCurrentLinuxSignalAnchor(groupId, inspection.members);
   if (!anchor) {
+    const anchorIssue: LinuxProcessGroupIssue = { kind: "identity_changed" };
+    rememberHardLinuxIssues(evidence, [anchorIssue]);
     throw linuxProcessGroupUnconfirmed({
       members: [],
-      issues: [...inspection.issues, { kind: "identity_changed" }],
+      issues: mergeLinuxIssues(issues, evidence.hardIssues),
     });
   }
   try {
@@ -1265,13 +1293,18 @@ async function signalLinuxProcessGroup(
 async function waitForLinuxProcessGroupExit(
   groupId: number,
   knownProcesses: Map<number, string>,
+  evidence: LinuxProcessGroupEvidence,
   timeoutMs: number,
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (true) {
     const inspection = await inspectLinuxProcessGroup(groupId, knownProcesses);
+    rememberHardLinuxIssues(evidence, inspection.issues);
     if (inspection.members.length === 0) {
-      if (inspection.issues.length > 0) throw linuxProcessGroupUnconfirmed(inspection);
+      const issues = mergeLinuxIssues(inspection.issues, evidence.hardIssues);
+      if (issues.length > 0) {
+        throw linuxProcessGroupUnconfirmed({ members: [], issues });
+      }
       return true;
     }
     const remaining = deadline - Date.now();
@@ -1301,22 +1334,38 @@ async function inspectLinuxProcessGroup(
     issues.push(linuxProcessGroupIssue(error));
   }
 
+  const candidateSet = new Set(candidatePids);
+  const confirmedDead = new Set<string>();
+  if (procEnumerationComplete) {
+    for (const [pid, startTime] of knownProcesses) {
+      if (!candidateSet.has(pid)) {
+        confirmedDead.add(linuxIdentityKey({ pid, startTime }));
+      }
+    }
+  }
+
   const members: LinuxProcessIdentity[] = [];
-  for (const pid of new Set(candidatePids)) {
+  for (const pid of candidateSet) {
+    const expectedStartTime = knownProcesses.get(pid);
     try {
       const metadata = await readLinuxProcessMetadata(pid);
-      const expectedStartTime = knownProcesses.get(pid);
       if (expectedStartTime !== undefined) {
+        const identity = { pid, startTime: expectedStartTime };
         if (metadata.startTime !== expectedStartTime) {
-          issues.push({ kind: "identity_changed" });
+          issues.push({ kind: "identity_changed", identity });
           continue;
         }
         if (metadata.processGroup !== groupId || metadata.session !== groupId) {
-          issues.push({ kind: "group_changed" });
+          issues.push({ kind: "group_changed", identity });
+          if (!isLiveLinuxProcessState(metadata.state)) {
+            confirmedDead.add(linuxIdentityKey(identity));
+          }
           continue;
         }
         if (isLiveLinuxProcessState(metadata.state)) {
-          members.push({ pid, startTime: expectedStartTime });
+          members.push(identity);
+        } else {
+          confirmedDead.add(linuxIdentityKey(identity));
         }
         continue;
       }
@@ -1329,23 +1378,26 @@ async function inspectLinuxProcessGroup(
       }
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-        knownProcesses.delete(pid);
+        if (expectedStartTime !== undefined) {
+          confirmedDead.add(linuxIdentityKey({ pid, startTime: expectedStartTime }));
+          knownProcesses.delete(pid);
+        }
         continue;
       }
       issues.push(linuxProcessGroupIssue(error));
     }
   }
-  if (
-    members.length === 0
-    && procEnumerationComplete
-    && issues.length > 0
-    && issues.every((issue) => issue.kind === "task_changed")
-  ) {
-    // A thread or its parent can disappear while stat -> children -> stat is
-    // being sampled during normal exit. Once a complete /proc scan proves
-    // there are no live members (known or unknown) left in the owned group,
-    // that topology race has converged and must not poison the final result.
-    issues = [];
+
+  if (members.length === 0 && procEnumerationComplete) {
+    issues = issues.filter((issue) => {
+      if (
+        (issue.kind !== "task_changed" && issue.kind !== "group_changed")
+        || issue.identity === undefined
+      ) {
+        return true;
+      }
+      return !confirmedDead.has(linuxIdentityKey(issue.identity));
+    });
   }
   return { members, issues };
 }
@@ -1363,6 +1415,7 @@ async function discoverKnownLinuxDescendants(
     visited.add(pid);
     const expectedStartTime = knownProcesses.get(pid);
     if (expectedStartTime === undefined) continue;
+    const parentIdentity = { pid, startTime: expectedStartTime };
 
     let parentBefore: LinuxProcessMetadata;
     try {
@@ -1376,11 +1429,11 @@ async function discoverKnownLinuxDescendants(
       continue;
     }
     if (parentBefore.startTime !== expectedStartTime) {
-      issues.push({ kind: "identity_changed" });
+      issues.push({ kind: "identity_changed", identity: parentIdentity });
       continue;
     }
     if (parentBefore.processGroup !== groupId || parentBefore.session !== groupId) {
-      issues.push({ kind: "group_changed" });
+      issues.push({ kind: "group_changed", identity: parentIdentity });
       continue;
     }
 
@@ -1391,7 +1444,7 @@ async function discoverKnownLinuxDescendants(
         .map(Number);
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-        issues.push({ kind: "task_changed" });
+        issues.push({ kind: "task_changed", identity: parentIdentity });
       } else {
         issues.push(linuxProcessGroupIssue(error));
       }
@@ -1403,6 +1456,7 @@ async function discoverKnownLinuxDescendants(
         groupId,
         pid,
         taskId,
+        parentIdentity,
         knownProcesses,
         queue,
       );
@@ -1412,13 +1466,13 @@ async function discoverKnownLinuxDescendants(
     try {
       const parentAfter = await readLinuxProcessMetadata(pid);
       if (parentAfter.startTime !== expectedStartTime) {
-        issues.push({ kind: "identity_changed" });
+        issues.push({ kind: "identity_changed", identity: parentIdentity });
       } else if (parentAfter.processGroup !== groupId || parentAfter.session !== groupId) {
-        issues.push({ kind: "group_changed" });
+        issues.push({ kind: "group_changed", identity: parentIdentity });
       }
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-        issues.push({ kind: "task_changed" });
+        issues.push({ kind: "task_changed", identity: parentIdentity });
       } else {
         issues.push(linuxProcessGroupIssue(error));
       }
@@ -1431,6 +1485,7 @@ async function discoverLinuxTaskChildren(
   groupId: number,
   processId: number,
   taskId: number,
+  ownerIdentity: LinuxProcessIdentity,
   knownProcesses: Map<number, string>,
   queue: number[],
 ): Promise<LinuxProcessGroupIssue[]> {
@@ -1440,13 +1495,15 @@ async function discoverLinuxTaskChildren(
     taskBefore = await readLinuxTaskMetadata(processId, taskId);
   } catch (error) {
     if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-      return [{ kind: "task_changed" }];
+      return [{ kind: "task_changed", identity: ownerIdentity }];
     }
     return [linuxProcessGroupIssue(error)];
   }
-  if (taskBefore.pid !== taskId) return [{ kind: "task_changed" }];
+  if (taskBefore.pid !== taskId) {
+    return [{ kind: "task_changed", identity: ownerIdentity }];
+  }
   if (taskBefore.processGroup !== groupId || taskBefore.session !== groupId) {
-    return [{ kind: "group_changed" }];
+    return [{ kind: "group_changed", identity: ownerIdentity }];
   }
 
   let children: string;
@@ -1454,7 +1511,7 @@ async function discoverLinuxTaskChildren(
     children = await readFile(`/proc/${processId}/task/${taskId}/children`, "utf8");
   } catch (error) {
     if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-      return [{ kind: "task_changed" }];
+      return [{ kind: "task_changed", identity: ownerIdentity }];
     }
     return [linuxProcessGroupIssue(error)];
   }
@@ -1464,7 +1521,7 @@ async function discoverLinuxTaskChildren(
     taskAfter = await readLinuxTaskMetadata(processId, taskId);
   } catch (error) {
     if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-      return [{ kind: "task_changed" }];
+      return [{ kind: "task_changed", identity: ownerIdentity }];
     }
     return [linuxProcessGroupIssue(error)];
   }
@@ -1474,7 +1531,7 @@ async function discoverLinuxTaskChildren(
     || taskAfter.processGroup !== taskBefore.processGroup
     || taskAfter.session !== taskBefore.session
   ) {
-    return [{ kind: "task_changed" }];
+    return [{ kind: "task_changed", identity: ownerIdentity }];
   }
 
   for (const child of children.trim().split(/\s+/u)) {
@@ -1488,11 +1545,19 @@ async function discoverLinuxTaskChildren(
         || metadata.session !== groupId
         || !isLiveLinuxProcessState(metadata.state)
       ) {
-        if (existingStartTime !== undefined) issues.push({ kind: "group_changed" });
+        if (existingStartTime !== undefined) {
+          issues.push({
+            kind: "group_changed",
+            identity: { pid: childPid, startTime: existingStartTime },
+          });
+        }
         continue;
       }
       if (existingStartTime !== undefined && metadata.startTime !== existingStartTime) {
-        issues.push({ kind: "identity_changed" });
+        issues.push({
+          kind: "identity_changed",
+          identity: { pid: childPid, startTime: existingStartTime },
+        });
         continue;
       }
       if (existingStartTime === undefined) {
@@ -1592,8 +1657,7 @@ function linuxProcessGroupIssue(error: unknown): LinuxProcessGroupIssue {
 
 function linuxProcessGroupUnconfirmed(inspection: LinuxProcessGroupInspection): LocalCliError {
   const systemCode = inspection.issues.map((issue) => issue.systemCode).find((code) => code !== undefined);
-  const ownershipIssue = inspection.issues[0]?.kind;
-  const ownershipIssues = [...new Set(inspection.issues.map((issue) => issue.kind))];
+  const ownershipIssue = primaryLinuxOwnershipIssue(inspection.issues);
   return new LocalCliError(
     "cli_cleanup_failed",
     "Unable to confirm that every owned DocWen process-group member exited.",
@@ -1602,10 +1666,61 @@ function linuxProcessGroupUnconfirmed(inspection: LinuxProcessGroupInspection): 
       ownershipState: "unconfirmed",
       unconfirmedEvidenceCount: inspection.issues.length,
       ...(ownershipIssue ? { ownershipIssue } : {}),
-      ownershipIssues,
       ...(systemCode ? { systemCode } : {}),
     },
   );
+}
+
+function primaryLinuxOwnershipIssue(
+  issues: readonly LinuxProcessGroupIssue[],
+): LinuxProcessIssueKind | undefined {
+  const priority: readonly LinuxProcessIssueKind[] = [
+    "proc_namespace_mismatch",
+    "identity_changed",
+    "proc_unreadable",
+    "unknown_group_member",
+    "group_changed",
+    "task_changed",
+  ];
+  return priority.find((kind) => issues.some((issue) => issue.kind === kind));
+}
+
+function rememberHardLinuxIssues(
+  evidence: LinuxProcessGroupEvidence,
+  issues: readonly LinuxProcessGroupIssue[],
+): void {
+  for (const issue of issues) {
+    if (issue.kind === "task_changed" || issue.kind === "group_changed") continue;
+    const key = linuxIssueKey(issue);
+    if (!evidence.hardIssues.some((existing) => linuxIssueKey(existing) === key)) {
+      evidence.hardIssues.push(issue);
+    }
+  }
+}
+
+function mergeLinuxIssues(
+  current: readonly LinuxProcessGroupIssue[],
+  hard: readonly LinuxProcessGroupIssue[],
+): LinuxProcessGroupIssue[] {
+  const merged: LinuxProcessGroupIssue[] = [];
+  for (const issue of [...current, ...hard]) {
+    const key = linuxIssueKey(issue);
+    if (!merged.some((existing) => linuxIssueKey(existing) === key)) merged.push(issue);
+  }
+  return merged;
+}
+
+function linuxIssueKey(issue: LinuxProcessGroupIssue): string {
+  return [
+    issue.kind,
+    issue.systemCode ?? "",
+    issue.identity?.pid ?? "",
+    issue.identity?.startTime ?? "",
+  ].join(":");
+}
+
+function linuxIdentityKey(identity: LinuxProcessIdentity): string {
+  return `${identity.pid}:${identity.startTime}`;
 }
 
 function linuxProcessGroupError(message: string, error: unknown): LocalCliError {

@@ -345,25 +345,9 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
       pids = await waitForPids(fixture.pidFile);
       await waitForTraceEvent(fixture.workerTraceFile, "health_seen");
       client.dispose();
-      const outcome = await pending.then(
-        () => ({ code: "resolved", details: null }),
-        (error: unknown) => ({
-          code: typeof error === "object" && error !== null && "code" in error ? String(error.code) : "unknown",
-          details: typeof error === "object" && error !== null && "details" in error
-            ? (error.details as Record<string, unknown>)
-            : null,
-        }),
-      );
-      if (outcome.code !== "cli_cancelled") {
-        throw new Error(`cooperative cleanup outcome ${JSON.stringify({
-          code: outcome.code,
-          cleanupState: outcome.details?.cleanupState,
-          ownershipIssue: outcome.details?.ownershipIssue,
-          ownershipIssues: outcome.details?.ownershipIssues,
-          unconfirmedEvidenceCount: outcome.details?.unconfirmedEvidenceCount,
-          systemCode: outcome.details?.systemCode,
-        })}`);
-      }
+      await waitForTraceEvent(fixture.rootTraceFile, "root_term");
+      await waitForTraceEvent(fixture.helperTraceFile, "helper_exit");
+      await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
       expect(await readTraceEvents(fixture.rootTraceFile)).toContain("root_term");
       const helperEvents = await readTraceEvents(fixture.helperTraceFile);
       expect(helperEvents).toContain("helper_term");
