@@ -1,3 +1,4 @@
+import { spawn, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,7 +21,7 @@ afterEach(async () => {
 });
 
 describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process ownership", () => {
-  it("terminates a detached process group even when the root exits and its descendant resists SIGTERM", async () => {
+  it("terminates a detached process group after the root exits while a descendant resists SIGTERM", async () => {
     const fixture = await createFixture("timeout", "resistant");
     const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
     let pids: number[] = [];
@@ -30,10 +31,8 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
         code: "cli_timeout",
       });
       pids = await waitForPids(fixture.pidFile);
-      expect(pids).toHaveLength(2);
-      const events = await readTraceEvents(fixture.traceFile);
-      expect(events).toContain("root_term");
-      expect(events).toContain("helper_term");
+      expect(pids).toHaveLength(3);
+      await assertResistantTerminationEvidence(fixture);
       for (const pid of pids) await expectProcessNotLive(pid);
     } finally {
       client.dispose();
@@ -42,7 +41,7 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
   }, 10_000);
 
   it.each(["query", "task", "cancel"] as const)(
-    "handles a real server closing fd 0 before a %s write and removes a resistant descendant",
+    "handles a real server closing its only pipe read fd before a %s write",
     async (phase) => {
       const fixture = await createFixture(phase, "resistant");
       const staging = path.join(fixture.root, "staging");
@@ -58,8 +57,19 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
       const controller = new AbortController();
       const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
       let pids: number[] = [];
+      let unrelated: ChildProcess | null = null;
 
       try {
+        if (phase === "task") {
+          unrelated = spawn(process.execPath, ["-e", "setInterval(() => undefined, 1000)"], {
+            detached: true,
+            stdio: "ignore",
+          });
+          unrelated.unref();
+          if (typeof unrelated.pid !== "number") throw new Error("Unrelated control process did not start");
+          await expectProcessLive(unrelated.pid);
+        }
+
         const operation: Promise<unknown> = phase === "query"
           ? client.query("health/check", {}, controller.signal, 8_000)
           : client.runTask(realTaskRequest(staging, input), controller.signal, 8_000);
@@ -70,13 +80,13 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
 
         pids = await waitForPids(fixture.pidFile);
         await waitForFile(fixture.closedFile);
-        await waitForTraceEvent(fixture.traceFile, "helper_handler_ready");
+        await waitForTraceEvent(fixture.workerTraceFile, "worker_fd_closed");
         if (phase === "cancel") {
           controller.abort();
-          // This is deliberately shorter than CANCELLATION_GRACE_MS. Seeing SIGTERM here
-          // proves the closed-pipe write error started cleanup instead of the 2 s timer.
-          await waitForTraceEvent(fixture.traceFile, "helper_term", 1_500);
-          expect(await readTraceEvents(fixture.traceFile)).not.toContain("task_cancel_seen");
+          // Shorter than CANCELLATION_GRACE_MS: cleanup must start from the
+          // closed-pipe write failure, not from the two-second cancellation timer.
+          await waitForTraceEvent(fixture.helperTraceFile, "helper_term", 1_500);
+          expect(await readTraceEvents(fixture.workerTraceFile)).not.toContain("task_cancel_seen");
         }
 
         const error = await Promise.race([
@@ -87,14 +97,14 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
         expect(error).toMatchObject({ code: phase === "cancel" ? "cli_cancelled" : "cli_protocol_error" });
         expect(uncaught).toEqual([]);
         expect(await readdir(staging)).toEqual([]);
-        const events = await readTraceEvents(fixture.traceFile);
-        expect(events).toContain("root_term");
-        expect(events).toContain("helper_term");
+        await assertResistantTerminationEvidence(fixture);
         for (const pid of pids) await expectProcessNotLive(pid);
+        if (unrelated?.pid) await expectProcessLive(unrelated.pid);
       } finally {
         process.removeListener("uncaughtExceptionMonitor", monitor);
         client.dispose();
         killRemaining(pids);
+        killUnrelated(unrelated);
       }
     },
     12_000,
@@ -108,13 +118,11 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
     try {
       const pending = client.query("health/check", {}, undefined, 8_000);
       pids = await waitForPids(fixture.pidFile);
-      await waitForTraceEvent(fixture.traceFile, "health_seen");
+      await waitForTraceEvent(fixture.workerTraceFile, "health_seen");
       client.dispose();
-      await waitForTraceEvent(fixture.traceFile, "helper_term", 1_500);
+      await waitForTraceEvent(fixture.helperTraceFile, "helper_term", 1_500);
       await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
-      const events = await readTraceEvents(fixture.traceFile);
-      expect(events).toContain("root_term");
-      expect(events).toContain("helper_term");
+      await assertResistantTerminationEvidence(fixture);
       for (const pid of pids) await expectProcessNotLive(pid);
     } finally {
       client.dispose();
@@ -130,13 +138,13 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
     try {
       const pending = client.query("health/check", {}, undefined, 8_000);
       pids = await waitForPids(fixture.pidFile);
-      await waitForTraceEvent(fixture.traceFile, "health_seen");
+      await waitForTraceEvent(fixture.workerTraceFile, "health_seen");
       client.dispose();
       await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
-      const events = await readTraceEvents(fixture.traceFile);
-      expect(events).toContain("root_term");
-      expect(events).toContain("helper_term");
-      expect(events).toContain("helper_exit");
+      expect(await readTraceEvents(fixture.rootTraceFile)).toContain("root_term");
+      const helperEvents = await readTraceEvents(fixture.helperTraceFile);
+      expect(helperEvents).toContain("helper_term");
+      expect(helperEvents).toContain("helper_exit");
       for (const pid of pids) await expectProcessNotLive(pid);
     } finally {
       client.dispose();
@@ -148,21 +156,42 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
 type FixtureMode = "timeout" | "query" | "task" | "cancel" | "unload";
 type HelperBehavior = "resistant" | "cooperative";
 
-async function createFixture(mode: FixtureMode, helperBehavior: HelperBehavior) {
+type Fixture = {
+  root: string;
+  executable: string;
+  pidFile: string;
+  closedFile: string;
+  rootTraceFile: string;
+  helperTraceFile: string;
+  workerTraceFile: string;
+};
+
+async function createFixture(mode: FixtureMode, helperBehavior: HelperBehavior): Promise<Fixture> {
   const root = await mkdtemp(path.join(tmpdir(), "docwen-machine-linux-"));
   roots.push(root);
   const executable = path.join(root, "docwen-machine-fixture");
   const pidFile = path.join(root, "pids.txt");
   const closedFile = path.join(root, "stdin-closed.txt");
   const readyFile = path.join(root, "helper-ready.txt");
-  const traceFile = path.join(root, "trace.jsonl");
+  const rootTraceFile = path.join(root, "root-trace.jsonl");
+  const helperTraceFile = path.join(root, "helper-trace.jsonl");
+  const workerTraceFile = path.join(root, "worker-trace.jsonl");
   await writeFile(
     executable,
-    fixtureServer(pidFile, closedFile, readyFile, traceFile, mode, helperBehavior),
+    fixtureServer({
+      pidFile,
+      closedFile,
+      readyFile,
+      rootTraceFile,
+      helperTraceFile,
+      workerTraceFile,
+      mode,
+      helperBehavior,
+    }),
     "utf8",
   );
   await chmod(executable, 0o755);
-  return { root, executable, pidFile, closedFile, readyFile, traceFile };
+  return { root, executable, pidFile, closedFile, rootTraceFile, helperTraceFile, workerTraceFile };
 }
 
 function realTaskRequest(staging: string, input: string): MachineTaskRequest {
@@ -184,19 +213,33 @@ function realTaskRequest(staging: string, input: string): MachineTaskRequest {
   };
 }
 
-function fixtureServer(
-  pidFile: string,
-  closedFile: string,
-  readyFile: string,
-  traceFile: string,
-  mode: FixtureMode,
-  helperBehavior: HelperBehavior,
-): string {
-  const helperSource = `
-const { appendFileSync, writeFileSync } = require("node:fs");
-const [traceFile, readyFile, behavior] = process.argv.slice(1);
+function fixtureServer(options: {
+  pidFile: string;
+  closedFile: string;
+  readyFile: string;
+  rootTraceFile: string;
+  helperTraceFile: string;
+  workerTraceFile: string;
+  mode: FixtureMode;
+  helperBehavior: HelperBehavior;
+}): string {
+  const helperSource = String.raw`
+const { appendFileSync, readFileSync, writeFileSync } = require("node:fs");
+const [traceFile, readyFile, behavior, rootPidText] = process.argv.slice(1);
+const rootPid = Number(rootPidText);
 function record(event) {
   appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
+}
+function rootIsGone() {
+  try {
+    const raw = readFileSync("/proc/" + rootPid + "/stat", "utf8");
+    const closingParen = raw.lastIndexOf(")");
+    if (closingParen < 0) return false;
+    const state = raw.slice(closingParen + 1).trim().split(/\\s+/u)[0];
+    return state === "Z" || state === "X" || state === "x";
+  } catch (error) {
+    return error && (error.code === "ENOENT" || error.code === "ESRCH");
+  }
 }
 process.on("SIGTERM", () => {
   record("helper_term");
@@ -204,26 +247,114 @@ process.on("SIGTERM", () => {
     record("helper_exit");
     process.exit(0);
   }
+  const timer = setInterval(() => {
+    if (rootIsGone()) {
+      clearInterval(timer);
+      record("helper_observed_root_gone");
+    }
+  }, 5);
 });
 record("helper_handler_ready");
 writeFileSync(readyFile, "ready\\n", "utf8");
 setInterval(() => undefined, 1000);
 `;
 
+  const workerSource = String.raw`
+const { appendFileSync, closeSync, readSync, writeFileSync, writeSync } = require("node:fs");
+const [mode, closedFile, traceFile] = process.argv.slice(1);
+let buffered = Buffer.alloc(0);
+function record(event) {
+  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
+}
+function readMessage() {
+  while (true) {
+    const headerEnd = buffered.indexOf("\\r\\n\\r\\n");
+    if (headerEnd >= 0) {
+      const header = buffered.subarray(0, headerEnd + 4).toString("ascii");
+      const match = /^Content-Length: ([1-9][0-9]*)\\r\\n\\r\\n$/.exec(header);
+      if (!match) process.exit(20);
+      const length = Number(match[1]);
+      const frameEnd = headerEnd + 4 + length;
+      if (buffered.length >= frameEnd) {
+        const message = JSON.parse(buffered.subarray(headerEnd + 4, frameEnd).toString("utf8"));
+        buffered = buffered.subarray(frameEnd);
+        return message;
+      }
+    }
+    const chunk = Buffer.allocUnsafe(8192);
+    let bytesRead;
+    try {
+      bytesRead = readSync(0, chunk, 0, chunk.length, null);
+    } catch (error) {
+      if (error && error.code === "EINTR") continue;
+      throw error;
+    }
+    if (bytesRead === 0) process.exit(0);
+    buffered = Buffer.concat([buffered, chunk.subarray(0, bytesRead)]);
+  }
+}
+function send(id, result) {
+  const body = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, result }), "utf8");
+  writeSync(1, Buffer.concat([
+    Buffer.from("Content-Length: " + body.length + "\\r\\n\\r\\n", "ascii"),
+    body,
+  ]));
+}
+function closeInput() {
+  closeSync(0);
+  writeFileSync(closedFile, "closed\\n", "utf8");
+  record("worker_fd_closed");
+}
+record("worker_started");
+const initialize = readMessage();
+const initialized = {
+  protocol: { name: "docwen.machine", major: 2, minor: 0 },
+  artifact_bundle_schema: "docwen.artifact_bundle.v3",
+  server: { name: "DocWen", version: "0.13.0" },
+  methods: [],
+  features: { progress: true, cancellation: true },
+  max_concurrent_tasks: 1,
+};
+if (mode === "query") {
+  closeInput();
+  send(initialize.id, initialized);
+  process.exit(0);
+}
+send(initialize.id, initialized);
+
+const second = readMessage();
+if (mode === "timeout" || mode === "unload") {
+  if (second.method !== "health/check") process.exit(21);
+  record("health_seen");
+  setInterval(() => undefined, 1000);
+} else {
+  if (second.method !== "task/plan") process.exit(22);
+  if (mode === "task") {
+    closeInput();
+    send(second.id, { plan_id: "plan.1" });
+    process.exit(0);
+  }
+  send(second.id, { plan_id: "plan.1" });
+  const execute = readMessage();
+  if (execute.method !== "task/execute") process.exit(23);
+  if (mode === "cancel") {
+    closeInput();
+    send(execute.id, { task_id: "task.1", state: "accepted" });
+    process.exit(0);
+  }
+}
+`;
+
   return `#!/usr/bin/env node
 import { spawn } from "node:child_process";
 import { appendFileSync, closeSync, existsSync, writeFileSync } from "node:fs";
 
-const pidFile = ${JSON.stringify(pidFile)};
-const closedFile = ${JSON.stringify(closedFile)};
-const readyFile = ${JSON.stringify(readyFile)};
-const traceFile = ${JSON.stringify(traceFile)};
-const mode = ${JSON.stringify(mode)};
-const helperBehavior = ${JSON.stringify(helperBehavior)};
+const options = ${JSON.stringify(options)};
 const helperSource = ${JSON.stringify(helperSource)};
+const workerSource = ${JSON.stringify(workerSource)};
 
 function record(event) {
-  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
+  appendFileSync(options.rootTraceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
 }
 process.on("SIGTERM", () => {
   record("root_term");
@@ -231,101 +362,55 @@ process.on("SIGTERM", () => {
 });
 record("root_handler_ready");
 
-const descendant = spawn(
+const helper = spawn(
   process.execPath,
-  ["-e", helperSource, traceFile, readyFile, helperBehavior],
+  ["-e", helperSource, options.helperTraceFile, options.readyFile, options.helperBehavior, String(process.pid)],
   { stdio: "ignore" },
 );
-writeFileSync(pidFile, String(process.pid) + "\\n" + String(descendant.pid) + "\\n", "utf8");
-setInterval(() => undefined, 1000);
 
-let buffered = Buffer.alloc(0);
-let inputClosing = false;
-process.stdin.on("data", (chunk) => {
-  buffered = Buffer.concat([buffered, Buffer.from(chunk)]);
-  while (true) {
-    const headerEnd = buffered.indexOf("\\r\\n\\r\\n");
-    if (headerEnd < 0) return;
-    const header = buffered.subarray(0, headerEnd + 4).toString("ascii");
-    const match = /^Content-Length: ([1-9][0-9]*)\\r\\n\\r\\n$/.exec(header);
-    if (!match) process.exit(20);
-    const length = Number(match[1]);
-    const frameEnd = headerEnd + 4 + length;
-    if (buffered.length < frameEnd) return;
-    const message = JSON.parse(buffered.subarray(headerEnd + 4, frameEnd).toString("utf8"));
-    buffered = buffered.subarray(frameEnd);
-    handle(message);
-  }
-});
-process.stdin.resume();
-
-function handle(message) {
-  if (message.method === "initialize") {
-    afterHelperReady(() => {
-      const initialized = {
-        protocol: { name: "docwen.machine", major: 2, minor: 0 },
-        artifact_bundle_schema: "docwen.artifact_bundle.v3",
-        server: { name: "DocWen", version: "0.13.0" },
-        methods: [],
-        features: { progress: true, cancellation: true },
-        max_concurrent_tasks: 1,
-      };
-      if (mode === "query") closeInput(() => reply(message.id, initialized));
-      else reply(message.id, initialized);
-    });
-    return;
-  }
-  if (message.method === "health/check") {
-    record("health_seen");
-    return;
-  }
-  if (message.method === "task/plan") {
-    if (mode === "task") closeInput(() => reply(message.id, { plan_id: "plan.1" }));
-    else reply(message.id, { plan_id: "plan.1" });
-    return;
-  }
-  if (message.method === "task/execute") {
-    reply(message.id, { task_id: "task.1", state: "accepted" });
-    if (mode === "cancel") setTimeout(() => closeInput(() => undefined), 50);
-    return;
-  }
-  if (message.method === "task/cancel") record("task_cancel_seen");
+function startWorker() {
+  const worker = spawn(
+    process.execPath,
+    ["-e", workerSource, options.mode, options.closedFile, options.workerTraceFile],
+    { stdio: [0, 1, 2] },
+  );
+  closeSync(0);
+  writeFileSync(
+    options.pidFile,
+    String(process.pid) + "\\n" + String(helper.pid) + "\\n" + String(worker.pid) + "\\n",
+    "utf8",
+  );
+  record("worker_spawned");
 }
 
-function afterHelperReady(callback) {
-  if (existsSync(readyFile)) {
-    callback();
-    return;
-  }
+if (existsSync(options.readyFile)) {
+  startWorker();
+} else {
   const deadline = Date.now() + 2000;
   const timer = setInterval(() => {
-    if (existsSync(readyFile)) {
+    if (existsSync(options.readyFile)) {
       clearInterval(timer);
-      callback();
+      startWorker();
     } else if (Date.now() >= deadline) {
       clearInterval(timer);
+      record("helper_ready_timeout");
       process.exit(24);
     }
   }, 5);
 }
-
-function closeInput(afterClose) {
-  if (inputClosing) return;
-  inputClosing = true;
-  process.stdin.pause();
-  process.stdin.on("error", () => {});
-  closeSync(0);
-  writeFileSync(closedFile, "closed\\n", "utf8");
-  record("stdin_closed");
-  afterClose();
-}
-
-function reply(id, result) {
-  const body = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, result }), "utf8");
-  process.stdout.write(Buffer.from("Content-Length: " + body.length + "\\r\\n\\r\\n", "ascii"));
-  process.stdout.write(body);
-}
+setInterval(() => undefined, 1000);
 `;
+}
+
+async function assertResistantTerminationEvidence(fixture: Fixture): Promise<void> {
+  const rootEvents = await readTraceEvents(fixture.rootTraceFile);
+  const helperEvents = await readTraceEvents(fixture.helperTraceFile);
+  expect(rootEvents).toContain("root_handler_ready");
+  expect(rootEvents).toContain("root_term");
+  expect(helperEvents).toContain("helper_handler_ready");
+  expect(helperEvents).toContain("helper_term");
+  expect(helperEvents).toContain("helper_observed_root_gone");
+  expect(helperEvents).not.toContain("helper_exit");
 }
 
 async function waitForPids(pidFile: string): Promise<number[]> {
@@ -337,13 +422,13 @@ async function waitForPids(pidFile: string): Promise<number[]> {
         .split(/\s+/u)
         .map(Number)
         .filter((pid) => Number.isSafeInteger(pid) && pid > 0);
-      if (pids.length === 2) return pids;
+      if (pids.length === 3) return pids;
     } catch {
-      // The server may still be starting.
+      // The fixture may still be starting.
     }
     await delay(20);
   }
-  throw new Error("Linux Machine fixture did not record its process group");
+  throw new Error("Linux Machine fixture did not record its complete process group");
 }
 
 async function waitForFile(filename: string): Promise<void> {
@@ -357,7 +442,7 @@ async function waitForFile(filename: string): Promise<void> {
     }
     await delay(20);
   }
-  throw new Error("Linux Machine fixture did not close fd 0 in time");
+  throw new Error("Linux Machine worker did not close its fd 0 in time");
 }
 
 async function waitForTraceEvent(traceFile: string, expected: string, timeoutMs = 2_000): Promise<void> {
@@ -380,6 +465,13 @@ async function readTraceEvents(traceFile: string): Promise<string[]> {
   } catch (error) {
     if (isErrno(error, "ENOENT")) return [];
     throw error;
+  }
+}
+
+async function expectProcessLive(pid: number): Promise<void> {
+  const state = await linuxProcessState(pid);
+  if (state === null || state === "Z" || state === "X" || state === "x") {
+    throw new Error(`Expected unrelated process ${pid} to remain live`);
   }
 }
 
@@ -411,6 +503,20 @@ function killRemaining(pids: readonly number[]): void {
       process.kill(pid, "SIGKILL");
     } catch {
       // The expected path already terminated every live member.
+    }
+  }
+}
+
+function killUnrelated(child: ChildProcess | null): void {
+  const pid = child?.pid;
+  if (typeof pid !== "number") return;
+  try {
+    process.kill(-pid, "SIGKILL");
+  } catch {
+    try {
+      process.kill(pid, "SIGKILL");
+    } catch {
+      // The control process is already gone.
     }
   }
 }
