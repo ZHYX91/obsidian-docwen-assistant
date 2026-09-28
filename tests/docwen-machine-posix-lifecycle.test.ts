@@ -7,6 +7,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DocWenMachineClient, type MachineTaskRequest } from "../src/docwen/machine-client";
+import { encodeMachineFrame, MachineFrameDecoder } from "../src/docwen/machine-framing";
 
 const roots: string[] = [];
 const WAIT_EXPIRED = Symbol("wait_expired");
@@ -21,6 +22,83 @@ afterEach(async () => {
 });
 
 describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process ownership", () => {
+  it("executes generated helper and worker sources with LF JSONL and CRLF framing", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "docwen-machine-source-check-"));
+    roots.push(root);
+
+    const helperTrace = path.join(root, "helper.jsonl");
+    const helperReady = path.join(root, "helper-ready.txt");
+    const helper = spawn(
+      process.execPath,
+      ["-e", helperFixtureSource(), helperTrace, helperReady, "resistant", String(process.pid)],
+      { stdio: "ignore" },
+    );
+    const helperClosed = waitForChildClose(helper);
+    try {
+      await waitForFile(helperReady);
+      expect(await readFile(helperReady, "utf8")).toBe("ready\n");
+      expect(helper.kill("SIGTERM")).toBe(true);
+      await waitForTraceEvent(helperTrace, "helper_term");
+      await waitForTraceEvent(helperTrace, "helper_root_stat_checked");
+      const helperText = await readFile(helperTrace, "utf8");
+      expect(helperText.endsWith("\n")).toBe(true);
+      expect(await readTraceEvents(helperTrace)).toEqual([
+        "helper_handler_ready",
+        "helper_term",
+        "helper_root_stat_checked",
+      ]);
+    } finally {
+      if (typeof helper.pid === "number") {
+        try {
+          process.kill(helper.pid, "SIGKILL");
+        } catch {
+          // The helper may already be gone.
+        }
+      }
+      await helperClosed;
+    }
+
+    const workerTrace = path.join(root, "worker.jsonl");
+    const workerClosedFile = path.join(root, "worker-stdin-closed.txt");
+    const worker = spawn(
+      process.execPath,
+      ["-e", workerFixtureSource(), "query", workerClosedFile, workerTrace],
+      { stdio: ["pipe", "pipe", "pipe"] },
+    );
+    const workerClosed = waitForChildClose(worker);
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+    worker.stdout?.on("data", (chunk: Buffer) => stdout.push(Buffer.from(chunk)));
+    worker.stderr?.on("data", (chunk: Buffer) => stderr.push(Buffer.from(chunk)));
+    worker.stdin?.on("error", () => undefined);
+    worker.stdin?.end(encodeMachineFrame({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {},
+    }));
+
+    expect(await workerClosed).toBe(0);
+    expect(Buffer.concat(stderr).toString("utf8")).toBe("");
+    expect(await readFile(workerClosedFile, "utf8")).toBe("closed\n");
+    const workerText = await readFile(workerTrace, "utf8");
+    expect(workerText.endsWith("\n")).toBe(true);
+    expect(await readTraceEvents(workerTrace)).toEqual(["worker_started", "worker_fd_closed"]);
+
+    const output = Buffer.concat(stdout);
+    expect(output.includes(Buffer.from("\r\n\r\n", "ascii"))).toBe(true);
+    const messages = new MachineFrameDecoder().feed(output);
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({
+      jsonrpc: "2.0",
+      id: 1,
+      result: {
+        protocol: { name: "docwen.machine", major: 2, minor: 0 },
+      },
+    });
+    expect(parsePidText("101\n202\t303 ")).toEqual([101, 202, 303]);
+  }, 5_000);
+
   it("terminates a detached process group after the root exits while a descendant resists SIGTERM", async () => {
     const fixture = await createFixture("timeout", "resistant");
     const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
@@ -213,29 +291,25 @@ function realTaskRequest(staging: string, input: string): MachineTaskRequest {
   };
 }
 
-function fixtureServer(options: {
-  pidFile: string;
-  closedFile: string;
-  readyFile: string;
-  rootTraceFile: string;
-  helperTraceFile: string;
-  workerTraceFile: string;
-  mode: FixtureMode;
-  helperBehavior: HelperBehavior;
-}): string {
-  const helperSource = String.raw`
+function helperFixtureSource(): string {
+  return String.raw`
 const { appendFileSync, readFileSync, writeFileSync } = require("node:fs");
 const [traceFile, readyFile, behavior, rootPidText] = process.argv.slice(1);
 const rootPid = Number(rootPidText);
+let rootStatChecked = false;
 function record(event) {
-  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
+  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\n", "utf8");
 }
 function rootIsGone() {
   try {
     const raw = readFileSync("/proc/" + rootPid + "/stat", "utf8");
     const closingParen = raw.lastIndexOf(")");
     if (closingParen < 0) return false;
-    const state = raw.slice(closingParen + 1).trim().split(/\\s+/u)[0];
+    const state = raw.slice(closingParen + 1).trim().split(/\s+/u)[0];
+    if (!rootStatChecked) {
+      rootStatChecked = true;
+      record("helper_root_stat_checked");
+    }
     return state === "Z" || state === "X" || state === "x";
   } catch (error) {
     return error && (error.code === "ENOENT" || error.code === "ESRCH");
@@ -255,23 +329,25 @@ process.on("SIGTERM", () => {
   }, 5);
 });
 record("helper_handler_ready");
-writeFileSync(readyFile, "ready\\n", "utf8");
+writeFileSync(readyFile, "ready\n", "utf8");
 setInterval(() => undefined, 1000);
 `;
+}
 
-  const workerSource = String.raw`
+function workerFixtureSource(): string {
+  return String.raw`
 const { appendFileSync, closeSync, readSync, writeFileSync, writeSync } = require("node:fs");
 const [mode, closedFile, traceFile] = process.argv.slice(1);
 let buffered = Buffer.alloc(0);
 function record(event) {
-  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
+  appendFileSync(traceFile, JSON.stringify({ event, pid: process.pid }) + "\n", "utf8");
 }
 function readMessage() {
   while (true) {
-    const headerEnd = buffered.indexOf("\\r\\n\\r\\n");
+    const headerEnd = buffered.indexOf("\r\n\r\n");
     if (headerEnd >= 0) {
       const header = buffered.subarray(0, headerEnd + 4).toString("ascii");
-      const match = /^Content-Length: ([1-9][0-9]*)\\r\\n\\r\\n$/.exec(header);
+      const match = /^Content-Length: ([1-9][0-9]*)\r\n\r\n$/.exec(header);
       if (!match) process.exit(20);
       const length = Number(match[1]);
       const frameEnd = headerEnd + 4 + length;
@@ -296,13 +372,13 @@ function readMessage() {
 function send(id, result) {
   const body = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, result }), "utf8");
   writeSync(1, Buffer.concat([
-    Buffer.from("Content-Length: " + body.length + "\\r\\n\\r\\n", "ascii"),
+    Buffer.from("Content-Length: " + body.length + "\r\n\r\n", "ascii"),
     body,
   ]));
 }
 function closeInput() {
   closeSync(0);
-  writeFileSync(closedFile, "closed\\n", "utf8");
+  writeFileSync(closedFile, "closed\n", "utf8");
   record("worker_fd_closed");
 }
 record("worker_started");
@@ -344,6 +420,20 @@ if (mode === "timeout" || mode === "unload") {
   }
 }
 `;
+}
+
+function fixtureServer(options: {
+  pidFile: string;
+  closedFile: string;
+  readyFile: string;
+  rootTraceFile: string;
+  helperTraceFile: string;
+  workerTraceFile: string;
+  mode: FixtureMode;
+  helperBehavior: HelperBehavior;
+}): string {
+  const helperSource = helperFixtureSource();
+  const workerSource = workerFixtureSource();
 
   return `#!/usr/bin/env node
 import { spawn } from "node:child_process";
@@ -413,15 +503,19 @@ async function assertResistantTerminationEvidence(fixture: Fixture): Promise<voi
   expect(helperEvents).not.toContain("helper_exit");
 }
 
+function parsePidText(value: string): number[] {
+  return value
+    .trim()
+    .split(/\s+/u)
+    .map(Number)
+    .filter((pid) => Number.isSafeInteger(pid) && pid > 0);
+}
+
 async function waitForPids(pidFile: string): Promise<number[]> {
   const deadline = Date.now() + 2_000;
   while (Date.now() < deadline) {
     try {
-      const pids = (await readFile(pidFile, "utf8"))
-        .trim()
-        .split(/\s+/u)
-        .map(Number)
-        .filter((pid) => Number.isSafeInteger(pid) && pid > 0);
+      const pids = parsePidText(await readFile(pidFile, "utf8"));
       if (pids.length === 3) return pids;
     } catch {
       // The fixture may still be starting.
@@ -466,6 +560,13 @@ async function readTraceEvents(traceFile: string): Promise<string[]> {
     if (isErrno(error, "ENOENT")) return [];
     throw error;
   }
+}
+
+function waitForChildClose(child: ChildProcess): Promise<number | null> {
+  return new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", resolve);
+  });
 }
 
 async function expectProcessLive(pid: number): Promise<void> {
