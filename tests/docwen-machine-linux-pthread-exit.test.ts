@@ -11,7 +11,31 @@ import {
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const procBootstrapFault = vi.hoisted(() => ({
+  consumeNextNumericStat: false,
+  consumed: false,
+}));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    readFileSync: (target: Parameters<typeof actual.readFileSync>[0], ...args: unknown[]) => {
+      if (
+        procBootstrapFault.consumeNextNumericStat
+        && typeof target === "string"
+        && /^\/proc\/\d+\/stat$/u.test(target)
+      ) {
+        procBootstrapFault.consumeNextNumericStat = false;
+        procBootstrapFault.consumed = true;
+        throw Object.assign(new Error("synthetic initial root stat visibility race"), { code: "ENOENT" });
+      }
+      return (actual.readFileSync as (...values: unknown[]) => unknown)(target, ...args);
+    },
+  };
+});
 
 import { DocWenMachineClient } from "../src/docwen/machine-client";
 
@@ -23,7 +47,14 @@ const nativePthreadAvailable = process.platform === "linux"
 const roots: string[] = [];
 const controls: ChildProcess[] = [];
 
+beforeEach(() => {
+  procBootstrapFault.consumeNextNumericStat = false;
+  procBootstrapFault.consumed = false;
+});
+
 afterEach(() => {
+  procBootstrapFault.consumeNextNumericStat = false;
+  procBootstrapFault.consumed = false;
   for (const child of controls.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -36,70 +67,13 @@ describe.skipIf(!nativePthreadAvailable)("Linux pthread-exit Machine ownership",
     let ids: FixtureIds | null = null;
 
     try {
-      const startedAt = Date.now();
       const pending = client.query("health/check", {}, undefined, 800);
       ids = await waitForFixtureReady(fixture);
-      const readyAt = Date.now();
-      const session = [...((client as unknown as {
-        activeSessions: Set<{
-          child: ChildProcess;
-          childProcessExited: boolean;
-        }>;
-      }).activeSessions)][0];
       await assertLeaderZombieWithLiveWorkers(ids);
-      const zombieAt = Date.now();
-      const heartbeatBefore = fileSize(fixture.heartbeatFile);
       await assertHeartbeatAdvances(fixture.heartbeatFile);
-      const heartbeatAfter = fileSize(fixture.heartbeatFile);
-      const heartbeatAt = Date.now();
       expectProcessLive(requiredPid(sentinel));
 
-      const outcome = await pending.then(
-        () => ({ code: "resolved", details: null as Record<string, unknown> | null }),
-        (error: unknown) => ({
-          code: typeof error === "object" && error !== null && "code" in error
-            ? String(error.code)
-            : "unknown",
-          details: typeof error === "object" && error !== null && "details" in error
-            ? error.details as Record<string, unknown>
-            : null,
-        }),
-      );
-      if (outcome.code !== "cli_timeout") {
-        const leader = readLinuxStat(ids.rootPid);
-        const protocol = readLinuxStat(ids.protocolTid);
-        const heartbeat = readLinuxStat(ids.heartbeatTid);
-        const activeSessions = (client as unknown as { activeSessions: Set<unknown> }).activeSessions.size;
-        const safeDetails = outcome.details;
-        throw new Error(`pthread timeout diagnostic ${JSON.stringify({
-          code: outcome.code,
-          details: safeDetails ? {
-            cleanupState: safeDetails.cleanupState,
-            ownershipState: safeDetails.ownershipState,
-            ownershipIssue: safeDetails.ownershipIssue,
-            unconfirmedEvidenceCount: safeDetails.unconfirmedEvidenceCount,
-            systemCode: safeDetails.systemCode,
-            primaryCode: safeDetails.primaryCode,
-          } : null,
-          timingMs: {
-            ready: readyAt - startedAt,
-            zombie: zombieAt - startedAt,
-            heartbeat: heartbeatAt - startedAt,
-            settled: Date.now() - startedAt,
-          },
-          leader,
-          protocol,
-          heartbeat,
-          heartbeatBytes: { before: heartbeatBefore, after: heartbeatAfter, now: fileSize(fixture.heartbeatFile) },
-          signalCount: readText(fixture.signalFile).trim().split("\n").filter(Boolean).length,
-          child: session ? {
-            exitCode: session.child.exitCode,
-            signalCode: session.child.signalCode,
-            childProcessExited: session.childProcessExited,
-          } : null,
-          activeSessions,
-        })}`);
-      }
+      await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
 
       expect(readText(fixture.signalFile)).toContain("term");
       await expectTrackedTasksNotLive(ids);
@@ -111,88 +85,33 @@ describe.skipIf(!nativePthreadAvailable)("Linux pthread-exit Machine ownership",
     }
   }, 12_000);
 
-  it("collects bounded pthread timeout cleanup diagnostics", async () => {
-    const summaries: Array<Record<string, unknown>> = [];
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const fixture = createFixture("timeout");
-      const sentinel = startSentinel();
-      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
-      let ids: FixtureIds | null = null;
-      try {
-        const startedAt = Date.now();
-        const pending = client.query("health/check", {}, undefined, 800);
-        ids = await waitForFixtureReady(fixture);
-        const readyAt = Date.now();
-        const session = [...((client as unknown as {
-          activeSessions: Set<{
-            child: ChildProcess;
-            childProcessExited: boolean;
-          }>;
-        }).activeSessions)][0];
-        await assertLeaderZombieWithLiveWorkers(ids);
-        const zombieAt = Date.now();
-        const heartbeatBefore = fileSize(fixture.heartbeatFile);
-        await assertHeartbeatAdvances(fixture.heartbeatFile);
-        const heartbeatAt = Date.now();
+  it("recovers the direct root identity after the initial proc stat is temporarily unavailable", async () => {
+    const fixture = createFixture("timeout");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let ids: FixtureIds | null = null;
 
-        const outcome = await pending.then(
-          () => ({ code: "resolved", details: null as Record<string, unknown> | null }),
-          (error: unknown) => ({
-            code: typeof error === "object" && error !== null && "code" in error
-              ? String(error.code)
-              : "unknown",
-            details: typeof error === "object" && error !== null && "details" in error
-              ? error.details as Record<string, unknown>
-              : null,
-          }),
-        );
-        const settledAt = Date.now();
-        const heartbeatSettled = fileSize(fixture.heartbeatFile);
-        await delay(160);
-        const heartbeatLater = fileSize(fixture.heartbeatFile);
-        const leader = readLinuxStat(ids.rootPid);
-        const protocol = readLinuxStat(ids.protocolTid);
-        const heartbeat = readLinuxStat(ids.heartbeatTid);
-        const details = outcome.details;
-        summaries.push({
-          attempt,
-          code: outcome.code,
-          details: details ? {
-            cleanupState: details.cleanupState,
-            ownershipState: details.ownershipState,
-            ownershipIssue: details.ownershipIssue,
-            unconfirmedEvidenceCount: details.unconfirmedEvidenceCount,
-            systemCode: details.systemCode,
-            primaryCode: details.primaryCode,
-          } : null,
-          timingMs: {
-            ready: readyAt - startedAt,
-            zombie: zombieAt - startedAt,
-            heartbeat: heartbeatAt - startedAt,
-            settled: settledAt - startedAt,
-          },
-          states: { leader, protocol, heartbeat },
-          heartbeatBytes: {
-            before: heartbeatBefore,
-            settled: heartbeatSettled,
-            later: heartbeatLater,
-          },
-          signalCount: readText(fixture.signalFile).trim().split("\n").filter(Boolean).length,
-          child: session ? {
-            exitCode: session.child.exitCode,
-            signalCode: session.child.signalCode,
-            childProcessExited: session.childProcessExited,
-          } : null,
-          activeSessions: (client as unknown as { activeSessions: Set<unknown> }).activeSessions.size,
-          sentinelLive: isObservedProcessLive(requiredPid(sentinel)),
-        });
-      } finally {
-        client.dispose();
-        if (ids) killPids([ids.rootPid, ids.protocolTid, ids.heartbeatTid]);
-      }
+    try {
+      procBootstrapFault.consumeNextNumericStat = true;
+      const pending = client.query("health/check", {}, undefined, 800);
+      expect(procBootstrapFault.consumed).toBe(true);
+
+      ids = await waitForFixtureReady(fixture);
+      await assertLeaderZombieWithLiveWorkers(ids);
+      await assertHeartbeatAdvances(fixture.heartbeatFile);
+      expectProcessLive(requiredPid(sentinel));
+
+      await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
+
+      expect(readText(fixture.signalFile)).toContain("term");
+      await expectTrackedTasksNotLive(ids);
+      await assertHeartbeatStopped(fixture.heartbeatFile);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      if (ids) killPids([ids.rootPid, ids.protocolTid, ids.heartbeatTid]);
     }
-    throw new Error(`bounded pthread timeout diagnostics ${JSON.stringify(summaries)}`);
-  }, 20_000);
+  }, 12_000);
 
   it("cleans live worker threads when dispose races a zombie leader", async () => {
     const fixture = createFixture("timeout");
@@ -445,11 +364,6 @@ function startSentinel(): ChildProcess {
 function requiredPid(child: ChildProcess): number {
   if (typeof child.pid !== "number") throw new Error("Sentinel process did not expose a pid");
   return child.pid;
-}
-
-function isObservedProcessLive(pid: number): boolean {
-  const state = readLinuxStat(pid);
-  return state !== null && isLiveState(state.state);
 }
 
 function expectProcessLive(pid: number): void {

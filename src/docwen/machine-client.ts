@@ -446,7 +446,11 @@ class MachineSession {
   private async captureLinuxOwnership(): Promise<void> {
     if (this.ownedLinuxProcessGroupId === null) return;
     try {
-      await captureLinuxProcessOwnership(this.ownedLinuxProcessGroupId, this.knownLinuxProcesses);
+      await captureLinuxProcessOwnership(
+        this.ownedLinuxProcessGroupId,
+        this.knownLinuxProcesses,
+        () => this.childProcessExited,
+      );
     } catch {
       // Cleanup performs the authoritative inspection and reports any
       // ownership-evidence failure. Opportunistic capture must not fail work.
@@ -1255,21 +1259,32 @@ function bootstrapLinuxProcessIdentity(
       root.pid === groupId
       && root.processGroup === groupId
       && root.session === groupId
-      && isLiveLinuxProcessState(root.state)
     ) {
+      // A direct child can already have a zombie leader after pthread_exit
+      // while its worker threads remain alive. State is therefore not an
+      // ownership discriminator for the root identity.
       knownProcesses.set(root.pid, root.startTime);
     }
   } catch {
-    // Later cleanup reports missing or inconsistent ownership evidence.
+    // initialize/cleanup retries direct-root capture after spawn visibility.
   }
 }
 
 async function captureLinuxProcessOwnership(
   groupId: number,
   knownProcesses: Map<number, string>,
+  rootProcessExited: () => boolean,
 ): Promise<void> {
   const namespaceIssue = await linuxProcNamespaceIssue();
   if (namespaceIssue) throw linuxProcessGroupUnconfirmed({ members: [], issues: [namespaceIssue] });
+
+  if (!knownProcesses.has(groupId) && !rootProcessExited()) {
+    await recoverDirectLinuxRootIdentity(
+      groupId,
+      knownProcesses,
+      rootProcessExited,
+    );
+  }
   if (knownProcesses.size === 0) {
     throw linuxProcessGroupUnconfirmed({
       members: [],
@@ -1278,6 +1293,40 @@ async function captureLinuxProcessOwnership(
   }
   const issues = await discoverKnownLinuxDescendants(groupId, knownProcesses);
   if (issues.length > 0) throw linuxProcessGroupUnconfirmed({ members: [], issues });
+}
+
+async function recoverDirectLinuxRootIdentity(
+  groupId: number,
+  knownProcesses: Map<number, string>,
+  rootProcessExited: () => boolean,
+): Promise<void> {
+  if (rootProcessExited()) return;
+
+  let root: LinuxProcessMetadata;
+  try {
+    root = await readLinuxProcessMetadata(groupId);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) return;
+    throw linuxProcessGroupError("Unable to inspect the DocWen root process.", error);
+  }
+
+  if (rootProcessExited()) return;
+  if (
+    root.pid !== groupId
+    || root.processGroup !== groupId
+    || root.session !== groupId
+  ) {
+    throw linuxProcessGroupUnconfirmed({
+      members: [],
+      issues: [{ kind: "group_changed" }],
+    });
+  }
+
+  // groupId is the PID returned by our detached spawn. While ChildProcess has
+  // not emitted "exit", that direct-child lifetime cannot be replaced by an
+  // unrelated process. Bind its current starttime; unknown group members never
+  // use this recovery path.
+  knownProcesses.set(groupId, root.startTime);
 }
 
 async function signalLinuxProcessGroup(
