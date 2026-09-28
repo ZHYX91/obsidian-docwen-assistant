@@ -36,13 +36,70 @@ describe.skipIf(!nativePthreadAvailable)("Linux pthread-exit Machine ownership",
     let ids: FixtureIds | null = null;
 
     try {
+      const startedAt = Date.now();
       const pending = client.query("health/check", {}, undefined, 800);
       ids = await waitForFixtureReady(fixture);
+      const readyAt = Date.now();
+      const session = [...((client as unknown as {
+        activeSessions: Set<{
+          child: ChildProcess;
+          childProcessExited: boolean;
+        }>;
+      }).activeSessions)][0];
       await assertLeaderZombieWithLiveWorkers(ids);
+      const zombieAt = Date.now();
+      const heartbeatBefore = fileSize(fixture.heartbeatFile);
       await assertHeartbeatAdvances(fixture.heartbeatFile);
+      const heartbeatAfter = fileSize(fixture.heartbeatFile);
+      const heartbeatAt = Date.now();
       expectProcessLive(requiredPid(sentinel));
 
-      await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
+      const outcome = await pending.then(
+        () => ({ code: "resolved", details: null as Record<string, unknown> | null }),
+        (error: unknown) => ({
+          code: typeof error === "object" && error !== null && "code" in error
+            ? String(error.code)
+            : "unknown",
+          details: typeof error === "object" && error !== null && "details" in error
+            ? error.details as Record<string, unknown>
+            : null,
+        }),
+      );
+      if (outcome.code !== "cli_timeout") {
+        const leader = readLinuxStat(ids.rootPid);
+        const protocol = readLinuxStat(ids.protocolTid);
+        const heartbeat = readLinuxStat(ids.heartbeatTid);
+        const activeSessions = (client as unknown as { activeSessions: Set<unknown> }).activeSessions.size;
+        const safeDetails = outcome.details;
+        throw new Error(`pthread timeout diagnostic ${JSON.stringify({
+          code: outcome.code,
+          details: safeDetails ? {
+            cleanupState: safeDetails.cleanupState,
+            ownershipState: safeDetails.ownershipState,
+            ownershipIssue: safeDetails.ownershipIssue,
+            unconfirmedEvidenceCount: safeDetails.unconfirmedEvidenceCount,
+            systemCode: safeDetails.systemCode,
+            primaryCode: safeDetails.primaryCode,
+          } : null,
+          timingMs: {
+            ready: readyAt - startedAt,
+            zombie: zombieAt - startedAt,
+            heartbeat: heartbeatAt - startedAt,
+            settled: Date.now() - startedAt,
+          },
+          leader,
+          protocol,
+          heartbeat,
+          heartbeatBytes: { before: heartbeatBefore, after: heartbeatAfter, now: fileSize(fixture.heartbeatFile) },
+          signalCount: readText(fixture.signalFile).trim().split("\n").filter(Boolean).length,
+          child: session ? {
+            exitCode: session.child.exitCode,
+            signalCode: session.child.signalCode,
+            childProcessExited: session.childProcessExited,
+          } : null,
+          activeSessions,
+        })}`);
+      }
 
       expect(readText(fixture.signalFile)).toContain("term");
       await expectTrackedTasksNotLive(ids);
