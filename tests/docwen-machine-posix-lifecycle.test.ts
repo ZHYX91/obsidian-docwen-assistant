@@ -74,10 +74,10 @@ describe("DocWenMachineClient POSIX process ownership", () => {
       let pids: number[] = [];
 
       try {
-        const operation = phase === "query"
+        const operation: Promise<unknown> = phase === "query"
           ? client.query("health/check", {}, controller.signal, 8_000)
           : client.runTask(realTaskRequest(staging, input), controller.signal, 8_000);
-        const failure = operation.then<unknown>(
+        const failure = operation.then(
           () => new Error("Machine operation unexpectedly resolved."),
           (error: unknown) => error,
         );
