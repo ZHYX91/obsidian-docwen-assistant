@@ -19,6 +19,7 @@ const procFault = vi.hoisted(() => ({
   enumerationCode: null as string | null,
   namespacePidDelta: 0,
   taskChildrenCode: null as string | null,
+  taskStatDisappearOnce: false,
 }));
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -34,6 +35,14 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   return {
     ...actual,
     readFile: async (target: unknown, ...args: unknown[]) => {
+      if (
+        procFault.taskStatDisappearOnce
+        && typeof target === "string"
+        && /^\/proc\/\d+\/task\/\d+\/stat$/u.test(target)
+      ) {
+        procFault.taskStatDisappearOnce = false;
+        throw Object.assign(new Error("synthetic transient task disappearance"), { code: "ENOENT" });
+      }
       if (
         procFault.taskChildrenCode
         && typeof target === "string"
@@ -92,6 +101,7 @@ beforeEach(() => {
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
   procFault.taskChildrenCode = null;
+  procFault.taskStatDisappearOnce = false;
 });
 
 afterEach(() => {
@@ -102,6 +112,7 @@ afterEach(() => {
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
   procFault.taskChildrenCode = null;
+  procFault.taskStatDisappearOnce = false;
   vi.restoreAllMocks();
   for (const child of spawned.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -223,6 +234,30 @@ describe.skipIf(process.platform !== "linux")("Linux process-group evidence fail
       expect(readEvents(fixture.rootTrace)).not.toContain("root_term");
       expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
       for (const pid of pids) expectProcessLive(pid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 8_000);
+
+  it("lets a one-time task disappearance converge after a complete later group scan", async () => {
+    const fixture = createHeldMachine();
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 1_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForEvent(fixture.rootTrace, "health_seen", 2_000);
+      procFault.taskStatDisappearOnce = true;
+
+      await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
+      expect(procFault.taskStatDisappearOnce).toBe(false);
+      expect(readEvents(fixture.rootTrace)).toContain("root_term");
+      expect(readEvents(fixture.helperTrace)).toContain("helper_term");
+      for (const pid of pids) await expectProcessNotLive(pid);
       expectProcessLive(requiredPid(sentinel));
     } finally {
       client.dispose();

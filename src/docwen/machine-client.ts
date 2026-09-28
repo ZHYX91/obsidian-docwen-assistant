@@ -1289,12 +1289,14 @@ async function inspectLinuxProcessGroup(
 
   const descendantIssues = await discoverKnownLinuxDescendants(groupId, knownProcesses);
   let candidatePids: number[];
+  let procEnumerationComplete = true;
   let issues: LinuxProcessGroupIssue[] = [...descendantIssues];
   try {
     candidatePids = (await readdir("/proc"))
       .filter((entry) => /^\d+$/u.test(entry))
       .map(Number);
   } catch (error) {
+    procEnumerationComplete = false;
     candidatePids = [...knownProcesses.keys()];
     issues.push(linuxProcessGroupIssue(error));
   }
@@ -1332,6 +1334,18 @@ async function inspectLinuxProcessGroup(
       }
       issues.push(linuxProcessGroupIssue(error));
     }
+  }
+  if (
+    members.length === 0
+    && procEnumerationComplete
+    && issues.length > 0
+    && issues.every((issue) => issue.kind === "task_changed")
+  ) {
+    // A thread or its parent can disappear while stat -> children -> stat is
+    // being sampled during normal exit. Once a complete /proc scan proves
+    // there are no live members (known or unknown) left in the owned group,
+    // that topology race has converged and must not poison the final result.
+    issues = [];
   }
   return { members, issues };
 }
