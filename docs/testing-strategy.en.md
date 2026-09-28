@@ -18,7 +18,7 @@ Vitest covers the fixed LOCALAPPDATA execution alias, rejection of PATH-relative
 
 ## Repository quality gate
 
-Under the pinned toolchain, `npm run check` runs runtime verification, lint, formatting, README and stable-document contracts, coverage, type checking, build, artifact checks, and the high-severity dependency audit. Formatting and bilingual scripts read real repository content and are not placeholder no-ops.
+Under the pinned toolchain, `npm run check` runs runtime verification, lint, formatting, README and stable-document contracts, coverage, type checking, build, artifact checks, and the high-severity dependency audit. Formatting and bilingual scripts read real repository content and are not placeholder no-ops. Artifact checking also verifies the Linux helper's pinned provenance and source/binary digests and requires the built `dist/main.js` to retain the exact embedded payload; this proves bundle inclusion, not Electron/Obsidian loading.
 
 ## Fixed DocWen package
 

@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows、Obsidian 1.12.7 以降、安定版 DocWen 0.13.0 以降 が必要です。
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows または Linux、Obsidian 1.12.7 以降、安定版 DocWen 0.13.0 以降 が必要です。
 
 > **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
 
@@ -34,19 +34,19 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 
 ## 要件と互換性
 
-- Windows と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
-- 完全に展開した安定版 DocWen 0.13.0 以降 の Windows 完全版。プラグインは DocWen を自動ダウンロードしません。
+- Windows または Linux と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
+- Windows では Store 版または完全に展開したポータブル版の DocWen 0.13.0 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux の結果ディレクトリエクスポートには x64 とアトミック no-replace 対応ファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 
 Store のインストールがこれらの要件を満たさない場合は、互換性のあるポータブル版を使用し、手動インストールで選択してください。
 
-既定の自動検出は登録済みの `docwen.exe` エイリアスを使用し、Microsoft Store の更新後も有効です。ポータブル ZIP では手動インストールに切り替え、展開した DocWen フォルダーを選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
+自動検出は Windows 専用で、登録済みの `docwen.exe` エイリアスを使用します。Linux では手動インストールが必須で、展開したフォルダー、`DocWen`、または `DocWenCLI` を選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
 
 ## インストール
 
 ### DocWen とプラグインをインストール
 
-[Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から DocWen をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を展開します。DocWen Assistant は Community Plugins からインストールできます。手動の場合は `main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。自動検出ではファイル選択は不要です。ポータブル版だけ設定で手動インストールと DocWen フォルダーを選びます。
+Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から DocWen をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル版を展開します。Linux x64 では同じ Releases ページから互換 Linux パッケージを完全に展開して手動で選択します。DocWen Assistant は Community Plugins からインストールでき、手動の場合は `main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。
 
 ### インストール時の安全性
 
@@ -68,7 +68,7 @@ Obsidian 1.12.7 以降では、横スクロール可能な 4 つの上部タブ�
 
 ## 制限
 
-- 対応するローカル DocWen がある Windows デスクトップ専用です。
+- 対応するローカル DocWen がある Windows または Linux デスクトップ向けです。Linux の結果ディレクトリエクスポートには x64 とアトミック no-replace 対応ファイルシステムが必要です。
 - 選択した DocWen フォルダーまたは実行ファイル以外を再帰検索しません。
 - CLI 応答、元スナップショット、エディター状態、出力先を安全に検証できない操作は拒否されます。
 

@@ -131,7 +131,7 @@ function fixtureServer(
 ): string {
   return `#!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { closeSync, writeFileSync } from "node:fs";
 
 const pidFile = ${JSON.stringify(pidFile)};
 const closedFile = ${JSON.stringify(closedFile)};
@@ -197,11 +197,11 @@ function handle(message) {
 function closeInput(afterClose) {
   if (inputClosing) return;
   inputClosing = true;
-  process.stdin.once("close", () => {
-    writeFileSync(closedFile, "closed\\n", "utf8");
-    afterClose();
-  });
-  process.stdin.destroy();
+  process.stdin.pause();
+  process.stdin.on("error", () => {});
+  closeSync(0);
+  writeFileSync(closedFile, "closed\\n", "utf8");
+  afterClose();
 }
 
 function reply(id, result) {
@@ -241,7 +241,7 @@ async function waitForFile(filename: string): Promise<void> {
     }
     await delay(20);
   }
-  throw new Error("POSIX Machine fixture did not close its stdin in time");
+  throw new Error("POSIX Machine fixture did not close fd 0 in time");
 }
 
 async function expectProcessGone(pid: number): Promise<void> {

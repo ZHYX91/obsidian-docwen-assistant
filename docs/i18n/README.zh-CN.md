@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91/docwen)，提供转换、校对、标题编号和文件打开能力。需要 Windows、Obsidian 1.12.7 或更高版本，以及 DocWen 0.13.0 或更高稳定版本。
+DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91/docwen)，提供转换、校对、标题编号和文件打开能力。需要 Windows 或 Linux、Obsidian 1.12.7 或更高版本，以及 DocWen 0.13.0 或更高稳定版本。
 
 > **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.13.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
@@ -38,22 +38,22 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 ## 使用要求与兼容性
 
-- 需要 Windows 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
-- 需要 Microsoft Store 安装版或完整解压的 ZIP 便携版 DocWen 0.13.0 或更高版本，插件不会自动下载 DocWen；
+- 需要 Windows 或 Linux 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
+- Windows 可使用 Microsoft Store 安装版或完整解压的便携版 DocWen 0.13.0 或更高版本；Linux 使用手动选择的完整解压包。Linux 结果目录导出要求 x64 且文件系统支持原子 no-replace；插件不会自动下载 DocWen；
 - 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
 
-如果商店安装版不满足以上要求，请使用兼容的便携包，并在“手动安装”中选择它。
+Windows 商店安装版不满足以上要求时，请使用兼容的便携包并在“手动安装”中选择；Linux 始终使用“手动安装”。
 
-插件默认通过系统注册的 `docwen.exe` 执行别名自动连接，因此 Microsoft Store 更新不会导致保存的程序路径失效。ZIP 便携版用户可以切换到“手动安装”，再选择解压后的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`。插件不会扫描 `WindowsApps`、递归搜索程序、写命令文件、自动下载软件或降级到旧协议。
+自动检测仅适用于 Windows，并使用系统注册的 `docwen.exe` 执行别名，因此 Microsoft Store 更新不会导致保存的程序路径失效。手动安装在 Windows 接受解压后的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受解压后的文件夹、`DocWen` 或 `DocWenCLI`。插件不会扫描 `WindowsApps`、递归搜索程序、写命令文件、自动下载软件或降级到旧协议。
 
 ## 安装
 
 ### 安装 DocWen 与插件
 
-1. 从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.13.0 或更高版本；也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载 `DocWen-windows-x64.zip` 并完整解压；
+1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.13.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包；Linux x64 请从同一 Releases 页面下载并完整解压兼容的 Linux 包；
 2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) 下载 `docwen-assistant-x.y.z.zip`，将其中的 `main.js`、`manifest.json` 和 `styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
 3. 重新加载第三方插件并启用 DocWen Assistant；
-4. 自动检测模式无需选择任何文件。使用 ZIP 便携版时，打开 **设置 → DocWen Assistant → 常规**，选择“手动安装”，再选择解压后的 DocWen 文件夹。
+4. Windows 自动检测无需选择文件；Windows 便携版和所有 Linux 用户都应打开 **设置 → DocWen Assistant → 常规**，选择“手动安装”，再选择解压后的 DocWen 文件夹或可执行文件。
 
 ### 安装安全边界
 
@@ -79,13 +79,13 @@ Word 导出在结果文件夹中生成独立 DOCX，请自行保留原始 Markdo
 
 - Obsidian 1.12.7 或更高版本使用四个可横向滚动的顶部页签：常规、转为 Markdown、转为 Word和校对；说明放在相关页签内，不再单设“使用方法”页；
 - 插件语言默认“跟随 Obsidian”，也可明确选择 11 种语言之一；界面、通知和资源查询始终使用同一解析结果；
-- “连接方式”默认“自动检测”，直接支持 Microsoft Store 安装版；切换到“手动安装”后才显示便携版文件夹选择器。状态行会核验产品身份、版本、协议和程序健康状态，不向普通用户暴露包路径；
+- “连接方式”默认“自动检测”，该模式仅用于 Windows Microsoft Store 安装版；Linux 必须切换到“手动安装”，Windows 便携版也使用同一选择器。状态行会核验产品身份、版本、协议和程序健康状态，不向普通用户暴露包路径；
 - 页签支持方向键（含 RTL）、Home/End、清晰的键盘焦点、20 px 界面字号和粗指针点击区；仅在显示相应页签时查询运行时编号方案。
 
 ## 限制
 
-- 仅支持 Windows 桌面端，并要求本机存在兼容的 DocWen；
-- 自动模式只使用固定的 `docwen.exe` 注册别名；手动模式只接受用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，两种模式都不会搜索任意目录；
+- 支持 Windows 与 Linux 桌面端，并要求本机存在兼容的 DocWen；Linux 结果目录导出要求 x64，不支持原子 no-replace 的文件系统会失败关闭，不会退回“先检查再 rename”；
+- Windows 自动模式只使用固定的 `docwen.exe` 注册别名；手动模式在 Windows 接受 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受文件夹、`DocWen` 或 `DocWenCLI`；两种模式都不会搜索任意目录；
 - 后台导出必须明确选择输出目录，校对不会直接重写源笔记；
 - 无法安全核验 CLI 响应、源快照、编辑器状态或目标时，操作会被拒绝。
 

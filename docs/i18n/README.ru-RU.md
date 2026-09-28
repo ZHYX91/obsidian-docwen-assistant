@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.13.0 или новее.
+DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows или Linux, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.13.0 или новее.
 
 > **Требуется DocWen.** Установите совместимую версию из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) либо полностью распакуйте переносимый ZIP со страницы [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -34,19 +34,19 @@ DocWen Assistant связывает Obsidian с локальной устано�
 
 ## Требования и совместимость
 
-- Windows и Obsidian 1.12.7 или новее; плагин работает только на компьютере.
-- Полностью распакованный пакет стабильной версии DocWen 0.13.0 или новее для Windows; плагин не загружает DocWen автоматически.
+- Windows или Linux и Obsidian 1.12.7 или новее; плагин работает только на компьютере.
+- В Windows используйте совместимую версию DocWen 0.13.0 или новее из Store либо полностью распакованный переносимый пакет; в Linux — полностью распакованный пакет, выбранный вручную. Для публикации каталога результата в Linux требуются x64 и файловая система с атомарным no-replace; плагин не загружает DocWen автоматически.
 - Плагину требуются `docwen.machine.v2` и `docwen.artifact_bundle.v3`; несовместимая версия DocWen отклоняется без перехода на другой протокол.
 
 Если установленная версия из Store не соответствует этим требованиям, используйте совместимый переносимый пакет и выберите его в режиме ручной установки.
 
-По умолчанию автоматическое обнаружение использует зарегистрированный псевдоним `docwen.exe`, который сохраняется после обновлений Microsoft Store. Для переносимого ZIP выберите ручную установку и распакованную папку DocWen. Плагин не просматривает `WindowsApps` или произвольные папки и не загружает программы автоматически.
+Автоматическое обнаружение доступно только в Windows и использует зарегистрированный псевдоним `docwen.exe`. В Linux требуется ручная установка; можно выбрать распакованную папку, `DocWen` или `DocWenCLI`. Плагин не просматривает `WindowsApps` или произвольные папки и не загружает программы автоматически.
 
 ## Установка
 
 ### Установка DocWen и плагина
 
-Установите DocWen из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) или распакуйте переносимый ZIP из [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Установите DocWen Assistant через Community Plugins либо скопируйте `main.js`, `manifest.json` и `styles.css` в `<Vault>/.obsidian/plugins/docwen-assistant/`. При автоматическом обнаружении файл выбирать не нужно; для переносимой версии выберите в настройках ручную установку и папку DocWen.
+В Windows установите DocWen из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) или распакуйте переносимый пакет из [DocWen Releases](https://github.com/ZHYX91/docwen/releases). В Linux x64 распакуйте совместимый Linux-пакет с той же страницы Releases и выберите его вручную. DocWen Assistant установите через Community Plugins либо скопируйте `main.js`, `manifest.json` и `styles.css` в `<Vault>/.obsidian/plugins/docwen-assistant/`.
 
 ### Безопасность установки
 
@@ -68,7 +68,7 @@ Obsidian 1.12.7 и новее использует четыре верхние �
 
 ## Ограничения
 
-- Только для Windows на компьютере с совместимой локальной установкой DocWen.
+- Для Windows или Linux на компьютере с совместимой локальной установкой DocWen; экспорт каталога результата в Linux требует x64 и файловой системы с атомарным no-replace.
 - Нет рекурсивного поиска за пределами выбранной папки или программы DocWen.
 - Операция отклоняется, если ответ CLI, исходный снимок, состояние редактора или цель нельзя безопасно проверить.
 

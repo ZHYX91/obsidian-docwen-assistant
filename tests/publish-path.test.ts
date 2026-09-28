@@ -26,7 +26,7 @@ describe("atomic directory publication boundary", () => {
       sourceSha256: string;
       binarySha256: string;
       nodeApi: number;
-      provenance: { commit: string };
+      provenance: { repository: string; commit: string; sourcePath: string; binaryPath: string };
     };
     const source = await readFile(new URL("../native/rename-directory.c", import.meta.url));
     const bytes = Buffer.from(LINUX_X64_RENAME_ADDON_BASE64, "base64");
@@ -35,7 +35,12 @@ describe("atomic directory publication boundary", () => {
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(build.binarySha256);
     expect(build.binarySha256).toBe(LINUX_X64_RENAME_ADDON_SHA256);
     expect(build.nodeApi).toBe(8);
-    expect(build.provenance.commit).toBe("935f0a816da96c8f42a72ddba662d5556fa3ddd1");
+    expect(build.provenance).toEqual({
+      repository: "ZHYX91/docwen-openclaw",
+      commit: "935f0a816da96c8f42a72ddba662d5556fa3ddd1",
+      sourcePath: "native/rename-directory.c",
+      binaryPath: "native/linux-x64.node",
+    });
   });
 
   it("rejects unsupported Linux architectures and Node-API levels without weakening Windows", () => {
