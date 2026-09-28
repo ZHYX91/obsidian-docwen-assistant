@@ -1175,6 +1175,7 @@ type LinuxProcessIssueKind =
   | "group_changed"
   | "proc_namespace_mismatch"
   | "proc_unreadable"
+  | "task_changed"
   | "unknown_group_member";
 
 type LinuxProcessGroupIssue = {
@@ -1349,9 +1350,9 @@ async function discoverKnownLinuxDescendants(
     const expectedStartTime = knownProcesses.get(pid);
     if (expectedStartTime === undefined) continue;
 
-    let parent: LinuxProcessMetadata;
+    let parentBefore: LinuxProcessMetadata;
     try {
-      parent = await readLinuxProcessMetadata(pid);
+      parentBefore = await readLinuxProcessMetadata(pid);
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
         knownProcesses.delete(pid);
@@ -1360,52 +1361,145 @@ async function discoverKnownLinuxDescendants(
       issues.push(linuxProcessGroupIssue(error));
       continue;
     }
-    if (parent.startTime !== expectedStartTime) {
+    if (parentBefore.startTime !== expectedStartTime) {
       issues.push({ kind: "identity_changed" });
       continue;
     }
-    if (parent.processGroup !== groupId || parent.session !== groupId) {
+    if (parentBefore.processGroup !== groupId || parentBefore.session !== groupId) {
       issues.push({ kind: "group_changed" });
       continue;
     }
 
-    let children: string;
+    let taskIds: number[];
     try {
-      children = await readFile(`/proc/${pid}/task/${pid}/children`, "utf8");
+      taskIds = (await readdir(`/proc/${pid}/task`))
+        .filter((entry) => /^\d+$/u.test(entry))
+        .map(Number);
     } catch (error) {
-      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) continue;
-      issues.push(linuxProcessGroupIssue(error));
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        issues.push({ kind: "task_changed" });
+      } else {
+        issues.push(linuxProcessGroupIssue(error));
+      }
       continue;
     }
-    for (const child of children.trim().split(/\s+/u)) {
-      if (!/^\d+$/u.test(child)) continue;
-      const childPid = Number(child);
-      const existingStartTime = knownProcesses.get(childPid);
-      try {
-        const metadata = await readLinuxProcessMetadata(childPid);
-        if (
-          metadata.processGroup !== groupId
-          || metadata.session !== groupId
-          || !isLiveLinuxProcessState(metadata.state)
-        ) {
-          if (existingStartTime !== undefined) issues.push({ kind: "group_changed" });
-          continue;
-        }
-        if (existingStartTime !== undefined && metadata.startTime !== existingStartTime) {
-          issues.push({ kind: "identity_changed" });
-          continue;
-        }
-        if (existingStartTime === undefined) {
-          knownProcesses.set(childPid, metadata.startTime);
-        }
-        queue.push(childPid);
-      } catch (error) {
-        if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) continue;
+
+    for (const taskId of new Set(taskIds)) {
+      const taskIssues = await discoverLinuxTaskChildren(
+        groupId,
+        pid,
+        taskId,
+        knownProcesses,
+        queue,
+      );
+      issues.push(...taskIssues);
+    }
+
+    try {
+      const parentAfter = await readLinuxProcessMetadata(pid);
+      if (parentAfter.startTime !== expectedStartTime) {
+        issues.push({ kind: "identity_changed" });
+      } else if (parentAfter.processGroup !== groupId || parentAfter.session !== groupId) {
+        issues.push({ kind: "group_changed" });
+      }
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        issues.push({ kind: "task_changed" });
+      } else {
         issues.push(linuxProcessGroupIssue(error));
       }
     }
   }
   return issues;
+}
+
+async function discoverLinuxTaskChildren(
+  groupId: number,
+  processId: number,
+  taskId: number,
+  knownProcesses: Map<number, string>,
+  queue: number[],
+): Promise<LinuxProcessGroupIssue[]> {
+  const issues: LinuxProcessGroupIssue[] = [];
+  let taskBefore: LinuxProcessMetadata;
+  try {
+    taskBefore = await readLinuxTaskMetadata(processId, taskId);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      return [{ kind: "task_changed" }];
+    }
+    return [linuxProcessGroupIssue(error)];
+  }
+  if (taskBefore.pid !== taskId) return [{ kind: "task_changed" }];
+  if (taskBefore.processGroup !== groupId || taskBefore.session !== groupId) {
+    return [{ kind: "group_changed" }];
+  }
+
+  let children: string;
+  try {
+    children = await readFile(`/proc/${processId}/task/${taskId}/children`, "utf8");
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      return [{ kind: "task_changed" }];
+    }
+    return [linuxProcessGroupIssue(error)];
+  }
+
+  let taskAfter: LinuxProcessMetadata;
+  try {
+    taskAfter = await readLinuxTaskMetadata(processId, taskId);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      return [{ kind: "task_changed" }];
+    }
+    return [linuxProcessGroupIssue(error)];
+  }
+  if (
+    taskAfter.pid !== taskBefore.pid
+    || taskAfter.startTime !== taskBefore.startTime
+    || taskAfter.processGroup !== taskBefore.processGroup
+    || taskAfter.session !== taskBefore.session
+  ) {
+    return [{ kind: "task_changed" }];
+  }
+
+  for (const child of children.trim().split(/\s+/u)) {
+    if (!/^\d+$/u.test(child)) continue;
+    const childPid = Number(child);
+    const existingStartTime = knownProcesses.get(childPid);
+    try {
+      const metadata = await readLinuxProcessMetadata(childPid);
+      if (
+        metadata.processGroup !== groupId
+        || metadata.session !== groupId
+        || !isLiveLinuxProcessState(metadata.state)
+      ) {
+        if (existingStartTime !== undefined) issues.push({ kind: "group_changed" });
+        continue;
+      }
+      if (existingStartTime !== undefined && metadata.startTime !== existingStartTime) {
+        issues.push({ kind: "identity_changed" });
+        continue;
+      }
+      if (existingStartTime === undefined) {
+        knownProcesses.set(childPid, metadata.startTime);
+      }
+      queue.push(childPid);
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) continue;
+      issues.push(linuxProcessGroupIssue(error));
+    }
+  }
+  return issues;
+}
+
+async function readLinuxTaskMetadata(
+  processId: number,
+  taskId: number,
+): Promise<LinuxProcessMetadata> {
+  return parseLinuxProcessMetadata(
+    await readFile(`/proc/${processId}/task/${taskId}/stat`, "utf8"),
+  );
 }
 
 async function linuxProcNamespaceIssue(): Promise<LinuxProcessGroupIssue | null> {

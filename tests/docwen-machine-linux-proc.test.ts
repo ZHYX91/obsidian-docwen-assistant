@@ -18,6 +18,7 @@ const procFault = vi.hoisted(() => ({
   deniedStatPid: null as number | null,
   enumerationCode: null as string | null,
   namespacePidDelta: 0,
+  taskChildrenCode: null as string | null,
 }));
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -33,6 +34,15 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   return {
     ...actual,
     readFile: async (target: unknown, ...args: unknown[]) => {
+      if (
+        procFault.taskChildrenCode
+        && typeof target === "string"
+        && /^\/proc\/\d+\/task\/\d+\/children$/u.test(target)
+      ) {
+        throw Object.assign(new Error("synthetic task children denial"), {
+          code: procFault.taskChildrenCode,
+        });
+      }
       if (
         procFault.deniedStatPid !== null
         && target === `/proc/${procFault.deniedStatPid}/stat`
@@ -81,6 +91,7 @@ beforeEach(() => {
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
+  procFault.taskChildrenCode = null;
 });
 
 afterEach(() => {
@@ -90,6 +101,7 @@ afterEach(() => {
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
+  procFault.taskChildrenCode = null;
   vi.restoreAllMocks();
   for (const child of spawned.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
@@ -211,6 +223,30 @@ describe.skipIf(process.platform !== "linux")("Linux process-group evidence fail
       expect(readEvents(fixture.rootTrace)).not.toContain("root_term");
       expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
       for (const pid of pids) expectProcessLive(pid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 8_000);
+
+  it("does not re-own an unknown same-group helper when per-thread children are unreadable", async () => {
+    procFault.taskChildrenCode = "EACCES";
+    const fixture = createHeldMachine();
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 1_000);
+      pids = await waitForPids(fixture.pidFile);
+      const error = await rejected(pending);
+
+      expectUnconfirmedCleanup(error, "EACCES", "cli_timeout");
+      expect(readEvents(fixture.rootTrace)).toContain("root_term");
+      expect(readEvents(fixture.helperTrace)).toContain("helper_term");
+      await expectProcessNotLive(pids[0]);
+      expectProcessLive(pids[1]);
       expectProcessLive(requiredPid(sentinel));
     } finally {
       client.dispose();
