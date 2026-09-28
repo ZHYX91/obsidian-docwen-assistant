@@ -196,6 +196,7 @@ class MachineSession {
   private normalClose = false;
   private preferredStdinFailure: Error | null = null;
   private termination: Promise<void> | null = null;
+  private childProcessExited = false;
   private readonly ownedLinuxProcessGroupId: number | null;
   private readonly knownLinuxProcesses = new Map<number, string>();
   private readonly closed: Promise<number | null>;
@@ -225,9 +226,13 @@ class MachineSession {
     if (this.ownedLinuxProcessGroupId !== null) {
       bootstrapLinuxProcessIdentity(this.ownedLinuxProcessGroupId, this.knownLinuxProcesses);
     }
+    this.child.once("exit", () => {
+      this.childProcessExited = true;
+    });
     this.closed = new Promise((resolve) => {
       this.child.once("close", resolve);
       this.child.once("error", (error) => {
+        this.childProcessExited = true;
         const aliasMissing = target.mode === "automatic" && isErrno(error, "ENOENT");
         const failure = new LocalCliError(
           aliasMissing ? "cli_alias_not_found" : "cli_spawn_failed",
@@ -451,19 +456,33 @@ class MachineSession {
       const groupId = this.ownedLinuxProcessGroupId;
       const evidence: LinuxProcessGroupEvidence = { hardIssues: [] };
       await this.captureLinuxOwnership();
-      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, evidence, false);
+      await signalLinuxProcessGroup(
+        groupId,
+        this.knownLinuxProcesses,
+        evidence,
+        () => this.childProcessExited,
+        false,
+      );
       this.child.stdin.destroy();
       if (await waitForLinuxProcessGroupExit(
         groupId,
         this.knownLinuxProcesses,
         evidence,
+        () => this.childProcessExited,
         TERMINATION_GRACE_MS,
       )) return;
-      await signalLinuxProcessGroup(groupId, this.knownLinuxProcesses, evidence, true);
+      await signalLinuxProcessGroup(
+        groupId,
+        this.knownLinuxProcesses,
+        evidence,
+        () => this.childProcessExited,
+        true,
+      );
       if (await waitForLinuxProcessGroupExit(
         groupId,
         this.knownLinuxProcesses,
         evidence,
+        () => this.childProcessExited,
         FORCE_KILL_WAIT_MS,
       )) return;
       throw new LocalCliError(
@@ -522,6 +541,7 @@ class MachineSession {
         this.ownedLinuxProcessGroupId,
         this.knownLinuxProcesses,
         { hardIssues: [] },
+        () => this.childProcessExited,
         force,
       );
       return;
@@ -1261,9 +1281,14 @@ async function signalLinuxProcessGroup(
   groupId: number,
   knownProcesses: Map<number, string>,
   evidence: LinuxProcessGroupEvidence,
+  rootProcessExited: () => boolean,
   force: boolean,
 ): Promise<void> {
-  const inspection = await inspectLinuxProcessGroup(groupId, knownProcesses);
+  const inspection = await inspectLinuxProcessGroup(
+    groupId,
+    knownProcesses,
+    rootProcessExited(),
+  );
   rememberHardLinuxIssues(evidence, inspection.issues);
   const issues = mergeLinuxIssues(inspection.issues, evidence.hardIssues);
   if (inspection.members.length === 0) {
@@ -1273,7 +1298,11 @@ async function signalLinuxProcessGroup(
     return;
   }
 
-  const anchor = await findCurrentLinuxSignalAnchor(groupId, inspection.members);
+  const anchor = await findCurrentLinuxSignalAnchor(
+    groupId,
+    inspection.members,
+    rootProcessExited(),
+  );
   if (!anchor) {
     const anchorIssue: LinuxProcessGroupIssue = { kind: "identity_changed" };
     rememberHardLinuxIssues(evidence, [anchorIssue]);
@@ -1294,11 +1323,16 @@ async function waitForLinuxProcessGroupExit(
   groupId: number,
   knownProcesses: Map<number, string>,
   evidence: LinuxProcessGroupEvidence,
+  rootProcessExited: () => boolean,
   timeoutMs: number,
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (true) {
-    const inspection = await inspectLinuxProcessGroup(groupId, knownProcesses);
+    const inspection = await inspectLinuxProcessGroup(
+      groupId,
+      knownProcesses,
+      rootProcessExited(),
+    );
     rememberHardLinuxIssues(evidence, inspection.issues);
     if (inspection.members.length === 0) {
       const issues = mergeLinuxIssues(inspection.issues, evidence.hardIssues);
@@ -1316,6 +1350,7 @@ async function waitForLinuxProcessGroupExit(
 async function inspectLinuxProcessGroup(
   groupId: number,
   knownProcesses: Map<number, string>,
+  rootProcessExited: boolean,
 ): Promise<LinuxProcessGroupInspection> {
   const namespaceIssue = await linuxProcNamespaceIssue();
   if (namespaceIssue) return { members: [], issues: [namespaceIssue] };
@@ -1336,15 +1371,23 @@ async function inspectLinuxProcessGroup(
 
   const candidateSet = new Set(candidatePids);
   const confirmedDead = new Set<string>();
+  let missingActiveRoot: LinuxProcessIdentity | null = null;
   if (procEnumerationComplete) {
     for (const [pid, startTime] of knownProcesses) {
       if (!candidateSet.has(pid)) {
-        confirmedDead.add(linuxIdentityKey({ pid, startTime }));
+        const identity = { pid, startTime };
+        if (pid === groupId && !rootProcessExited) {
+          missingActiveRoot = identity;
+          issues.push({ kind: "task_changed", identity });
+        } else {
+          confirmedDead.add(linuxIdentityKey(identity));
+        }
       }
     }
   }
 
   const members: LinuxProcessIdentity[] = [];
+  if (missingActiveRoot) members.push(missingActiveRoot);
   for (const pid of candidateSet) {
     const expectedStartTime = knownProcesses.get(pid);
     try {
@@ -1357,14 +1400,34 @@ async function inspectLinuxProcessGroup(
         }
         if (metadata.processGroup !== groupId || metadata.session !== groupId) {
           issues.push({ kind: "group_changed", identity });
-          if (!isLiveLinuxProcessState(metadata.state)) {
-            confirmedDead.add(linuxIdentityKey(identity));
-          }
           continue;
         }
         if (isLiveLinuxProcessState(metadata.state)) {
           members.push(identity);
-        } else {
+          continue;
+        }
+        if (pid === groupId && rootProcessExited) {
+          confirmedDead.add(linuxIdentityKey(identity));
+          continue;
+        }
+
+        const taskInspection = await inspectLinuxProcessTasks(
+          pid,
+          identity,
+          groupId,
+        );
+        issues.push(...taskInspection.issues);
+        members.push(...taskInspection.members);
+        if (taskInspection.members.length > 0) continue;
+        if (pid === groupId && !rootProcessExited) {
+          // Node has not observed the direct child process exit. The leader may
+          // be a zombie after pthread_exit while other threads keep the same
+          // process group alive. Keep the stable root identity as a signal
+          // anchor regardless of task-directory visibility.
+          members.push(identity);
+          continue;
+        }
+        if (taskInspection.complete) {
           confirmedDead.add(linuxIdentityKey(identity));
         }
         continue;
@@ -1400,6 +1463,113 @@ async function inspectLinuxProcessGroup(
     });
   }
   return { members, issues };
+}
+
+async function inspectLinuxProcessTasks(
+  processId: number,
+  ownerIdentity: LinuxProcessIdentity,
+  groupId: number,
+): Promise<{
+  members: LinuxProcessIdentity[];
+  issues: LinuxProcessGroupIssue[];
+  complete: boolean;
+}> {
+  let firstTaskIds: number[];
+  try {
+    firstTaskIds = (await readdir(`/proc/${processId}/task`))
+      .filter((entry) => /^\d+$/u.test(entry))
+      .map(Number);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      return {
+        members: [],
+        issues: [{ kind: "task_changed", identity: ownerIdentity }],
+        complete: false,
+      };
+    }
+    return {
+      members: [],
+      issues: [linuxProcessGroupIssue(error)],
+      complete: false,
+    };
+  }
+
+  const first = new Map<number, LinuxProcessMetadata>();
+  const issues: LinuxProcessGroupIssue[] = [];
+  for (const taskId of new Set(firstTaskIds)) {
+    try {
+      first.set(taskId, await readLinuxTaskMetadata(processId, taskId));
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        issues.push({ kind: "task_changed", identity: ownerIdentity });
+      } else {
+        issues.push(linuxProcessGroupIssue(error));
+      }
+    }
+  }
+
+  let secondTaskIds: number[];
+  try {
+    secondTaskIds = (await readdir(`/proc/${processId}/task`))
+      .filter((entry) => /^\d+$/u.test(entry))
+      .map(Number);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      issues.push({ kind: "task_changed", identity: ownerIdentity });
+    } else {
+      issues.push(linuxProcessGroupIssue(error));
+    }
+    return { members: [], issues, complete: false };
+  }
+
+  const firstSet = new Set(firstTaskIds);
+  const secondSet = new Set(secondTaskIds);
+  if (
+    firstSet.size !== secondSet.size
+    || [...firstSet].some((taskId) => !secondSet.has(taskId))
+  ) {
+    issues.push({ kind: "task_changed", identity: ownerIdentity });
+  }
+
+  const members: LinuxProcessIdentity[] = [];
+  for (const taskId of secondSet) {
+    const before = first.get(taskId);
+    if (!before) {
+      issues.push({ kind: "task_changed", identity: ownerIdentity });
+      continue;
+    }
+    try {
+      const after = await readLinuxTaskMetadata(processId, taskId);
+      if (
+        after.pid !== before.pid
+        || after.startTime !== before.startTime
+        || after.processGroup !== before.processGroup
+        || after.session !== before.session
+      ) {
+        issues.push({ kind: "task_changed", identity: ownerIdentity });
+        continue;
+      }
+      if (after.processGroup !== groupId || after.session !== groupId) {
+        issues.push({ kind: "group_changed", identity: ownerIdentity });
+        continue;
+      }
+      if (isLiveLinuxProcessState(after.state)) {
+        members.push({ pid: after.pid, startTime: after.startTime });
+      }
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        issues.push({ kind: "task_changed", identity: ownerIdentity });
+      } else {
+        issues.push(linuxProcessGroupIssue(error));
+      }
+    }
+  }
+
+  return {
+    members,
+    issues,
+    complete: issues.length === 0,
+  };
 }
 
 async function discoverKnownLinuxDescendants(
@@ -1594,6 +1764,7 @@ async function linuxProcNamespaceIssue(): Promise<LinuxProcessGroupIssue | null>
 async function findCurrentLinuxSignalAnchor(
   groupId: number,
   members: readonly LinuxProcessIdentity[],
+  rootProcessExited: boolean,
 ): Promise<LinuxProcessIdentity | null> {
   for (const member of members) {
     try {
@@ -1602,7 +1773,10 @@ async function findCurrentLinuxSignalAnchor(
         metadata.startTime === member.startTime
         && metadata.processGroup === groupId
         && metadata.session === groupId
-        && isLiveLinuxProcessState(metadata.state)
+        && (
+          isLiveLinuxProcessState(metadata.state)
+          || (member.pid === groupId && !rootProcessExited)
+        )
       ) {
         return member;
       }
