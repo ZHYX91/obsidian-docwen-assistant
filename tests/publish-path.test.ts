@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
@@ -64,9 +64,9 @@ describe("atomic directory publication boundary", () => {
 
       const second = path.join(root, "second");
       await mkdir(second);
-      const identity = await import("node:fs/promises").then(({ lstat }) => lstat(published, { bigint: true }));
+      const identity = await lstat(published, { bigint: true });
       await expect(publishDirectoryNoReplace(second, published)).rejects.toMatchObject({ code: "cli_commit_failed" });
-      const current = await import("node:fs/promises").then(({ lstat }) => lstat(published, { bigint: true }));
+      const current = await lstat(published, { bigint: true });
       expect({ dev: current.dev, ino: current.ino }).toEqual({ dev: identity.dev, ino: identity.ino });
       expect(await readdir(second)).toEqual([]);
     },

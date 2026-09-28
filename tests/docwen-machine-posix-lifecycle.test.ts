@@ -48,9 +48,10 @@ describe("DocWenMachineClient POSIX process ownership", () => {
     10_000,
   );
 
-  it.skipIf(process.platform === "win32").each(["query", "task", "cancel"] as const)(
+  it.each(["query", "task", "cancel"] as const)(
     "handles a real server closing stdin before a %s write without an unhandled error",
     async (phase) => {
+      if (process.platform === "win32") return;
       const root = await mkdtemp(path.join(tmpdir(), "docwen-machine-epipe-"));
       roots.push(root);
       const executable = path.join(root, "docwen-machine-fixture");
