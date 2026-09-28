@@ -86,6 +86,7 @@ async function loadLinuxBinding(): Promise<DirectoryBinding> {
 
   const root = await mkdtemp(path.join(tmpdir(), "docwen-assistant-native-"));
   let primaryFailure: unknown;
+  let cleanupFailure: unknown;
   let loaded: DirectoryBinding | null = null;
   try {
     const addonPath = path.join(root, "linux-x64.node");
@@ -98,21 +99,25 @@ async function loadLinuxBinding(): Promise<DirectoryBinding> {
     loaded = candidate;
   } catch (error) {
     primaryFailure = error;
-    throw nativeLoadError(error);
   } finally {
     try {
       await rm(root, { recursive: true, force: true });
     } catch (error) {
-      if (primaryFailure === undefined) {
-        throw new LocalCliError(
-          "cli_cleanup_failed",
-          "The temporary Linux publication helper could not be removed.",
-          safeSystemDetails(error),
-        );
-      }
+      cleanupFailure = error;
     }
   }
-  return loaded!;
+  if (primaryFailure !== undefined) throw nativeLoadError(primaryFailure);
+  if (cleanupFailure !== undefined) {
+    throw new LocalCliError(
+      "cli_cleanup_failed",
+      "The temporary Linux publication helper could not be removed.",
+      safeSystemDetails(cleanupFailure),
+    );
+  }
+  if (!loaded) {
+    throw new LocalCliError("cli_integrity_error", "The embedded Linux publication helper did not load.");
+  }
+  return loaded;
 }
 
 function isDirectoryBinding(value: unknown): value is DirectoryBinding {
