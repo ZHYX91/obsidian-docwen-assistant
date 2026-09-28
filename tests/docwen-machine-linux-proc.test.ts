@@ -12,8 +12,12 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const procFault = vi.hoisted(() => ({
+  changedStartTimePid: null as number | null,
+  changedStatAfter: null as string | null,
+  changedStatBefore: null as string | null,
   deniedStatPid: null as number | null,
   enumerationCode: null as string | null,
+  namespacePidDelta: 0,
 }));
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -35,7 +39,24 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       ) {
         throw Object.assign(new Error("synthetic proc stat denial"), { code: "EACCES" });
       }
-      return actualReadFile(target, ...args);
+      const value = await actualReadFile(target, ...args);
+      if (typeof value !== "string") return value;
+      if (target === "/proc/self/stat" && procFault.namespacePidDelta !== 0) {
+        return value.replace(/^\d+/u, String(process.pid + procFault.namespacePidDelta));
+      }
+      if (
+        procFault.changedStartTimePid !== null
+        && target === `/proc/${procFault.changedStartTimePid}/stat`
+      ) {
+        const closingParen = value.lastIndexOf(")");
+        const fields = value.slice(closingParen + 1).trim().split(/\s+/u);
+        procFault.changedStatBefore = value;
+        fields[19] = String(BigInt(fields[19] ?? "0") + 1n);
+        const changed = `${value.slice(0, closingParen + 1)} ${fields.join(" ")}`;
+        procFault.changedStatAfter = changed;
+        return changed;
+      }
+      return value;
     },
     readdir: async (target: unknown, ...args: unknown[]) => {
       if (target === "/proc" && procFault.enumerationCode) {
@@ -54,13 +75,22 @@ const roots: string[] = [];
 const spawned: ChildProcess[] = [];
 
 beforeEach(() => {
+  procFault.changedStartTimePid = null;
+  procFault.changedStatAfter = null;
+  procFault.changedStatBefore = null;
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
+  procFault.namespacePidDelta = 0;
 });
 
 afterEach(() => {
+  procFault.changedStartTimePid = null;
+  procFault.changedStatAfter = null;
+  procFault.changedStatBefore = null;
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
+  procFault.namespacePidDelta = 0;
+  vi.restoreAllMocks();
   for (const child of spawned.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -107,6 +137,80 @@ describe.skipIf(process.platform !== "linux")("Linux process-group evidence fail
       expect(readEvents(fixture.helperTrace)).toContain("helper_term");
       await expectProcessNotLive(pids[0]);
       expectProcessLive(helperPid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 8_000);
+
+  it("does not re-own a reused pid when only starttime changes under the same pid, pgid and sid", async () => {
+    const fixture = createHeldMachine();
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+    let interceptedForceSignals = 0;
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 1_000);
+      pids = await waitForPids(fixture.pidFile);
+      const groupId = pids[0];
+      const helperPid = pids[1];
+      await waitForEvent(fixture.helperTrace, "helper_term", 2_500);
+
+      const realKill = process.kill.bind(process);
+      vi.spyOn(process, "kill").mockImplementation(((pid: number, signal?: NodeJS.Signals | number) => {
+        if (pid === -groupId && signal === "SIGKILL") {
+          interceptedForceSignals += 1;
+          return true;
+        }
+        return realKill(pid, signal);
+      }) as typeof process.kill);
+      procFault.changedStartTimePid = helperPid;
+
+      const error = await rejected(pending);
+
+      expectUnconfirmedOwnership(error, "identity_changed", "cli_timeout");
+      expect(interceptedForceSignals).toBe(0);
+      expect(procFault.changedStatBefore).not.toBeNull();
+      expect(procFault.changedStatAfter).not.toBeNull();
+      const before = statIdentity(procFault.changedStatBefore!);
+      const after = statIdentity(procFault.changedStatAfter!);
+      expect({
+        pid: after.pid,
+        processGroup: after.processGroup,
+        session: after.session,
+      }).toEqual({
+        pid: before.pid,
+        processGroup: before.processGroup,
+        session: before.session,
+      });
+      expect(after.startTime).not.toBe(before.startTime);
+      await expectProcessNotLive(pids[0]);
+      expectProcessLive(helperPid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 8_000);
+
+  it("treats a procfs pid-namespace mismatch as unconfirmed instead of numeric proof", async () => {
+    const fixture = createHeldMachine();
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 1_000);
+      pids = await waitForPids(fixture.pidFile);
+      procFault.namespacePidDelta = 100_000;
+      const error = await rejected(pending);
+
+      expectUnconfirmedOwnership(error, "proc_namespace_mismatch", "cli_timeout");
+      expect(readEvents(fixture.rootTrace)).not.toContain("root_term");
+      expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+      for (const pid of pids) expectProcessLive(pid);
       expectProcessLive(requiredPid(sentinel));
     } finally {
       client.dispose();
@@ -262,6 +366,44 @@ function expectUnconfirmedCleanup(error: unknown, systemCode: string, primaryCod
   });
   const details = (error as { details: { unconfirmedEvidenceCount?: number } }).details;
   expect(details.unconfirmedEvidenceCount).toBeGreaterThan(0);
+}
+
+function expectUnconfirmedOwnership(error: unknown, ownershipIssue: string, primaryCode: string): void {
+  expect(error).toMatchObject({
+    code: "cli_cleanup_failed",
+    details: {
+      cleanupState: "unconfirmed",
+      ownershipIssue,
+      ownershipState: "unconfirmed",
+      primaryCode,
+    },
+  });
+}
+
+function statIdentity(raw: string): {
+  pid: number;
+  processGroup: number;
+  session: number;
+  startTime: string;
+} {
+  const openingParen = raw.indexOf("(");
+  const closingParen = raw.lastIndexOf(")");
+  const fields = raw.slice(closingParen + 1).trim().split(/\s+/u);
+  return {
+    pid: Number(raw.slice(0, openingParen).trim()),
+    processGroup: Number(fields[2]),
+    session: Number(fields[3]),
+    startTime: fields[19] ?? "",
+  };
+}
+
+async function waitForEvent(filename: string, expected: string, timeoutMs: number): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (readEvents(filename).includes(expected)) return;
+    await delay(20);
+  }
+  throw new Error(`Machine fixture did not record ${expected} in time`);
 }
 
 async function waitForPids(pidFile: string): Promise<number[]> {

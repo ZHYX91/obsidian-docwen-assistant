@@ -147,6 +147,85 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
     12_000,
   );
 
+  it.each(["success-query", "success-task"] as const)(
+    "rejects a late abort during successful %s descendant cleanup",
+    async (mode) => {
+      const fixture = await createFixture(mode, "resistant");
+      const staging = path.join(fixture.root, "late-abort-staging");
+      const input = path.join(fixture.root, "late-abort-input.md");
+      await mkdir(staging);
+      await writeFile(input, "# input\n", "utf8");
+      const sentinel = startDetachedSentinel();
+      const controller = new AbortController();
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+      let pids: number[] = [];
+
+      try {
+        const pending = mode === "success-query"
+          ? client.query("health/check", {}, controller.signal, 8_000)
+          : client.runTask(realTaskRequest(staging, input), controller.signal, 8_000);
+        pids = await waitForPids(fixture.pidFile);
+        await waitForTraceEvent(fixture.rootTraceFile, "root_normal_exit");
+        await waitForTraceEvent(fixture.helperTraceFile, "helper_term");
+        controller.abort();
+
+        await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+        for (const pid of pids) await expectProcessNotLive(pid);
+        if (sentinel.pid) await expectProcessLive(sentinel.pid);
+      } finally {
+        client.dispose();
+        killRemaining(pids);
+        killUnrelated(sentinel);
+      }
+    },
+    12_000,
+  );
+
+  it("rejects a late plugin dispose during successful query descendant cleanup", async () => {
+    const fixture = await createFixture("success-query", "resistant");
+    const sentinel = startDetachedSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 8_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForTraceEvent(fixture.rootTraceFile, "root_normal_exit");
+      await waitForTraceEvent(fixture.helperTraceFile, "helper_term");
+      client.dispose();
+
+      await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+      for (const pid of pids) await expectProcessNotLive(pid);
+      if (sentinel.pid) await expectProcessLive(sentinel.pid);
+    } finally {
+      client.dispose();
+      killRemaining(pids);
+      killUnrelated(sentinel);
+    }
+  }, 12_000);
+
+  it("rejects a late operation timeout during successful query descendant cleanup", async () => {
+    const fixture = await createFixture("success-query", "resistant");
+    const sentinel = startDetachedSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 450);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForTraceEvent(fixture.rootTraceFile, "root_normal_exit");
+      await waitForTraceEvent(fixture.helperTraceFile, "helper_term");
+
+      await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
+      for (const pid of pids) await expectProcessNotLive(pid);
+      if (sentinel.pid) await expectProcessLive(sentinel.pid);
+    } finally {
+      client.dispose();
+      killRemaining(pids);
+      killUnrelated(sentinel);
+    }
+  }, 12_000);
+
   it("terminates a detached process group after the root exits while a descendant resists SIGTERM", async () => {
     const fixture = await createFixture("timeout", "resistant");
     const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
@@ -720,6 +799,16 @@ async function linuxProcessState(pid: number): Promise<string | null> {
     if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) return null;
     throw error;
   }
+}
+
+function startDetachedSentinel(): ChildProcess {
+  const child = spawn(process.execPath, ["-e", "setInterval(() => undefined, 1000)"], {
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
+  if (typeof child.pid !== "number") throw new Error("Sentinel process did not start");
+  return child;
 }
 
 function killRemaining(pids: readonly number[]): void {
