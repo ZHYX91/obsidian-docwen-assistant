@@ -4,6 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.1.2] - 2026-09-28
+
+- Handle closed or failed Machine input streams without an uncaught stream error, preserving cancellation and timeout results.
+- Strengthen Linux process cleanup with process identity and per-thread descendant checks, including processes whose main thread has exited while worker threads remain active. Report cleanup that cannot be confirmed separately from the operation result.
+- Publish result directories without replacing an existing destination; Linux x64 uses an integrity-checked native atomic rename and rejects unsupported filesystems.
+
 ## [3.1.1] - 2026-09-27
 
 - Match Core source input kinds for PDF, spreadsheet and image snapshots.
