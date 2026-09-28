@@ -111,6 +111,89 @@ describe.skipIf(!nativePthreadAvailable)("Linux pthread-exit Machine ownership",
     }
   }, 12_000);
 
+  it("collects bounded pthread timeout cleanup diagnostics", async () => {
+    const summaries: Array<Record<string, unknown>> = [];
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const fixture = createFixture("timeout");
+      const sentinel = startSentinel();
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+      let ids: FixtureIds | null = null;
+      try {
+        const startedAt = Date.now();
+        const pending = client.query("health/check", {}, undefined, 800);
+        ids = await waitForFixtureReady(fixture);
+        const readyAt = Date.now();
+        const session = [...((client as unknown as {
+          activeSessions: Set<{
+            child: ChildProcess;
+            childProcessExited: boolean;
+          }>;
+        }).activeSessions)][0];
+        await assertLeaderZombieWithLiveWorkers(ids);
+        const zombieAt = Date.now();
+        const heartbeatBefore = fileSize(fixture.heartbeatFile);
+        await assertHeartbeatAdvances(fixture.heartbeatFile);
+        const heartbeatAt = Date.now();
+
+        const outcome = await pending.then(
+          () => ({ code: "resolved", details: null as Record<string, unknown> | null }),
+          (error: unknown) => ({
+            code: typeof error === "object" && error !== null && "code" in error
+              ? String(error.code)
+              : "unknown",
+            details: typeof error === "object" && error !== null && "details" in error
+              ? error.details as Record<string, unknown>
+              : null,
+          }),
+        );
+        const settledAt = Date.now();
+        const heartbeatSettled = fileSize(fixture.heartbeatFile);
+        await delay(160);
+        const heartbeatLater = fileSize(fixture.heartbeatFile);
+        const leader = readLinuxStat(ids.rootPid);
+        const protocol = readLinuxStat(ids.protocolTid);
+        const heartbeat = readLinuxStat(ids.heartbeatTid);
+        const details = outcome.details;
+        summaries.push({
+          attempt,
+          code: outcome.code,
+          details: details ? {
+            cleanupState: details.cleanupState,
+            ownershipState: details.ownershipState,
+            ownershipIssue: details.ownershipIssue,
+            unconfirmedEvidenceCount: details.unconfirmedEvidenceCount,
+            systemCode: details.systemCode,
+            primaryCode: details.primaryCode,
+          } : null,
+          timingMs: {
+            ready: readyAt - startedAt,
+            zombie: zombieAt - startedAt,
+            heartbeat: heartbeatAt - startedAt,
+            settled: settledAt - startedAt,
+          },
+          states: { leader, protocol, heartbeat },
+          heartbeatBytes: {
+            before: heartbeatBefore,
+            settled: heartbeatSettled,
+            later: heartbeatLater,
+          },
+          signalCount: readText(fixture.signalFile).trim().split("\n").filter(Boolean).length,
+          child: session ? {
+            exitCode: session.child.exitCode,
+            signalCode: session.child.signalCode,
+            childProcessExited: session.childProcessExited,
+          } : null,
+          activeSessions: (client as unknown as { activeSessions: Set<unknown> }).activeSessions.size,
+          sentinelLive: isObservedProcessLive(requiredPid(sentinel)),
+        });
+      } finally {
+        client.dispose();
+        if (ids) killPids([ids.rootPid, ids.protocolTid, ids.heartbeatTid]);
+      }
+    }
+    throw new Error(`bounded pthread timeout diagnostics ${JSON.stringify(summaries)}`);
+  }, 20_000);
+
   it("cleans live worker threads when dispose races a zombie leader", async () => {
     const fixture = createFixture("timeout");
     const sentinel = startSentinel();
@@ -362,6 +445,11 @@ function startSentinel(): ChildProcess {
 function requiredPid(child: ChildProcess): number {
   if (typeof child.pid !== "number") throw new Error("Sentinel process did not expose a pid");
   return child.pid;
+}
+
+function isObservedProcessLive(pid: number): boolean {
+  const state = readLinuxStat(pid);
+  return state !== null && isLiveState(state.state);
 }
 
 function expectProcessLive(pid: number): void {
