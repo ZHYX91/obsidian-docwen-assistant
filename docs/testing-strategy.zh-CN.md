@@ -13,7 +13,7 @@ translation_status: source
 
 ## 源码自动测试
 
-Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。
+Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。 Machine 生命周期回归还必须使用真实受控 POSIX 子进程，在 query、task/execute 与已接收任务的 task/cancel 写入前关闭读取端，证明不会产生未处理的 EPIPE、等待者会在有界时间内结束、不会生成额外 staging 输出，并清理拥有的进程组及后代。结果目录发布测试在最后一次碰撞检查与实际发布原语之间设置确定性屏障，让外部写者分别创建空目录和含用户字节的非空目录；两种情况都必须拒绝、保留目标目录身份与用户字节，并只清理自己的暂存目录。Linux x64 Node-API helper 的公开来源、C 源 SHA-256、内嵌二进制 SHA-256 与 Node-API 下限也由源码测试固定。
 
 ## 仓库质量门
 
@@ -29,7 +29,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## 人工兼容矩阵
 
-Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用、Store 升级、卸载恢复、便携版回退、DocWen GUI 激活、原生目录选择对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
+Windows 人工检查需要覆盖 Microsoft Store 安装、别名禁用与启用、Store 升级、卸载恢复、便携版回退、DocWen GUI 激活、原生目录选择对话框、Word/Excel/Markdown 输出、编号冲突和可见校对。Linux x64 人工检查另行覆盖手动包选择、Machine/GUI 控制和真实结果目录导出；Ubuntu 源码 CI 对 Node-API helper 与 no-replace 竞态的通过不能替代真实 Obsidian Linux 宿主验收。若依赖 Office 或真实文档呈现，应单独记录应用版本、样本、候选哈希与人工结论。
 
 ## 安全夹具
 
