@@ -1422,7 +1422,8 @@ async function discoverKnownLinuxDescendants(
       parentBefore = await readLinuxProcessMetadata(pid);
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
-        knownProcesses.delete(pid);
+        // Keep the captured pid+starttime until the authoritative full /proc
+        // scan in this inspection can prove that exact lifetime is gone.
         continue;
       }
       issues.push(linuxProcessGroupIssue(error));
