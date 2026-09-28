@@ -1593,6 +1593,7 @@ function linuxProcessGroupIssue(error: unknown): LinuxProcessGroupIssue {
 function linuxProcessGroupUnconfirmed(inspection: LinuxProcessGroupInspection): LocalCliError {
   const systemCode = inspection.issues.map((issue) => issue.systemCode).find((code) => code !== undefined);
   const ownershipIssue = inspection.issues[0]?.kind;
+  const ownershipIssues = [...new Set(inspection.issues.map((issue) => issue.kind))];
   return new LocalCliError(
     "cli_cleanup_failed",
     "Unable to confirm that every owned DocWen process-group member exited.",
@@ -1601,6 +1602,7 @@ function linuxProcessGroupUnconfirmed(inspection: LinuxProcessGroupInspection): 
       ownershipState: "unconfirmed",
       unconfirmedEvidenceCount: inspection.issues.length,
       ...(ownershipIssue ? { ownershipIssue } : {}),
+      ownershipIssues,
       ...(systemCode ? { systemCode } : {}),
     },
   );
