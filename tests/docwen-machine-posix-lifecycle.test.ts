@@ -99,6 +99,54 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
     expect(parsePidText("101\n202\t303 ")).toEqual([101, 202, 303]);
   }, 5_000);
 
+  it.each(["success-query", "success-task"] as const)(
+    "cleans surviving owned descendants before a successful %s session releases ownership",
+    async (mode) => {
+      const fixture = await createFixture(mode, "resistant");
+      const staging = path.join(fixture.root, "success-staging");
+      const input = path.join(fixture.root, "success-input.md");
+      await mkdir(staging);
+      await writeFile(input, "# input\n", "utf8");
+      const sentinel = spawn(process.execPath, ["-e", "setInterval(() => undefined, 1000)"], {
+        detached: true,
+        stdio: "ignore",
+      });
+      sentinel.unref();
+      if (typeof sentinel.pid !== "number") throw new Error("Sentinel process did not start");
+      await expectProcessLive(sentinel.pid);
+
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+      let pids: number[] = [];
+      try {
+        const operation: Promise<unknown> = mode === "success-query"
+          ? client.query("health/check", {}, undefined, 8_000)
+          : client.runTask(realTaskRequest(staging, input), undefined, 8_000);
+        pids = await waitForPids(fixture.pidFile);
+        if (mode === "success-query") {
+          await expect(operation).resolves.toMatchObject({ all_ok: true });
+        } else {
+          await expect(operation).resolves.toMatchObject({
+            taskId: "task.1",
+            bundle: { artifacts: [expect.objectContaining({ logical_path: "output.md" })] },
+          });
+        }
+
+        expect(await readTraceEvents(fixture.rootTraceFile)).toContain("root_normal_exit");
+        const helperEvents = await readTraceEvents(fixture.helperTraceFile);
+        expect(helperEvents).toContain("helper_term");
+        expect(helperEvents).toContain("helper_observed_root_gone");
+        expect(helperEvents).not.toContain("helper_exit");
+        for (const pid of pids) await expectProcessNotLive(pid);
+        await expectProcessLive(sentinel.pid);
+      } finally {
+        client.dispose();
+        killRemaining(pids);
+        killUnrelated(sentinel);
+      }
+    },
+    12_000,
+  );
+
   it("terminates a detached process group after the root exits while a descendant resists SIGTERM", async () => {
     const fixture = await createFixture("timeout", "resistant");
     const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
@@ -231,7 +279,14 @@ describe.skipIf(process.platform !== "linux")("DocWenMachineClient Linux process
   }, 8_000);
 });
 
-type FixtureMode = "timeout" | "query" | "task" | "cancel" | "unload";
+type FixtureMode =
+  | "timeout"
+  | "query"
+  | "task"
+  | "cancel"
+  | "unload"
+  | "success-query"
+  | "success-task";
 type HelperBehavior = "resistant" | "cooperative";
 
 type Fixture = {
@@ -336,7 +391,9 @@ setInterval(() => undefined, 1000);
 
 function workerFixtureSource(): string {
   return String.raw`
+const { createHash } = require("node:crypto");
 const { appendFileSync, closeSync, readSync, writeFileSync, writeSync } = require("node:fs");
+const path = require("node:path");
 const [mode, closedFile, traceFile] = process.argv.slice(1);
 let buffered = Buffer.alloc(0);
 function record(event) {
@@ -369,12 +426,31 @@ function readMessage() {
     buffered = Buffer.concat([buffered, chunk.subarray(0, bytesRead)]);
   }
 }
-function send(id, result) {
-  const body = Buffer.from(JSON.stringify({ jsonrpc: "2.0", id, result }), "utf8");
+function waitForInputClose() {
+  const chunk = Buffer.allocUnsafe(256);
+  while (true) {
+    let bytesRead;
+    try {
+      bytesRead = readSync(0, chunk, 0, chunk.length, null);
+    } catch (error) {
+      if (error && error.code === "EINTR") continue;
+      throw error;
+    }
+    if (bytesRead === 0) process.exit(0);
+  }
+}
+function sendMessage(message) {
+  const body = Buffer.from(JSON.stringify(message), "utf8");
   writeSync(1, Buffer.concat([
     Buffer.from("Content-Length: " + body.length + "\r\n\r\n", "ascii"),
     body,
   ]));
+}
+function send(id, result) {
+  sendMessage({ jsonrpc: "2.0", id, result });
+}
+function notify(method, params) {
+  sendMessage({ jsonrpc: "2.0", method, params });
 }
 function closeInput() {
   closeSync(0);
@@ -403,6 +479,10 @@ if (mode === "timeout" || mode === "unload") {
   if (second.method !== "health/check") process.exit(21);
   record("health_seen");
   setInterval(() => undefined, 1000);
+} else if (mode === "success-query") {
+  if (second.method !== "health/check") process.exit(21);
+  send(second.id, { all_ok: true, checks: [] });
+  waitForInputClose();
 } else {
   if (second.method !== "task/plan") process.exit(22);
   if (mode === "task") {
@@ -410,6 +490,7 @@ if (mode === "timeout" || mode === "unload") {
     send(second.id, { plan_id: "plan.1" });
     process.exit(0);
   }
+  const request = second.params;
   send(second.id, { plan_id: "plan.1" });
   const execute = readMessage();
   if (execute.method !== "task/execute") process.exit(23);
@@ -417,6 +498,43 @@ if (mode === "timeout" || mode === "unload") {
     closeInput();
     send(execute.id, { task_id: "task.1", state: "accepted" });
     process.exit(0);
+  }
+  if (mode === "success-task") {
+    send(execute.id, { task_id: "task.1", state: "accepted" });
+    const staging = request.output.staging_root.path;
+    const outputPath = path.join(staging, "output.md");
+    const bytes = Buffer.from("# output\n", "utf8");
+    writeFileSync(outputPath, bytes);
+    notify("task/completed", {
+      task_id: "task.1",
+      bundle: {
+        schema: "docwen.artifact_bundle.v3",
+        bundle_id: "bundle.1",
+        task_id: "task.1",
+        producer: {
+          name: "DocWen",
+          product_version: "0.13.0",
+          machine_protocol: "docwen.machine.v2",
+        },
+        layout_schema: "docwen.artifact_layout.v1",
+        artifacts: [{
+          artifact_id: "artifact.1",
+          kind: "document",
+          locator: "output.md",
+          logical_path: "output.md",
+          suggested_name: "output.md",
+          media_type: "text/markdown",
+          size_bytes: bytes.length,
+          sha256: createHash("sha256").update(bytes).digest("hex"),
+        }],
+        entries: [{ artifact_id: "artifact.1", role: "primary", ordinal: 0, preferred: true }],
+        relations: [],
+      },
+      diagnostics: [],
+      metrics: { duration_ms: 1, input_bytes: 1, output_bytes: bytes.length },
+      sequence: 1,
+    });
+    waitForInputClose();
   }
 }
 `;
@@ -464,6 +582,12 @@ function startWorker() {
     ["-e", workerSource, options.mode, options.closedFile, options.workerTraceFile],
     { stdio: [0, 1, 2] },
   );
+  if (options.mode === "success-query" || options.mode === "success-task") {
+    worker.once("close", (code) => {
+      record("root_normal_exit");
+      process.exit(code === 0 ? 0 : 25);
+    });
+  }
   closeSync(0);
   writeFileSync(
     options.pidFile,

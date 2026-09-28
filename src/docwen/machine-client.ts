@@ -197,6 +197,7 @@ class MachineSession {
   private preferredStdinFailure: Error | null = null;
   private termination: Promise<void> | null = null;
   private readonly ownedLinuxProcessGroupId: number | null;
+  private readonly knownLinuxProcessIds = new Set<number>();
   private readonly closed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
 
@@ -221,6 +222,9 @@ class MachineSession {
       && this.child.pid > 0
       ? this.child.pid
       : null;
+    if (this.ownedLinuxProcessGroupId !== null) {
+      this.knownLinuxProcessIds.add(this.ownedLinuxProcessGroupId);
+    }
     this.closed = new Promise((resolve) => {
       this.child.once("close", resolve);
       this.child.once("error", (error) => {
@@ -421,6 +425,7 @@ class MachineSession {
         stderr: stderrText,
       });
     }
+    if (this.ownedLinuxProcessGroupId !== null) await this.terminate();
   }
 
   terminate(): Promise<void> {
@@ -432,11 +437,11 @@ class MachineSession {
     this.normalClose = true;
     if (this.ownedLinuxProcessGroupId !== null) {
       const groupId = this.ownedLinuxProcessGroupId;
-      await signalLinuxProcessGroup(groupId, false);
+      await signalLinuxProcessGroup(groupId, this.knownLinuxProcessIds, false);
       this.child.stdin.destroy();
-      if (await waitForLinuxProcessGroupExit(groupId, TERMINATION_GRACE_MS)) return;
-      await signalLinuxProcessGroup(groupId, true);
-      if (await waitForLinuxProcessGroupExit(groupId, FORCE_KILL_WAIT_MS)) return;
+      if (await waitForLinuxProcessGroupExit(groupId, this.knownLinuxProcessIds, TERMINATION_GRACE_MS)) return;
+      await signalLinuxProcessGroup(groupId, this.knownLinuxProcessIds, true);
+      if (await waitForLinuxProcessGroupExit(groupId, this.knownLinuxProcessIds, FORCE_KILL_WAIT_MS)) return;
       throw new LocalCliError(
         "cli_cleanup_failed",
         "Unable to terminate every live member of the DocWen process group.",
@@ -489,7 +494,7 @@ class MachineSession {
       }
     }
     if (process.platform === "linux" && this.ownedLinuxProcessGroupId !== null) {
-      await signalLinuxProcessGroup(this.ownedLinuxProcessGroupId, force);
+      await signalLinuxProcessGroup(this.ownedLinuxProcessGroupId, this.knownLinuxProcessIds, force);
       return;
     }
     if (process.platform !== "win32" && typeof pid === "number" && pid > 0) {
@@ -707,6 +712,17 @@ export class DocWenMachineClient {
       try {
         await session.terminate();
       } catch (cleanupError) {
+        if (cleanupError === primary) throw primary;
+        if (
+          cleanupError instanceof LocalCliError
+          && cleanupError.code === "cli_cleanup_failed"
+          && cleanupError.details.cleanupState === "unconfirmed"
+        ) {
+          throw new LocalCliError("cli_cleanup_failed", cleanupError.message, {
+            ...cleanupError.details,
+            primaryCode: primary instanceof LocalCliError ? primary.code : undefined,
+          });
+        }
         throw new LocalCliError("cli_cleanup_failed", "Unable to clean up the DocWen process tree.", {
           primaryCode: primary instanceof LocalCliError ? primary.code : undefined,
           primaryCause: errorMessage(primary),
@@ -1135,9 +1151,25 @@ function remoteTaskError(params: JsonObject): RemoteMachineError {
   );
 }
 
-async function signalLinuxProcessGroup(groupId: number, force: boolean): Promise<void> {
-  const members = await liveLinuxProcessGroupMembers(groupId);
-  if (members.length === 0) return;
+type LinuxProcessGroupIssue = {
+  systemCode?: string;
+};
+
+type LinuxProcessGroupInspection = {
+  members: number[];
+  issues: LinuxProcessGroupIssue[];
+};
+
+async function signalLinuxProcessGroup(
+  groupId: number,
+  knownProcessIds: Set<number>,
+  force: boolean,
+): Promise<void> {
+  const inspection = await inspectLinuxProcessGroup(groupId, knownProcessIds);
+  if (inspection.members.length === 0) {
+    if (inspection.issues.length > 0) throw linuxProcessGroupUnconfirmed(inspection);
+    return;
+  }
   try {
     process.kill(-groupId, force ? "SIGKILL" : "SIGTERM");
   } catch (error) {
@@ -1146,54 +1178,127 @@ async function signalLinuxProcessGroup(groupId: number, force: boolean): Promise
   }
 }
 
-async function waitForLinuxProcessGroupExit(groupId: number, timeoutMs: number): Promise<boolean> {
+async function waitForLinuxProcessGroupExit(
+  groupId: number,
+  knownProcessIds: Set<number>,
+  timeoutMs: number,
+): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (true) {
-    if ((await liveLinuxProcessGroupMembers(groupId)).length === 0) return true;
+    const inspection = await inspectLinuxProcessGroup(groupId, knownProcessIds);
+    if (inspection.members.length === 0) {
+      if (inspection.issues.length > 0) throw linuxProcessGroupUnconfirmed(inspection);
+      return true;
+    }
     const remaining = deadline - Date.now();
     if (remaining <= 0) return false;
     await waitMilliseconds(Math.min(PROCESS_GROUP_POLL_MS, remaining));
   }
 }
 
-async function liveLinuxProcessGroupMembers(groupId: number): Promise<number[]> {
-  let entries: string[];
+async function inspectLinuxProcessGroup(
+  groupId: number,
+  knownProcessIds: Set<number>,
+): Promise<LinuxProcessGroupInspection> {
+  const descendantIssues = await discoverKnownLinuxDescendants(knownProcessIds);
+  let candidatePids: number[];
+  let issues: LinuxProcessGroupIssue[] = [];
   try {
-    entries = await readdir("/proc");
+    candidatePids = (await readdir("/proc"))
+      .filter((entry) => /^\d+$/u.test(entry))
+      .map(Number);
   } catch (error) {
-    throw linuxProcessGroupError("Unable to inspect the DocWen process group.", error);
+    candidatePids = [...knownProcessIds];
+    issues = [linuxProcessGroupIssue(error), ...descendantIssues];
   }
 
   const members: number[] = [];
-  for (const entry of entries) {
-    if (!/^\d+$/u.test(entry)) continue;
-    const pid = Number(entry);
+  for (const pid of new Set(candidatePids)) {
     try {
-      const raw = await readFile(`/proc/${entry}/stat`, "utf8");
-      const closingParen = raw.lastIndexOf(")");
-      if (closingParen < 0) {
-        throw new LocalCliError("cli_cleanup_failed", "Linux process metadata is malformed.");
+      const metadata = await readLinuxProcessMetadata(pid);
+      if (metadata.processGroup !== groupId || metadata.session !== groupId) {
+        if (knownProcessIds.has(pid)) knownProcessIds.delete(pid);
+        continue;
       }
-      const fields = raw.slice(closingParen + 1).trim().split(/\s+/u);
-      const state = fields[0];
-      const processGroup = Number(fields[2]);
-      const session = Number(fields[3]);
-      if (
-        processGroup === groupId
-        && session === groupId
-        && state !== "Z"
-        && state !== "X"
-        && state !== "x"
-      ) {
-        members.push(pid);
+      knownProcessIds.add(pid);
+      if (isLiveLinuxProcessState(metadata.state)) members.push(pid);
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        knownProcessIds.delete(pid);
+        continue;
+      }
+      issues.push(linuxProcessGroupIssue(error));
+    }
+  }
+  return { members, issues };
+}
+
+async function discoverKnownLinuxDescendants(
+  knownProcessIds: Set<number>,
+): Promise<LinuxProcessGroupIssue[]> {
+  const issues: LinuxProcessGroupIssue[] = [];
+  const queue = [...knownProcessIds];
+  const visited = new Set<number>();
+  while (queue.length > 0) {
+    const pid = queue.shift();
+    if (pid === undefined || visited.has(pid)) continue;
+    visited.add(pid);
+    try {
+      const children = await readFile(`/proc/${pid}/task/${pid}/children`, "utf8");
+      for (const child of children.trim().split(/\s+/u)) {
+        if (!/^\d+$/u.test(child)) continue;
+        const childPid = Number(child);
+        if (!knownProcessIds.has(childPid)) {
+          knownProcessIds.add(childPid);
+          queue.push(childPid);
+        }
       }
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) continue;
-      if (error instanceof LocalCliError) throw error;
-      throw linuxProcessGroupError("Unable to inspect a DocWen process-group member.", error);
+      issues.push(linuxProcessGroupIssue(error));
     }
   }
-  return members;
+  return issues;
+}
+
+async function readLinuxProcessMetadata(pid: number): Promise<{
+  state: string;
+  processGroup: number;
+  session: number;
+}> {
+  const raw = await readFile(`/proc/${pid}/stat`, "utf8");
+  const closingParen = raw.lastIndexOf(")");
+  if (closingParen < 0) {
+    throw new LocalCliError("cli_cleanup_failed", "Linux process metadata is malformed.");
+  }
+  const fields = raw.slice(closingParen + 1).trim().split(/\s+/u);
+  return {
+    state: fields[0] ?? "",
+    processGroup: Number(fields[2]),
+    session: Number(fields[3]),
+  };
+}
+
+function isLiveLinuxProcessState(state: string): boolean {
+  return state !== "Z" && state !== "X" && state !== "x";
+}
+
+function linuxProcessGroupIssue(error: unknown): LinuxProcessGroupIssue {
+  const systemCode = systemErrorCode(error);
+  return systemCode ? { systemCode } : {};
+}
+
+function linuxProcessGroupUnconfirmed(inspection: LinuxProcessGroupInspection): LocalCliError {
+  const systemCode = inspection.issues.map((issue) => issue.systemCode).find((code) => code !== undefined);
+  return new LocalCliError(
+    "cli_cleanup_failed",
+    "Unable to confirm that every owned DocWen process-group member exited.",
+    {
+      cleanupState: "unconfirmed",
+      unconfirmedEvidenceCount: inspection.issues.length,
+      ...(systemCode ? { systemCode } : {}),
+    },
+  );
 }
 
 function linuxProcessGroupError(message: string, error: unknown): LocalCliError {
