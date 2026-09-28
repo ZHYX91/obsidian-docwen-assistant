@@ -52,6 +52,14 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
   if (mode === "automatic" || mode === "manual") details.mode = mode;
   const primaryCode = diagnosticCode(read("primaryCode"));
   if (primaryCode) details.primaryCode = primaryCode;
+  const systemCode = diagnosticCode(read("systemCode"));
+  if (systemCode) details.systemCode = systemCode;
+  const cleanupState = read("cleanupState");
+  if (cleanupState === "unconfirmed") details.cleanupState = cleanupState;
+  const unconfirmedEvidenceCount = read("unconfirmedEvidenceCount");
+  if (typeof unconfirmedEvidenceCount === "number" && Number.isSafeInteger(unconfirmedEvidenceCount) && unconfirmedEvidenceCount >= 0) {
+    details.unconfirmedEvidenceCount = unconfirmedEvidenceCount;
+  }
   return details;
 }
 
