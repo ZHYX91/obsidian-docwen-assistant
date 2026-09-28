@@ -232,7 +232,10 @@ class MachineSession {
     this.closed = new Promise((resolve) => {
       this.child.once("close", resolve);
       this.child.once("error", (error) => {
-        this.childProcessExited = true;
+        // Only the ChildProcess "exit" event is direct evidence that a
+        // successfully spawned process has exited. Spawn failures have no
+        // owned Linux process group, and other "error" events are not exit
+        // evidence.
         const aliasMissing = target.mode === "automatic" && isErrno(error, "ENOENT");
         const failure = new LocalCliError(
           aliasMissing ? "cli_alias_not_found" : "cli_spawn_failed",
@@ -1435,15 +1438,56 @@ async function inspectLinuxProcessGroup(
       if (
         metadata.processGroup === groupId
         && metadata.session === groupId
-        && isLiveLinuxProcessState(metadata.state)
       ) {
-        issues.push({ kind: "unknown_group_member" });
+        if (isLiveLinuxProcessState(metadata.state)) {
+          issues.push({ kind: "unknown_group_member" });
+          continue;
+        }
+
+        const unknownIdentity = { pid: metadata.pid, startTime: metadata.startTime };
+        const taskInspection = await inspectLinuxProcessTasks(
+          pid,
+          unknownIdentity,
+          groupId,
+        );
+        if (taskInspection.members.length > 0) {
+          // Task liveness is evidence that this unknown process is still part
+          // of the group, but it does not establish ownership. Never add it to
+          // knownProcesses or use its task identities as signal anchors.
+          issues.push({ kind: "unknown_group_member" });
+          continue;
+        }
+        if (taskInspection.complete) {
+          // A stable task snapshot with no live task is sufficient to ignore
+          // this unknown dead process. It still never becomes owned.
+          continue;
+        }
+
+        const hardTaskIssues = taskInspection.issues.filter(
+          (issue) => issue.kind === "proc_unreadable",
+        );
+        if (hardTaskIssues.length > 0) {
+          issues.push(...hardTaskIssues);
+        } else {
+          // Task topology changed or could not be completed. Without ownership
+          // continuity, that uncertainty must remain an unknown group member.
+          issues.push({ kind: "unknown_group_member" });
+        }
       }
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
         if (expectedStartTime !== undefined) {
-          confirmedDead.add(linuxIdentityKey({ pid, startTime: expectedStartTime }));
-          knownProcesses.delete(pid);
+          const identity = { pid, startTime: expectedStartTime };
+          if (pid === groupId && !rootProcessExited) {
+            // /proc disappearance can race process teardown, but Node has not
+            // observed the direct child exit yet. Keep the captured root
+            // lifetime and report uncertainty rather than treating ENOENT as
+            // whole-process exit proof.
+            issues.push({ kind: "task_changed", identity });
+          } else {
+            confirmedDead.add(linuxIdentityKey(identity));
+            knownProcesses.delete(pid);
+          }
         }
         continue;
       }
