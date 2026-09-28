@@ -444,11 +444,14 @@ function expectUnconfirmedOwnership(error: unknown, ownershipIssue: string, prim
     code: "cli_cleanup_failed",
     details: {
       cleanupState: "unconfirmed",
-      ownershipIssue,
       ownershipState: "unconfirmed",
       primaryCode,
     },
   });
+  const details = (error as {
+    details: { ownershipIssues?: string[] };
+  }).details;
+  expect(details.ownershipIssues).toContain(ownershipIssue);
 }
 
 function statIdentity(raw: string): {
