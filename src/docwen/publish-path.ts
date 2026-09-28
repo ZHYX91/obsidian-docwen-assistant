@@ -6,6 +6,7 @@ import * as path from "node:path";
 import { getSystemErrorName } from "node:util";
 
 import { LocalCliError } from "./errors";
+import { operationWarning, recordFailureWarning } from "./operation-outcome";
 import {
   LINUX_X64_RENAME_ADDON_BASE64,
   LINUX_X64_RENAME_ADDON_SHA256,
@@ -106,7 +107,13 @@ async function loadLinuxBinding(): Promise<DirectoryBinding> {
       cleanupFailure = error;
     }
   }
-  if (primaryFailure !== undefined) throw nativeLoadError(primaryFailure);
+  if (primaryFailure !== undefined) {
+    const failure = nativeLoadError(primaryFailure);
+    if (cleanupFailure !== undefined) {
+      recordFailureWarning(failure, operationWarning("output_cleanup_failed", cleanupFailure));
+    }
+    throw failure;
+  }
   if (cleanupFailure !== undefined) {
     throw new LocalCliError(
       "cli_cleanup_failed",
