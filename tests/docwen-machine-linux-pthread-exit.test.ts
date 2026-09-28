@@ -22,14 +22,8 @@ const nativePthreadAvailable = process.platform === "linux"
 
 const roots: string[] = [];
 const controls: ChildProcess[] = [];
-const originalEnvironment = new Map<string, string | undefined>();
 
 afterEach(() => {
-  for (const [name, value] of originalEnvironment) {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
-  }
-  originalEnvironment.clear();
   for (const child of controls.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -135,15 +129,16 @@ function createFixture(mode: "timeout" | "normal"): Fixture {
   const root = mkdtempSync(path.join(tmpdir(), "docwen-pthread-exit-"));
   roots.push(root);
   const source = path.join(root, "machine.c");
+  const binary = path.join(root, "docwen-machine-pthread.bin");
   const executable = path.join(root, "docwen-machine-pthread");
   writeFileSync(source, C_SOURCE, "utf8");
-  const compile = spawnSync("cc", ["-std=c11", "-O2", "-pthread", source, "-o", executable], {
+  const compile = spawnSync("cc", ["-std=c11", "-O2", "-pthread", source, "-o", binary], {
     encoding: "utf8",
   });
   if (compile.status !== 0) {
     throw new Error("Unable to compile pthread Machine fixture: " + (compile.stderr || compile.stdout));
   }
-  chmodSync(executable, 0o755);
+  chmodSync(binary, 0o755);
 
   const fixture: Fixture = {
     executable,
@@ -156,21 +151,27 @@ function createFixture(mode: "timeout" | "normal"): Fixture {
     releaseFile: path.join(root, "release"),
     signalFile: path.join(root, "signal.log"),
   };
-  setEnv("DOCWEN_TEST_MODE", mode);
-  setEnv("DOCWEN_TEST_ROOT_PID_FILE", fixture.rootPidFile);
-  setEnv("DOCWEN_TEST_PROTOCOL_TID_FILE", fixture.protocolTidFile);
-  setEnv("DOCWEN_TEST_HEARTBEAT_TID_FILE", fixture.heartbeatTidFile);
-  setEnv("DOCWEN_TEST_HEARTBEAT_FILE", fixture.heartbeatFile);
-  setEnv("DOCWEN_TEST_HEALTH_FILE", fixture.healthFile);
-  setEnv("DOCWEN_TEST_MAIN_FILE", fixture.mainFile);
-  setEnv("DOCWEN_TEST_RELEASE_FILE", fixture.releaseFile);
-  setEnv("DOCWEN_TEST_SIGNAL_FILE", fixture.signalFile);
+  const wrapper = [
+    "#!/bin/sh",
+    "export DOCWEN_TEST_MODE=" + shellQuote(mode),
+    "export DOCWEN_TEST_ROOT_PID_FILE=" + shellQuote(fixture.rootPidFile),
+    "export DOCWEN_TEST_PROTOCOL_TID_FILE=" + shellQuote(fixture.protocolTidFile),
+    "export DOCWEN_TEST_HEARTBEAT_TID_FILE=" + shellQuote(fixture.heartbeatTidFile),
+    "export DOCWEN_TEST_HEARTBEAT_FILE=" + shellQuote(fixture.heartbeatFile),
+    "export DOCWEN_TEST_HEALTH_FILE=" + shellQuote(fixture.healthFile),
+    "export DOCWEN_TEST_MAIN_FILE=" + shellQuote(fixture.mainFile),
+    "export DOCWEN_TEST_RELEASE_FILE=" + shellQuote(fixture.releaseFile),
+    "export DOCWEN_TEST_SIGNAL_FILE=" + shellQuote(fixture.signalFile),
+    "exec " + shellQuote(binary) + " \"$@\"",
+    "",
+  ].join("\n");
+  writeFileSync(executable, wrapper, "utf8");
+  chmodSync(executable, 0o755);
   return fixture;
 }
 
-function setEnv(name: string, value: string): void {
-  if (!originalEnvironment.has(name)) originalEnvironment.set(name, process.env[name]);
-  process.env[name] = value;
+function shellQuote(value: string): string {
+  return "'" + value.replace(/'/gu, "'\\''") + "'";
 }
 
 async function waitForFixtureReady(fixture: Fixture): Promise<FixtureIds> {
