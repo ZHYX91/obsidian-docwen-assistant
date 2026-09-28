@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { lstat, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as integrity from "../src/docwen/output-integrity";
 import type { ValidatedArtifactBundle } from "../src/docwen/machine-client";
 import { atomicCommitDirectory, captureOutputDirectory } from "../src/docwen/output-directory";
+import * as publication from "../src/docwen/publish-path";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -81,6 +82,30 @@ describe("conversion directory publication", () => {
     expect(await readFile(path.join(f.output, f.node, "user.txt"), "utf8")).toBe("keep");
     expect(await readdir(f.output)).toEqual([f.node]);
   });
+
+  it.each(["empty", "non-empty"] as const)(
+    "atomically refuses an external %s target created after the final collision check",
+    async (kind) => {
+      const f = await fixture();
+      const target = path.join(f.output, f.node);
+      const publish = publication.publishDirectoryNoReplace;
+      let writerIdentity: { dev: bigint; ino: bigint } | null = null;
+      vi.spyOn(publication, "publishDirectoryNoReplace").mockImplementation(async (source, destination) => {
+        await mkdir(destination);
+        if (kind === "non-empty") await writeFile(path.join(destination, "user.txt"), "keep");
+        const identity = await lstat(destination, { bigint: true });
+        writerIdentity = { dev: identity.dev, ino: identity.ino };
+        await publish(source, destination);
+      });
+
+      await expect(atomicCommitDirectory(f.bundle, f.parent)).rejects.toMatchObject({ code: "cli_commit_failed" });
+      const current = await lstat(target, { bigint: true });
+      expect({ dev: current.dev, ino: current.ino }).toEqual(writerIdentity);
+      if (kind === "non-empty") expect(await readFile(path.join(target, "user.txt"), "utf8")).toBe("keep");
+      else expect(await readdir(target)).toEqual([]);
+      expect(await readdir(f.output)).toEqual([f.node]);
+    },
+  );
 
   it("cancels after preparation without publishing a partial directory", async () => {
     const f = await fixture();

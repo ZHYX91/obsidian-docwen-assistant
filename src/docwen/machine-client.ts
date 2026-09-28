@@ -193,6 +193,7 @@ class MachineSession {
   private stderrBytes = 0;
   private nextRequestId = 0;
   private normalClose = false;
+  private preferredStdinFailure: Error | null = null;
   private termination: Promise<void> | null = null;
   private readonly closed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
@@ -228,6 +229,9 @@ class MachineSession {
         this.queue.fail(failure);
         resolve(null);
       });
+    });
+    this.child.stdin.on("error", (error) => {
+      this.handleStdinError(error);
     });
     this.child.stdout.on("data", (chunk: Buffer) => {
       try {
@@ -365,13 +369,13 @@ class MachineSession {
     return message ? Promise.resolve(message) : this.queue.next();
   }
 
-  requestCancellation(taskId: string): void {
+  requestCancellation(taskId: string, failure: Error): void {
     this.send({
       jsonrpc: "2.0",
       id: ++this.nextRequestId,
       method: "task/cancel",
       params: { task_id: taskId },
-    });
+    }, failure);
   }
 
   fail(error: Error): void {
@@ -486,11 +490,40 @@ class MachineSession {
     }
   }
 
-  private send(message: JsonObject): void {
+  private send(message: JsonObject, writeFailure?: Error): void {
     const failure = this.queue.failureError();
     if (failure) throw failure;
-    if (this.child.stdin.destroyed) throw protocolError("DocWen stdin is closed");
-    this.child.stdin.write(encodeMachineFrame(message));
+    if (
+      this.child.stdin.destroyed
+      || this.child.stdin.writableEnded
+      || this.child.stdin.writableFinished
+      || !this.child.stdin.writable
+    ) {
+      const closedFailure = writeFailure ?? protocolError("DocWen stdin is closed");
+      this.queue.fail(closedFailure);
+      void this.terminate().catch(() => undefined);
+      throw closedFailure;
+    }
+    if (writeFailure) this.preferredStdinFailure = writeFailure;
+    try {
+      this.child.stdin.write(encodeMachineFrame(message), (error) => {
+        if (error) {
+          this.handleStdinError(error, writeFailure);
+        } else if (writeFailure && this.preferredStdinFailure === writeFailure) {
+          this.preferredStdinFailure = null;
+        }
+      });
+    } catch (error) {
+      throw this.handleStdinError(error, writeFailure);
+    }
+  }
+
+  private handleStdinError(error: unknown, preferredFailure?: Error): Error {
+    const failure = preferredFailure ?? this.preferredStdinFailure ?? stdinWriteError(error);
+    if (preferredFailure || this.preferredStdinFailure === failure) this.preferredStdinFailure = null;
+    this.queue.fail(failure);
+    void this.terminate().catch(() => undefined);
+    return failure;
   }
 }
 
@@ -615,7 +648,7 @@ export class DocWenMachineClient {
       const cancellation = new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
       if (taskId) {
         try {
-          session.requestCancellation(taskId);
+          session.requestCancellation(taskId, cancellation);
         } catch {
           session.fail(cancellation);
           void session.terminate().catch(() => undefined);
@@ -1107,6 +1140,21 @@ function meetsMinimumStableVersion(actual: string, minimum: string): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function stdinWriteError(error: unknown): LocalCliError {
+  const systemCode = systemErrorCode(error);
+  return new LocalCliError(
+    "cli_protocol_error",
+    "DocWen Machine Protocol input stream failed.",
+    systemCode ? { systemCode } : {},
+  );
+}
+
+function systemErrorCode(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
+    ? error.code
+    : undefined;
 }
 
 function isErrno(error: unknown, code: string): boolean {

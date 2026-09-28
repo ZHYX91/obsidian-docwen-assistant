@@ -437,6 +437,27 @@ describe("DocWenMachineClient", () => {
     expect(child.killed).toBe(true);
   }, 10_000);
 
+  it("bounds cancellation that arrives after normal close has ended stdin", async () => {
+    const child = new FakeChild();
+    child.stdin.removeAllListeners("finish");
+    spawnMock.mockReturnValueOnce(child);
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# input\n", "utf8");
+    writeFileSync(input, bytes);
+    const controller = new AbortController();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 10_000);
+    await vi.waitFor(() => expect(child.stdin.writableEnded).toBe(true));
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+    expect(serverState.taskAccepted).toBe(true);
+    expect(serverState.cancelRequested).toBe(false);
+    expect(child.killed).toBe(true);
+  });
+
   it("launches the fixed automatic alias with an explicit safe working directory", async () => {
     const aliasPath = "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe";
     const client = new DocWenMachineClient(
