@@ -15,6 +15,7 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
   serverState: {
     cancelRequested: false,
+    cancellationDelayMs: 0,
     corruptHash: false,
     floodHealth: false,
     holdHealth: false,
@@ -226,7 +227,9 @@ class FakeChild extends EventEmitter {
     if (message.method === "task/cancel") {
       serverState.cancelRequested = true;
       if (!serverState.ignoreCancellation) {
-        queueMicrotask(() => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 }));
+        const notifyCancelled = () => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 });
+        if (serverState.cancellationDelayMs > 0) window.setTimeout(notifyCancelled, serverState.cancellationDelayMs);
+        else queueMicrotask(notifyCancelled);
       }
     }
   }
@@ -259,6 +262,7 @@ describe("DocWenMachineClient", () => {
     vi.stubGlobal("window", { setTimeout, clearTimeout });
     spawnMock.mockReset();
     serverState.cancelRequested = false;
+    serverState.cancellationDelayMs = 0;
     serverState.corruptHash = false;
     serverState.floodHealth = false;
     serverState.holdHealth = false;
@@ -609,6 +613,33 @@ describe("DocWenMachineClient", () => {
     expect(serverState.cancelRequested).toBe(true);
     expect(child.killed).toBe(true);
   });
+
+  it("lets a cancellation that starts first outlive the original operation deadline within its own grace", async () => {
+    serverState.holdTask = true;
+    serverState.cancellationDelayMs = 300;
+    const child = new FakeChild();
+    spawnMock.mockReturnValueOnce(child);
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# input\n", "utf8");
+    writeFileSync(input, bytes);
+    const controller = new AbortController();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const operationStarted = Date.now();
+
+    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 1_000);
+    await vi.waitFor(() => expect(serverState.taskAccepted).toBe(true));
+    const delayUntilLateAbort = 850 - (Date.now() - operationStarted);
+    if (delayUntilLateAbort > 0) {
+      await new Promise<void>((resolve) => window.setTimeout(resolve, delayUntilLateAbort));
+    }
+    controller.abort();
+
+    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+    expect(serverState.cancelRequested).toBe(true);
+    expect(Date.now() - operationStarted).toBeGreaterThanOrEqual(1_000);
+    expect(child.killed).toBe(true);
+  }, 4_000);
 
   it("force-terminates an accepted task when the server ignores cancellation", async () => {
     serverState.holdTask = true;
