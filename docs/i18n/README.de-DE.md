@@ -86,8 +86,9 @@ Repository-Governance: [Änderungsprotokoll](../../CHANGELOG.md) · [Mitwirken](
 
 ## Support
 
-- Verwenden Sie [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general) für Workflow-Ideen und allgemeines Feedback.
-- Verwenden Sie [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a) für Fragen zur Nutzung und Konfiguration.
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Fragen zur Nutzung und Konfiguration.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Erste Ideen für Funktionen und Arbeitsabläufe.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Tipps, Arbeitsabläufe und Referenzimplementierungen.
 - Reproduzierbare Obsidian-Integrationsfehler und konkrete Funktionsvorschläge gehören in die strukturierten [DocWen Assistant Issue-Formulare](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
 - Konvertierung, OCR, Korrektur oder CLI-Verhalten außerhalb von Obsidian gehört zu den [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues).
 - Melden Sie Sicherheitslücken privat gemäß der [Sicherheitsrichtlinie](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).

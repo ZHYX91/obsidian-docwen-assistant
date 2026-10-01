@@ -86,8 +86,9 @@ Obsidian 1.12.7 и новее использует четыре верхние �
 
 ## Поддержка
 
-- Используйте [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general) для идей по рабочим процессам и общих отзывов.
-- Используйте [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a) для вопросов по использованию и настройке.
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Вопросы по использованию и настройке.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Предварительные идеи функций и рабочих процессов.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Советы, рабочие процессы и примеры реализации.
 - Воспроизводимые ошибки интеграции с Obsidian и конкретные предложения отправляйте через [формы Issues DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
 - Вопросы преобразования, OCR, проверки текста или поведения CLI вне Obsidian отправляйте в [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues).
 - Сообщайте об уязвимостях приватно в соответствии с [политикой безопасности](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).

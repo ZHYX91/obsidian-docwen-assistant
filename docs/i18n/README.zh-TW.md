@@ -92,8 +92,9 @@ Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉�
 
 ## 支援
 
-- 工作流程想法和一般意見請發布到 [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general)；
-- 使用和設定問題請發布到 [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)；
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用和設定問題。
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：尚待討論的功能與工作流程想法。
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell)：技巧、工作流程和參考實作。
 - 可重現的 Obsidian 整合錯誤和明確功能建議請使用結構化的 [DocWen Assistant Issue 表單](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose)；
 - Obsidian 以外的轉換、OCR、校對或 CLI 行為請提交到 [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues)；
 - 安全性漏洞請依照儲存庫的[安全性政策](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy)私下回報。

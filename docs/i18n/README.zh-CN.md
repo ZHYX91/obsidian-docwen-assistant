@@ -113,8 +113,9 @@ npm run release
 
 ## 支持
 
-- 工作流想法和一般反馈请发布到 [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general)；
-- 使用和配置问题请发布到 [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)；
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用和配置问题。
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：尚待讨论的功能与工作流想法。
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell)：技巧、工作流和参考实现。
 - 可复现的 Obsidian 集成缺陷和明确的功能建议请使用结构化的 [DocWen Assistant Issue 表单](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose)；
 - Obsidian 之外的转换、OCR、校对或 CLI 行为请提交到 [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues)；
 - 安全漏洞请按照仓库的[安全策略](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy)私密报告。

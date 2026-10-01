@@ -86,8 +86,9 @@ Gouvernance du dépôt : [Journal des modifications](../../CHANGELOG.md) · [Con
 
 ## Assistance
 
-- Utilisez [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general) pour les idées de flux de travail et les retours généraux.
-- Utilisez [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a) pour les questions d'utilisation et de configuration.
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Questions d’utilisation et de configuration.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Premières idées de fonctionnalités et de flux de travail.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Astuces, flux de travail et implémentations de référence.
 - Signalez les défauts reproductibles d'intégration Obsidian et les propositions concrètes via les [formulaires d'issue DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
 - Pour la conversion, l'OCR, la relecture ou le comportement CLI hors d'Obsidian, utilisez les [issues DocWen Core](https://github.com/ZHYX91/docwen/issues).
 - Signalez les vulnérabilités en privé conformément à la [politique de sécurité](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).

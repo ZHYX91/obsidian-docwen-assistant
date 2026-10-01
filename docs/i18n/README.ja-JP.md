@@ -86,8 +86,9 @@ Node.js 24.19.0 と npm 11.17.0 を使用します。`npm ci`、`npm run check`�
 
 ## サポート
 
-- ワークフローのアイデアや一般的なフィードバックには [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general) を使用してください。
-- 使用方法や設定に関する質問には [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a) を使用してください。
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用方法や設定に関する質問。
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：機能やワークフローについての初期段階のアイデア。
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell)：ヒント、ワークフロー、参考実装。
 - 再現可能な Obsidian 連携の不具合や具体的な機能提案は、[DocWen Assistant の Issue フォーム](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose)から報告してください。
 - Obsidian 外の変換、OCR、校正、CLI の動作は [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues) で報告してください。
 - 脆弱性は[セキュリティポリシー](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy)に従って非公開で報告してください。

@@ -86,8 +86,9 @@ Quản trị kho mã: [Nhật ký thay đổi](../../CHANGELOG.md) · [Hướng 
 
 ## Hỗ trợ
 
-- Dùng [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general) cho ý tưởng quy trình làm việc và phản hồi chung.
-- Dùng [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a) cho câu hỏi về cách sử dụng và cấu hình.
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Câu hỏi về cách sử dụng và cấu hình.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Ý tưởng ban đầu về tính năng và quy trình làm việc.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Mẹo, quy trình làm việc và bản triển khai tham khảo.
 - Gửi lỗi tích hợp Obsidian có thể tái hiện và đề xuất tính năng cụ thể qua [biểu mẫu issue của DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
 - Với chuyển đổi, OCR, soát lỗi hoặc hành vi CLI ngoài Obsidian, hãy dùng [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues).
 - Báo cáo lỗ hổng theo cách riêng tư theo [chính sách bảo mật](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).

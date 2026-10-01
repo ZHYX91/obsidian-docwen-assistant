@@ -1,5 +1,14 @@
 blank_issues_enabled: false
 contact_links:
+  - name: "Q&A"
+    url: https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a
+    about: Usage and configuration questions.
+  - name: "Ideas"
+    url: https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas
+    about: Early feature and workflow ideas.
+  - name: "Show and tell"
+    url: https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell
+    about: Tips, workflows, and reference implementations.
   - name: DocWen core issues
     url: https://github.com/ZHYX91/docwen/issues
     about: Report conversion, OCR, proofreading, or DocWen CLI problems that also occur outside Obsidian.

@@ -86,8 +86,9 @@ Node.js 24.19.0과 npm 11.17.0을 사용합니다. `npm ci`, `npm run check`, `n
 
 ## 지원
 
-- 워크플로 아이디어와 일반 피드백은 [General](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/general)을 사용하세요.
-- 사용 및 설정 질문은 [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)를 사용하세요.
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): 사용 및 설정 질문.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): 초기 기능 및 워크플로 아이디어.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): 팁, 워크플로 및 참고 구현.
 - 재현 가능한 Obsidian 통합 버그와 구체적인 기능 제안은 [DocWen Assistant 이슈 양식](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose)으로 제출하세요.
 - Obsidian 외부의 변환, OCR, 교정 또는 CLI 동작은 [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues)에 제출하세요.
 - 취약점은 [보안 정책](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy)에 따라 비공개로 신고하세요.
