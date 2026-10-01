@@ -1388,10 +1388,13 @@ async function waitForLinuxProcessGroupExit(
     rememberHardLinuxIssues(evidence, inspection.issues);
     if (inspection.members.length === 0) {
       const issues = mergeLinuxIssues(inspection.issues, evidence.hardIssues);
-      if (issues.length > 0) {
+      if (issues.length === 0) return true;
+      // A procfs scan can outlive the direct child's exit observation. Retry
+      // transient task/group changes within the existing bound; unreadable,
+      // unknown, namespace or identity evidence must remain unconfirmed.
+      if (evidence.hardIssues.length > 0 || Date.now() >= deadline) {
         throw linuxProcessGroupUnconfirmed({ members: [], issues });
       }
-      return true;
     }
     const remaining = deadline - Date.now();
     if (remaining <= 0) return false;
