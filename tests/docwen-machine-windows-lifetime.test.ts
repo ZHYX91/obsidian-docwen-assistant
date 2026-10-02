@@ -1,5 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
+import { writeFileSync } from "node:fs";
 import { copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
@@ -287,10 +288,17 @@ function compileWindowsFixture(source: string, executable: string): void {
   if (discovery.status !== 0 || !discovery.stdout.trim()) {
     throw new Error("Visual Studio C++ build tools are required for the Windows pipe fixture.");
   }
-  const vcvars = path.join(discovery.stdout.trim(), "VC", "Auxiliary", "Build", "vcvars64.bat");
-  const command = 'call "' + vcvars + '" >nul && cl /nologo /O2 /W3 "'
-    + source + '" /Fe:"' + executable + '"';
-  const compile = spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
+  const vcvars = path.join(discovery.stdout.trim(), "VC", "Auxiliary", "Build", "vcvarsall.bat");
+  const fixtureRoot = path.dirname(executable);
+  const object = path.join(fixtureRoot, "windows-machine-broken-pipe.obj");
+  const buildScript = path.join(fixtureRoot, "build-windows-machine-broken-pipe.cmd");
+  writeFileSync(buildScript, [
+    '@call "' + vcvars + '" x64 >nul',
+    "@if errorlevel 1 exit /b 1",
+    '@cl /nologo /O2 /W3 "' + source + '" /Fo"' + object + '" /Fe"' + executable + '"',
+  ].join("\r\n") + "\r\n", "utf8");
+  const compile = spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/c", buildScript], {
+    cwd: fixtureRoot,
     encoding: "utf8",
     shell: false,
     timeout: 60_000,

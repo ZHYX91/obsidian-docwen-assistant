@@ -52,6 +52,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rebuild Windows owner twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          first="$RUNNER_TEMP/windows-owner-first"
+          second="$RUNNER_TEMP/windows-owner-second"
+          mkdir -p "$first" "$second"
+          node scripts/build-native-windows-owner.mjs "$first"
+          node scripts/build-native-windows-owner.mjs "$second"
+          cmp "$first/windows-x64.exe" "$second/windows-x64.exe"
+          cmp "$first/windows-machine-owner-x64.ts" "$second/windows-machine-owner-x64.ts"
+          echo '--- WINDOWS-BUILD.json ---'
+          cat "$first/WINDOWS-BUILD.json"
+          echo '--- windows-machine-owner-x64.ts ---'
+          cat "$first/windows-machine-owner-x64.ts"
+          echo '--- end Windows owner rebuild ---'
+
       - name: Lint, test, type-check, build, and verify assets
         run: npm run check
 
