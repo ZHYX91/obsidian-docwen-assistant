@@ -1,0 +1,80 @@
+{
+  "name": "docwen-assistant",
+  "version": "3.1.2",
+  "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
+  "main": "dist/main.js",
+  "scripts": {
+    "check:runtime": "node scripts/check-runtime.mjs",
+    "format:check": "node scripts/check-format.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=json-summary",
+    "test:watch": "vitest",
+    "dev": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --watch",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "build": "npm run typecheck && esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote --minify && node scripts/sync-dist-assets.mjs",
+    "build:quick": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --external:electron --external:@electron/remote",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" \"scripts/**/*.mjs\"",
+    "lint:fix": "npm run lint -- --fix",
+    "check:readme-i18n": "node scripts/check-readme-i18n.mjs",
+    "check:docs-i18n": "node scripts/check-docs-i18n.mjs",
+    "artifact:check": "node scripts/check-artifacts.mjs",
+    "acceptance:docwen-package": "npm run check:runtime && node scripts/run-docwen-package-acceptance.mjs",
+    "audit:all": "node scripts/check-dependencies.mjs",
+    "check": "npm run check:runtime && npm run lint && npm run format:check && npm run check:readme-i18n && npm run check:docs-i18n && npm run test:coverage && npm run build && npm run artifact:check && npm run audit:all && npm run release:validate",
+    "clean": "node scripts/clean.mjs",
+    "clean:deps": "node scripts/clean.mjs --deps",
+    "prebuild": "node scripts/prepare-build.mjs prepare",
+    "version:set": "node scripts/set-version.mjs",
+    "release": "npm run release:check && node scripts/release.mjs bundle --output-dir release",
+    "release:validate": "node scripts/release.mjs validate",
+    "release:validate-tag": "node scripts/release.mjs validate-tag",
+    "release:bundle": "node scripts/release.mjs bundle",
+    "release:verify-source": "node scripts/release.mjs verify-source",
+    "release:verify-transport": "node scripts/release.mjs verify-transport",
+    "release:publication-boundary": "node scripts/release.mjs publication-boundary",
+    "release:publish-github": "node scripts/release.mjs publish-github",
+    "release:post-verify": "node scripts/release.mjs post-verify",
+    "release:docwen-compatibility": "node scripts/check-docwen-compatibility.mjs",
+    "release:check": "npm run check && npm run release:validate-tag"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "docwen",
+    "document",
+    "converter"
+  ],
+  "author": "ZhengYX",
+  "license": "MIT",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "packageManager": "npm@11.17.0",
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@eslint/json": "0.14.0",
+    "@types/node": "^24.19.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "ajv": "8.20.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.4",
+    "eslint-plugin-obsidianmd": "^0.4.2",
+    "obsidian": "^1.13.1",
+    "tslib": "^2.8.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^4.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ZHYX91/obsidian-docwen-assistant.git"
+  },
+  "allowScripts": {
+    "esbuild": true
+  },
+  "overrides": {
+    "obsidian": {
+      "moment": "2.31.0"
+    }
+  }
+}

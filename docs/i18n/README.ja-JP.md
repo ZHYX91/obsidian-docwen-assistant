@@ -1,0 +1,100 @@
+# DocWen Assistant
+
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
+
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows または Linux、Obsidian 1.12.7 以降、安定版 DocWen 0.13.0 以降 が必要です。
+
+> **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
+
+## スクリーンショット
+
+以下は、パッケージ済みプラグインと DocWen CLI をデスクトップ版 Obsidian で実行した画面です。
+
+### 校正サイドバー
+
+行またはルールごとに問題を確認し、ノートを書き換えずに対応するソース範囲へ戻れます。
+
+![DocWen 校正サイドバー](../assets/docwen-assistant-proofread-en.png)
+
+### 上部タブ設定と CLI 機能
+
+4 つの上部タブと各タブの説明カードで正確な DocWen ランタイムを選び、変換と校正を調整し、Machine 機能を確認できます。
+
+![DocWen Assistant の上部タブ設定](../assets/docwen-assistant-settings-en.png)
+
+### 機能に応じたエクスポート
+
+利用可能な変換経路と明示的な出力先を選び、ソースノートは変更しません。
+
+![DocWen Assistant の機能別エクスポート](../assets/docwen-assistant-export-en.png)
+
+## 機能
+
+DocWen でのファイル表示、出力先を明示した Word／Excel／Markdown 変換、Markdown 見出し番号の追加・削除、校正、doctor 診断を利用できます。
+
+## 要件と互換性
+
+- Windows または Linux と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
+- Windows では Store 版または完全に展開したポータブル版の DocWen 0.13.0 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux の結果ディレクトリエクスポートには x64 とアトミック no-replace 対応ファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
+- プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
+
+Store のインストールがこれらの要件を満たさない場合は、互換性のあるポータブル版を使用し、手動インストールで選択してください。
+
+自動検出は Windows 専用で、登録済みの `docwen.exe` エイリアスを使用します。Linux では手動インストールが必須で、展開したフォルダー、`DocWen`、または `DocWenCLI` を選択します。`WindowsApps` や任意のフォルダーを検索せず、ソフトウェアを自動ダウンロードしません。
+
+## インストール
+
+### DocWen とプラグインをインストール
+
+Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から DocWen をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル版を展開します。Linux x64 では同じ Releases ページから互換 Linux パッケージを完全に展開して手動で選択します。DocWen Assistant は Community Plugins からインストールでき、手動の場合は `main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。
+
+### インストール時の安全性
+
+リリースパッケージに含まれるのは `main.js`、`manifest.json`、`styles.css` だけであり、`data.json` を含めたり、置き換えたり、削除したりすることはありません。すべての設定を意図的にリセットする場合だけ `data.json` を削除してください。
+
+## 使用方法
+
+リボンアイコン、**DocWen** サブメニュー、コマンドパレットから、DocWen の起動、Word／Excel／Markdown の出力、見出し番号の変更、Markdown 校正、doctor を実行できます。
+
+出力フォルダーを選択します。変換ごとに元の名前、日時、入力形式を含む結果フォルダーを作成し、生成ファイル名と関連リソースを保持します。既存の結果フォルダーは上書きしません。
+
+Word 出力では結果フォルダー内に独立した DOCX を生成します。 元の Markdown はご自身で保管してください。逆変換は元の文書を保存した付随ファイルに依存せず、DOCX の内容と構造を読み取ります。元と同じ記法や空白は保証しません。拡張構文は DocWen の設定で選択できます。
+
+互換性のある [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照を Markdown ノートに番号を書き込まずに保持します。
+
+## 設定
+
+Obsidian 1.12.7 以降では、横スクロール可能な 4 つの上部タブ（一般、Markdown へ、Word へ、校正）を使用します。説明は関連するタブ内に表示され、独立した使用方法ページはありません。タブは RTL を含む矢印キー、Home/End、20 px の UI 文字、粗いポインター向けの大きな操作領域に対応します。言語は既定で Obsidian に従い、対応する 11 言語から明示的に選択できます。
+
+## 制限
+
+- 対応するローカル DocWen がある Windows または Linux デスクトップ向けです。Linux の結果ディレクトリエクスポートには x64 とアトミック no-replace 対応ファイルシステムが必要です。
+- 選択した DocWen フォルダーまたは実行ファイル以外を再帰検索しません。
+- CLI 応答、元スナップショット、エディター状態、出力先を安全に検証できない操作は拒否されます。
+
+## プライバシーとセキュリティ
+
+プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけを DocWen に渡します。Vault 外へアクセスするのは、登録済みの DocWen エイリアスまたは手動で選択したポータブルアプリの起動、一時入力と検証済み成果物の管理、明示的に選択した出力先への書き込みに限られます。バージョン付きの Microsoft Store パッケージパスは開いたり保存したりしません。文書のアップロードや Vault 全体の列挙も行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+
+## 開発
+
+Node.js 24.19.0 と npm 11.17.0 を使用します。`npm ci`、`npm run check`、`npm run release` を実行します。ソースは `src/`、テストは `tests/` にあり、`dist/` と `release/` の生成物はソースではありません。
+
+安定版文書：[製品要件](../product-requirements.en.md) · [UX 仕様](../ux-spec.en.md) · [アーキテクチャ](../architecture.en.md) · [テスト戦略](../testing-strategy.en.md)
+
+リポジトリ運営：[変更履歴](../../CHANGELOG.md) · [コントリビューションガイド](../../CONTRIBUTING.md) · [セキュリティ](../../SECURITY.md)
+
+## サポート
+
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用方法や設定に関する質問。
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：機能やワークフローについての初期段階のアイデア。
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell)：ヒント、ワークフロー、参考実装。
+- 再現可能な Obsidian 連携の不具合や具体的な機能提案は、[DocWen Assistant の Issue フォーム](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose)から報告してください。
+- Obsidian 外の変換、OCR、校正、CLI の動作は [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues) で報告してください。
+- 脆弱性は[セキュリティポリシー](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy)に従って非公開で報告してください。
+
+公開前に、文書の機密内容、ファイルと Vault のパス、CLI ログ、実行ファイルの場所、認証情報を削除してください。
+
+## ライセンス
+
+MIT © ZhengYX

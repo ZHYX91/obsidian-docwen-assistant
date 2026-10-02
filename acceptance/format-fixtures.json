@@ -1,0 +1,212 @@
+[
+  {
+    "format": "docx",
+    "file": "01-docx.docx",
+    "bytes": 36794,
+    "sha256": "dcd26f085a7a833a09ded3b95c33d3187cc8202aeb668dd2510ceb747212fd05"
+  },
+  {
+    "format": "doc",
+    "file": "02-doc.doc",
+    "bytes": 18432,
+    "sha256": "f4a6e68d38aa4248120664880150171879cddd7dc34ad174c439feee84c288eb"
+  },
+  {
+    "format": "odt",
+    "file": "03-odt.odt",
+    "bytes": 15489,
+    "sha256": "4d447c6aa854fd8c3a97f89be26b66a5be6e7aa017974cdbd5a1250c317b47e4"
+  },
+  {
+    "format": "rtf",
+    "file": "04-rtf.rtf",
+    "bytes": 18333,
+    "sha256": "9810972125f66f76efdca9c769bd7e10ecc2fe9710471e92c07af3eb13ebb4ed"
+  },
+  {
+    "format": "wps",
+    "file": "05-wps.wps",
+    "bytes": 18432,
+    "sha256": "f4a6e68d38aa4248120664880150171879cddd7dc34ad174c439feee84c288eb"
+  },
+  {
+    "format": "txt",
+    "file": "06-txt.txt",
+    "bytes": 48,
+    "sha256": "cfec443f594e41a7d1bc475e5fd903b447b957d2546ba272f20647c7a43f1d86"
+  },
+  {
+    "format": "xlsx",
+    "file": "07-xlsx.xlsx",
+    "bytes": 4861,
+    "sha256": "dcd860d1a6751bc929644c5883202561cd2ba136ef838ce04369b61898a23afe"
+  },
+  {
+    "format": "xls",
+    "file": "08-xls.xls",
+    "bytes": 5632,
+    "sha256": "13bf077087091682fc19d77cd6eeed354b0e88ef53a3172ec6fdf4ac52b49c26"
+  },
+  {
+    "format": "ods",
+    "file": "09-ods.ods",
+    "bytes": 9641,
+    "sha256": "22e2e730046399407fe432b22f4bc7a7c35464e0cf200cd2c35a42879a726e68"
+  },
+  {
+    "format": "et",
+    "file": "10-et.et",
+    "bytes": 5632,
+    "sha256": "13bf077087091682fc19d77cd6eeed354b0e88ef53a3172ec6fdf4ac52b49c26"
+  },
+  {
+    "format": "csv",
+    "file": "11-csv.csv",
+    "bytes": 24,
+    "sha256": "f015235675348da66e4597dbea64a48ca93705419b481d3ce3a216df6709a569"
+  },
+  {
+    "format": "tsv",
+    "file": "12-tsv.tsv",
+    "bytes": 24,
+    "sha256": "a7f3a713350bc559664be74e78451422ad66c15b29ee7c0d64799232b85f12a7"
+  },
+  {
+    "format": "png",
+    "file": "13-png.png",
+    "bytes": 3538,
+    "sha256": "9a354cc88453f7fdca6e376eda0603fc302df81b85c6345fb15603cfd5745dae"
+  },
+  {
+    "format": "jpg",
+    "file": "14-jpg.jpg",
+    "bytes": 6685,
+    "sha256": "a6618932933e853f87b9847c55105d0af149e425c34d4c8786e48192f66914cc"
+  },
+  {
+    "format": "jpeg",
+    "file": "15-jpeg.jpeg",
+    "bytes": 6685,
+    "sha256": "a6618932933e853f87b9847c55105d0af149e425c34d4c8786e48192f66914cc"
+  },
+  {
+    "format": "gif",
+    "file": "16-gif.gif",
+    "bytes": 2634,
+    "sha256": "079db3ee86f79a65b6ac5e799c653d22204d89e73b9bbc839291ae6795780ba4"
+  },
+  {
+    "format": "bmp",
+    "file": "17-bmp.bmp",
+    "bytes": 864054,
+    "sha256": "89a487aba278f0fe5632c3f3a1c64ccc3f41bbdfe98c91782582657dc40a857a"
+  },
+  {
+    "format": "tif",
+    "file": "18-tif.tif",
+    "bytes": 864140,
+    "sha256": "8a62dcfb8f3e3664edf1a34e10e7bb04b5ed73188b01bb79f198eb8d38a3dacf"
+  },
+  {
+    "format": "tiff",
+    "file": "19-tiff.tiff",
+    "bytes": 864140,
+    "sha256": "8a62dcfb8f3e3664edf1a34e10e7bb04b5ed73188b01bb79f198eb8d38a3dacf"
+  },
+  {
+    "format": "webp",
+    "file": "20-webp.webp",
+    "bytes": 1576,
+    "sha256": "f884de420d08b7a30166e196a9941a1cf5372a3d59eb1c86cd147f9ac8c6eeec"
+  },
+  {
+    "format": "heic",
+    "file": "21-heic.heic",
+    "bytes": 2004,
+    "sha256": "e3d0897632305da1ef43ddb2f257725182b291492f5460849ecc3bb682790d42"
+  },
+  {
+    "format": "heif",
+    "file": "22-heif.heif",
+    "bytes": 2004,
+    "sha256": "e3d0897632305da1ef43ddb2f257725182b291492f5460849ecc3bb682790d42"
+  },
+  {
+    "format": "pdf",
+    "file": "23-pdf.pdf",
+    "bytes": 1593,
+    "sha256": "9ee75bdd5ee2da5bf85d7c3ccedb2dc5719e7f4fb9750f8a689b8ec1019af0fb"
+  },
+  {
+    "format": "ofd",
+    "file": "24-ofd.ofd",
+    "bytes": 946,
+    "sha256": "6b2b505e0baa701c2b27fcabd48ca184c79b7d50913fabbf1e27b8e010075151"
+  },
+  {
+    "format": "xps",
+    "file": "25-xps.xps",
+    "bytes": 1351,
+    "sha256": "e0e03543f5046d9a2c2715952e36bb0604f46e39ad031c4af9a82d0c54e503db"
+  },
+  {
+    "format": "md",
+    "file": "26-md.md",
+    "bytes": 114,
+    "sha256": "6845fbafbab3ec2d7747802df4504c2b14e86dd6aac9a638f0cf03a32d829259"
+  },
+  {
+    "format": "markdown",
+    "file": "27-markdown.markdown",
+    "bytes": 121,
+    "sha256": "3567fde6823ff9797701846b4a64a63799fadf24e98c4e484839cee8ba706c89"
+  },
+  {
+    "format": "html",
+    "file": "28-html.html",
+    "bytes": 138,
+    "sha256": "d5406f992c7549e20039c6fc9947acd5a8a5a0e91f839710c8f5a8761fc9d725"
+  },
+  {
+    "format": "htm",
+    "file": "29-htm.htm",
+    "bytes": 138,
+    "sha256": "d5406f992c7549e20039c6fc9947acd5a8a5a0e91f839710c8f5a8761fc9d725"
+  },
+  {
+    "format": "mhtml",
+    "file": "30-mhtml.mhtml",
+    "bytes": 361,
+    "sha256": "12757fbedd72802ba517de3c9daff9f83110badbe37fe467827df40fa926cf9b"
+  },
+  {
+    "format": "mht",
+    "file": "31-mht.mht",
+    "bytes": 361,
+    "sha256": "12757fbedd72802ba517de3c9daff9f83110badbe37fe467827df40fa926cf9b"
+  },
+  {
+    "format": "epub",
+    "file": "32-epub.epub",
+    "bytes": 1242,
+    "sha256": "f825ab1f0ffb6518793144beb099e3166c769495f0dd6254b56825749e9e3abf"
+  },
+  {
+    "format": "enex",
+    "file": "33-enex.enex",
+    "bytes": 387,
+    "sha256": "f44a4538d6508064c59ea58883b70dfc4047556cb594dd2142c2c4b4dfe0ac6e"
+  },
+  {
+    "format": "pptx",
+    "file": "34-pptx.pptx",
+    "bytes": 28254,
+    "sha256": "a437d73d2ab03856d43e6900ec2c96109014a7a33004d6758a9553f844c8ca3c"
+  },
+  {
+    "format": "ppt",
+    "file": "35-ppt.ppt",
+    "bytes": 649728,
+    "sha256": "678f1bd4b3489072eaf3c912ad31972117f5f771134b76037519ed252075f39e"
+  }
+]

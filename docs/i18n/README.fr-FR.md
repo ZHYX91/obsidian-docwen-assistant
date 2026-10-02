@@ -1,0 +1,100 @@
+# DocWen Assistant
+
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
+
+DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://github.com/ZHYX91/docwen). Il nécessite Windows ou Linux, Obsidian 1.12.7 ou ultérieur et une version stable de DocWen 0.13.0 ou ultérieure.
+
+> **DocWen est requis.** Installez une version compatible depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez entièrement le ZIP portable proposé dans [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+
+## Captures d’écran
+
+Ces captures montrent le plugin empaqueté avec DocWen CLI dans Obsidian pour ordinateur.
+
+### Barre latérale de relecture
+
+Examinez les problèmes par ligne ou par règle et revenez à la plage source correspondante sans réécrire la note.
+
+![Barre latérale de relecture DocWen](../assets/docwen-assistant-proofread-en.png)
+
+### Paramètres à onglets supérieurs et capacités CLI
+
+Utilisez les quatre onglets supérieurs et leurs aides contextuelles pour choisir précisément l’environnement DocWen, régler les conversions et la relecture, puis vérifier les capacités Machine.
+
+![Paramètres de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+
+### Export selon les capacités
+
+Choisissez une voie de conversion disponible et une destination explicite tout en laissant la note source inchangée.
+
+![Export DocWen Assistant selon les capacités](../assets/docwen-assistant-export-en.png)
+
+## Fonctionnalités
+
+Le plugin ouvre les fichiers dans DocWen, exporte vers Word/Excel/Markdown avec une destination explicite, gère la numérotation des titres Markdown, relit le Markdown et lance le diagnostic doctor.
+
+## Configuration requise et compatibilité
+
+- Windows ou Linux et Obsidian 1.12.7 ou ultérieur ; le plugin fonctionne uniquement sur ordinateur.
+- Sous Windows, utilisez une version DocWen 0.13.0 ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export de répertoires de résultat sous Linux exige x64 et un système de fichiers avec no-replace atomique ; le plugin ne télécharge pas DocWen automatiquement.
+- Le plugin exige `docwen.machine.v2` et `docwen.artifact_bundle.v3` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
+
+Si la version du Store ne répond pas à ces exigences, utilisez un paquet portable compatible et sélectionnez-le avec l’installation manuelle.
+
+La détection automatique est réservée à Windows, utilise l’alias enregistré `docwen.exe` et reste valide après les mises à jour Microsoft Store. Sous Linux, l’installation manuelle est obligatoire et accepte le dossier extrait, `DocWen` ou `DocWenCLI`. Le plugin ne parcourt ni `WindowsApps` ni des dossiers arbitraires et ne télécharge aucun logiciel automatiquement.
+
+## Installation
+
+### Installer DocWen et le plugin
+
+Sous Windows, installez DocWen depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extrayez le paquet portable depuis [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez un paquet Linux compatible depuis la même page Releases et sélectionnez-le manuellement. Installez DocWen Assistant depuis Community Plugins ou copiez `main.js`, `manifest.json` et `styles.css` dans `<Vault>/.obsidian/plugins/docwen-assistant/`.
+
+### Sécurité de l’installation
+
+Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styles.css` ; il ne contient, ne remplace et ne supprime jamais `data.json`. Ne supprimez `data.json` que pour réinitialiser volontairement toutes les préférences.
+
+## Utilisation
+
+L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et d'exécuter doctor.
+
+Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de résultats avec le nom source, l’horodatage et le format d’entrée. Les noms et ressources liées sont conservés ; aucun dossier existant n’est remplacé.
+
+L’export Word produit un DOCX autonome dans le dossier de résultats. Conservez le Markdown original. La conversion inverse lit le contenu et la structure du DOCX sans fichier compagnon de la source ; une écriture ou des espaces identiques ne sont pas garantis. Choisissez les extensions dans les paramètres DocWen.
+
+Avec une version compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite), l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans ajouter ces numéros à la note Markdown.
+
+## Paramètres
+
+Obsidian 1.12.7 ou ultérieur utilise quatre onglets supérieurs à défilement horizontal : Général, Exporter en Markdown, Exporter vers Word et Relecture. L’aide contextuelle apparaît dans l’onglet concerné plutôt que dans une page Utilisation séparée. Les onglets prennent en charge les flèches, y compris RTL, Début/Fin, le texte d'interface à 20 px et de grandes cibles tactiles. La langue suit Obsidian par défaut et peut être remplacée par l'une des 11 langues prises en charge.
+
+## Limitations
+
+- Sur ordinateur Windows ou Linux avec une installation locale compatible de DocWen ; l’export de répertoires de résultat sous Linux exige x64 et un système de fichiers avec no-replace atomique.
+- Aucune recherche récursive en dehors du dossier ou du programme DocWen sélectionné.
+- Une opération est refusée si la réponse CLI, l'instantané source, l'état de l'éditeur ou la cible ne peuvent pas être vérifiés en toute sécurité.
+
+## Confidentialité et sécurité
+
+Le plugin transmet uniquement un instantané isolé de l’éditeur courant ou du fichier du Vault à DocWen. Il n’accède aux fichiers hors du Vault que pour lancer l’alias DocWen enregistré ou l’application portable choisie manuellement, gérer les entrées temporaires et artefacts validés, puis écrire vers une destination explicitement choisie. Il n’ouvre ni n’enregistre le chemin versionné du paquet Microsoft Store, ne téléverse aucun document et ne parcourt pas tout le Vault. Détails : [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+
+## Développement
+
+Utilisez Node.js 24.19.0 et npm 11.17.0. Exécutez `npm ci`, `npm run check` et `npm run release`. Le code source se trouve sous `src/`, les tests sous `tests/` ; les fichiers générés dans `dist/` et `release/` ne sont pas du code source.
+
+Documents stables : [Exigences produit](../product-requirements.en.md) · [Spécification UX](../ux-spec.en.md) · [Architecture](../architecture.en.md) · [Stratégie de test](../testing-strategy.en.md)
+
+Gouvernance du dépôt : [Journal des modifications](../../CHANGELOG.md) · [Contribuer](../../CONTRIBUTING.md) · [Sécurité](../../SECURITY.md)
+
+## Assistance
+
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Questions d’utilisation et de configuration.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Premières idées de fonctionnalités et de flux de travail.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Astuces, flux de travail et implémentations de référence.
+- Signalez les défauts reproductibles d'intégration Obsidian et les propositions concrètes via les [formulaires d'issue DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
+- Pour la conversion, l'OCR, la relecture ou le comportement CLI hors d'Obsidian, utilisez les [issues DocWen Core](https://github.com/ZHYX91/docwen/issues).
+- Signalez les vulnérabilités en privé conformément à la [politique de sécurité](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).
+
+Avant toute publication, retirez le contenu privé des documents, les chemins de fichiers et de Vault, les journaux CLI, les emplacements d'exécutables et les identifiants.
+
+## Licence
+
+MIT © ZhengYX

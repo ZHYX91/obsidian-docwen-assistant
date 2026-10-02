@@ -1,0 +1,100 @@
+# DocWen Assistant
+
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
+
+DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows hoặc Linux, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.13.0 trở lên ổn định.
+
+> **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP di động trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+
+## Ảnh chụp màn hình
+
+Các ảnh sau cho thấy plugin đã đóng gói cùng DocWen CLI chạy trong Obsidian trên máy tính.
+
+### Thanh bên soát lỗi
+
+Xem vấn đề theo dòng hoặc quy tắc và quay lại đúng vùng nguồn mà không ghi lại ghi chú.
+
+![Thanh bên soát lỗi DocWen](../assets/docwen-assistant-proofread-en.png)
+
+### Cài đặt bằng thẻ trên cùng và khả năng CLI
+
+Dùng bốn thẻ trên cùng và hướng dẫn theo ngữ cảnh để chọn đúng môi trường DocWen, điều chỉnh chuyển đổi và soát lỗi, rồi xác minh khả năng Machine.
+
+![Cài đặt DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+
+### Xuất theo khả năng
+
+Chọn một lộ trình chuyển đổi khả dụng và vị trí đầu ra rõ ràng trong khi giữ nguyên ghi chú nguồn.
+
+![Xuất theo khả năng của DocWen Assistant](../assets/docwen-assistant-export-en.png)
+
+## Tính năng
+
+Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích đã chọn, thêm hoặc xóa số thứ tự tiêu đề Markdown, soát lỗi Markdown và chạy chẩn đoán doctor.
+
+## Yêu cầu và khả năng tương thích
+
+- Windows hoặc Linux và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
+- Trên Windows, dùng DocWen 0.13.0 trở lên tương thích từ Store hoặc gói di động đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất thư mục kết quả trên Linux yêu cầu x64 và hệ thống tệp hỗ trợ no-replace nguyên tử; plugin không tự động tải DocWen.
+- Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
+
+Nếu bản cài đặt từ Store không đáp ứng các yêu cầu này, hãy dùng gói di động tương thích và chọn gói đó trong chế độ cài đặt thủ công.
+
+Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe` đã đăng ký. Trên Linux bắt buộc dùng cài đặt thủ công; có thể chọn thư mục đã giải nén, `DocWen` hoặc `DocWenCLI`. Plugin không quét `WindowsApps` hay thư mục tùy ý và không tự động tải phần mềm.
+
+## Cài đặt
+
+### Cài DocWen và plugin
+
+Trên Windows, cài DocWen từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) hoặc giải nén gói di động từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux tương thích từ cùng trang Releases và chọn thủ công. Cài DocWen Assistant từ Community Plugins; nếu cài thủ công, sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
+
+### An toàn khi cài đặt
+
+Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói này không bao giờ chứa, thay thế hoặc xóa `data.json`. Chỉ xóa `data.json` khi chủ động đặt lại toàn bộ tùy chọn.
+
+## Cách sử dụng
+
+Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor.
+
+Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục kết quả riêng với tên nguồn, dấu thời gian và định dạng đầu vào. Tên tệp và tài nguyên liên kết được giữ nguyên; thư mục kết quả có sẵn không bị ghi đè.
+
+Xuất Word tạo một tệp DOCX độc lập trong thư mục kết quả. Hãy tự giữ Markdown gốc. Chuyển đổi ngược đọc nội dung và cấu trúc DOCX mà không cần tệp kèm chứa bản gốc; không đảm bảo cách viết và khoảng trắng giống hệt. Chọn phần mở rộng trong cài đặt DocWen.
+
+Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không thêm các số đó vào Markdown.
+
+## Cài đặt plugin
+
+Obsidian 1.12.7 trở lên dùng bốn thẻ trên cùng có thể cuộn ngang: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Hướng dẫn theo ngữ cảnh nằm trong thẻ liên quan, không có trang Cách dùng riêng. Các thẻ hỗ trợ phím mũi tên kể cả RTL, Home/End, chữ giao diện 20 px và vùng bấm lớn cho con trỏ thô. Ngôn ngữ mặc định theo Obsidian và có thể đổi sang một trong 11 ngôn ngữ được hỗ trợ.
+
+## Giới hạn
+
+- Hỗ trợ máy tính để bàn Windows hoặc Linux có bản DocWen cục bộ tương thích; xuất thư mục kết quả trên Linux yêu cầu x64 và hệ thống tệp hỗ trợ no-replace nguyên tử.
+- Không tìm kiếm đệ quy bên ngoài thư mục hoặc chương trình DocWen đã chọn.
+- Thao tác bị từ chối nếu không thể xác minh an toàn phản hồi CLI, ảnh chụp nguồn, trạng thái trình soạn thảo hoặc đích.
+
+## Quyền riêng tư và bảo mật
+
+Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc ứng dụng di động được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+
+## Phát triển
+
+Sử dụng Node.js 24.19.0 và npm 11.17.0. Chạy `npm ci`, `npm run check` và `npm run release`. Mã nguồn nằm trong `src/`, kiểm thử trong `tests/`; các tệp tạo ra trong `dist/` và `release/` không phải mã nguồn.
+
+Tài liệu ổn định: [Yêu cầu sản phẩm](../product-requirements.en.md) · [Đặc tả UX](../ux-spec.en.md) · [Kiến trúc](../architecture.en.md) · [Chiến lược kiểm thử](../testing-strategy.en.md)
+
+Quản trị kho mã: [Nhật ký thay đổi](../../CHANGELOG.md) · [Hướng dẫn đóng góp](../../CONTRIBUTING.md) · [Bảo mật](../../SECURITY.md)
+
+## Hỗ trợ
+
+- [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Câu hỏi về cách sử dụng và cấu hình.
+- [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Ý tưởng ban đầu về tính năng và quy trình làm việc.
+- [Show and tell](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/show-and-tell): Mẹo, quy trình làm việc và bản triển khai tham khảo.
+- Gửi lỗi tích hợp Obsidian có thể tái hiện và đề xuất tính năng cụ thể qua [biểu mẫu issue của DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose).
+- Với chuyển đổi, OCR, soát lỗi hoặc hành vi CLI ngoài Obsidian, hãy dùng [DocWen Core Issues](https://github.com/ZHYX91/docwen/issues).
+- Báo cáo lỗ hổng theo cách riêng tư theo [chính sách bảo mật](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).
+
+Trước khi đăng công khai, hãy xóa nội dung tài liệu riêng tư, đường dẫn tệp và Vault, nhật ký CLI, vị trí tệp thực thi và thông tin xác thực.
+
+## Giấy phép
+
+MIT © ZhengYX

@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible DocWen Assistant integration problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve DocWen Assistant. Remove private note content, Vault paths, document paths, and credentials before attaching logs or screenshots.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: DocWen Assistant, DocWen, Obsidian, and Windows versions
+      placeholder: DocWen Assistant 2.0.0; DocWen x.y.z; Obsidian x.y.z; Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the actual and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Include console errors or DocWen doctor output only after removing private paths and content.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I reproduced this with the latest DocWen Assistant and DocWen releases.
+          required: true
+        - label: I removed private note content, paths, credentials, and personal data.
+          required: true
