@@ -102,7 +102,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild Windows owner twice
+      - name: Rebuild and verify Windows owner
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -111,19 +111,18 @@ jobs:
           New-Item -ItemType Directory -Force -Path $first, $second | Out-Null
           node scripts/build-native-windows-owner.mjs $first
           node scripts/build-native-windows-owner.mjs $second
-          if ((Get-FileHash (Join-Path $first "windows-x64.exe") -Algorithm SHA256).Hash -ne
-              (Get-FileHash (Join-Path $second "windows-x64.exe") -Algorithm SHA256).Hash) {
-            throw "Independent Windows owner builds differ."
+
+          function Assert-SameHash([string]$left, [string]$right, [string]$message) {
+            $leftHash = (Get-FileHash $left -Algorithm SHA256).Hash
+            $rightHash = (Get-FileHash $right -Algorithm SHA256).Hash
+            if ($leftHash -ne $rightHash) { throw $message }
           }
-          if ((Get-FileHash (Join-Path $first "windows-machine-owner-x64.ts") -Algorithm SHA256).Hash -ne
-              (Get-FileHash (Join-Path $second "windows-machine-owner-x64.ts") -Algorithm SHA256).Hash) {
-            throw "Independent embedded owner modules differ."
-          }
-          Write-Output "--- WINDOWS-BUILD.json ---"
-          Get-Content -Raw (Join-Path $first "WINDOWS-BUILD.json")
-          Write-Output "--- windows-machine-owner-x64.ts ---"
-          Get-Content -Raw (Join-Path $first "windows-machine-owner-x64.ts")
-          Write-Output "--- end Windows owner rebuild ---"
+
+          Assert-SameHash (Join-Path $first "windows-x64.exe") (Join-Path $second "windows-x64.exe") "Independent Windows owner builds differ."
+          Assert-SameHash (Join-Path $first "WINDOWS-BUILD.json") (Join-Path $second "WINDOWS-BUILD.json") "Independent Windows owner build records differ."
+          Assert-SameHash (Join-Path $first "windows-machine-owner-x64.ts") (Join-Path $second "windows-machine-owner-x64.ts") "Independent embedded owner modules differ."
+          Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
+          Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
 
       - name: Type-check Windows owner integration
         run: npm run typecheck
