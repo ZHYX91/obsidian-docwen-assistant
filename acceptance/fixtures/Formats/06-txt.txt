@@ -1,3 +1,0 @@
-Document example
-
-A paragraph of plain text.

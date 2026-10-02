@@ -37,10 +37,12 @@ scan, sibling-repository lookup, runtime download, or runtime native compilation
 
 The adapted source is `windows-job.c`, derived under MIT from
 `ZHYX91/docwen-openclaw@d7ad7294b9cadcfea0d430d0dc42ea0bdb48fc10`. Its import definition,
-source SHA-256, generated PE SHA-256, byte length, x64 PE identity, zero COFF timestamp, exact Clang/LLD
-identity and flags are pinned in `WINDOWS-BUILD.json`. `scripts/build-native-windows-owner.mjs`
-reproduces the PE and generated TypeScript payload on the recorded Linux x64 LLVM toolchain. Two clean
-build directories must produce identical bytes before the embedded payload is updated.
+source SHA-256, generated PE SHA-256, byte length, x64 PE identity, zero COFF timestamp, exact MSVC
+compiler/librarian/linker identity and flags are pinned in `WINDOWS-BUILD.json`.
+`scripts/build-native-windows-owner.mjs` reproduces the PE and generated TypeScript payload on a
+Windows x64 host with the recorded MSVC toolset. It resolves the installed x64 compiler tools directly
+and does not download a toolchain. Two clean build directories must produce identical bytes before the
+embedded payload is updated.
 
 At runtime Assistant decodes the pinned bytes into a random owned temporary directory and verifies the
 SHA-256 plus PE32+/x64/subsystem/timestamp identity both when materializing and before reuse. Failure to

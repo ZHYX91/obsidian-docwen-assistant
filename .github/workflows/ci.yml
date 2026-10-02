@@ -52,23 +52,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild Windows owner twice
-        shell: bash
-        run: |
-          set -euo pipefail
-          first="$RUNNER_TEMP/windows-owner-first"
-          second="$RUNNER_TEMP/windows-owner-second"
-          mkdir -p "$first" "$second"
-          node scripts/build-native-windows-owner.mjs "$first"
-          node scripts/build-native-windows-owner.mjs "$second"
-          cmp "$first/windows-x64.exe" "$second/windows-x64.exe"
-          cmp "$first/windows-machine-owner-x64.ts" "$second/windows-machine-owner-x64.ts"
-          echo '--- WINDOWS-BUILD.json ---'
-          cat "$first/WINDOWS-BUILD.json"
-          echo '--- windows-machine-owner-x64.ts ---'
-          cat "$first/windows-machine-owner-x64.ts"
-          echo '--- end Windows owner rebuild ---'
-
       - name: Lint, test, type-check, build, and verify assets
         run: npm run check
 
@@ -118,6 +101,29 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Rebuild Windows owner twice
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $first = Join-Path $env:RUNNER_TEMP "windows-owner-first"
+          $second = Join-Path $env:RUNNER_TEMP "windows-owner-second"
+          New-Item -ItemType Directory -Force -Path $first, $second | Out-Null
+          node scripts/build-native-windows-owner.mjs $first
+          node scripts/build-native-windows-owner.mjs $second
+          if ((Get-FileHash (Join-Path $first "windows-x64.exe") -Algorithm SHA256).Hash -ne
+              (Get-FileHash (Join-Path $second "windows-x64.exe") -Algorithm SHA256).Hash) {
+            throw "Independent Windows owner builds differ."
+          }
+          if ((Get-FileHash (Join-Path $first "windows-machine-owner-x64.ts") -Algorithm SHA256).Hash -ne
+              (Get-FileHash (Join-Path $second "windows-machine-owner-x64.ts") -Algorithm SHA256).Hash) {
+            throw "Independent embedded owner modules differ."
+          }
+          Write-Output "--- WINDOWS-BUILD.json ---"
+          Get-Content -Raw (Join-Path $first "WINDOWS-BUILD.json")
+          Write-Output "--- windows-machine-owner-x64.ts ---"
+          Get-Content -Raw (Join-Path $first "windows-machine-owner-x64.ts")
+          Write-Output "--- end Windows owner rebuild ---"
 
       - name: Type-check Windows owner integration
         run: npm run typecheck
