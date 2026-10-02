@@ -10,6 +10,8 @@ import { DocWenCapabilityService, DocWenClient, DocWenMachineClient, type TaskIn
 import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acceptance.mjs";
 
 const packageBinding = await loadPackageAcceptanceReceipt(process.env);
+const formatFixtures = join(import.meta.dirname, "../acceptance/fixtures/Formats");
+const formatFixtureNames = (await readdir(formatFixtures)).filter((name) => /^\d{2}-/u.test(name)).sort();
 
 describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () => {
   let root: string;
@@ -57,15 +59,21 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     });
   });
 
-  it("matches every format fixture to the exact advertised Machine capabilities", async () => {
-    const fixtures = join(import.meta.dirname, "../acceptance/fixtures/Formats");
-    const names = (await readdir(fixtures)).filter((name) => /^\d{2}-/u.test(name)).sort();
-    expect(names).toHaveLength(35);
-    const service = new DocWenCapabilityService(client);
-    const projection = await client.runtimeCapabilities();
-    for (const name of names) {
+  describe("format fixture admission", () => {
+    let service: DocWenCapabilityService;
+    let projection: Awaited<ReturnType<DocWenClient["runtimeCapabilities"]>>;
+
+    beforeAll(async () => {
+      expect(formatFixtureNames).toHaveLength(35);
+      service = new DocWenCapabilityService(client);
+      projection = await client.runtimeCapabilities();
+    }, 30_000);
+
+    // Each source owns its deadline so process startup costs across unrelated
+    // formats cannot exhaust one shared timeout or obscure the failing fixture.
+    it.each(formatFixtureNames)("matches %s to the exact advertised Machine capabilities", async (name) => {
       const source = join(root, name);
-      await copyFile(join(fixtures, name), source);
+      await copyFile(join(formatFixtures, name), source);
       const inspection = await client.inspect(source);
       expect(inspection.mediaType, name).not.toBe("application/octet-stream");
       const advertised = projection.capabilities.filter((capability) =>
@@ -82,8 +90,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
         expect(file.machineCapabilities.map((item) => item.capability_id), name)
           .toEqual(advertised.map((item) => item.capability_id));
       }
-    }
-  }, 120_000);
+    }, 30_000);
+  });
 
   it("validates a Bundle and commits only the explicit Unicode target", async () => {
     const source = join(root, "输入 空格 #.md");
