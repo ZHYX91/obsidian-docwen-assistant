@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Own every Windows Machine session with an embedded integrity-checked Job Object controller so normal root exit, timeout, cancellation, broken stdin and plugin unload collect descendants without stale-PID `taskkill` authority.
+
 ## [3.1.2] - 2026-09-28
 
 - Handle closed or failed Machine input streams without an uncaught stream error, preserving cancellation and timeout results.
