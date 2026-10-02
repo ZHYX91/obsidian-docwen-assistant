@@ -211,10 +211,12 @@ class MachineSession {
   static async create(
     rawTarget: string | DocWenLaunchTarget,
     windowsOwnerStore: WindowsMachineOwnerStore,
+    assertStartAllowed: () => void,
   ): Promise<MachineSession> {
     const target = normalizeDocWenLaunchTarget(rawTarget);
+    assertStartAllowed();
     if (process.platform === "win32") {
-      const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore);
+      const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore, assertStartAllowed);
       return new MachineSession(target, child, true);
     }
     try {
@@ -448,6 +450,9 @@ class MachineSession {
     }
     let stderrText = Buffer.concat(this.stderr).toString("utf8");
     if (this.stderrBytes > STDERR_LIMIT_BYTES) stderrText += "\n<truncated>";
+    if (this.windowsOwned && code === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
+      throw windowsOwnerCleanupUnconfirmed("The Windows Machine lifetime owner failed during normal shutdown.");
+    }
     if (code !== 0) {
       throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol exited with an error.", {
         exitCode: code,
@@ -458,9 +463,6 @@ class MachineSession {
       throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol wrote unexpected stderr.", {
         stderr: stderrText,
       });
-    }
-    if (this.windowsOwned && code === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
-      throw windowsOwnerCleanupUnconfirmed("The Windows Machine lifetime owner failed during normal shutdown.");
     }
     if (this.ownedLinuxProcessGroupId !== null) await this.terminate();
   }
@@ -633,13 +635,13 @@ class MachineSession {
 
 export class DocWenMachineClient {
   private readonly activeSessions = new Set<MachineSession>();
-  private readonly windowsOwnerStore = new WindowsMachineOwnerStore();
   private disposed = false;
 
   constructor(
     private readonly resolveBinaryPath: () => string | DocWenLaunchTarget,
     private readonly resolveLocale: () => string,
     private readonly expectedProductVersion?: string,
+    private readonly windowsOwnerStore: WindowsMachineOwnerStore = new WindowsMachineOwnerStore(),
   ) {}
 
   locale(): string {
@@ -737,7 +739,17 @@ export class DocWenMachineClient {
   ): Promise<T> {
     if (this.disposed) throw new LocalCliError("cli_spawn_failed", "DocWen client has been disposed.");
     if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
-    const session = await MachineSession.create(this.resolveBinaryPath(), this.windowsOwnerStore);
+    const assertStartAllowed = (): void => {
+      if (this.disposed) {
+        throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
+      }
+      if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
+    };
+    const session = await MachineSession.create(
+      this.resolveBinaryPath(),
+      this.windowsOwnerStore,
+      assertStartAllowed,
+    );
     this.activeSessions.add(session);
     let taskId: string | null = null;
     let timedOut = false;
@@ -773,6 +785,7 @@ export class DocWenMachineClient {
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) onAbort();
     try {
+      assertStartAllowed();
       const productVersion = await session.initialize(this.expectedProductVersion);
       if (this.disposed) {
         throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");

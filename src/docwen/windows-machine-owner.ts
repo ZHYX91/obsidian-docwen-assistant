@@ -16,62 +16,75 @@ export const WINDOWS_MACHINE_OWNER_TARGET_ENV = "DOCWEN_ASSISTANT_JOB_TARGET";
 export const WINDOWS_MACHINE_OWNER_FAILURE_EXIT = 125;
 export const WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT = 126;
 
-type WindowsMachineOwnerImage = {
+export type WindowsMachineOwnerImage = {
   root: string;
   executable: string;
 };
 
-type WindowsMachineOwnerLease = {
+export type WindowsMachineOwnerLease = {
   executable: string;
+  assertActive(): void;
   release(): void;
 };
 
-type WindowsMachineOwnerMaterializer = () => Promise<WindowsMachineOwnerImage>;
+export type WindowsMachineOwnerMaterializer = () => Promise<WindowsMachineOwnerImage>;
+export type WindowsMachineOwnerVerifier = (filename: string) => Promise<void>;
 
 export class WindowsMachineOwnerStore {
   private image: Promise<WindowsMachineOwnerImage> | null = null;
   private leases = 0;
+  private acquisitions = 0;
   private disposed = false;
 
   constructor(
     private readonly materialize: WindowsMachineOwnerMaterializer = materializeWindowsMachineOwner,
+    private readonly verify: WindowsMachineOwnerVerifier = verifyWindowsMachineOwnerFile,
   ) {}
 
   async acquire(): Promise<WindowsMachineOwnerLease> {
-    if (this.disposed) {
-      throw new LocalCliError("cli_spawn_failed", "The Windows Machine lifetime owner has been disposed.");
-    }
-    const image = await this.loadImage();
-    if (this.disposed) {
-      void this.cleanupIfIdle();
-      throw new LocalCliError("cli_spawn_failed", "The Windows Machine lifetime owner has been disposed.");
-    }
+    this.assertAvailable();
+    this.acquisitions += 1;
     try {
-      await verifyWindowsMachineOwnerFile(image.executable);
-    } catch (error) {
-      if (error instanceof LocalCliError) throw error;
-      throw new LocalCliError(
-        "cli_integrity_error",
-        "The materialized Windows Machine lifetime owner could not be verified.",
-        { cause: errorMessage(error), ownershipState: "windows_job" },
-      );
+      const image = await this.loadImage();
+      this.assertAvailable();
+      try {
+        await this.verify(image.executable);
+      } catch (error) {
+        if (error instanceof LocalCliError) throw error;
+        throw new LocalCliError(
+          "cli_integrity_error",
+          "The materialized Windows Machine lifetime owner could not be verified.",
+          { cause: errorMessage(error), ownershipState: "windows_job" },
+        );
+      }
+      this.assertAvailable();
+      this.leases += 1;
+      let released = false;
+      return {
+        executable: image.executable,
+        assertActive: () => this.assertAvailable(),
+        release: () => {
+          if (released) return;
+          released = true;
+          this.leases -= 1;
+          void this.cleanupIfIdle();
+        },
+      };
+    } finally {
+      this.acquisitions -= 1;
+      void this.cleanupIfIdle();
     }
-    this.leases += 1;
-    let released = false;
-    return {
-      executable: image.executable,
-      release: () => {
-        if (released) return;
-        released = true;
-        this.leases -= 1;
-        void this.cleanupIfIdle();
-      },
-    };
   }
 
   dispose(): void {
     this.disposed = true;
     void this.cleanupIfIdle();
+  }
+
+  private assertAvailable(): void {
+    if (this.disposed) {
+      throw new LocalCliError("cli_spawn_failed", "The Windows Machine lifetime owner has been disposed.");
+    }
   }
 
   private loadImage(): Promise<WindowsMachineOwnerImage> {
@@ -86,7 +99,7 @@ export class WindowsMachineOwnerStore {
   }
 
   private async cleanupIfIdle(): Promise<void> {
-    if (!this.disposed || this.leases !== 0 || !this.image) return;
+    if (!this.disposed || this.leases !== 0 || this.acquisitions !== 0 || !this.image) return;
     const imagePromise = this.image;
     this.image = null;
     try {
@@ -102,9 +115,18 @@ export class WindowsMachineOwnerStore {
 export async function spawnWindowsOwnedMachineProcess(
   target: DocWenLaunchTarget,
   store: WindowsMachineOwnerStore,
+  assertStartAllowed: () => void = () => undefined,
 ): Promise<ChildProcessWithoutNullStreams> {
-  const lease = await store.acquire();
+  let lease: WindowsMachineOwnerLease;
   try {
+    lease = await store.acquire();
+  } catch (error) {
+    assertStartAllowed();
+    throw error;
+  }
+  try {
+    assertStartAllowed();
+    lease.assertActive();
     const child = spawn(lease.executable, [], {
       cwd: target.cwd,
       env: {
@@ -127,6 +149,7 @@ export async function spawnWindowsOwnedMachineProcess(
     return child;
   } catch (error) {
     lease.release();
+    if (error instanceof LocalCliError) throw error;
     throw new LocalCliError("cli_spawn_failed", "Unable to start the Windows Machine lifetime owner.", {
       cause: errorMessage(error),
       ownershipState: "windows_job",

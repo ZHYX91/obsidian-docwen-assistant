@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocalCliError } from "../src/docwen/errors";
 import { DocWenMachineClient, type MachineTaskRequest } from "../src/docwen/machine-client";
 import {
+  materializeWindowsMachineOwner,
   spawnWindowsOwnedMachineProcess,
   verifyWindowsMachineOwnerImage,
   WindowsMachineOwnerStore,
@@ -125,6 +126,82 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     }
   }, 10_000);
 
+  it("classifies the reserved owner failure exit during normal close as unconfirmed cleanup", async () => {
+    const fixture = await createNodeFixture("owner-failure-close");
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+
+    try {
+      await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: {
+          cleanupState: "unconfirmed",
+          ownershipState: "windows_job",
+        },
+      });
+    } finally {
+      client.dispose();
+    }
+  }, 10_000);
+
+  it.each(["dispose", "abort"] as const)(
+    "does not launch a Machine target after %s during asynchronous owner verification",
+    async (trigger) => {
+      const fixture = await createNodeFixture("marker");
+      const marker = path.join(fixture.root, "target-started.txt");
+      vi.stubEnv("DOCWEN_LOG_DIR", marker);
+      const verifyStarted = deferred<void>();
+      const continueVerify = deferred<void>();
+      let ownerRoot = "";
+      let ownerExecutable = "";
+      const owner = new WindowsMachineOwnerStore(
+        async () => {
+          const image = await materializeWindowsMachineOwner();
+          ownerRoot = image.root;
+          ownerExecutable = image.executable;
+          roots.push(image.root);
+          return image;
+        },
+        async (filename) => {
+          verifyStarted.resolve();
+          await continueVerify.promise;
+          verifyWindowsMachineOwnerImage(await readFile(filename));
+        },
+      );
+      const controller = new AbortController();
+      const client = new DocWenMachineClient(
+        () => fixture.executable,
+        () => "en_US",
+        undefined,
+        owner,
+      );
+
+      try {
+        const pending = client.query("health/check", {}, controller.signal, 8_000);
+        await verifyStarted.promise;
+        expect(ownerRoot).not.toBe("");
+        expect(ownerExecutable).not.toBe("");
+
+        if (trigger === "dispose") {
+          client.dispose();
+          await expect(lstat(ownerExecutable)).resolves.toMatchObject({ isFile: expect.any(Function) });
+        } else {
+          controller.abort();
+        }
+
+        continueVerify.resolve();
+        await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+        await expect(readFile(marker, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+
+        client.dispose();
+        await waitForPathGone(ownerRoot);
+      } finally {
+        continueVerify.resolve();
+        client.dispose();
+      }
+    },
+    12_000,
+  );
+
   it("preserves a real closed-pipe protocol failure and still releases the Job owner", async () => {
     const fixture = await createBrokenPipeFixture();
     const sentinel = startSentinel();
@@ -167,7 +244,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
   });
 });
 
-type FixtureMode = "root-exit" | "timeout" | "cancel" | "unload" | "marker";
+type FixtureMode = "root-exit" | "owner-failure-close" | "timeout" | "cancel" | "unload" | "marker";
 
 async function createNodeFixture(mode: FixtureMode): Promise<{ root: string; executable: string; trace: string }> {
   const root = await mkdtemp(path.join(tmpdir(), "docwen-windows-owner-"));
@@ -281,7 +358,7 @@ function handle(message) {
     });
   } else if (message.method === "health/check") {
     record("health_seen");
-    if (mode === "root-exit") send(message.id, { all_ok: true, checks: [] });
+    if (mode === "root-exit" || mode === "owner-failure-close") send(message.id, { all_ok: true, checks: [] });
     else if (mode === "marker") {
       writeFileSync(process.env.DOCWEN_LOG_DIR, "started\n", "utf8");
       send(message.id, { all_ok: true, checks: [] });
@@ -325,7 +402,7 @@ process.stdin.on("data", (chunk) => {
 process.stdin.on("end", () => {
   if (mode === "root-exit") helperOnce();
   record("root_exit");
-  process.exit(0);
+  process.exit(mode === "owner-failure-close" ? 125 : 0);
 });
 setInterval(() => undefined, 1000);
 `;
@@ -407,6 +484,31 @@ function killProcess(pid: number | undefined): void {
   } catch {
     // The controlled process already exited.
   }
+}
+
+async function waitForPathGone(filename: string, timeoutMs = 3_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      await lstat(filename);
+    } catch (error) {
+      if (isErrno(error, "ENOENT")) return;
+      throw error;
+    }
+    await delay(20);
+  }
+  throw new Error("Windows Machine owner path remained after all acquisitions and leases were released.");
+}
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve(value: T | PromiseLike<T>): void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
 }
 
 function delay(milliseconds: number): Promise<void> {
