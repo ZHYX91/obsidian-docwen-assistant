@@ -222,6 +222,8 @@ void entry(void) {
     fail(job, (HANDLE)0, (HANDLE)0);
   }
 
+  /* Assign membership as part of process creation, not after it. If this
+     controller dies during startup, no suspended child can escape the job. */
   SIZE_T attributeBytes = 0;
   InitializeProcThreadAttributeList((LPVOID)0, 1, 0, &attributeBytes);
   if (!attributeBytes) fail(job, (HANDLE)0, (HANDLE)0);
@@ -256,6 +258,8 @@ void entry(void) {
   HeapFree(heap, 0, startup.lpAttributeList);
   startup.lpAttributeList = (LPVOID)0;
 
+  /* Close the duplicate read end before the child can answer initialize.
+     Its own handle-close barrier then proves that no extra reader remains. */
   CloseHandle(input);
   SetStdHandle(STD_INPUT_HANDLE, INVALID_HANDLE_VALUE);
   if (ResumeThread(processInfo.hThread) == 0xffffffffu) {
@@ -274,6 +278,9 @@ void entry(void) {
   CloseHandle(processInfo.hProcess);
   processInfo.hProcess = (HANDLE)0;
 
+  /* A direct child may have exited while descendants still hold inherited
+     stdio. Job ownership survives that root exit, so terminate those members
+     before the wrapper itself releases its stdout/stderr handles. */
   if (!TerminateJobObject(job, exitCode == 0 ? WRAPPER_ERROR : exitCode)) {
     fail(job, (HANDLE)0, (HANDLE)0);
   }
