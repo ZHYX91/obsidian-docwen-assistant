@@ -25,7 +25,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   for (const control of controls.splice(0)) killProcess(control.pid);
-  for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) await removeTestRoot(root);
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -58,7 +58,8 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     let rootPid = 0;
 
     try {
-      const pending = client.query("health/check", {}, undefined, 450);
+      const pending = client.query("health/check", {}, undefined, 2_000);
+      void pending.catch(() => undefined);
       rootPid = numberField(await waitForEvent(fixture.trace, "root_started"), "pid");
       helperPid = numberField(await waitForEvent(fixture.trace, "helper_started"), "helperPid");
       await expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
@@ -87,6 +88,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
 
     try {
       const pending = client.runTask(taskRequest(staging, input, bytes), controller.signal, 8_000);
+      void pending.catch(() => undefined);
       await waitForEvent(fixture.trace, "task_accepted");
       rootPid = numberField(await waitForEvent(fixture.trace, "root_started"), "pid");
       helperPid = numberField(await waitForEvent(fixture.trace, "helper_started"), "helperPid");
@@ -112,6 +114,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
 
     try {
       const pending = client.query("health/check", {}, undefined, 8_000);
+      void pending.catch(() => undefined);
       await waitForEvent(fixture.trace, "health_seen");
       rootPid = numberField(await waitForEvent(fixture.trace, "root_started"), "pid");
       helperPid = numberField(await waitForEvent(fixture.trace, "helper_started"), "helperPid");
@@ -211,6 +214,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
 
     try {
       const pending = client.query("health/check", {}, undefined, 8_000);
+      void pending.catch(() => undefined);
       const closed = await waitForEvent(fixture.trace, "stdin_closed");
       rootPid = numberField(closed, "pid");
       await expect(pending).rejects.toMatchObject({ code: "cli_protocol_error" });
@@ -517,6 +521,24 @@ function deferred<T>(): {
     resolve = settle;
   });
   return { promise, resolve };
+}
+
+async function removeTestRoot(root: string, timeoutMs = 3_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (true) {
+    try {
+      await rm(root, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (
+        Date.now() >= deadline
+        || (!isErrno(error, "EPERM") && !isErrno(error, "EBUSY") && !isErrno(error, "ENOTEMPTY"))
+      ) {
+        throw error;
+      }
+      await delay(25);
+    }
+  }
 }
 
 function delay(milliseconds: number): Promise<void> {
