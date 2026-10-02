@@ -64,3 +64,44 @@ jobs:
             dist/manifest.json
             dist/styles.css
           if-no-files-found: error
+
+  windows-owned-lifecycle:
+    runs-on: windows-2025
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install exact npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          NPM_PACKAGE_MANAGER="$(
+            node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+          const packageManager = packageJson.packageManager;
+          if (typeof packageManager !== "string" || !/^npm@\d+\.\d+\.\d+$/u.test(packageManager)) {
+            throw new Error("package.json packageManager must use exact npm@x.y.z format");
+          }
+          process.stdout.write(packageManager);
+          NODE
+          )"
+          npm install --global "$NPM_PACKAGE_MANAGER"
+          test "$(npm --version)" = "${NPM_PACKAGE_MANAGER#npm@}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Exercise Windows Machine lifetime regression
+        run: npx vitest run tests/docwen-machine-windows-lifetime.test.ts
+
