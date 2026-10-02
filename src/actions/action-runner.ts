@@ -66,14 +66,14 @@ export class ActionRunner {
 
   presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
     const code = getLocalErrorCode(error) ?? "";
-    if (SETUP_ERROR_CODES.has(code)) {
-      new DocWenSetupModal(this.app, this.openSettings).open();
-      return;
-    }
-
     const summary = getErrorMessage(error);
     const notice = t(failureNotice, { error: summary });
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
+    if (SETUP_ERROR_CODES.has(code)) {
+      new DocWenSetupModal(this.app, this.openSettings, notice, detailsText).open();
+      return;
+    }
+
     const showTechnicalDetails = code === "" || TECHNICAL_DETAIL_CODES.has(code);
     if (getFailureWarnings(error).length > 0 || !showTechnicalDetails) {
       showNoticeWithAction(notice, t("dialogDetails"), () => {
@@ -139,7 +139,12 @@ function safeCompletionDiagnostics(diagnostics: readonly unknown[]): SafeComplet
 
 
 class DocWenSetupModal extends Modal {
-  constructor(app: App, private readonly openSettings: (() => void) | null) {
+  constructor(
+    app: App,
+    private readonly openSettings: (() => void) | null,
+    private readonly failureSummary: string,
+    private readonly detailsText: string,
+  ) {
     super(app);
   }
 
@@ -167,6 +172,22 @@ class DocWenSetupModal extends Modal {
     releasesLink.href = DOCWEN_RELEASES_URL;
     releasesLink.target = "_blank";
     releasesLink.rel = "noopener noreferrer";
+
+    this.contentEl.createEl("p", { text: this.failureSummary });
+    const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
+    details.createEl("summary", { text: t("dialogDetails") });
+    details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
+    details.createEl("pre", { text: this.detailsText });
+    const copy = this.contentEl.createEl("button", {
+      text: t("dialogCopyDetails"),
+      cls: "mod-cta",
+      attr: { type: "button" },
+    });
+    copy.addEventListener("click", () => {
+      void copyTextToClipboard(this.detailsText).then((copied) => {
+        if (copied) copy.setText(t("dialogCopied"));
+      });
+    });
   }
 
   override onClose(): void {

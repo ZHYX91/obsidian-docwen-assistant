@@ -1,12 +1,13 @@
 /** Publish the producer's complete logical directory through one rename. */
 import { createHash } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
-import { copyFile, lstat, mkdir, mkdtemp, open, realpath, rename, rm } from "node:fs/promises";
+import { copyFile, lstat, mkdir, mkdtemp, open, realpath, rm } from "node:fs/promises";
 import * as path from "node:path";
 import { LocalCliError } from "./errors";
 import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning } from "./operation-outcome";
 import type { ValidatedArtifactBundle } from "./machine-client";
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
+import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
 
 export type DirectoryPublication = <T>(outputRoot: string, commit: () => Promise<T>) => Promise<T>;
 
@@ -74,6 +75,7 @@ export async function atomicCommitDirectory(
   if (bundle.layout_schema !== "docwen.document_node.v1") {
     throw new LocalCliError("cli_integrity_error", "Conversion output requires the document-node layout.");
   }
+  assertDirectoryPublicationSupported();
   const preferred = preferredArtifact(bundle);
   const paths = bundle.artifacts.map((artifact) => ({ artifact, parts: logicalParts(artifact.logical_path) }));
   const roots = new Set(paths.map(({ parts }) => parts[0]));
@@ -133,7 +135,7 @@ export async function atomicCommitDirectory(
         await parent.assertCurrent();
         await requireAbsent(finalRoot);
         throwIfAborted(signal);
-        await rename(temporary, finalRoot);
+        await publishDirectoryNoReplace(temporary, finalRoot);
         committed = true;
       } finally {
         try {

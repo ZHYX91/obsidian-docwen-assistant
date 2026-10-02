@@ -159,7 +159,7 @@ function canExecuteFile(candidate: string): boolean {
 function unsupportedPlatformError(platform: NodeJS.Platform): LocalCliError {
   return new LocalCliError(
     "cli_platform_unsupported",
-    "DocWen Assistant supports Windows desktop hosts.",
+    "Automatic DocWen discovery requires Windows; manual DocWen paths are supported on Windows and Linux.",
     { platform },
   );
 }

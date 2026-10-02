@@ -40,23 +40,23 @@ Choose an available conversion route and an explicit output location while keepi
 
 ## Requirements and compatibility
 
-- Windows and Obsidian 1.12.7 or later. The plugin is desktop-only.
-- A compatible DocWen 0.13.0 or later installation from Microsoft Store, or a fully extracted portable Windows package. The plugin does not download DocWen automatically.
+- Windows or Linux and Obsidian 1.12.7 or later. The plugin is desktop-only.
+- On Windows, use a compatible DocWen 0.13.0 or later installation from Microsoft Store or a fully extracted portable package. On Linux, use a compatible fully extracted package and select it manually. Linux result-directory export requires x64 and an atomic no-replace filesystem. The plugin does not download DocWen automatically.
 - Background conversion, proofreading, numbering, discovery, and connection checks require `docwen.machine.v2` and `docwen.artifact_bundle.v3`; incompatible DocWen versions fail validation instead of using a fallback protocol.
 - Launching/opening the DocWen desktop app uses the public local `gui open` CLI control surface, so a Machine negotiation failure does not prevent opening DocWen itself.
 
-If the Store installation does not meet these requirements, use a compatible portable package and select it with Manual installation.
+If the Windows Store installation does not meet these requirements, use a compatible portable package and select it with Manual installation. Linux always uses Manual installation.
 
-Automatic detection is the default and uses the registered `docwen.exe` application execution alias, so Microsoft Store updates do not invalidate a saved package path. Portable ZIP users can switch to manual installation and select the extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`. The plugin never scans `WindowsApps`, recursively searches for executables, exchanges command files, downloads software, or falls back to an older protocol.
+Automatic detection is Windows-only and uses the registered `docwen.exe` application execution alias, so Microsoft Store updates do not invalidate a saved package path. Manual installation accepts the extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` on Windows and the extracted folder, `DocWen`, or `DocWenCLI` on Linux. The plugin never scans `WindowsApps`, recursively searches for executables, exchanges command files, downloads software, or falls back to an older protocol.
 
 ## Installation
 
 ### Install DocWen and the plugin
 
-1. Install a compatible DocWen 0.13.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97). Alternatively, download `DocWen-windows-x64.zip` from [DocWen Releases](https://github.com/ZHYX91/docwen/releases) and extract it completely.
+1. On Windows, install a compatible DocWen 0.13.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) or fully extract the portable Windows package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases). On Linux x64, fully extract a compatible Linux package from the same Releases page.
 2. Install DocWen Assistant from Obsidian Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases), then copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Reload Community plugins and enable DocWen Assistant.
-4. Automatic detection needs no file selection. If you use the portable ZIP, open **Settings → DocWen Assistant → General**, choose **Manual installation**, and select the extracted DocWen folder.
+4. On Windows, automatic detection needs no file selection. Portable Windows users and all Linux users should open **Settings → DocWen Assistant → General**, choose **Manual installation**, and select the extracted DocWen folder or executable.
 
 ### Installation safety
 
@@ -85,13 +85,13 @@ With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite
 
 - Obsidian 1.12.7 or later uses four horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Contextual help appears on the relevant tab instead of a separate Usage page.
 - Plugin language defaults to **Follow Obsidian** and can be overridden with any of DocWen Assistant's 11 languages. Resource discovery receives the same resolved locale.
-- **Connection method** defaults to **Detect automatically**, which supports Microsoft Store. **Manual installation** reveals the portable-folder picker. The status row checks the product identity, minimum supported version, Machine protocol, Bundle contract, and health without exposing package paths; protocol conflicts show the Assistant request and DocWen-supported versions separately.
+- **Connection method** defaults to **Detect automatically** for Windows Microsoft Store installs. Linux users must choose **Manual installation**; the same manual picker also supports portable Windows packages. The status row checks the product identity, minimum supported version, Machine protocol, Bundle contract, and health without exposing package paths; protocol conflicts show the Assistant request and DocWen-supported versions separately.
 - Tabs support arrow keys (including RTL direction), Home/End, visible keyboard focus, 20 px UI text, and coarse-pointer targets. Runtime numbering schemes are queried only when their tab is rendered.
 
 ## Limitations
 
-- DocWen Assistant is Windows desktop-only and requires a compatible local DocWen installation.
-- Automatic mode uses only the fixed registered `docwen.exe` alias. Manual mode accepts only the selected DocWen folder, `DocWen.exe`, or `DocWenCLI.exe`; neither mode searches arbitrary folders.
+- DocWen Assistant supports Windows and Linux desktop hosts and requires a compatible local DocWen installation. Linux result-directory export requires x64; unsupported filesystems fail closed rather than falling back to check-then-rename.
+- Windows automatic mode uses only the fixed registered `docwen.exe` alias. Manual mode accepts the selected DocWen folder/`DocWen.exe`/`DocWenCLI.exe` on Windows and folder/`DocWen`/`DocWenCLI` on Linux; neither mode searches arbitrary folders.
 - Background export requires an explicit output folder, and proofreading does not rewrite the source note.
 - A command is rejected when the CLI response, source snapshot, editor state, or target cannot be verified safely.
 

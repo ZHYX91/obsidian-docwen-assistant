@@ -324,6 +324,52 @@ describe("ActionRunner", () => {
     expect(state.modals).toHaveLength(1);
   });
 
+  it("keeps setup guidance while run exposes redacted native-load and cleanup details on repeated failures", async () => {
+    const { LocalCliError } = await import("../src/docwen");
+    const { recordFailureWarning } = await import("../src/docwen/operation-outcome");
+    const { ActionRunner } = await import("../src/actions/action-runner");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const runner = new ActionRunner({} as never, new OperationCoordinator(), vi.fn());
+    const secret = "/home/user/private-vault/secret.md";
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await runner.run({ key: "export", kind: "export" }, "noticeExportFailed", async () => {
+        throw recordFailureWarning(
+          new LocalCliError(
+            "cli_platform_unsupported",
+            `native load failed at ${secret}`,
+            { systemCode: "ERR_DLOPEN_FAILED", path: secret },
+          ),
+          { code: "output_cleanup_failed", phase: "cleanup", detailCode: "EACCES" },
+        );
+      });
+    }
+
+    expect(state.notices).toHaveLength(0);
+    expect(state.modals).toHaveLength(2);
+    for (const modal of state.modals) {
+      const text = allText(modal.contentEl);
+      expect(text).toContain("DocWen");
+      expect(text).toContain("cli_platform_unsupported");
+      expect(text).toContain("ERR_DLOPEN_FAILED");
+      expect(text).toContain("output_cleanup_failed");
+      expect(text).toContain("EACCES");
+      expect(text).not.toContain(secret);
+      modal.contentEl.children.at(-1)?.listeners.get("click")?.();
+    }
+    await vi.waitFor(() => expect(state.copied).toHaveLength(2));
+    for (const copiedText of state.copied) {
+      const copied = JSON.parse(copiedText);
+      expect(copied).toMatchObject({
+        redacted: true,
+        code: "cli_platform_unsupported",
+        details: { systemCode: "ERR_DLOPEN_FAILED" },
+        warnings: [{ code: "output_cleanup_failed", phase: "cleanup", detailCode: "EACCES" }],
+      });
+      expect(copiedText).not.toContain(secret);
+    }
+  });
+
   it("turns missing configuration into settings and download actions", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");
@@ -340,7 +386,8 @@ describe("ActionRunner", () => {
 
     expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
-    expect(allText(state.modals[0].contentEl)).not.toContain("{}");
+    expect(allText(state.modals[0].contentEl)).toContain("cli_path_not_configured");
+    expect(allText(state.modals[0].contentEl)).toContain("Copy details");
     const button = findByText(state.modals[0].contentEl, "Open DocWen settings");
     expect(button).toBeDefined();
     button?.listeners.get("click")?.();

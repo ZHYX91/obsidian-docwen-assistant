@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows、Obsidian 1.12.7 以上及 DocWen 0.13.0 或更新的穩定版本。
+DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows 或 Linux、Obsidian 1.12.7 以上及 DocWen 0.13.0 或更新的穩定版本。
 
 > **必須安裝 DocWen 本體。** 請從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容版本，或完整解壓縮 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 提供的 ZIP 可攜版。
 
@@ -38,21 +38,21 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ## 使用要求與相容性
 
-- 需要 Windows 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- 需要 Microsoft Store 安裝版或完整解壓縮的 ZIP 可攜版 DocWen 0.13.0 或更新版本；外掛不會自動下載 DocWen；
+- 需要 Windows 或 Linux 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
+- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.13.0 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 結果目錄匯出需要 x64 且檔案系統支援原子 no-replace；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 
-若商店安裝版不符合以上要求，請使用相容的可攜包，並透過「手動安裝」選取。
+Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並透過「手動安裝」選取；Linux 一律使用「手動安裝」。
 
-預設的自動偵測使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。ZIP 可攜版使用者可切換到手動安裝並選擇解壓縮後的 DocWen 資料夾。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
+自動偵測僅適用於 Windows，並使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。手動安裝在 Windows 接受解壓縮後的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
 
 ## 安裝
 
 ### 安裝 DocWen 與外掛
 
-1. 從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝 DocWen，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 ZIP 可攜版；
+1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝 DocWen，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版；Linux x64 請從同一 Releases 頁面下載並完整解壓縮相容的 Linux 套件；
 2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，將 `main.js`、`manifest.json` 和 `styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
-3. 重新載入並啟用外掛；自動偵測無須選擇檔案。使用可攜版時，在設定中選擇「手動安裝」和 DocWen 資料夾。
+3. 重新載入並啟用外掛；Windows 自動偵測無須選擇檔案。Windows 可攜版與所有 Linux 使用者都應在設定中選擇「手動安裝」和 DocWen 資料夾或執行檔。
 
 ### 安裝安全界線
 
@@ -70,12 +70,12 @@ Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的
 
 ## 設定
 
-Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word和校對；說明放在相關頁籤內，不再另設「使用方法」頁。「連線方式」預設為「自動偵測」，只有手動安裝可攜版時才顯示資料夾選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
+Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word和校對；說明放在相關頁籤內，不再另設「使用方法」頁。「連線方式」預設為「自動偵測」，此模式僅適用 Windows Microsoft Store；Linux 必須選擇「手動安裝」，Windows 可攜版亦使用同一選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
 
 ## 限制
 
-- 僅支援 Windows 桌面端，且本機必須安裝相容的 DocWen；
-- 自動模式只使用固定的 `docwen.exe` 已註冊別名；手動模式只接受選定的 DocWen 資料夾或程式，兩種模式都不會搜尋任意目錄；
+- 支援 Windows 與 Linux 桌面端，且本機必須安裝相容的 DocWen；Linux 結果目錄匯出需要 x64，不支援原子 no-replace 的檔案系統會直接失敗，不會退回先檢查再 rename；
+- Windows 自動模式只使用固定的 `docwen.exe` 已註冊別名；手動模式在 Windows 接受 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`；兩種模式都不會搜尋任意目錄；
 - 無法安全核驗 CLI 回應、來源快照、編輯器狀態或輸出目標時，操作會被拒絕。
 
 ## 隱私與安全性

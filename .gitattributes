@@ -2,6 +2,7 @@
 
 # Release inputs and all build-relevant source text must have identical bytes
 # on Windows and Linux.
+*.c text eol=lf
 *.css text eol=lf
 *.csv text eol=lf
 *.cjs text eol=lf

@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen). Requiere Windows, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.13.0 o posterior.
+DocWen Assistant conecta Obsidian con una instalación local de [DocWen](https://github.com/ZHYX91/docwen). Requiere Windows o Linux, Obsidian 1.12.7 o posterior y una versión estable de DocWen 0.13.0 o posterior.
 
 > **DocWen es obligatorio.** Instala una versión compatible desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae por completo el ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -34,19 +34,19 @@ El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida
 
 ## Requisitos y compatibilidad
 
-- Windows y Obsidian 1.12.7 o posterior; el complemento es solo para escritorio.
-- Un paquete completo de una versión estable de DocWen 0.13.0 o posterior para Windows, totalmente extraído; el complemento no descarga DocWen automáticamente.
+- Windows o Linux y Obsidian 1.12.7 o posterior; el complemento es solo para escritorio.
+- En Windows, usa una versión compatible de DocWen 0.13.0 o posterior de Store o un paquete portátil totalmente extraído; en Linux, usa un paquete totalmente extraído seleccionado manualmente. La exportación de directorios de resultados en Linux requiere x64 y un sistema de archivos con no-replace atómico; el complemento no descarga DocWen automáticamente.
 - El complemento requiere `docwen.machine.v2` y `docwen.artifact_bundle.v3`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
 
 Si la instalación de Store no cumple estos requisitos, utiliza un paquete portátil compatible y selecciónalo mediante la instalación manual.
 
-La detección automática usa de forma predeterminada el alias registrado `docwen.exe` y sigue funcionando tras las actualizaciones de Microsoft Store. Para el ZIP portátil, selecciona la instalación manual y la carpeta extraída de DocWen. El complemento no examina `WindowsApps` ni carpetas arbitrarias y no descarga software automáticamente.
+La detección automática es exclusiva de Windows, usa el alias registrado `docwen.exe` y sigue funcionando tras las actualizaciones de Microsoft Store. En Linux, la instalación manual es obligatoria y acepta la carpeta extraída, `DocWen` o `DocWenCLI`. El complemento no examina `WindowsApps` ni carpetas arbitrarias y no descarga software automáticamente.
 
 ## Instalación
 
 ### Instalar DocWen y el complemento
 
-Instala DocWen desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae el ZIP portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Instala DocWen Assistant desde Community Plugins o copia `main.js`, `manifest.json` y `styles.css` en `<Vault>/.obsidian/plugins/docwen-assistant/`. La detección automática no requiere elegir archivos; para el ZIP portátil, elige instalación manual y la carpeta de DocWen en los ajustes.
+En Windows, instala DocWen desde [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) o extrae el paquete portátil de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). En Linux x64, extrae un paquete Linux compatible de la misma página Releases y selecciónalo manualmente. Instala DocWen Assistant desde Community Plugins o copia `main.js`, `manifest.json` y `styles.css` en `<Vault>/.obsidian/plugins/docwen-assistant/`.
 
 ### Seguridad de la instalación
 
@@ -68,7 +68,7 @@ Obsidian 1.12.7 o posterior usa cuatro pestañas superiores con desplazamiento h
 
 ## Limitaciones
 
-- Solo para escritorio Windows con una instalación local compatible de DocWen.
+- Para escritorio Windows o Linux con una instalación local compatible de DocWen; la exportación de directorios de resultados en Linux requiere x64 y un sistema de archivos con no-replace atómico.
 - No hay búsqueda recursiva fuera de la carpeta o programa DocWen seleccionado.
 - Se rechaza una operación si no se pueden verificar de forma segura la respuesta CLI, la instantánea de origen, el estado del editor o el destino.
 

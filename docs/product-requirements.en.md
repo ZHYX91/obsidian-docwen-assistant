@@ -10,11 +10,11 @@ translation_status: synced
 
 ## Product position
 
-DocWen Assistant is a Windows desktop Obsidian plugin that connects the current note or an explicitly selected Vault file to local DocWen. It serves users who want to launch DocWen, convert documents, manage heading numbering within one file, and review proofreading advice without leaving Obsidian.
+DocWen Assistant is a Windows and Linux desktop Obsidian plugin that connects the current note or an explicitly selected Vault file to local DocWen. Windows supports automatic Microsoft Store discovery or a manual package path; Linux uses a manual package path. It serves users who want to launch DocWen, convert documents, manage heading numbering within one file, and review proofreading advice without leaving Obsidian.
 
 ## Compatibility prerequisites
 
-The plugin requires Windows, Obsidian 1.12.7 or later, and DocWen 0.13.0 or later from Microsoft Store or a fully extracted portable package. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
+The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocWen 0.13.0 or later. Windows can use Microsoft Store or a fully extracted portable package; Linux uses a fully extracted package selected manually. Result-directory export on Linux requires x64 for atomic no-replace publication; unsupported architectures or filesystems fail closed before publication. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
 
 ## Core capabilities
 
@@ -38,4 +38,4 @@ The plugin does not download DocWen, inspect the versioned Microsoft Store packa
 
 ## Acceptance boundary
 
-Source tests, fixed DocWen package tests, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, Windows manual checks, and public release are separate evidence layers. Passing a lower layer does not substitute for candidate or host evidence.
+Source tests, fixed DocWen package tests, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, Windows manual checks, Linux x64 manual checks, and public release are separate evidence layers. Passing a lower layer does not substitute for candidate or host evidence.
