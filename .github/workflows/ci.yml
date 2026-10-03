@@ -124,8 +124,5 @@ jobs:
           Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
           Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
 
-      - name: Type-check Windows owner integration
-        run: npm run typecheck
-
-      - name: Exercise Windows Machine lifetime regressions
-        run: npx vitest run tests/docwen-machine-windows-lifetime.test.ts
+      - name: Verify the complete Windows source and native lifecycle gate
+        run: npm run check
