@@ -556,6 +556,19 @@ function resolvedCaptionTarget(
   ) {
     throw new NumberSuiteInteropError("Number Suite caption facts contradict the exact authored source line.");
   }
+  if (
+    (caption.kind === "Figure" || caption.kind === "Table")
+    && caption.authoredText.length === 0
+  ) {
+    throw new NumberSuiteInteropError("Number Suite Figure/Table captions require visible authored text.");
+  }
+  if (
+    (caption.kind === "Equation" || caption.kind === "Code")
+    && caption.authoredText.length === 0
+    && caption.targetId === null
+  ) {
+    throw new NumberSuiteInteropError("Number Suite empty Equation/Code captions require a stable target ID.");
+  }
   assertNumberSuiteTargetIdMatchesSource(
     source,
     caption.sourceStartUtf16,
