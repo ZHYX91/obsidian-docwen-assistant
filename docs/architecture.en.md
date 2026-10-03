@@ -40,7 +40,13 @@ its effective enabled heading and caption numbers plus same-file references into
 `resolved_document` and exact-two `numbering_export_plan`. There is no build-time sibling-repository
 dependency. If the plugin is absent, the explicit unnumbered plan remains the fallback. A malformed
 API, source-conflicting facts, or numbering that cannot be represented safely fails closed; visible
-text is never used to guess a number.
+text is never used to guess a number. This adapter is a context-enrichment boundary, not a second
+Markdown dialect: canonical Number Suite caption keywords remain case-sensitive, Figure/Table retain
+non-empty visible titles, empty Equation/Code captions require a stable target ID, and an unbound or
+ambiguous caption remains a semantic target without an invented carrier. Given the same authored
+Markdown and effective Number Suite numbering state, direct DocWen consumption and
+Assistant→resolved-document consumption must therefore have the same observable semantic targets,
+numbers, references and round-trip declarations.
 
 ## Artifacts and commit
 
