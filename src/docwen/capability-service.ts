@@ -12,6 +12,7 @@ import type {
 import type { MachineCapability } from "./machine-client";
 
 const MARKDOWN_TO_DOCX_CAPABILITY_ID = "convert.markdown.to_docx";
+const MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID = "convert.markdown_source.to_docx";
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
 const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const RESOLVED_DOCUMENT_MEDIA_TYPE = "application/vnd.docwen.resolved-document+json";
@@ -96,6 +97,15 @@ export class DocWenCapabilityService {
       route.target === target && route.available && (optimizationId === undefined
         ? route.operation === "conversion" && route.optimizationId === undefined
         : route.optimizationId === optimizationId));
+    if (
+      target === "docx"
+      && optimizationId === undefined
+      && capability.source.category === "markdown"
+    ) {
+      const sourceNative = matches.filter((route) =>
+        route.capabilityId === MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID);
+      if (sourceNative.length === 1) return sourceNative[0];
+    }
     return matches.length === 1 ? matches[0] : null;
   }
 
@@ -280,9 +290,31 @@ function capabilitySupportsInspectedMediaType(capability: MachineCapability, med
   if (capability.capability_id === MARKDOWN_TO_DOCX_CAPABILITY_ID) {
     return mediaType === MARKDOWN_MEDIA_TYPE && isCurrentResolvedMarkdownToDocxCapability(capability);
   }
+  if (capability.capability_id === MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID) {
+    return mediaType === MARKDOWN_MEDIA_TYPE && isCurrentSourceMarkdownToDocxCapability(capability);
+  }
   return capability.input_shape.slots.some((slot) =>
     slot.role === "source" && slot.media_types.includes(mediaType));
 }
+
+function isCurrentSourceMarkdownToDocxCapability(capability: MachineCapability): boolean {
+  if (
+    capability.operation !== "convert"
+    || capability.input_shape.undeclared_roles !== "reject"
+    || capability.output_media_types.length !== 1
+    || capability.output_media_types[0] !== DOCX_MEDIA_TYPE
+  ) return false;
+  const slots = new Map(capability.input_shape.slots.map((slot) => [slot.role, slot]));
+  const source = slots.get("source");
+  const resources = slots.get("linked_resource");
+  return capability.input_shape.slots.length === 2
+    && exactInputSlot(source, "document", MARKDOWN_MEDIA_TYPE)
+    && resources?.kind === "resource"
+    && resources.min_items === 0
+    && resources.max_items === undefined
+    && resources.media_types.length > 0;
+}
+
 
 function isCurrentResolvedMarkdownToDocxCapability(capability: MachineCapability): boolean {
   if (
