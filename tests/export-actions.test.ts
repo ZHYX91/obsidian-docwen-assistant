@@ -485,6 +485,9 @@ describe("ExportActions advisory proofreading", () => {
       capabilityId: "convert.markdown_source.to_docx",
       selectedCapability,
       cleanNumbering: "remove",
+      markdownResourceBindings: expect.objectContaining({
+        images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }],
+      }),
       addNumbering: "legal",
       headingNumberingRenderMode: "word_native",
       outputDirectory: resolve("D:\\Vault"),

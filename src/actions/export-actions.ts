@@ -166,6 +166,8 @@ export class ExportActions {
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
+      // Preserve authored dialect syntax and let the same effective DocWen
+      // configuration govern direct conversion and Assistant export.
       const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
       const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
       this.capabilities.requireTaskInputs(route, taskInputs);

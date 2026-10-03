@@ -6,6 +6,37 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it("preserves Structural Tables authored bytes in the source-native port", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "tables/structural.md", extension: "md" };
+    const source = [
+      "| Region | Sales | < |",
+      "| Quarter | Q1 | Q2 |",
+      "| --- || --- | --- |",
+      "| North | 10 | 12 |",
+      "| ^ | 8 | 11 |",
+      "",
+      "| --- | --- |",
+      "| Alice | 10 |",
+      "| Bob | 20 |",
+      "",
+      "| Literal | Markers |",
+      "| --- | --- |",
+      "| \\< | \\^ |",
+      "",
+    ].join("\n");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      get plugins(): never { throw new Error("Source export must not consult editing plugins"); },
+    };
+    await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      const declared = await snapshot.getDeclaredMarkdownInputs();
+      expect(declared?.inputs.map((input) => input.role)).toEqual(["source"]);
+      expect(await readFile(declared!.inputs[0].path)).toEqual(Buffer.from(source));
+      expect(declared?.resourceBindings).toBeUndefined();
+    });
+  });
   it.each([
     ["note.md", "md", "document", "text/markdown"],
     ["letter.docx", "docx", "document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
