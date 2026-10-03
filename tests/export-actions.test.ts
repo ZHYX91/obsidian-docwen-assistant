@@ -417,6 +417,11 @@ describe("ExportActions advisory proofreading", () => {
     const runner = advisoryRunner(signal);
     const capability = markdownCapability();
     const capabilities = advisoryCapabilities(capability);
+    capabilities.requireConversionRoute.mockReturnValue({
+      capabilityId: "convert.markdown.to_docx",
+      options: ["markdown_extensions"],
+      inputShape: { slots: [], undeclared_roles: "reject" },
+    });
     const docwen = {
       optimizations: vi.fn(),
       validate: vi.fn(),
@@ -442,7 +447,9 @@ describe("ExportActions advisory proofreading", () => {
         expect.objectContaining({ role: "numbering_export_plan" }),
       ],
       outputDirectory: resolve("D:\\Vault"),
+      supportedOptions: ["markdown_extensions"],
     }), signal);
+    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("markdownExtensions");
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
     expect(runner.presentFailure).not.toHaveBeenCalled();
   });
