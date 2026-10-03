@@ -60,7 +60,6 @@ Escolha uma pasta de saída. Cada conversão cria sua própria pasta de resultad
 
 A exportação para Word gera um DOCX independente na pasta de resultados. Guarde o Markdown original. A conversão inversa lê o conteúdo e a estrutura do DOCX sem arquivo auxiliar da origem; não garante a mesma escrita ou os mesmos espaços. Escolha as extensões nas configurações do DocWen.
 
-Com uma versão compatível do [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) ativada, a exportação para Word preserva números virtuais validados de títulos e legendas e referências da mesma nota sem adicionar esses números ao Markdown.
 
 ## Configurações
 
