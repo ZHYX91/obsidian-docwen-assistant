@@ -869,6 +869,133 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
     expect(captured.plan.plan.targets).toMatchObject([{ enabled: false, derived_number: null }]);
   });
 
+  it.each([
+    ["Figure", "Figure: ^figure-only", "figure-only"],
+    ["Table", "Table: ^table-only", "table-only"],
+  ])("rejects %s ID-only captions before creating DocWen resolved inputs", async (
+    kind,
+    caption,
+    targetId,
+  ) => {
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind,
+        targetId,
+        authoredText: "",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+    });
+
+    await expect(captureNumberSuiteProjection(caption, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("require visible authored text") },
+    });
+  });
+
+  it("rejects an empty Equation/Code caption when the interop snapshot has no stable target ID", async () => {
+    const source = "Equation: ^same\n\nCode: ^same\n";
+    const codeStart = source.indexOf("Code:");
+    const snapshot = semanticSnapshot({
+      captions: [
+        {
+          sourceStartUtf16: 0,
+          sourceEndUtf16: "Equation: ^same".length,
+          line: 0,
+          kind: "Equation",
+          targetId: null,
+          authoredText: "",
+          enabled: true,
+          derivedNumber: "1",
+        },
+        {
+          sourceStartUtf16: codeStart,
+          sourceEndUtf16: codeStart + "Code: ^same".length,
+          line: 2,
+          kind: "Code",
+          targetId: null,
+          authoredText: "",
+          enabled: true,
+          derivedNumber: "1",
+        },
+      ],
+    });
+
+    await expect(captureNumberSuiteProjection(source, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("require a stable target ID") },
+    });
+  });
+
+  it("rejects a case-only caption keyword near-miss from a forged interop snapshot", async () => {
+    const caption = "figure: Architecture";
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind: "Figure",
+        targetId: null,
+        authoredText: "Architecture",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+    });
+
+    await expect(captureNumberSuiteProjection(caption, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("exact authored source line") },
+    });
+  });
+
+  it("keeps an unbound caption as a resolved target instead of inferring a carrier", async () => {
+    const caption = "Figure: Planned ^planned";
+    const reference = "@[[#^planned]]";
+    const source = `${caption}\n\n\nOrdinary paragraph.\n\nSee ${reference}.\n`;
+    const referenceStart = source.indexOf(reference);
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind: "Figure",
+        targetId: "planned",
+        authoredText: "Planned",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+      references: [{
+        sourceStartUtf16: referenceStart,
+        sourceEndUtf16: referenceStart + reference.length,
+        targetSourceStartUtf16: 0,
+        targetSourceEndUtf16: caption.length,
+        alias: null,
+      }],
+    });
+
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot);
+
+    expect(captured.neutral.document.authored_markdown).toBe(source);
+    expect(captured.neutral.document.targets).toMatchObject([{
+      kind: "figure",
+      target_id: "planned",
+      authored_text: "Planned",
+    }]);
+    expect(captured.plan.plan.targets).toMatchObject([{
+      kind: "figure",
+      enabled: true,
+      derived_number: "1",
+    }]);
+    expect(captured.neutral.document.references).toMatchObject([{
+      target_kind: "figure",
+      target_id: "planned",
+      cached_number: "1",
+    }]);
+  });
+
   it("projects CRLF UTF-16 ranges with astral text and an empty Code caption title", async () => {
     const caption = "Code: ^snippet";
     const reference = "@[[#^snippet|  code 🐈  ]]";
