@@ -50,6 +50,52 @@ function capability(
   };
 }
 
+function sourceMarkdownDocxCapability(): MachineCapability {
+  return {
+    capability_id: "convert.markdown_source.to_docx",
+    operation: "convert",
+    input_shape: {
+      slots: [
+        {
+          role: "source",
+          kind: "document",
+          media_types: ["text/markdown"],
+          min_items: 1,
+          max_items: 1,
+        },
+        {
+          role: "linked_resource",
+          kind: "resource",
+          media_types: ["image/png", "image/jpeg"],
+          min_items: 0,
+        },
+      ],
+      undeclared_roles: "reject",
+    },
+    output_media_types: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    output_shape: {
+      cardinality: "one",
+      artifact_kinds: ["document"],
+      relation_types: [],
+      atomic_bundle: true,
+    },
+    options_schema: {
+      type: "object",
+      properties: {
+        template_name: {},
+        remove_numbering: {},
+        add_numbering: {},
+        numbering_scheme: {},
+        heading_numbering_render_mode: {},
+      },
+      additionalProperties: false,
+    },
+    availability: "available",
+    dependencies: [],
+    limitations: [],
+  };
+}
+
 function resolvedMarkdownDocxCapability(): MachineCapability {
   return {
     capability_id: "convert.markdown.to_docx",
@@ -92,6 +138,7 @@ function projection() {
     contractId: "docwen.machine.v2" as const,
     capabilities: [
       resolvedMarkdownDocxCapability(),
+      sourceMarkdownDocxCapability(),
       capability("validate.markdown", "validate", "application/json"),
       capability("transform.markdown.heading_numbering", "transform", "text/markdown"),
     ],
@@ -143,7 +190,7 @@ describe("DocWenCapabilityService", () => {
     expect(service.findConversionRoute(file, "md")?.capabilityId).toBe("ordinary");
   });
 
-  it("joins Markdown inspection to the exact resolved-document Word capability", async () => {
+  it("prefers source-native Markdown Word conversion over the resolved-provider route", async () => {
     const client = {
       inspect: vi.fn().mockResolvedValue(inspection()),
       runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
@@ -152,12 +199,18 @@ describe("DocWenCapabilityService", () => {
 
     const file = await service.requireAction("D:\\note.md", "convert");
     expect(service.findConversionRoute(file, "docx")).toMatchObject({
-      capabilityId: "convert.markdown.to_docx",
-      options: ["template_name"],
+      capabilityId: "convert.markdown_source.to_docx",
+      options: [
+        "template_name",
+        "remove_numbering",
+        "add_numbering",
+        "numbering_scheme",
+        "heading_numbering_render_mode",
+      ],
       inputShape: {
         slots: [
-          { role: "neutral_document" },
-          { role: "numbering_export_plan" },
+          { role: "source" },
+          { role: "linked_resource" },
         ],
       },
     });
@@ -167,7 +220,7 @@ describe("DocWenCapabilityService", () => {
     });
   });
 
-  it("does not accept the retired raw-Markdown Word capability shape", async () => {
+  it("does not confuse a malformed raw route with either current Word capability", async () => {
     const retired = capability(
       "convert.markdown.to_docx",
       "convert",
@@ -374,18 +427,11 @@ describe("DocWenCapabilityService", () => {
 
     expect(() => service.requireTaskInputs(route, [
       {
-        path: "D:\\resolved-document.json",
+        path: "D:\\note.md",
         kind: "document",
-        role: "neutral_document",
-        logicalPath: "resolved-document.json",
-        mediaType: "application/vnd.docwen.resolved-document+json",
-      },
-      {
-        path: "D:\\numbering-export-plan.json",
-        kind: "resource",
-        role: "numbering_export_plan",
-        logicalPath: "numbering-export-plan.json",
-        mediaType: "application/vnd.docwen.numbering-export-plan+json",
+        role: "source",
+        logicalPath: "note.md",
+        mediaType: "text/markdown",
       },
       {
         path: "D:\\refs.bib",
