@@ -10,6 +10,7 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMachineFrame, MachineFrameDecoder, type JsonObject } from "../src/docwen/machine-framing";
+import { WindowsMachineOwnerStore } from "../src/docwen/windows-machine-owner";
 
 const { spawnMock, serverState } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
@@ -46,8 +47,10 @@ import {
 } from "../src/docwen/machine-client";
 
 const temporaryRoots: string[] = [];
+const fakeWindowsOwner = path.join(tmpdir(), "mock-machine-owner.exe");
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   for (const root of temporaryRoots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -112,6 +115,8 @@ class FakeChild extends EventEmitter {
   readonly stdout = new PassThrough();
   readonly stderr = new PassThrough();
   killed = false;
+  exitCode: number | null = null;
+  signalCode: string | null = null;
   private readonly decoder = new MachineFrameDecoder();
   private taskPlan: JsonObject | null = null;
 
@@ -126,8 +131,17 @@ class FakeChild extends EventEmitter {
     });
   }
 
-  kill(_signal?: string): boolean {
+  override emit(event: string | symbol, ...args: unknown[]): boolean {
+    if (event === "close") {
+      this.exitCode = typeof args[0] === "number" ? args[0] : null;
+      super.emit("exit", this.exitCode, this.signalCode);
+    }
+    return super.emit(event, ...args);
+  }
+
+  kill(signal?: string): boolean {
     this.killed = true;
+    this.signalCode = signal ?? "SIGTERM";
     queueMicrotask(() => this.emit("close", null));
     return true;
   }
@@ -260,6 +274,12 @@ class FakeChild extends EventEmitter {
 describe("DocWenMachineClient", () => {
   beforeEach(() => {
     vi.stubGlobal("window", { setTimeout, clearTimeout });
+    // This suite models framed transport; native Job ownership has its own real-process suite.
+    vi.spyOn(WindowsMachineOwnerStore.prototype, "acquire").mockResolvedValue({
+      executable: fakeWindowsOwner,
+      assertActive: () => {},
+      release: () => {},
+    });
     spawnMock.mockReset();
     serverState.cancelRequested = false;
     serverState.cancellationDelayMs = 0;
@@ -291,8 +311,8 @@ describe("DocWenMachineClient", () => {
       checks: [{ id: "config", ok: true }],
     });
     expect(spawnMock).toHaveBeenCalledWith(
-      "C:\\DocWen\\DocWenCLI.exe",
-      ["serve", "--stdio"],
+      process.platform === "win32" ? fakeWindowsOwner : "C:\\DocWen\\DocWenCLI.exe",
+      process.platform === "win32" ? [] : ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
   });
@@ -471,10 +491,13 @@ describe("DocWenMachineClient", () => {
 
     await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
     expect(spawnMock).toHaveBeenCalledWith(
-      aliasPath,
-      ["serve", "--stdio"],
+      process.platform === "win32" ? fakeWindowsOwner : aliasPath,
+      process.platform === "win32" ? [] : ["serve", "--stdio"],
       expect.objectContaining({ cwd: "C:\\Temp", shell: false }),
     );
+    if (process.platform === "win32") {
+      expect(spawnMock.mock.calls[0][2].env.DOCWEN_ASSISTANT_JOB_TARGET).toBe(aliasPath);
+    }
   });
 
   it("preserves explicitly supplied DocWen profile directories without forwarding unrelated variables", async () => {
@@ -560,7 +583,11 @@ describe("DocWenMachineClient", () => {
   it("reports a missing automatic execution alias as a setup failure", async () => {
     spawnMock.mockImplementationOnce(() => {
       const child = new FakeChild();
-      queueMicrotask(() => child.emit("error", Object.assign(new Error("missing"), { code: "ENOENT" })));
+      child.stdin.removeAllListeners("data");
+      setImmediate(() => {
+        if (process.platform === "win32") child.emit("close", 126);
+        else child.emit("error", Object.assign(new Error("missing"), { code: "ENOENT" }));
+      });
       return child;
     });
     const client = new DocWenMachineClient(
@@ -573,6 +600,22 @@ describe("DocWenMachineClient", () => {
     );
 
     await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_alias_not_found" });
+  });
+
+  it.skipIf(process.platform !== "win32")("classifies a controller failure during normal close as unconfirmed cleanup", async () => {
+    const child = new FakeChild();
+    child.stdin.removeAllListeners("finish");
+    child.stdin.on("finish", () => queueMicrotask(() => child.emit("close", 125)));
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      await expect(client.query("health/check", {})).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job" },
+      });
+    } finally {
+      client.dispose();
+    }
   });
 
   it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {

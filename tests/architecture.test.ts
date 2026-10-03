@@ -59,9 +59,10 @@ describe("architecture boundaries", () => {
     expect(client).toMatch(/async convert\(\s*request: ConvertRequest,\s*signal\?: AbortSignal,?\s*\)/u);
     expect(client).toContain('"convert.markdown.to_docx"');
     expect(machine).toContain('method: "task/cancel"');
-    expect(machine).toContain('path.join(windowsRoot, "System32", "taskkill.exe")');
+    expect(machine).not.toContain("taskkill.exe");
+    expect(machine).toContain("spawnWindowsOwnedMachineProcess");
     expect(machine).toContain('process.kill(-pid, force ? "SIGKILL" : "SIGTERM")');
-    expect(machine).toContain('detached: process.platform !== "win32"');
+    expect(machine).toContain("windowsOwnerCleanupUnconfirmed");
     expect(machine).toContain("ARTIFACT_BUNDLE_LIMITS");
     expect(machine).toContain('"docwen.artifact_bundle.v3"');
     expect(machine).not.toContain('shell: true');

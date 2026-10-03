@@ -1,0 +1,47 @@
+{
+  "sourceSha256": "4131ffe2f92d28555e5965440c766b72e6c4434aea00abee29d075daf6d407cc",
+  "defSha256": "0b23eb8186cea04c6abe18b96b17aeb54fec862870c22dee5c6289acf192b20e",
+  "binarySha256": "f7bfd55b3cc95a6216ccda87a439b24dc2c2c96a09f8e098e8eae67f2cb3275b",
+  "binaryBytes": 5120,
+  "platform": "win32",
+  "arch": "x64",
+  "minimumWindows": "10",
+  "peMachine": "0x8664",
+  "peMagic": "0x020b",
+  "subsystem": "windows-cui",
+  "timestamp": 0,
+  "compiler": "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64",
+  "librarian": "Microsoft (R) Library Manager Version 14.51.36260.0",
+  "linker": "Microsoft (R) Incremental Linker Version 14.51.36260.0",
+  "compilerTarget": "x64-msvc",
+  "compilerFlags": [
+    "/nologo",
+    "/std:c11",
+    "/O1",
+    "/GS-",
+    "/Zl",
+    "/W4",
+    "/WX",
+    "/c"
+  ],
+  "librarianFlags": [
+    "/nologo",
+    "/machine:x64"
+  ],
+  "linkerFlags": [
+    "/nologo",
+    "/entry:entry",
+    "/subsystem:console",
+    "/nodefaultlib",
+    "/machine:x64",
+    "/Brepro"
+  ],
+  "timestampNormalization": "COFF TimeDateStamp zeroed after deterministic MSVC link",
+  "provenance": {
+    "repository": "ZHYX91/docwen-openclaw",
+    "commit": "d7ad7294b9cadcfea0d430d0dc42ea0bdb48fc10",
+    "sourcePath": "native/windows-job.c",
+    "license": "MIT",
+    "adaptation": "Assistant target environment and reserved controller statuses distinct from target exits"
+  }
+}

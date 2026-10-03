@@ -15,6 +15,12 @@ import {
 } from "./process-launch";
 import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
 import { fileIdentity, sameFileIdentity } from "./output-integrity";
+import {
+  spawnWindowsOwnedMachineProcess,
+  WINDOWS_MACHINE_OWNER_FAILURE_EXIT,
+  WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT,
+  WindowsMachineOwnerStore,
+} from "./windows-machine-owner";
 
 export type { JsonObject } from "./machine-framing";
 
@@ -202,22 +208,40 @@ class MachineSession {
   private readonly closed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
 
-  constructor(rawTarget: string | DocWenLaunchTarget) {
+  static async create(
+    rawTarget: string | DocWenLaunchTarget,
+    windowsOwnerStore: WindowsMachineOwnerStore,
+    assertStartAllowed: () => void,
+  ): Promise<MachineSession> {
     const target = normalizeDocWenLaunchTarget(rawTarget);
+    assertStartAllowed();
+    if (process.platform === "win32") {
+      const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore, assertStartAllowed);
+      return new MachineSession(target, child, true);
+    }
     try {
-      this.child = spawn(target.executable, ["serve", "--stdio"], {
+      const child = spawn(target.executable, ["serve", "--stdio"], {
         cwd: target.cwd,
         env: docWenChildEnvironment(),
-        detached: process.platform !== "win32",
+        detached: true,
         shell: false,
         windowsHide: true,
         stdio: ["pipe", "pipe", "pipe"],
       });
+      return new MachineSession(target, child, false);
     } catch (error) {
       throw new LocalCliError("cli_spawn_failed", "Unable to start DocWen Machine Protocol.", {
         cause: errorMessage(error),
       });
     }
+  }
+
+  private constructor(
+    target: DocWenLaunchTarget,
+    child: ChildProcessWithoutNullStreams,
+    private readonly windowsOwned: boolean,
+  ) {
+    this.child = child;
     this.ownedLinuxProcessGroupId = process.platform === "linux"
       && typeof this.child.pid === "number"
       && this.child.pid > 0
@@ -233,10 +257,9 @@ class MachineSession {
       this.child.once("close", resolve);
       this.child.once("error", (error) => {
         // Only the ChildProcess "exit" event is direct evidence that a
-        // successfully spawned process has exited. Spawn failures have no
-        // owned Linux process group, and other "error" events are not exit
-        // evidence.
-        const aliasMissing = target.mode === "automatic" && isErrno(error, "ENOENT");
+        // successfully spawned process has exited. Other "error" events are
+        // stream/process failures, not ownership release evidence.
+        const aliasMissing = !this.windowsOwned && target.mode === "automatic" && isErrno(error, "ENOENT");
         const failure = new LocalCliError(
           aliasMissing ? "cli_alias_not_found" : "cli_spawn_failed",
           aliasMissing
@@ -244,6 +267,7 @@ class MachineSession {
             : "DocWen Machine Protocol process failed.", {
           cause: error.message,
           mode: target.mode,
+          ...(this.windowsOwned ? { ownershipState: "windows_job" } : {}),
         });
         this.queue.fail(failure);
         resolve(null);
@@ -277,9 +301,11 @@ class MachineSession {
         return;
       }
       if (!this.normalClose) {
-        this.queue.fail(new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
-          exitCode: code,
-        }));
+        this.queue.fail(this.windowsOwned
+          ? windowsOwnerEarlyExit(target.mode, code)
+          : new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
+              exitCode: code,
+            }));
       }
     });
   }
@@ -424,6 +450,9 @@ class MachineSession {
     }
     let stderrText = Buffer.concat(this.stderr).toString("utf8");
     if (this.stderrBytes > STDERR_LIMIT_BYTES) stderrText += "\n<truncated>";
+    if (this.windowsOwned && code === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
+      throw windowsOwnerCleanupUnconfirmed("The Windows Machine lifetime owner failed during normal shutdown.");
+    }
     if (code !== 0) {
       throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol exited with an error.", {
         exitCode: code,
@@ -459,6 +488,28 @@ class MachineSession {
 
   private async terminateOnce(): Promise<void> {
     this.normalClose = true;
+    if (this.windowsOwned) {
+      this.child.stdin.destroy();
+      const alreadyExited = this.childProcessExited
+        || this.child.exitCode !== null
+        || this.child.signalCode !== null;
+      if (!alreadyExited) {
+        let signalled = false;
+        try {
+          signalled = this.child.kill("SIGKILL");
+        } catch {
+          signalled = false;
+        }
+        if (!signalled && !this.childProcessExited && this.child.exitCode === null && this.child.signalCode === null) {
+          throw windowsOwnerCleanupUnconfirmed("Unable to terminate the Windows Machine lifetime owner.");
+        }
+      }
+      const closeResult = await waitForExit(this.closed, FORCE_KILL_WAIT_MS);
+      if (closeResult === EXIT_WAIT_EXPIRED) {
+        throw windowsOwnerCleanupUnconfirmed("Windows Machine lifetime-owner cleanup did not settle.");
+      }
+      return;
+    }
     if (this.ownedLinuxProcessGroupId !== null) {
       const groupId = this.ownedLinuxProcessGroupId;
       const evidence: LinuxProcessGroupEvidence = { hardIssues: [] };
@@ -513,36 +564,6 @@ class MachineSession {
 
   private async signalProcessTree(force: boolean): Promise<void> {
     const pid = this.child.pid;
-    if (process.platform === "win32" && typeof pid === "number" && pid > 0) {
-      const windowsRoot = process.env.SystemRoot || process.env.WINDIR || "C:\\Windows";
-      try {
-        const killer = spawn(
-          path.join(windowsRoot, "System32", "taskkill.exe"),
-          ["/PID", String(pid), "/T", "/F"],
-          {
-            detached: false,
-            env: docWenChildEnvironment(),
-            shell: false,
-            stdio: "ignore",
-            timeout: TERMINATION_GRACE_MS,
-            windowsHide: true,
-          },
-        );
-        const killedTree = await new Promise<boolean>((resolve) => {
-          let settled = false;
-          const finish = (value: boolean): void => {
-            if (settled) return;
-            settled = true;
-            resolve(value);
-          };
-          killer.once("error", () => finish(false));
-          killer.once("close", (code) => finish(code === 0));
-        });
-        if (killedTree) return;
-      } catch {
-        // Fall through to direct termination when taskkill cannot be started.
-      }
-    }
     if (process.platform === "linux" && this.ownedLinuxProcessGroupId !== null) {
       await signalLinuxProcessGroup(
         this.ownedLinuxProcessGroupId,
@@ -620,6 +641,7 @@ export class DocWenMachineClient {
     private readonly resolveBinaryPath: () => string | DocWenLaunchTarget,
     private readonly resolveLocale: () => string,
     private readonly expectedProductVersion?: string,
+    private readonly windowsOwnerStore: WindowsMachineOwnerStore = new WindowsMachineOwnerStore(),
   ) {}
 
   locale(): string {
@@ -703,6 +725,7 @@ export class DocWenMachineClient {
       void session.terminate().catch(() => undefined);
     }
     this.activeSessions.clear();
+    this.windowsOwnerStore.dispose();
   }
 
   private async withSession<T>(
@@ -716,7 +739,17 @@ export class DocWenMachineClient {
   ): Promise<T> {
     if (this.disposed) throw new LocalCliError("cli_spawn_failed", "DocWen client has been disposed.");
     if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
-    const session = new MachineSession(this.resolveBinaryPath());
+    const assertStartAllowed = (): void => {
+      if (this.disposed) {
+        throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
+      }
+      if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
+    };
+    const session = await MachineSession.create(
+      this.resolveBinaryPath(),
+      this.windowsOwnerStore,
+      assertStartAllowed,
+    );
     this.activeSessions.add(session);
     let taskId: string | null = null;
     let timedOut = false;
@@ -752,6 +785,7 @@ export class DocWenMachineClient {
     signal?.addEventListener("abort", onAbort, { once: true });
     if (signal?.aborted) onAbort();
     try {
+      assertStartAllowed();
       const productVersion = await session.initialize(this.expectedProductVersion);
       if (this.disposed) {
         throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
@@ -2015,6 +2049,40 @@ function waitForExit(
       cancelTimeout(timer);
       resolve(code);
     });
+  });
+}
+
+
+function windowsOwnerEarlyExit(
+  mode: DocWenLaunchTarget["mode"],
+  exitCode: number | null,
+): LocalCliError {
+  if (exitCode === WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT) {
+    return new LocalCliError(
+      mode === "automatic" ? "cli_alias_not_found" : "cli_spawn_failed",
+      mode === "automatic"
+        ? "The DocWen application execution alias is unavailable."
+        : "The configured DocWen Machine executable could not be started.",
+      { exitCode, mode, ownershipState: "windows_job" },
+    );
+  }
+  if (exitCode === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
+    return new LocalCliError(
+      "cli_spawn_failed",
+      "The Windows Machine lifetime owner failed before the operation completed.",
+      { exitCode, mode, ownershipState: "windows_job" },
+    );
+  }
+  return new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
+    exitCode,
+    ownershipState: "windows_job",
+  });
+}
+
+function windowsOwnerCleanupUnconfirmed(message: string): LocalCliError {
+  return new LocalCliError("cli_cleanup_failed", message, {
+    cleanupState: "unconfirmed",
+    ownershipState: "windows_job",
   });
 }
 

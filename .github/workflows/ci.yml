@@ -64,3 +64,77 @@ jobs:
             dist/manifest.json
             dist/styles.css
           if-no-files-found: error
+
+  windows-owned-lifecycle:
+    runs-on: windows-2025
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install exact npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          NPM_PACKAGE_MANAGER="$(
+            node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+          const packageManager = packageJson.packageManager;
+          if (typeof packageManager !== "string" || !/^npm@\d+\.\d+\.\d+$/u.test(packageManager)) {
+            throw new Error("package.json packageManager must use exact npm@x.y.z format");
+          }
+          process.stdout.write(packageManager);
+          NODE
+          )"
+          npm install --global "$NPM_PACKAGE_MANAGER"
+          test "$(npm --version)" = "${NPM_PACKAGE_MANAGER#npm@}"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild and verify Windows owner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $first = Join-Path $env:RUNNER_TEMP "windows-owner-first"
+          $second = Join-Path $env:RUNNER_TEMP "windows-owner-second"
+          New-Item -ItemType Directory -Force -Path $first, $second | Out-Null
+          node scripts/build-native-windows-owner.mjs $first
+          node scripts/build-native-windows-owner.mjs $second
+
+          function Assert-SameHash([string]$left, [string]$right, [string]$message) {
+            $leftHash = (Get-FileHash $left -Algorithm SHA256).Hash
+            $rightHash = (Get-FileHash $right -Algorithm SHA256).Hash
+            if ($leftHash -ne $rightHash) { throw $message }
+          }
+
+          Assert-SameHash (Join-Path $first "windows-x64.exe") (Join-Path $second "windows-x64.exe") "Independent Windows owner builds differ."
+          Assert-SameHash (Join-Path $first "WINDOWS-BUILD.json") (Join-Path $second "WINDOWS-BUILD.json") "Independent Windows owner build records differ."
+          Assert-SameHash (Join-Path $first "windows-machine-owner-x64.ts") (Join-Path $second "windows-machine-owner-x64.ts") "Independent embedded owner modules differ."
+          Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
+          Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
+
+      - name: Retain native rebuild identity for verification failures
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: windows-owner-rebuild-diagnostic
+          path: |
+            ${{ runner.temp }}/windows-owner-first/windows-x64.exe
+            ${{ runner.temp }}/windows-owner-first/WINDOWS-BUILD.json
+            ${{ runner.temp }}/windows-owner-first/windows-machine-owner-x64.ts
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Verify the complete Windows source and native lifecycle gate
+        run: npm run check

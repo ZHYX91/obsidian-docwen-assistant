@@ -13,6 +13,10 @@ const versions = JSON.parse(await readFile(resolve(root, "versions.json"), "utf8
 const nativeBuild = JSON.parse(await readFile(resolve(root, "native/BUILD.json"), "utf8"));
 const nativeSource = await readFile(resolve(root, "native/rename-directory.c"));
 const embeddedNativeSource = await readFile(resolve(root, "src/docwen/publish-path-linux-x64.ts"), "utf8");
+const windowsBuild = JSON.parse(await readFile(resolve(root, "native/WINDOWS-BUILD.json"), "utf8"));
+const windowsSource = await readFile(resolve(root, "native/windows-job.c"));
+const windowsDefinitions = await readFile(resolve(root, "native/windows-job.def"));
+const embeddedWindowsSource = await readFile(resolve(root, "src/docwen/windows-machine-owner-x64.ts"), "utf8");
 if (
   manifest.version !== packageJson.version ||
   manifest.version !== packageLock.version ||
@@ -78,4 +82,76 @@ for (const chunk of chunks) {
   if (index < 0) throw new Error("dist/main.js is missing embedded Linux publication helper bytes");
   searchFrom = index + chunk.length;
 }
-console.log(`Production assets verified: ${PRODUCTION_ASSETS.join(", ")}; embedded Linux helper verified`);
+
+const expectedWindowsProvenance = {
+  repository: "ZHYX91/docwen-openclaw",
+  commit: "d7ad7294b9cadcfea0d430d0dc42ea0bdb48fc10",
+  sourcePath: "native/windows-job.c",
+  license: "MIT",
+  adaptation: "Assistant target environment and reserved controller statuses distinct from target exits",
+};
+if (
+  JSON.stringify(Object.keys(windowsBuild.provenance ?? {}).sort())
+    !== JSON.stringify(Object.keys(expectedWindowsProvenance).sort())
+  || Object.entries(expectedWindowsProvenance)
+    .some(([key, value]) => windowsBuild.provenance?.[key] !== value)
+) {
+  throw new Error("Windows Machine owner provenance changed");
+}
+const windowsSourceSha256 = createHash("sha256").update(windowsSource).digest("hex");
+const windowsDefinitionsSha256 = createHash("sha256").update(windowsDefinitions).digest("hex");
+if (
+  windowsSourceSha256 !== windowsBuild.sourceSha256
+  || windowsDefinitionsSha256 !== windowsBuild.defSha256
+) {
+  throw new Error("Windows Machine owner source digest does not match native/WINDOWS-BUILD.json");
+}
+const windowsDigestMatch = /WINDOWS_X64_MACHINE_OWNER_SHA256 = "([0-9a-f]{64})"/u.exec(embeddedWindowsSource);
+const windowsBytesMatch = /WINDOWS_X64_MACHINE_OWNER_BYTES = ([0-9]+);/u.exec(embeddedWindowsSource);
+const windowsPayloadMatch = /WINDOWS_X64_MACHINE_OWNER_BASE64 = \[([\s\S]*?)\]\.join\(""?\);/u.exec(embeddedWindowsSource);
+const windowsChunks = windowsPayloadMatch
+  ? [...windowsPayloadMatch[1].matchAll(/"([A-Za-z0-9+/=]+)"/gu)].map((match) => match[1])
+  : [];
+if (!windowsDigestMatch || !windowsBytesMatch || windowsChunks.length === 0) {
+  throw new Error("Embedded Windows Machine owner source is malformed");
+}
+const windowsBytes = Buffer.from(windowsChunks.join(""), "base64");
+const windowsSha256 = createHash("sha256").update(windowsBytes).digest("hex");
+if (
+  windowsSha256 !== windowsBuild.binarySha256
+  || windowsSha256 !== windowsDigestMatch[1]
+  || windowsBytes.length !== windowsBuild.binaryBytes
+  || windowsBytes.length !== Number(windowsBytesMatch[1])
+) {
+  throw new Error("Embedded Windows Machine owner digest or size does not match native/WINDOWS-BUILD.json");
+}
+if (windowsBytes.length < 0x100 || windowsBytes.readUInt16LE(0) !== 0x5a4d) {
+  throw new Error("Embedded Windows Machine owner is not a PE image");
+}
+const pe = windowsBytes.readUInt32LE(0x3c);
+if (
+  windowsBytes.readUInt32LE(pe) !== 0x00004550
+  || windowsBytes.readUInt16LE(pe + 4) !== 0x8664
+  || windowsBytes.readUInt32LE(pe + 8) !== 0
+  || windowsBytes.readUInt16LE(pe + 24) !== 0x020b
+  || windowsBytes.readUInt16LE(pe + 24 + 68) !== 3
+  || windowsBuild.peMachine !== "0x8664"
+  || windowsBuild.peMagic !== "0x020b"
+  || windowsBuild.timestamp !== 0
+  || windowsBuild.platform !== "win32"
+  || windowsBuild.arch !== "x64"
+) {
+  throw new Error("Embedded Windows Machine owner PE identity changed");
+}
+if (!mainBundle.includes(windowsBuild.binarySha256)) {
+  throw new Error("dist/main.js is missing the pinned Windows Machine owner digest");
+}
+searchFrom = 0;
+for (const chunk of windowsChunks) {
+  const index = mainBundle.indexOf(chunk, searchFrom);
+  if (index < 0) throw new Error("dist/main.js is missing embedded Windows Machine owner bytes");
+  searchFrom = index + chunk.length;
+}
+console.log(
+  `Production assets verified: ${PRODUCTION_ASSETS.join(", ")}; embedded Linux helper and Windows Machine owner verified`,
+);
