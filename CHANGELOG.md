@@ -4,7 +4,13 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-04
+
 - Own every Windows Machine session with an embedded integrity-checked Job Object controller so normal root exit, timeout, cancellation, broken stdin and plugin unload collect descendants without stale-PID `taskkill` authority.
+
+- Send authored Markdown unchanged through the declared-source conversion route so DocWen owns Number Suite and Structural Tables parsing under its effective configuration.
+- Bind cross-folder images to their declared Vault resource paths using the source hash; reject unsupported or conflicting bindings instead of rewriting authored links.
+- Remove the obsolete resolved-document export path and align compatibility documentation with source-native conversion.
 
 ## [3.1.2] - 2026-09-28
 
