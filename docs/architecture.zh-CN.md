@@ -35,6 +35,11 @@ Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。As
 包括共享的 Number Suite/DocWen H7-H9 扩展；随后再把实际启用的标题与题注编号以及同文件引用降级为 DocWen 的
 `resolved_document` 与 exact-two `numbering_export_plan`。构建时不依赖兄弟仓库。插件缺失时沿用明确的
 未编号计划；API 畸形、事实与源码冲突或编号无法安全表达时失败关闭，不从可见文字猜测编号。
+该适配器只是“补充上下文”的边界，不是第二套 Markdown 方言：Number Suite 题注关键字继续严格区分规范
+大小写，Figure/Table 必须保留非空可见标题，空标题 Equation/Code 必须具有稳定目标 ID；没有唯一载体或
+载体关系存在歧义时，题注仍是语义目标，Assistant 不得擅自绑定一个载体。因此，在作者 Markdown 与
+Number Suite 实际编号状态相同的前提下，直接交给 DocWen 与经
+Assistant→resolved-document 交给 DocWen，最终可观察的语义目标、编号、引用和往返声明必须一致。
 
 ## 产物与提交
 
