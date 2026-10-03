@@ -60,7 +60,6 @@ Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục 
 
 Xuất Word tạo một tệp DOCX độc lập trong thư mục kết quả. Hãy tự giữ Markdown gốc. Chuyển đổi ngược đọc nội dung và cấu trúc DOCX mà không cần tệp kèm chứa bản gốc; không đảm bảo cách viết và khoảng trắng giống hệt. Chọn phần mở rộng trong cài đặt DocWen.
 
-Khi bật phiên bản [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không thêm các số đó vào Markdown.
 
 ## Cài đặt plugin
 
