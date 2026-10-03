@@ -462,7 +462,9 @@ async function waitForEvent(
       const row = rows.find((candidate) => candidate.event === event);
       if (row) return row;
     } catch (error) {
-      if (!isErrno(error, "ENOENT")) throw error;
+      // The native fixture briefly holds an exclusive handle while appending.
+      // Retry only transient sharing contention within the existing deadline.
+      if (!isErrno(error, "ENOENT") && !isErrno(error, "EBUSY")) throw error;
     }
     await delay(20);
   }
