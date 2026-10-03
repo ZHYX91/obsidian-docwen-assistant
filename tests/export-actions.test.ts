@@ -389,7 +389,12 @@ describe("ExportActions advisory proofreading", () => {
       {} as never,
       docwen as never,
       capabilities as never,
-      () => markdownSettings(false) as never,
+      () => ({
+        ...markdownSettings(false),
+        mdToDocCleanNumbering: "remove",
+        mdToDocAddNumbering: "legal",
+        headingNumberingRenderMode: "word_native",
+      }) as never,
       runner as never,
     );
 
