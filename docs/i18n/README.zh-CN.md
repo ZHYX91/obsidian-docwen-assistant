@@ -73,7 +73,6 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 
 Word 导出在结果文件夹中生成独立 DOCX，请自行保留原始 Markdown。反向转换读取 DOCX 的实际内容和结构，不依赖原文伴随文件，也不保证完全相同的写法和空白。可在 DocWen 设置中选择 Markdown 扩展语法。
 
-启用兼容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 后，Word 导出会保留它经过验证的虚拟标题、题注编号和同一笔记内的引用，不会把这些编号写入 Markdown 笔记。
 
 ## 设置
 
