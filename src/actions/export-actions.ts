@@ -156,6 +156,11 @@ export class ExportActions {
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
+      // Keep Markdown dialect ownership in DocWen. The resolved-document
+      // input preserves the exact authored Markdown, so both direct DocWen
+      // conversion and Assistant conversion must resolve markdown_extensions
+      // from the same effective DocWen configuration unless a caller
+      // deliberately supplies an explicit request override.
       const taskInputs = target === "docx"
         ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
         : snapshot.inputs;
