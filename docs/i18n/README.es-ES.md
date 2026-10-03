@@ -37,6 +37,7 @@ El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida
 - Windows o Linux y Obsidian 1.12.7 o posterior; el complemento es solo para escritorio.
 - En Windows, usa una versión compatible de DocWen 0.13.0 o posterior de Store o un paquete portátil totalmente extraído; en Linux, usa un paquete totalmente extraído seleccionado manualmente. La exportación de directorios de resultados en Linux requiere x64 y un sistema de archivos con no-replace atómico; el complemento no descarga DocWen automáticamente.
 - El complemento requiere `docwen.machine.v2` y `docwen.artifact_bundle.v3`; una versión incompatible de DocWen se rechaza en lugar de usar otro protocolo.
+- El inicio o la apertura de la aplicación de escritorio DocWen usa el control CLI local público `gui open`; por ello, un fallo en la negociación Machine no impide abrir DocWen.
 
 Si la instalación de Store no cumple estos requisitos, utiliza un paquete portátil compatible y selecciónalo mediante la instalación manual.
 

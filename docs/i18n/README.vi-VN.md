@@ -37,6 +37,7 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích �
 - Windows hoặc Linux và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
 - Trên Windows, dùng DocWen 0.13.0 trở lên tương thích từ Store hoặc gói di động đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất thư mục kết quả trên Linux yêu cầu x64 và hệ thống tệp hỗ trợ no-replace nguyên tử; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
+- Việc khởi chạy hoặc mở ứng dụng DocWen dùng lệnh CLI cục bộ công khai `gui open`; vì vậy lỗi thương lượng Machine không ngăn việc mở chính DocWen.
 
 Nếu bản cài đặt từ Store không đáp ứng các yêu cầu này, hãy dùng gói di động tương thích và chọn gói đó trong chế độ cài đặt thủ công.
 

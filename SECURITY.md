@@ -6,7 +6,7 @@ DocWen Assistant handles local Vault text, executable paths, subprocesses, stage
 
 Use GitHub's [private advisory form](https://github.com/ZHYX91/obsidian-docwen-assistant/security/advisories/new). If private vulnerability reporting is unavailable, open a public issue containing only a request for a private contact channel; do not disclose exploit details or private data publicly.
 
-Include the affected plugin revision, DocWen version, Obsidian version, Windows version, impact, and the smallest sanitized reproduction. Remove credentials, note contents, Vault and document paths, executable locations, unsanitized CLI output, and unrelated `data.json` values.
+Include the affected plugin revision, DocWen version, Obsidian version, operating system and version, impact, and the smallest sanitized reproduction. Remove credentials, note contents, Vault and document paths, executable locations, unsanitized CLI output, and unrelated `data.json` values.
 
 ## Security scope
 

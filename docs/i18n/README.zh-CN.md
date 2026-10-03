@@ -41,6 +41,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 - 需要 Windows 或 Linux 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
 - Windows 可使用 Microsoft Store 安装版或完整解压的便携版 DocWen 0.13.0 或更高版本；Linux 使用手动选择的完整解压包。Linux 结果目录导出要求 x64 且文件系统支持原子 no-replace；插件不会自动下载 DocWen；
 - 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
+- 启动或打开 DocWen 桌面应用使用公开的本机 `gui open` CLI 控制命令，因此 Machine 协商失败不会阻止打开 DocWen 本身。
 
 Windows 商店安装版不满足以上要求时，请使用兼容的便携包并在“手动安装”中选择；Linux 始终使用“手动安装”。
 

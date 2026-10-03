@@ -37,6 +37,7 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 - Windows 또는 Linux와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
 - Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.13.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 결과 디렉터리 내보내기에는 x64와 원자적 no-replace를 지원하는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
+- DocWen 데스크톱 앱 시작/열기는 공개 로컬 CLI `gui open`을 사용하므로 Machine 협상에 실패해도 DocWen 자체를 열 수 있습니다.
 
 Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 휴대용 패키지를 사용하고 수동 설치에서 선택하세요.
 

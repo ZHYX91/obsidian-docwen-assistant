@@ -37,6 +37,7 @@ O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino es
 - Windows ou Linux e Obsidian 1.12.7 ou superior; o plugin funciona apenas no desktop.
 - No Windows, use uma versão compatível do DocWen 0.13.0 ou posterior da Store ou um pacote portátil totalmente extraído; no Linux, use um pacote totalmente extraído selecionado manualmente. A exportação de diretórios de resultado no Linux exige x64 e sistema de arquivos com no-replace atômico; o plugin não baixa o DocWen automaticamente.
 - O plugin exige `docwen.machine.v2` e `docwen.artifact_bundle.v3`; uma versão incompatível do DocWen é recusada em vez de usar outro protocolo.
+- A inicialização ou abertura do aplicativo DocWen usa o comando CLI local público `gui open`; portanto, uma falha na negociação Machine não impede abrir o próprio DocWen.
 
 Se a instalação da Store não atender a esses requisitos, use um pacote portátil compatível e selecione-o na instalação manual.
 

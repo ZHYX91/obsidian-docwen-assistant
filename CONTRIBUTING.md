@@ -30,7 +30,7 @@ The README remains English at the root with translations under `docs/i18n/`. Do 
 
 Add the smallest test that fails before a fix. Use synthetic files, temporary directories, and dedicated test Vaults. Never point a fixture or destructive operation at an ordinary or production Vault, and preserve `data.json` unless a reset is explicitly authorized.
 
-Source checks, a fixed packaged DocWen candidate, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, manual Windows/Office checks, GitHub publication, and Community Plugins approval are separate claims. State exactly which layer was exercised.
+Source checks, a fixed packaged DocWen candidate, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, manual Windows/Office checks, Linux host checks, GitHub publication, and Community Plugins approval are separate claims. State exactly which layer was exercised.
 
 ## Pull requests
 
