@@ -85,6 +85,52 @@ describe("VaultReadSnapshot", () => {
     });
   });
 
+  it("builds source-native DOCX inputs without consulting Number Suite plugins", async () => {
+    const { TFile } = await import("obsidian");
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = Object.assign(new TFile(), { path: "notes/note.md", extension: "md" });
+    const image = Object.assign(new TFile(), { path: "assets/chart.png", extension: "png" });
+    const token = "![[chart.png]]";
+    const source = `# Scope\n\nFigure: Chart ^chart\n\n${token}\n`;
+    const tokenStart = source.indexOf(token);
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        readBinary: vi.fn(async (target: unknown) =>
+          target === file
+            ? new TextEncoder().encode(source).buffer
+            : Uint8Array.from([1, 2, 3]).buffer),
+      },
+      metadataCache: {
+        getFileCache: vi.fn(() => ({
+          embeds: [{
+            link: "chart.png",
+            original: token,
+            position: { start: { offset: tokenStart }, end: { offset: tokenStart + token.length } },
+          }],
+        })),
+        getFirstLinkpathDest: vi.fn(() => image),
+      },
+      get plugins(): never {
+        throw new Error("source-native export must not inspect Number Suite");
+      },
+    };
+
+    await new VaultReadSnapshot(app as never).run(
+      file as never,
+      new AbortController().signal,
+      async (snapshot) => {
+        const inputs = await snapshot.getDeclaredMarkdownInputs();
+        expect(inputs).toMatchObject([
+          { role: "source", logicalPath: "notes/note.md", mediaType: "text/markdown" },
+          { role: "linked_resource", logicalPath: "assets/chart.png", mediaType: "image/png" },
+        ]);
+        expect(await readFile(inputs![0].path, "utf8")).toBe(source);
+        expect([...await readFile(inputs![1].path)]).toEqual([1, 2, 3]);
+      },
+    );
+  });
+
   it("memoizes deferred projection and handles cancellation before metadata access", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
