@@ -39,7 +39,6 @@ describe("settings page definitions", () => {
       "docToMdCleanNumbering",
       "headingMergeMode",
       "mdToDocCleanNumbering",
-      "mdToDocAddNumbering",
       "headingNumberingRenderMode",
       "proofreadOnConvert",
       "proofreadTypo",
@@ -95,9 +94,10 @@ describe("settings page definitions", () => {
     expect(collectControlKeys(definitions[2].items ?? [])).toEqual(new Set([
       "headingMergeMode",
       "mdToDocCleanNumbering",
-      "mdToDocAddNumbering",
       "headingNumberingRenderMode",
     ]));
+    const numberingRender = definitions[2].items.find((item) => "render" in item && item.render);
+    expect(numberingRender).toBeDefined();
     expect(collectControlKeys(definitions[2].items ?? [])).not.toContain("docToMdCleanNumbering");
   });
 
