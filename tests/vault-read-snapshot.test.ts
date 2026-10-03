@@ -127,6 +127,45 @@ describe("VaultReadSnapshot", () => {
     });
   });
 
+  it("preserves Structural Tables source verbatim in the resolved-document port", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "tables/structural.md", extension: "md" };
+    const source = [
+      "| Region | Sales | < |",
+      "| Quarter | Q1 | Q2 |",
+      "| --- || --- | --- |",
+      "| North | 10 | 12 |",
+      "| ^ | 8 | 11 |",
+      "",
+      "| --- | --- |",
+      "| Alice | 10 |",
+      "| Bob | 20 |",
+      "",
+      "| Literal | Markers |",
+      "| --- | --- |",
+      "| \\< | \\^ |",
+      "",
+    ].join("\n");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+    };
+
+    await new VaultReadSnapshot(app as never).run(
+      file as never,
+      new AbortController().signal,
+      async (snapshot) => {
+        const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
+        const neutral = JSON.parse(await readFile(resolvedInputs![0].path, "utf8"));
+        expect(neutral.document.authored_markdown).toBe(source);
+        expect(resolvedInputs?.map((input) => input.role)).toEqual([
+          "neutral_document",
+          "numbering_export_plan",
+        ]);
+      },
+    );
+  });
+
   it("rejects changed source before publishing and does not recheck after successful publication", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
