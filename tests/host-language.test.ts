@@ -13,6 +13,7 @@ import {
   resolvePluginLocale,
 } from "../src/host-language";
 import { initI18n, t } from "../src/i18n";
+import { translations } from "../src/i18n/catalogs";
 
 describe("plugin language", () => {
   beforeEach(() => {
@@ -67,4 +68,21 @@ describe("plugin language", () => {
     expect(getDocWenLanguage("pt-BR")).toBe("pt_BR");
     expect(getLanguage).not.toHaveBeenCalled();
   });
+
+  it("keeps interpolation placeholders identical in every locale", () => {
+    const source = translations["zh-cn"];
+    const collect = (value: string): string[] =>
+      [...value.matchAll(/\{([A-Za-z][A-Za-z0-9]*)\}/g)]
+        .map((match) => match[1] ?? "")
+        .filter(Boolean)
+        .sort();
+
+    for (const [locale, catalog] of Object.entries(translations)) {
+      for (const key of Object.keys(source) as Array<keyof typeof source>) {
+        expect(collect(catalog[key]), `${locale}:${String(key)}`)
+          .toEqual(collect(source[key]));
+      }
+    }
+  });
+
 });
