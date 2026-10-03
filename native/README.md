@@ -50,3 +50,8 @@ create or verify that owner rejects the Machine launch; it never falls back to d
 DocWen. The controller drops its private target-path environment variable before launching DocWen and
 closes its duplicate stdin read handle before resuming the target, preserving the existing bounded
 environment, cwd, Unicode path and real broken-pipe semantics.
+
+Controller exit 125 denotes an internal owner failure; exit 126 means target creation failed
+because the executable was not found. After a target starts and its Job is successfully closed,
+target exits 125 and 126 are mapped to ordinary target failure 127, so target errors cannot be
+misreported as unconfirmed cleanup or a missing execution alias.

@@ -40,6 +40,7 @@ typedef unsigned char BYTE;
 #define WAIT_OBJECT_0 0u
 #define WRAPPER_ERROR 125u
 #define TARGET_NOT_FOUND 126u
+#define TARGET_FAILURE 127u
 #define ERROR_FILE_NOT_FOUND 2u
 #define ERROR_PATH_NOT_FOUND 3u
 #define MAX_TARGET 16384u
@@ -274,7 +275,9 @@ void entry(void) {
     fail(job, processInfo.hProcess, (HANDLE)0);
   }
   DWORD exitCode = WRAPPER_ERROR;
-  if (!GetExitCodeProcess(processInfo.hProcess, &exitCode)) exitCode = WRAPPER_ERROR;
+  if (!GetExitCodeProcess(processInfo.hProcess, &exitCode)) {
+    fail(job, processInfo.hProcess, (HANDLE)0);
+  }
   CloseHandle(processInfo.hProcess);
   processInfo.hProcess = (HANDLE)0;
 
@@ -285,5 +288,7 @@ void entry(void) {
     fail(job, (HANDLE)0, (HANDLE)0);
   }
   CloseHandle(job);
-  ExitProcess(exitCode);
+  /* Keep controller failures distinct from a successfully launched target. */
+  ExitProcess(exitCode == WRAPPER_ERROR || exitCode == TARGET_NOT_FOUND
+    ? TARGET_FAILURE : exitCode);
 }

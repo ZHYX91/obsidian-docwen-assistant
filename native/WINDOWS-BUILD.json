@@ -1,8 +1,8 @@
 {
-  "sourceSha256": "d7af63ac9bef76dcdc1b4b81edc6a4537be2dcfe2d9398a7fe51d22d7569169b",
+  "sourceSha256": "4131ffe2f92d28555e5965440c766b72e6c4434aea00abee29d075daf6d407cc",
   "defSha256": "0b23eb8186cea04c6abe18b96b17aeb54fec862870c22dee5c6289acf192b20e",
-  "binarySha256": "ccbb8ed6a40b4492a92270d545c172a4c6908ac0fe59e10fe225a734a340ee8a",
-  "binaryBytes": 5120,
+  "binarySha256": "cc0e8662f245ad1e6bc57d8b195e3cc38d1185aae793edf6c841f1af3b82c455",
+  "binaryBytes": 4608,
   "platform": "win32",
   "arch": "x64",
   "minimumWindows": "10",
@@ -10,9 +10,9 @@
   "peMagic": "0x020b",
   "subsystem": "windows-cui",
   "timestamp": 0,
-  "compiler": "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64",
-  "librarian": "Microsoft (R) Library Manager Version 14.51.36260.0",
-  "linker": "Microsoft (R) Incremental Linker Version 14.51.36260.0",
+  "compiler": "用法: cl [ 选项... ] 文件名... [ /link 链接选项... ]",
+  "librarian": "Microsoft (R) Library Manager Version 14.44.35228.0",
+  "linker": "Microsoft (R) Incremental Linker Version 14.44.35228.0",
   "compilerTarget": "x64-msvc",
   "compilerFlags": [
     "/nologo",
@@ -42,6 +42,6 @@
     "commit": "d7ad7294b9cadcfea0d430d0dc42ea0bdb48fc10",
     "sourcePath": "native/windows-job.c",
     "license": "MIT",
-    "adaptation": "Assistant target environment name plus distinct target-not-found exit status"
+    "adaptation": "Assistant target environment and reserved controller statuses distinct from target exits"
   }
 }

@@ -602,6 +602,22 @@ describe("DocWenMachineClient", () => {
     await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_alias_not_found" });
   });
 
+  it.skipIf(process.platform !== "win32")("classifies a controller failure during normal close as unconfirmed cleanup", async () => {
+    const child = new FakeChild();
+    child.stdin.removeAllListeners("finish");
+    child.stdin.on("finish", () => queueMicrotask(() => child.emit("close", 125)));
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      await expect(client.query("health/check", {})).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job" },
+      });
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {
     for (const failure of ["timeout", "stderr", "queue"] as const) {
       const child = new FakeChild();

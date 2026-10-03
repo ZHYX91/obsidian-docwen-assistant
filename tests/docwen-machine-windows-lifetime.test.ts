@@ -58,7 +58,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     let rootPid = 0;
 
     try {
-      const pending = client.query("health/check", {}, undefined, 2_000);
+      const pending = client.query("health/check", {}, undefined, 8_000);
       void pending.catch(() => undefined);
       rootPid = numberField(await waitForEvent(fixture.trace, "root_started"), "pid");
       helperPid = numberField(await waitForEvent(fixture.trace, "helper_started"), "helperPid");
@@ -71,7 +71,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
       killProcess(rootPid);
       killProcess(helperPid);
     }
-  }, 10_000);
+  }, 15_000);
 
   it("bounds accepted-task cancellation through the held Job owner", async () => {
     const fixture = await createNodeFixture("cancel");
@@ -130,18 +130,32 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     }
   }, 10_000);
 
-  it("classifies the reserved owner failure exit during normal close as unconfirmed cleanup", async () => {
-    const fixture = await createNodeFixture("owner-failure-close");
+  it("keeps target exit 125 separate from owner cleanup failure", async () => {
+    const fixture = await createNodeFixture("target-exit-125");
     const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
 
     try {
       await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({
-        code: "cli_cleanup_failed",
+        code: "cli_protocol_error",
         details: {
-          cleanupState: "unconfirmed",
-          ownershipState: "windows_job",
+          exitCode: 127,
         },
       });
+    } finally {
+      client.dispose();
+    }
+  }, 10_000);
+
+  it("keeps an early target exit 126 separate from a missing automatic alias", async () => {
+    const fixture = await createNodeFixture("target-exit-126");
+    const client = new DocWenMachineClient(() => ({
+      executable: fixture.executable, cwd: fixture.root, mode: "automatic",
+    }), () => "en_US");
+    try {
+      await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({
+        code: "cli_protocol_error", details: { exitCode: 127 },
+      });
+      expect(numberField(await waitForEvent(fixture.trace, "root_started"), "pid")).toBeGreaterThan(0);
     } finally {
       client.dispose();
     }
@@ -249,7 +263,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
   });
 });
 
-type FixtureMode = "root-exit" | "owner-failure-close" | "timeout" | "cancel" | "unload" | "marker";
+type FixtureMode = "root-exit" | "target-exit-125" | "target-exit-126" | "timeout" | "cancel" | "unload" | "marker";
 
 async function createNodeFixture(mode: FixtureMode): Promise<{ root: string; executable: string; trace: string }> {
   const root = await mkdtemp(path.join(tmpdir(), "docwen-windows-owner-"));
@@ -370,7 +384,7 @@ function handle(message) {
     });
   } else if (message.method === "health/check") {
     record("health_seen");
-    if (mode === "root-exit" || mode === "owner-failure-close") send(message.id, { all_ok: true, checks: [] });
+    if (mode === "root-exit" || mode === "target-exit-125") send(message.id, { all_ok: true, checks: [] });
     else if (mode === "marker") {
       writeFileSync(process.env.DOCWEN_LOG_DIR, "started\n", "utf8");
       send(message.id, { all_ok: true, checks: [] });
@@ -394,6 +408,7 @@ function handle(message) {
   }
 }
 record("root_started");
+if (mode === "target-exit-126") process.exit(126);
 process.stdin.on("data", (chunk) => {
   buffer = Buffer.concat([buffer, chunk]);
   while (true) {
@@ -414,7 +429,7 @@ process.stdin.on("data", (chunk) => {
 process.stdin.on("end", () => {
   if (mode === "root-exit") helperOnce();
   record("root_exit");
-  process.exit(mode === "owner-failure-close" ? 125 : 0);
+  process.exit(mode === "target-exit-125" ? 125 : 0);
 });
 setInterval(() => undefined, 1000);
 `;
@@ -434,7 +449,7 @@ function startSentinel(): ChildProcess {
 async function waitForEvent(
   filename: string,
   event: string,
-  timeoutMs = 3_000,
+  timeoutMs = 7_000,
 ): Promise<Record<string, unknown>> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {

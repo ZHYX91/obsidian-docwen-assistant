@@ -124,5 +124,17 @@ jobs:
           Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
           Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
 
+      - name: Retain native rebuild identity for verification failures
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: windows-owner-rebuild-diagnostic
+          path: |
+            ${{ runner.temp }}/windows-owner-first/windows-x64.exe
+            ${{ runner.temp }}/windows-owner-first/WINDOWS-BUILD.json
+            ${{ runner.temp }}/windows-owner-first/windows-machine-owner-x64.ts
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Verify the complete Windows source and native lifecycle gate
         run: npm run check

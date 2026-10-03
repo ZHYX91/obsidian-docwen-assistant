@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -42,14 +42,14 @@ async function makeBundle(source: string): Promise<ValidatedArtifactBundle> {
     artifacts: [{
       artifact_id: "main", kind: "document", locator: "produced.md", logical_path: "result/result.md",
       suggested_name: "result.md", media_type: "text/markdown", size_bytes: bytes.length,
-      sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath,
+      sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath: await realpath(absolutePath),
     }],
     entries: [{ artifact_id: "main", preferred: true, role: "primary", ordinal: 0 }], relations: [],
   };
 }
 
 async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), "docwen-output-lifecycle-"));
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), "docwen-output-lifecycle-")));
   roots.push(root);
   const output = path.join(root, "output");
   await mkdir(output);
