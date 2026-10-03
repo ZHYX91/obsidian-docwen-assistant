@@ -149,6 +149,19 @@ export class ExportActions {
           );
         }
       }
+      if (target === "docx" && capability.source.category === "markdown") {
+        options.markdownExtensions = {
+          input: { captions_references: true },
+        };
+        Object.assign(
+          options,
+          buildNumberingOptions(
+            settings,
+            settings.mdToDocCleanNumbering,
+            settings.mdToDocAddNumbering,
+          ),
+        );
+      }
       if (capability.source.category === "markdown") {
         if (settings.proofreadOnConvert) {
           await this.runAdvisoryProofread(sourceInput, settings, signal);
@@ -157,7 +170,7 @@ export class ExportActions {
       }
 
       const taskInputs = target === "docx"
-        ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
+        ? await snapshot.getDeclaredMarkdownInputs() ?? snapshot.inputs
         : snapshot.inputs;
       this.capabilities.requireTaskInputs(route, taskInputs);
 
