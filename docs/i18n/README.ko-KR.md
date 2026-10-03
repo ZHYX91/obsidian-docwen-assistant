@@ -61,7 +61,6 @@ Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH9
 
 Word 내보내기는 결과 폴더에 독립된 DOCX를 생성합니다. 원본 Markdown은 직접 보관하세요. 역변환은 원문을 저장한 동반 파일 없이 DOCX의 내용과 구조를 읽으며 동일한 표기와 공백을 보장하지 않습니다. 확장은 DocWen 설정에서 선택할 수 있습니다.
 
-호환되는 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite)를 활성화하면 Word 내보내기는 Markdown 노트에 번호를 추가하지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다.
 
 ## 설정
 

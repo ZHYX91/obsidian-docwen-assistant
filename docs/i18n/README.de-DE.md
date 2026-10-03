@@ -61,7 +61,6 @@ Wählen Sie einen Ausgabeordner. Jede Konvertierung erstellt darin einen eigenen
 
 Der Word-Export erzeugt eine eigenständige DOCX-Datei im Ergebnisordner. Bewahren Sie das ursprüngliche Markdown selbst auf. Die Rückkonvertierung liest DOCX-Inhalt und -Struktur ohne Quelldatei-Begleiter; identische Schreibweise und Leerzeichen werden nicht garantiert. Erweiterungen wählen Sie in den DocWen-Einstellungen.
 
-Mit einer kompatiblen Version von [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) übernimmt der Word-Export die geprüften virtuellen Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne diese Nummern in die Markdown-Notiz zu schreiben.
 
 ## Einstellungen
 

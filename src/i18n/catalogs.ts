@@ -90,7 +90,6 @@ export const translations: Record<string, Translations> = {
         <li>在文件列表中右键文件，选择 <b>DocWen</b> 子菜单：转换格式、添加/清理序号、用 DocWen 打开</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b>，可使用启动、导出、序号、自检等命令</li>
         <li>只有执行“启动或发送当前文件”等 DocWen 操作时，才会传递当前文件路径</li>
-        <li>启用兼容版本的 Number Suite 后，Word 导出会保留已验证的虚拟标题、题注编号和同一笔记内的引用，不改写原笔记</li>
       </ul>
     `,
 
@@ -320,7 +319,6 @@ export const translations: Record<string, Translations> = {
         <li>在檔案列表中右鍵檔案，選擇 <b>DocWen</b> 子選單：轉換格式、添加/清理序號、用 DocWen 開啟</li>
         <li>使用命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b>，可使用啟動、匯出、序號、自檢等命令</li>
         <li>只有執行「啟動或傳送目前檔案」等 DocWen 操作時，才會傳遞目前檔案路徑</li>
-        <li>啟用相容版本的 Number Suite 後，Word 匯出會保留已驗證的虛擬標題、題注編號及同一筆記內的引用，不改寫原筆記</li>
       </ul>
     `,
 
@@ -550,7 +548,6 @@ export const translations: Record<string, Translations> = {
         <li>Right-click a file in the file list and use the <b>DocWen</b> submenu: convert formats, manage numbering, or open in DocWen</li>
         <li>Use the command palette (Ctrl/Cmd + P) and search <b>DocWen</b> for launch, export, numbering, and connection commands</li>
         <li>The current file path is passed only when you run a DocWen action such as launch or send current file</li>
-        <li>With a compatible Number Suite version enabled, Word export preserves validated virtual heading and caption numbers plus same-note references without rewriting the note</li>
       </ul>
     `,
 
@@ -1010,7 +1007,6 @@ export const translations: Record<string, Translations> = {
         <li>Faites un clic droit sur un fichier dans la liste et utilisez le sous-menu <b>DocWen</b> : convertir, numéroter ou ouvrir dans DocWen</li>
         <li>Utilisez la palette de commandes (Ctrl/Cmd + P) et recherchez <b>DocWen</b> pour toutes les commandes disponibles</li>
         <li>Le chemin du fichier actuel est transmis uniquement lorsque vous lancez une action DocWen, comme démarrer ou envoyer le fichier actuel</li>
-        <li>Avec une version compatible de Number Suite, l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans réécrire la note</li>
       </ul>
     `,
 
@@ -1240,7 +1236,6 @@ export const translations: Record<string, Translations> = {
         <li>Щёлкните правой кнопкой мыши по файлу в списке и используйте подменю <b>DocWen</b>: конвертировать, нумеровать или открыть в DocWen</li>
         <li>Используйте палитру команд (Ctrl/Cmd + P) и найдите <b>DocWen</b> для всех доступных команд</li>
         <li>Путь к текущему файлу передаётся только при выполнении действия DocWen, например запуска или отправки текущего файла</li>
-        <li>При включённой совместимой версии Number Suite экспорт в Word сохраняет проверенные виртуальные номера заголовков и подписей, а также ссылки внутри заметки, не переписывая её</li>
       </ul>
     `,
 
@@ -1470,7 +1465,6 @@ export const translations: Record<string, Translations> = {
         <li>Clique com o botão direito em um arquivo na lista e use o submenu <b>DocWen</b>: converter formatos, gerenciar numeração ou abrir no DocWen</li>
         <li>Use a paleta de comandos (Ctrl/Cmd + P) e pesquise <b>DocWen</b> para todos os comandos disponíveis</li>
         <li>O caminho do arquivo atual só é enviado quando você executa uma ação do DocWen, como iniciar ou enviar o arquivo atual</li>
-        <li>Com uma versão compatível do Number Suite ativada, a exportação para Word preserva números virtuais validados de títulos e legendas e referências da mesma nota sem reescrevê-la</li>
       </ul>
     `,
 
@@ -1700,7 +1694,6 @@ export const translations: Record<string, Translations> = {
         <li>ファイルリストでファイルを右クリックし、<b>DocWen</b> サブメニューを使用：形式変換、番号管理、DocWen で開く</li>
         <li>コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索し、すべてのコマンドを利用</li>
         <li>現在のファイルパスは、DocWen の起動や現在のファイルの送信などの操作を実行した場合にのみ渡されます</li>
-        <li>互換性のある Number Suite を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照をノートを書き換えずに保持します</li>
       </ul>
     `,
 
@@ -1929,7 +1922,6 @@ export const translations: Record<string, Translations> = {
         <li>파일 목록에서 파일을 우클릭하고 <b>DocWen</b> 하위 메뉴 사용: 형식 변환, 번호 관리, DocWen에서 열기</li>
         <li>명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하여 모든 명령 사용</li>
         <li>현재 파일 경로는 DocWen 실행 또는 현재 파일 전송 같은 작업을 실행할 때만 전달됩니다</li>
-        <li>호환되는 Number Suite를 활성화하면 Word 내보내기는 노트를 다시 쓰지 않고 검증된 가상 제목 및 캡션 번호와 같은 노트 안의 참조를 유지합니다</li>
       </ul>
     `,
 
@@ -2158,7 +2150,6 @@ export const translations: Record<string, Translations> = {
         <li>Haz clic derecho en un archivo de la lista y usa el submenú <b>DocWen</b>: convertir formatos, gestionar numeración o abrir en DocWen</li>
         <li>Usa la paleta de comandos (Ctrl/Cmd + P) y busca <b>DocWen</b> para todos los comandos disponibles</li>
         <li>La ruta del archivo actual solo se envía al ejecutar una acción de DocWen, como iniciar o enviar el archivo actual</li>
-        <li>Con una versión compatible de Number Suite activada, la exportación a Word conserva los números virtuales validados de títulos y leyendas y las referencias de la misma nota sin reescribirla</li>
       </ul>
     `,
 
@@ -2387,7 +2378,6 @@ export const translations: Record<string, Translations> = {
         <li>Nhấp chuột phải vào tệp trong danh sách và dùng menu con <b>DocWen</b>: chuyển đổi định dạng, đánh số hoặc mở trong DocWen</li>
         <li>Dùng bảng lệnh (Ctrl/Cmd + P) và tìm <b>DocWen</b> để xem tất cả lệnh có sẵn</li>
         <li>Đường dẫn tệp hiện tại chỉ được gửi khi bạn chạy một thao tác DocWen như khởi chạy hoặc gửi tệp hiện tại</li>
-        <li>Khi bật phiên bản Number Suite tương thích, xuất Word sẽ giữ các số tiêu đề và chú thích ảo đã xác thực cùng tham chiếu trong cùng ghi chú mà không ghi lại ghi chú</li>
       </ul>
     `,
 

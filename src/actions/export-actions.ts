@@ -149,6 +149,16 @@ export class ExportActions {
           );
         }
       }
+      if (target === "docx" && capability.source.category === "markdown") {
+        Object.assign(
+          options,
+          buildNumberingOptions(
+            settings,
+            settings.mdToDocCleanNumbering,
+            settings.mdToDocAddNumbering,
+          ),
+        );
+      }
       if (capability.source.category === "markdown") {
         if (settings.proofreadOnConvert) {
           await this.runAdvisoryProofread(sourceInput, settings, signal);
@@ -156,13 +166,15 @@ export class ExportActions {
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
-      const taskInputs = target === "docx"
-        ? await snapshot.getResolvedMarkdownInputs() ?? snapshot.inputs
-        : snapshot.inputs;
+      // Preserve authored dialect syntax and let the same effective DocWen
+      // configuration govern direct conversion and Assistant export.
+      const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
+      const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
       this.capabilities.requireTaskInputs(route, taskInputs);
 
       return this.docwen.convert({
         ...options,
+        markdownResourceBindings: declaredMarkdown?.resourceBindings,
         inputs: taskInputs,
         sourceInput,
         outputDirectory,

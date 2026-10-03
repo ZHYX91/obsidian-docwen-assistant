@@ -7,7 +7,7 @@ import { setTimeout as yieldToHost } from "node:timers/promises";
 
 import { TFile, type App } from "obsidian";
 
-import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type TaskInput } from "../docwen";
+import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import {
   isSameOpenMarkdownTarget,
   locateOpenMarkdownTarget,
@@ -29,9 +29,15 @@ export interface IsolatedSnapshot {
   readonly contentSha256: string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
+  readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
   readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
   readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
+}
+
+export interface DeclaredMarkdownSnapshot {
+  readonly inputs: readonly TaskInput[];
+  readonly resourceBindings?: MarkdownResourceBindings;
 }
 
 interface ResolvedMarkdownSnapshot {
@@ -114,6 +120,15 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(file.path),
         mediaType: mediaTypeForPath(file.path),
       };
+      let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
+      const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {
+        if (authoredMarkdown === null) return undefined;
+        await assertCurrent();
+        declaredMarkdownInputs ??= this.buildDeclaredMarkdownInputs(file, authoredMarkdown, workspace, signal, sourceInput, contentSha256);
+        const declared = await declaredMarkdownInputs;
+        await assertCurrent();
+        return declared;
+      };
       let resolvedMarkdownSnapshot: Promise<ResolvedMarkdownSnapshot> | undefined;
       const getResolvedMarkdownInputs = async (): Promise<readonly [TaskInput, TaskInput] | undefined> => {
         if (authoredMarkdown === null) return undefined;
@@ -129,6 +144,7 @@ export class VaultReadSnapshot {
         publish,
         sourceInput,
         inputs: [sourceInput],
+        getDeclaredMarkdownInputs,
         getResolvedMarkdownInputs,
       });
       // After publication the source may legitimately change again. The
@@ -148,6 +164,94 @@ export class VaultReadSnapshot {
       warnings.push(operationWarning("input_cleanup_failed", cleanupError));
     }
     return { value: result, warnings };
+  }
+
+  private async buildDeclaredMarkdownInputs(
+    file: TFile,
+    authoredMarkdown: string,
+    workspace: string,
+    signal: AbortSignal,
+    sourceInput: TaskInput,
+    sourceSha256: string,
+  ): Promise<DeclaredMarkdownSnapshot> {
+    await yieldToHost(0, undefined, { signal });
+    throwIfAborted(signal);
+    const metadataCache = this.app.metadataCache;
+    const fileCache = metadataCache?.getFileCache(file);
+    const resources = new Map<string, TaskInput>();
+    const imageBindings = new Map<string, string>();
+    let totalResourceBytes = 0;
+    const embeds = [...(fileCache?.embeds ?? [])]
+      .sort((left, right) => left.position.start.offset - right.position.start.offset);
+
+    for (const embed of embeds) {
+      throwIfAborted(signal);
+      const linked = metadataCache.getFirstLinkpathDest(embed.link, file.path);
+      const requestedExtension = extensionForLink(embed.link);
+      if (!(linked instanceof TFile)) {
+        if (IMAGE_LIKE_EXTENSIONS.has(requestedExtension)) {
+          throw new VaultWriteError(
+            "vault_input_invalid",
+            `Obsidian could not resolve the embedded image: ${embed.link}`,
+          );
+        }
+        continue;
+      }
+      const extension = linked.extension.toLowerCase();
+      const mediaType = SUPPORTED_IMAGE_MEDIA_TYPES.get(extension);
+      if (!mediaType) {
+        if (IMAGE_LIKE_EXTENSIONS.has(extension)) {
+          throw new VaultWriteError(
+            "vault_input_invalid",
+            `DocWen does not support the embedded image format: ${linked.extension}`,
+          );
+        }
+        continue;
+      }
+      const authoredToken = authoredMarkdown.slice(
+        embed.position.start.offset,
+        embed.position.end.offset,
+      );
+      if (!authoredToken || authoredToken !== embed.original) {
+        throw new VaultWriteError(
+          "vault_input_invalid",
+          `The Obsidian embed cache is stale for: ${embed.link}`,
+        );
+      }
+      const logicalPath = logicalPathFor(linked.path);
+      const previous = imageBindings.get(authoredToken);
+      if (previous !== undefined && previous !== logicalPath) {
+        throw new VaultWriteError("vault_input_invalid", "The embed cache maps identical image tokens to different resources.");
+      }
+      imageBindings.set(authoredToken, logicalPath);
+      if (resources.has(linked.path)) continue;
+
+      const content = Buffer.from(await this.app.vault.readBinary(linked));
+      totalResourceBytes += content.length;
+      if (content.length === 0 || totalResourceBytes > MAX_EMBEDDED_RESOURCE_BYTES) {
+        throw new VaultWriteError(
+          "vault_input_invalid",
+          "Embedded image bytes exceed the DocWen declared-resource limit.",
+        );
+      }
+      const resourcePath = path.join(workspace, `linked-${resources.size + 1}.${extension}`);
+      await writeFile(resourcePath, content);
+      resources.set(linked.path, {
+        path: resourcePath,
+        kind: "resource",
+        role: "linked_resource",
+        logicalPath: logicalPathFor(linked.path),
+        mediaType,
+      });
+    }
+
+    return {
+      inputs: [sourceInput, ...resources.values()],
+      resourceBindings: imageBindings.size === 0 ? undefined : {
+        authored_sha256: sourceSha256,
+        images: [...imageBindings].map(([authored_token, logical_path]) => ({ authored_token, logical_path })),
+      },
+    };
   }
 
   private async buildResolvedMarkdownInputs(
@@ -555,6 +659,19 @@ function resolvedCaptionTarget(
     || sourceIndex.lineNumber(caption.sourceStartUtf16) !== caption.line
   ) {
     throw new NumberSuiteInteropError("Number Suite caption facts contradict the exact authored source line.");
+  }
+  if (
+    (caption.kind === "Figure" || caption.kind === "Table")
+    && caption.authoredText.length === 0
+  ) {
+    throw new NumberSuiteInteropError("Number Suite Figure/Table captions require visible authored text.");
+  }
+  if (
+    (caption.kind === "Equation" || caption.kind === "Code")
+    && caption.authoredText.length === 0
+    && caption.targetId === null
+  ) {
+    throw new NumberSuiteInteropError("Number Suite empty Equation/Code captions require a stable target ID.");
   }
   assertNumberSuiteTargetIdMatchesSource(
     source,

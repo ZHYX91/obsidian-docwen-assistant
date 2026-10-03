@@ -61,7 +61,6 @@ Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de r
 
 L’export Word produit un DOCX autonome dans le dossier de résultats. Conservez le Markdown original. La conversion inverse lit le contenu et la structure du DOCX sans fichier compagnon de la source ; une écriture ou des espaces identiques ne sont pas garantis. Choisissez les extensions dans les paramètres DocWen.
 
-Avec une version compatible de [Number Suite](https://github.com/ZHYX91/obsidian-number-suite), l'export Word conserve les numéros virtuels validés des titres et légendes ainsi que les références de la même note, sans ajouter ces numéros à la note Markdown.
 
 ## Paramètres
 

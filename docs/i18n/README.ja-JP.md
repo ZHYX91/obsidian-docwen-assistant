@@ -61,7 +61,6 @@ Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)
 
 Word 出力では結果フォルダー内に独立した DOCX を生成します。 元の Markdown はご自身で保管してください。逆変換は元の文書を保存した付随ファイルに依存せず、DOCX の内容と構造を読み取ります。元と同じ記法や空白は保証しません。拡張構文は DocWen の設定で選択できます。
 
-互換性のある [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) を有効にすると、Word 出力は検証済みの仮想見出し番号、図表番号、同一ノート内の参照を Markdown ノートに番号を書き込まずに保持します。
 
 ## 設定
 

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { describe, expect, it, vi } from "vitest";
@@ -5,6 +6,37 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it("preserves Structural Tables authored bytes in the source-native port", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "tables/structural.md", extension: "md" };
+    const source = [
+      "| Region | Sales | < |",
+      "| Quarter | Q1 | Q2 |",
+      "| --- || --- | --- |",
+      "| North | 10 | 12 |",
+      "| ^ | 8 | 11 |",
+      "",
+      "| --- | --- |",
+      "| Alice | 10 |",
+      "| Bob | 20 |",
+      "",
+      "| Literal | Markers |",
+      "| --- | --- |",
+      "| \\< | \\^ |",
+      "",
+    ].join("\n");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      get plugins(): never { throw new Error("Source export must not consult editing plugins"); },
+    };
+    await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      const declared = await snapshot.getDeclaredMarkdownInputs();
+      expect(declared?.inputs.map((input) => input.role)).toEqual(["source"]);
+      expect(await readFile(declared!.inputs[0].path)).toEqual(Buffer.from(source));
+      expect(declared?.resourceBindings).toBeUndefined();
+    });
+  });
   it.each([
     ["note.md", "md", "document", "text/markdown"],
     ["letter.docx", "docx", "document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
@@ -83,6 +115,58 @@ describe("VaultReadSnapshot", () => {
     await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
       expect(await readFile(snapshot.sourceInput.path, "utf8")).toBe(source);
     });
+  });
+
+  it.each([false, true])("builds source-native DOCX inputs without consulting Number Suite plugins (BOM=%s)", async (bom) => {
+    const { TFile } = await import("obsidian");
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = Object.assign(new TFile(), { path: "notes/note.md", extension: "md" });
+    const image = Object.assign(new TFile(), { path: "assets/chart.png", extension: "png" });
+    const token = "![[chart.png]]";
+    const source = `# Scope\n\nFigure: Chart ^chart\n\n${token}\n`;
+    const sourceBytes = Buffer.from((bom ? "\uFEFF" : "") + source);
+    const tokenStart = source.indexOf(token);
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        readBinary: vi.fn(async (target: unknown) =>
+          target === file
+            ? Uint8Array.from(sourceBytes).buffer
+            : Uint8Array.from([1, 2, 3]).buffer),
+      },
+      metadataCache: {
+        getFileCache: vi.fn(() => ({
+          embeds: [{
+            link: "chart.png",
+            original: token,
+            position: { start: { offset: tokenStart }, end: { offset: tokenStart + token.length } },
+          }],
+        })),
+        getFirstLinkpathDest: vi.fn(() => image),
+      },
+      get plugins(): never {
+        throw new Error("source-native export must not inspect Number Suite");
+      },
+    };
+
+    await new VaultReadSnapshot(app as never).run(
+      file as never,
+      new AbortController().signal,
+      async (snapshot) => {
+        const declared = await snapshot.getDeclaredMarkdownInputs();
+        const inputs = declared?.inputs;
+        expect(declared?.resourceBindings).toEqual({
+          authored_sha256: createHash("sha256").update(sourceBytes).digest("hex"),
+          images: [{ authored_token: token, logical_path: "assets/chart.png" }],
+        });
+        expect(inputs).toMatchObject([
+          { role: "source", logicalPath: "notes/note.md", mediaType: "text/markdown" },
+          { role: "linked_resource", logicalPath: "assets/chart.png", mediaType: "image/png" },
+        ]);
+        expect(await readFile(inputs![0].path)).toEqual(sourceBytes);
+        expect([...await readFile(inputs![1].path)]).toEqual([1, 2, 3]);
+      },
+    );
   });
 
   it("memoizes deferred projection and handles cancellation before metadata access", async () => {
@@ -867,6 +951,133 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
       cached_number: "",
     }]);
     expect(captured.plan.plan.targets).toMatchObject([{ enabled: false, derived_number: null }]);
+  });
+
+  it.each([
+    ["Figure", "Figure: ^figure-only", "figure-only"],
+    ["Table", "Table: ^table-only", "table-only"],
+  ])("rejects %s ID-only captions before creating DocWen resolved inputs", async (
+    kind,
+    caption,
+    targetId,
+  ) => {
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind,
+        targetId,
+        authoredText: "",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+    });
+
+    await expect(captureNumberSuiteProjection(caption, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("require visible authored text") },
+    });
+  });
+
+  it("rejects an empty Equation/Code caption when the interop snapshot has no stable target ID", async () => {
+    const source = "Equation: ^same\n\nCode: ^same\n";
+    const codeStart = source.indexOf("Code:");
+    const snapshot = semanticSnapshot({
+      captions: [
+        {
+          sourceStartUtf16: 0,
+          sourceEndUtf16: "Equation: ^same".length,
+          line: 0,
+          kind: "Equation",
+          targetId: null,
+          authoredText: "",
+          enabled: true,
+          derivedNumber: "1",
+        },
+        {
+          sourceStartUtf16: codeStart,
+          sourceEndUtf16: codeStart + "Code: ^same".length,
+          line: 2,
+          kind: "Code",
+          targetId: null,
+          authoredText: "",
+          enabled: true,
+          derivedNumber: "1",
+        },
+      ],
+    });
+
+    await expect(captureNumberSuiteProjection(source, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("require a stable target ID") },
+    });
+  });
+
+  it("rejects a case-only caption keyword near-miss from a forged interop snapshot", async () => {
+    const caption = "figure: Architecture";
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind: "Figure",
+        targetId: null,
+        authoredText: "Architecture",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+    });
+
+    await expect(captureNumberSuiteProjection(caption, snapshot)).rejects.toMatchObject({
+      code: "vault_input_invalid",
+      details: { cause: expect.stringContaining("exact authored source line") },
+    });
+  });
+
+  it("keeps an unbound caption as a resolved target instead of inferring a carrier", async () => {
+    const caption = "Figure: Planned ^planned";
+    const reference = "@[[#^planned]]";
+    const source = `${caption}\n\n\nOrdinary paragraph.\n\nSee ${reference}.\n`;
+    const referenceStart = source.indexOf(reference);
+    const snapshot = semanticSnapshot({
+      captions: [{
+        sourceStartUtf16: 0,
+        sourceEndUtf16: caption.length,
+        line: 0,
+        kind: "Figure",
+        targetId: "planned",
+        authoredText: "Planned",
+        enabled: true,
+        derivedNumber: "1",
+      }],
+      references: [{
+        sourceStartUtf16: referenceStart,
+        sourceEndUtf16: referenceStart + reference.length,
+        targetSourceStartUtf16: 0,
+        targetSourceEndUtf16: caption.length,
+        alias: null,
+      }],
+    });
+
+    const { value: captured } = await captureNumberSuiteProjection(source, snapshot);
+
+    expect(captured.neutral.document.authored_markdown).toBe(source);
+    expect(captured.neutral.document.targets).toMatchObject([{
+      kind: "figure",
+      target_id: "planned",
+      authored_text: "Planned",
+    }]);
+    expect(captured.plan.plan.targets).toMatchObject([{
+      kind: "figure",
+      enabled: true,
+      derived_number: "1",
+    }]);
+    expect(captured.neutral.document.references).toMatchObject([{
+      target_kind: "figure",
+      target_id: "planned",
+      cached_number: "1",
+    }]);
   });
 
   it("projects CRLF UTF-16 ranges with astral text and an empty Code caption title", async () => {

@@ -7,6 +7,8 @@ const state = vi.hoisted(() => ({
   pickerItems: [] as Array<{ id: string }>,
   choose: undefined as ((item: { id: string } | null) => void) | undefined,
   openDialog: vi.fn(),
+  getDeclaredMarkdownInputs: vi.fn(),
+  getResolvedMarkdownInputs: vi.fn(),
 }));
 
 vi.mock("obsidian", () => ({ TFile: class TFile {}, Modal: class Modal {} }));
@@ -42,6 +44,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
         sourceInput: unknown;
         inputs: unknown[];
+        getDeclaredMarkdownInputs: () => Promise<{ inputs: unknown[] }>;
         getResolvedMarkdownInputs: () => Promise<unknown[]>;
       }) => Promise<T>,
     ): Promise<{ value: T; warnings: [] }> {
@@ -52,28 +55,41 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         logicalPath: "note.md",
         mediaType: "text/markdown",
       };
+      const declaredInputs = [
+        sourceInput,
+        {
+          path: "D:\\Temp\\linked-1.png",
+          kind: "resource",
+          role: "linked_resource",
+          logicalPath: "assets/chart.png",
+          mediaType: "image/png",
+        },
+      ];
+      state.getDeclaredMarkdownInputs.mockResolvedValue({ inputs: declaredInputs, resourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }] } });
+      state.getResolvedMarkdownInputs.mockResolvedValue([
+        {
+          path: "D:\\Temp\\resolved-document.json",
+          kind: "document",
+          role: "neutral_document",
+          logicalPath: "resolved-document.json",
+          mediaType: "application/vnd.docwen.resolved-document+json",
+        },
+        {
+          path: "D:\\Temp\\numbering-export-plan.json",
+          kind: "resource",
+          role: "numbering_export_plan",
+          logicalPath: "numbering-export-plan.json",
+          mediaType: "application/vnd.docwen.numbering-export-plan+json",
+        },
+      ]);
       const value = await work({
         inputPath: "D:\\Temp\\input.bin",
         contentSha256: "sha",
         publish: async (commit) => commit(),
         sourceInput,
         inputs: [sourceInput],
-        getResolvedMarkdownInputs: async () => [
-          {
-            path: "D:\\Temp\\resolved-document.json",
-            kind: "document",
-            role: "neutral_document",
-            logicalPath: "resolved-document.json",
-            mediaType: "application/vnd.docwen.resolved-document+json",
-          },
-          {
-            path: "D:\\Temp\\numbering-export-plan.json",
-            kind: "resource",
-            role: "numbering_export_plan",
-            logicalPath: "numbering-export-plan.json",
-            mediaType: "application/vnd.docwen.numbering-export-plan+json",
-          },
-        ],
+        getDeclaredMarkdownInputs: state.getDeclaredMarkdownInputs,
+        getResolvedMarkdownInputs: state.getResolvedMarkdownInputs,
       });
       return { value, warnings: [] };
     }
@@ -373,7 +389,12 @@ describe("ExportActions advisory proofreading", () => {
       {} as never,
       docwen as never,
       capabilities as never,
-      () => markdownSettings(false) as never,
+      () => ({
+        ...markdownSettings(false),
+        mdToDocCleanNumbering: "remove",
+        mdToDocAddNumbering: "legal",
+        headingNumberingRenderMode: "word_native",
+      }) as never,
       runner as never,
     );
 
@@ -411,12 +432,25 @@ describe("ExportActions advisory proofreading", () => {
     expect(runner.presentFailure).not.toHaveBeenCalled();
   });
 
-  it("delegates the resolved DOCX to one DocWen conversion", async () => {
+  it("delegates Markdown source plus declared resources without consulting Number Suite projection", async () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const signal = new AbortController().signal;
     const runner = advisoryRunner(signal);
     const capability = markdownCapability();
     const capabilities = advisoryCapabilities(capability);
+    const selectedCapability = { capability_id: "convert.markdown_source.to_docx" };
+    capabilities.requireConversionRoute.mockReturnValue({
+      capabilityId: "convert.markdown_source.to_docx",
+      capability: selectedCapability,
+      options: [
+        "remove_numbering",
+        "add_numbering",
+        "numbering_scheme",
+        "heading_numbering_render_mode",
+        "heading_merge_mode",
+        "markdown_extensions",
+      ],
+    });
     const docwen = {
       optimizations: vi.fn(),
       validate: vi.fn(),
@@ -430,19 +464,35 @@ describe("ExportActions advisory proofreading", () => {
       {} as never,
       docwen as never,
       capabilities as never,
-      () => markdownSettings(false) as never,
+      () => ({
+        ...markdownSettings(false),
+        mdToDocCleanNumbering: "remove",
+        mdToDocAddNumbering: "legal",
+        headingNumberingRenderMode: "word_native",
+      }) as never,
       runner as never,
     );
 
     await actions.toDocx({ path: "note.md", name: "note.md" } as never);
 
+    expect(state.getDeclaredMarkdownInputs).toHaveBeenCalledOnce();
+    expect(state.getResolvedMarkdownInputs).not.toHaveBeenCalled();
     expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({
       inputs: [
-        expect.objectContaining({ role: "neutral_document" }),
-        expect.objectContaining({ role: "numbering_export_plan" }),
+        expect.objectContaining({ role: "source", mediaType: "text/markdown" }),
+        expect.objectContaining({ role: "linked_resource", mediaType: "image/png" }),
       ],
+      capabilityId: "convert.markdown_source.to_docx",
+      selectedCapability,
+      cleanNumbering: "remove",
+      markdownResourceBindings: expect.objectContaining({
+        images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }],
+      }),
+      addNumbering: "legal",
+      headingNumberingRenderMode: "word_native",
       outputDirectory: resolve("D:\\Vault"),
     }), signal);
+    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("markdownExtensions");
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
     expect(runner.presentFailure).not.toHaveBeenCalled();
   });
@@ -453,6 +503,8 @@ function resetState(): void {
   state.pickerItems = [];
   state.choose = undefined;
   state.openDialog.mockReset().mockResolvedValue({ canceled: false, filePaths: ["D:\\Vault"] });
+  state.getDeclaredMarkdownInputs.mockReset();
+  state.getResolvedMarkdownInputs.mockReset();
 }
 
 function advisoryRunner(signal: AbortSignal) {

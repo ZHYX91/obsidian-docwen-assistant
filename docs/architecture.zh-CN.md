@@ -26,21 +26,17 @@ Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALA
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
-Markdown 转 DOCX 时，原始快照只用于检查、校对和冲突验证。Assistant 通过 Obsidian metadata cache 解析该笔记明确写出的图片嵌入，支持 PNG、JPEG、GIF、BMP 与 WebP；短 Wiki 链接、跨目录链接和带空格文件名都遵循 Obsidian 自己的解析结果。Assistant 不枚举 Vault，也不扫描同名文件。它把每个出现位置、原始 token、媒体类型、字节、大小和 SHA-256 封装进 `resolved_document`。同时，它认证 DocWen 的完整 1 至 9 级标题清单，并在中性的 `numbering_export_plan` 中把这些标题显式标为未启用编号；这不会猜测或增加编号。DocWen 不读取 Vault，也不二次寻找图片。
+Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。短 Wiki 链接、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索图片。 capability 声明的 `markdown_resource_bindings` 选项将每个原始图片标记绑定到已声明资源的逻辑路径及完整源文件 SHA-256；未声明此选项的旧 capability 无法接收带映射的图片导出。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。此声明图片入口不支持需要文件搜索的本地 Wiki 导航及 Markdown 嵌入展开。
 
-语义输入只在所选导出需要时延迟构建，每个快照只构建一次。只使用原文的操作不读取语义元数据或 Number Suite。每个快照共用一个文本索引来计算 Unicode 位置和行号，避免反复扫描源码前缀；延迟构建仍保留取消和原文冲突检查。
+本次导出的编号由转换请求拥有，而不是由任何已安装的编辑插件拥有。Assistant 会随请求发送清理/保持选择、可选的编号方案 ID、标题序号渲染模式；Markdown 扩展开关使用 DocWen 的有效配置。DocWen 的 source-native consumer 直接从作者 Markdown 解释 Number Suite 题注/引用方言，并应用本次选择的 DocWen 编号策略。因此安装、停用或配置 Number Suite 都不能改变其他输入完全相同的 Assistant Word 导出结果。
 
-若运行时已加载 Number Suite 且提供 `number-suite.interop.v2`，Assistant 会验证其纯数据快照的 schema、
-范围、目标、引用和计数一致性。v2 合同携带 H1-H9 目标、精确九个计数器值与 H1-H9 显示片段，
-包括共享的 Number Suite/DocWen H7-H9 扩展；随后再把实际启用的标题与题注编号以及同文件引用降级为 DocWen 的
-`resolved_document` 与 exact-two `numbering_export_plan`。构建时不依赖兄弟仓库。插件缺失时沿用明确的
-未编号计划；API 畸形、事实与源码冲突或编号无法安全表达时失败关闭，不从可见文字猜测编号。
+provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 
 ## 产物与提交
 
 DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
 
-resolved-document 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
+source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
 `output-files` 负责文件发布和回滚，`output-directory` 负责完整结果目录，`operation-outcome` 限定每次操作只能尝试一次实际提交。宿主回调不能不提交就报告成功、重复提交，或让已经完成的发布进入回滚。备份、锁、任务 staging 和输入快照清理失败随结果返回结构化警告；清理对象身份变化时保留对象。提交前清理失败不能覆盖原始错误。
 

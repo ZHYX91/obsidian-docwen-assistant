@@ -67,7 +67,6 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的實際內容和結構，不依賴原文伴隨檔案，也不保證完全相同的寫法和空白。可在 DocWen 設定中選擇 Markdown 擴充語法。
 
-啟用相容版本的 [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) 後，Word 匯出會保留其經過驗證的虛擬標題、題注編號及同一筆記內的引用，不會把這些編號寫入 Markdown 筆記。
 
 ## 設定
 

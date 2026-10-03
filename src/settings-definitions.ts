@@ -117,6 +117,19 @@ export function getSettingsPages(
           always: t("settingsHeadingMergeModeAlways"),
           never: t("settingsHeadingMergeModeNever"),
         }),
+        cleanNumbering("mdToDocCleanNumbering"),
+        numberingScheme(context, "mdToDocAddNumbering"),
+        dropdown(
+          "headingNumberingRenderMode",
+          t("settingsHeadingNumberingRenderMode"),
+          t("settingsHeadingNumberingRenderModeDesc"),
+          {
+            default: t("settingsNumberingDefault"),
+            text: t("settingsHeadingNumberingRenderModeText"),
+            word_native: t("settingsHeadingNumberingRenderModeWordNative"),
+          },
+          () => ["default", "none"].includes(context.settings.mdToDocAddNumbering),
+        ),
       ],
     },
     {

@@ -24,6 +24,7 @@ export type {
   ConvertOptions,
   ConvertRequest,
   ConvertTarget,
+  MarkdownResourceBindings,
   FileInspection,
   HealthReport,
   NumberingSchemeItem,

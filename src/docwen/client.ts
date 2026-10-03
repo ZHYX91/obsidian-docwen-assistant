@@ -45,7 +45,13 @@ const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordproce
 export type ProofreadCheck = "typo" | "symbol" | "punct" | "sensitive" | "all" | "none";
 export type ConvertTarget = "md" | "docx" | "xlsx";
 
+export interface MarkdownResourceBindings {
+  readonly authored_sha256: string;
+  readonly images: readonly { readonly authored_token: string; readonly logical_path: string }[];
+}
+
 export interface ConvertOptions {
+  markdownResourceBindings?: MarkdownResourceBindings;
   target: ConvertTarget;
   template?: string;
   optimization?: string;
@@ -307,7 +313,10 @@ export class DocWenClient {
         }, inspection.mediaType);
         return prepared;
       }, signal);
-      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      if (
+        capabilityId === "convert.markdown.to_docx"
+        || capabilityId === "convert.markdown_source.to_docx"
+      ) requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
       return {
         ...outputs,
@@ -676,6 +685,12 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
 
   setOption("template_name", request.template);
   setOption("markdown_extensions", request.markdownExtensions);
+  if (request.markdownResourceBindings !== undefined) {
+    if (!accepts("markdown_resource_bindings")) {
+      throw new LocalCliError("cli_input_invalid", "This DocWen capability cannot bind authored image resources.");
+    }
+    setOption("markdown_resource_bindings", request.markdownResourceBindings);
+  }
   if (request.target === "md") {
     const resourceOption = preferredSupportedOption(
       supported,
@@ -777,7 +792,7 @@ function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
     || entry.ordinal !== 0
     || entry.preferred !== true
   ) {
-    throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
+    throw new LocalCliError("cli_integrity_error", "Markdown to DOCX requires one preferred DOCX document.");
   }
 }
 
