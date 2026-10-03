@@ -11,6 +11,21 @@ const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordproce
 const XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 describe("capability-specific conversion options", () => {
+  it("requires advertised support before sending exact authored image bindings", () => {
+    const bindings = {
+      authored_sha256: "a".repeat(64),
+      images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }],
+    };
+    expect(buildConversionMachineOptions(request({
+      markdownResourceBindings: bindings,
+      supportedOptions: ["markdown_resource_bindings"],
+    }), "text/markdown")).toEqual({ markdown_resource_bindings: bindings });
+    expect(() => buildConversionMachineOptions(request({
+      markdownResourceBindings: bindings,
+      supportedOptions: [],
+    }), "text/markdown")).toThrow("cannot bind authored image resources");
+  });
+
   it("uses canonical OCR fields and omits route-unsupported settings", () => {
     const options = buildConversionMachineOptions(request({
       target: "md",

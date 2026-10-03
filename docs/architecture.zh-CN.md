@@ -26,9 +26,9 @@ Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALA
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
-Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。短 Wiki 链接、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索图片。
+Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。短 Wiki 链接、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索图片。 capability 声明的 `markdown_resource_bindings` 选项将每个原始图片标记绑定到已声明资源的逻辑路径及完整源文件 SHA-256；未声明此选项的旧 capability 无法接收带映射的图片导出。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。此声明图片入口不支持需要文件搜索的本地 Wiki 导航及 Markdown 嵌入展开。
 
-本次导出的编号由转换请求拥有，而不是由任何已安装的编辑插件拥有。Assistant 会随请求发送清理/保持选择、可选的编号方案 ID、标题序号渲染模式，以及公开的 `captions_references` Markdown 扩展开关。DocWen 的 source-native consumer 直接从作者 Markdown 解释 Number Suite 题注/引用方言，并应用本次选择的 DocWen 编号策略。因此安装、停用或配置 Number Suite 都不能改变其他输入完全相同的 Assistant Word 导出结果。
+本次导出的编号由转换请求拥有，而不是由任何已安装的编辑插件拥有。Assistant 会随请求发送清理/保持选择、可选的编号方案 ID、标题序号渲染模式；Markdown 扩展开关使用 DocWen 的有效配置。DocWen 的 source-native consumer 直接从作者 Markdown 解释 Number Suite 题注/引用方言，并应用本次选择的 DocWen 编号策略。因此安装、停用或配置 Number Suite 都不能改变其他输入完全相同的 Assistant Word 导出结果。
 
 provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 

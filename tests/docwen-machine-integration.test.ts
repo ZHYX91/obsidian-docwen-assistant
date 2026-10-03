@@ -4,10 +4,12 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { DocWenCapabilityService, DocWenClient, DocWenMachineClient, type TaskInput } from "../src/docwen";
 import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acceptance.mjs";
+
+vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 const packageBinding = await loadPackageAcceptanceReceipt(process.env);
 const formatFixtures = join(import.meta.dirname, "../acceptance/fixtures/Formats");
@@ -38,17 +40,17 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     await expect(client.doctor()).resolves.toMatchObject({ allOk: true });
     const projection = await client.runtimeCapabilities();
     expect(projection.contractId).toBe("docwen.machine.v2");
-    expect(projection.capabilities.map((item) => item.capability_id)).toContain("convert.markdown.to_docx");
+    expect(projection.capabilities.map((item) => item.capability_id)).toContain("convert.markdown_source.to_docx");
 
     const source = join(root, "capability-adapter.md");
     await writeFile(source, "# Current contract\n", "utf8");
     const service = new DocWenCapabilityService(client);
     const file = await service.requireAction(source, "convert");
     const route = service.requireConversionRoute(file, "docx");
-    expect(route.capabilityId).toBe("convert.markdown.to_docx");
+    expect(route.capabilityId).toBe("convert.markdown_source.to_docx");
     expect(route.inputShape.slots.map((slot) => slot.role)).toEqual([
-      "neutral_document",
-      "numbering_export_plan",
+      "source",
+      "linked_resource",
     ]);
   }, 120_000);
 
@@ -78,9 +80,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       expect(inspection.mediaType, name).not.toBe("application/octet-stream");
       const advertised = projection.capabilities.filter((capability) =>
         capability.availability !== "unavailable"
-        && (capability.input_shape.slots.some((slot) =>
-          slot.role === "source" && slot.media_types.includes(inspection.mediaType))
-          || (inspection.mediaType === "text/markdown" && capability.capability_id === "convert.markdown.to_docx")));
+        && capability.input_shape.slots.some((slot) =>
+          slot.role === "source" && slot.media_types.includes(inspection.mediaType)));
       if (advertised.length === 0) {
         await expect(service.forFile(source), name).rejects.toMatchObject({
           code: "cli_capability_unavailable", details: { mediaType: inspection.mediaType },
@@ -137,13 +138,12 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       logicalPath: "notes/authored.md",
       mediaType: "text/markdown",
     };
-    const resolvedInputs = await writeResolvedTextPort(join(caseRoot, "port"), authored);
     const generated = await client.convert({
       sourceInput,
-      inputs: resolvedInputs,
+      inputs: [sourceInput],
       outputDirectory: caseRoot,
       target: "docx",
-      capabilityId: "convert.markdown.to_docx",
+      capabilityId: "convert.markdown_source.to_docx",
       markdownExtensions: { input: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
     });
     const docx = generated.output;
@@ -201,7 +201,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     expect(restored).not.toMatch(/\[\^endnote-/u);
   }, 240_000);
 
-  it("runs the v4 neutral port for a cross-folder short Wiki image with spaces", async () => {
+  it("exports a real VaultReadSnapshot through the packaged source route with a cross-folder Wiki image", async () => {
     const source = join(root, "physical-source", "typed-source.md");
     const linked = join(root, "declared-pool", "typed linked.png");
     const decoy = join(root, "physical-source", "assets", "typed linked.png");
@@ -219,21 +219,41 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       { path: decoy, bytes: decoyBytes, sha256: sha256(decoyBytes) },
     ];
 
-    const sourceInput: TaskInput = {
-      path: source,
-      kind: "document",
-      role: "source",
-      logicalPath: "notes/typed-source.md",
-      mediaType: "text/markdown",
+    const { TFile } = await import("obsidian");
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const note = Object.assign(new TFile(), { path: "notes/typed-source.md", extension: "md" });
+    const image = Object.assign(new TFile(), { path: "assets/typed linked.png", extension: "png" });
+    const token = "![[typed linked.png]]";
+    const authored = sourceBytes.toString("utf8");
+    const start = authored.indexOf(token);
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async (file: unknown) => Uint8Array.from(file === note ? sourceBytes : declaredBytes).buffer },
+      metadataCache: {
+        getFileCache: () => ({ embeds: [{ link: "typed linked.png", original: token, position: { start: { offset: start }, end: { offset: start + token.length } } }] }),
+        getFirstLinkpathDest: () => image,
+      },
+      get plugins(): never { throw new Error("Source conversion must not consult Number Suite state"); },
     };
-    const resolvedInputs = await writeResolvedPort(root, sourceBytes.toString("utf8"), declaredBytes);
-    const generated = await client.convert({
-      sourceInput,
-      inputs: resolvedInputs,
-      outputDirectory: root,
-      target: "docx",
-      capabilityId: "convert.markdown.to_docx",
+    const completed = await new VaultReadSnapshot(app as never).run(note, new AbortController().signal, async (snapshot) => {
+      const declared = await snapshot.getDeclaredMarkdownInputs();
+      expect(declared?.resourceBindings?.authored_sha256).toBe(sha256(sourceBytes));
+      const service = new DocWenCapabilityService(client);
+      const capability = await service.requireAction(snapshot.sourceInput, "convert");
+      const route = service.requireConversionRoute(capability, "docx");
+      service.requireTaskInputs(route, declared!.inputs);
+      return client.convert({
+        sourceInput: snapshot.sourceInput,
+        inputs: declared!.inputs,
+        markdownResourceBindings: declared!.resourceBindings,
+        supportedOptions: route.options,
+        selectedCapability: route.capability,
+        outputDirectory: root,
+        target: "docx",
+        capabilityId: route.capabilityId,
+      });
     });
+    const generated = completed.value;
     const output = generated.output;
     expect(generated.outputs).toEqual([output]);
     const outputBytes = await readFile(output);
@@ -254,189 +274,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
   }, 120_000);
 });
 
-async function writeResolvedPort(portRoot: string, source: string, imageBytes: Buffer): Promise<TaskInput[]> {
-  const token = "![[typed linked.png]]";
-  const sourceStart = Array.from(source.slice(0, source.indexOf(token))).length;
-  const sourceEnd = sourceStart + Array.from(token).length;
-  const sourceSha256 = sha256(Buffer.from(source, "utf8"));
-  const inputId = `obsidian-${sourceSha256.slice(0, 32)}`;
-  const headingLine = "# Typed input";
-  const heading = {
-    source_start: 0,
-    source_end: Array.from(headingLine).length,
-    source_slice_sha256: sha256(Buffer.from(headingLine, "utf8")),
-    kind: "heading",
-    target_id: null,
-    heading_level: 1,
-    authored_text: "Typed input",
-  };
-  const plan = {
-    heading_definitions: [],
-    heading_instances: [],
-    targets: [{
-      source_start: heading.source_start,
-      source_end: heading.source_end,
-      kind: "heading",
-      enabled: false,
-      target_id: null,
-      derived_number: null,
-      materialization: null,
-    }],
-  };
-  const planSha256 = sha256(Buffer.from(canonicalJson(plan), "utf8"));
-  const neutral = {
-    $schema: "urn:docwen:schema:resolved-document:v1",
-    schema: "docwen.resolved_document.v1",
-    input_id: inputId,
-    source_sha256: sourceSha256,
-    plan_sha256: planSha256,
-    document: {
-      authored_markdown: source,
-      targets: [heading],
-      references: [],
-      resource_occurrences: [{
-        source_start: sourceStart,
-        source_end: sourceEnd,
-        source_slice_sha256: sha256(Buffer.from(token, "utf8")),
-        authored_token: token,
-        authored_locator: "typed linked.png",
-        resource_id: "image-1",
-      }],
-      citations: [],
-      resources: [{
-        resource_id: "image-1",
-        role: "linked_resource",
-        media_type: "image/png",
-        size_bytes: imageBytes.length,
-        sha256: sha256(imageBytes),
-        content_base64: imageBytes.toString("base64"),
-      }],
-    },
-  };
-  const numbering = {
-    $schema: "urn:docwen:schema:numbering-export-plan:v1",
-    schema: "docwen.numbering_export_plan.v1",
-    input_id: inputId,
-    source_sha256: sourceSha256,
-    plan_sha256: planSha256,
-    plan,
-  };
-  const neutralPath = join(portRoot, "resolved-document.json");
-  const numberingPath = join(portRoot, "numbering-export-plan.json");
-  await writeFile(neutralPath, JSON.stringify(neutral), "utf8");
-  await writeFile(numberingPath, JSON.stringify(numbering), "utf8");
-  return [
-    {
-      path: neutralPath,
-      kind: "document",
-      role: "neutral_document",
-      logicalPath: "notes/authored.md",
-      mediaType: "application/vnd.docwen.resolved-document+json",
-    },
-    {
-      path: numberingPath,
-      kind: "resource",
-      role: "numbering_export_plan",
-      logicalPath: "numbering-export-plan.json",
-      mediaType: "application/vnd.docwen.numbering-export-plan+json",
-    },
-  ];
-}
-
-async function writeResolvedTextPort(portRoot: string, source: string): Promise<TaskInput[]> {
-  const sourceSha256 = sha256(Buffer.from(source, "utf8"));
-  const inputId = `obsidian-${sourceSha256.slice(0, 32)}`;
-  const headings = [...source.matchAll(/^(#{7,9})[ \t]+([^\r\n]+)$/gmu)].map((match) => {
-    const sourceStart = Array.from(source.slice(0, match.index)).length;
-    const sourceSlice = match[0];
-    return {
-      source_start: sourceStart,
-      source_end: sourceStart + Array.from(sourceSlice).length,
-      source_slice_sha256: sha256(Buffer.from(sourceSlice, "utf8")),
-      kind: "heading",
-      target_id: null,
-      heading_level: match[1]!.length,
-      authored_text: match[2]!,
-    };
-  });
-  const plan = {
-    heading_definitions: [],
-    heading_instances: [],
-    targets: headings.map((heading) => ({
-      source_start: heading.source_start,
-      source_end: heading.source_end,
-      kind: "heading",
-      enabled: false,
-      target_id: null,
-      derived_number: null,
-      materialization: null,
-    })),
-  };
-  const planSha256 = sha256(Buffer.from(canonicalJson(plan), "utf8"));
-  const neutral = {
-    $schema: "urn:docwen:schema:resolved-document:v1",
-    schema: "docwen.resolved_document.v1",
-    input_id: inputId,
-    source_sha256: sourceSha256,
-    plan_sha256: planSha256,
-    document: {
-      authored_markdown: source,
-      targets: headings,
-      references: [],
-      resource_occurrences: [],
-      citations: [],
-      resources: [],
-    },
-  };
-  const numbering = {
-    $schema: "urn:docwen:schema:numbering-export-plan:v1",
-    schema: "docwen.numbering_export_plan.v1",
-    input_id: inputId,
-    source_sha256: sourceSha256,
-    plan_sha256: planSha256,
-    plan,
-  };
-  await mkdir(portRoot, { recursive: true });
-  const neutralPath = join(portRoot, "resolved-document.json");
-  const numberingPath = join(portRoot, "numbering-export-plan.json");
-  await writeFile(neutralPath, JSON.stringify(neutral), "utf8");
-  await writeFile(numberingPath, JSON.stringify(numbering), "utf8");
-  return [
-    {
-      path: neutralPath,
-      kind: "document",
-      role: "neutral_document",
-      logicalPath: "notes/authored.md",
-      mediaType: "application/vnd.docwen.resolved-document+json",
-    },
-    {
-      path: numberingPath,
-      kind: "resource",
-      role: "numbering_export_plan",
-      logicalPath: "numbering-export-plan.json",
-      mediaType: "application/vnd.docwen.numbering-export-plan+json",
-    },
-  ];
-}
-
 function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
-}
-
-function canonicalJson(value: unknown): string {
-  return JSON.stringify(sortJsonValue(value));
-}
-
-function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (value !== null && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, item]) => [key, sortJsonValue(item)]),
-    );
-  }
-  return value;
 }
 
 function readStrictZip(archive: Buffer): Map<string, Buffer> {

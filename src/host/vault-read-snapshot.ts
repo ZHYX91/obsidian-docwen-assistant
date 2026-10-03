@@ -7,7 +7,7 @@ import { setTimeout as yieldToHost } from "node:timers/promises";
 
 import { TFile, type App } from "obsidian";
 
-import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type TaskInput } from "../docwen";
+import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import {
   isSameOpenMarkdownTarget,
   locateOpenMarkdownTarget,
@@ -29,10 +29,15 @@ export interface IsolatedSnapshot {
   readonly contentSha256: string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
-  readonly getDeclaredMarkdownInputs: () => Promise<readonly TaskInput[] | undefined>;
+  readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
   readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
   readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
+}
+
+export interface DeclaredMarkdownSnapshot {
+  readonly inputs: readonly TaskInput[];
+  readonly resourceBindings?: MarkdownResourceBindings;
 }
 
 interface ResolvedMarkdownSnapshot {
@@ -115,11 +120,11 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(file.path),
         mediaType: mediaTypeForPath(file.path),
       };
-      let declaredMarkdownInputs: Promise<readonly TaskInput[]> | undefined;
-      const getDeclaredMarkdownInputs = async (): Promise<readonly TaskInput[] | undefined> => {
+      let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
+      const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {
         if (authoredMarkdown === null) return undefined;
         await assertCurrent();
-        declaredMarkdownInputs ??= this.buildDeclaredMarkdownInputs(file, authoredMarkdown, workspace, signal, sourceInput);
+        declaredMarkdownInputs ??= this.buildDeclaredMarkdownInputs(file, authoredMarkdown, workspace, signal, sourceInput, contentSha256);
         const declared = await declaredMarkdownInputs;
         await assertCurrent();
         return declared;
@@ -167,12 +172,14 @@ export class VaultReadSnapshot {
     workspace: string,
     signal: AbortSignal,
     sourceInput: TaskInput,
-  ): Promise<readonly TaskInput[]> {
+    sourceSha256: string,
+  ): Promise<DeclaredMarkdownSnapshot> {
     await yieldToHost(0, undefined, { signal });
     throwIfAborted(signal);
     const metadataCache = this.app.metadataCache;
     const fileCache = metadataCache?.getFileCache(file);
     const resources = new Map<string, TaskInput>();
+    const imageBindings = new Map<string, string>();
     let totalResourceBytes = 0;
     const embeds = [...(fileCache?.embeds ?? [])]
       .sort((left, right) => left.position.start.offset - right.position.start.offset);
@@ -211,6 +218,12 @@ export class VaultReadSnapshot {
           `The Obsidian embed cache is stale for: ${embed.link}`,
         );
       }
+      const logicalPath = logicalPathFor(linked.path);
+      const previous = imageBindings.get(authoredToken);
+      if (previous !== undefined && previous !== logicalPath) {
+        throw new VaultWriteError("vault_input_invalid", "The embed cache maps identical image tokens to different resources.");
+      }
+      imageBindings.set(authoredToken, logicalPath);
       if (resources.has(linked.path)) continue;
 
       const content = Buffer.from(await this.app.vault.readBinary(linked));
@@ -232,7 +245,13 @@ export class VaultReadSnapshot {
       });
     }
 
-    return [sourceInput, ...resources.values()];
+    return {
+      inputs: [sourceInput, ...resources.values()],
+      resourceBindings: imageBindings.size === 0 ? undefined : {
+        authored_sha256: sourceSha256,
+        images: [...imageBindings].map(([authored_token, logical_path]) => ({ authored_token, logical_path })),
+      },
+    };
   }
 
   private async buildResolvedMarkdownInputs(

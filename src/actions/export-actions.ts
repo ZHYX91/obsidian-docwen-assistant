@@ -166,13 +166,13 @@ export class ExportActions {
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
-      const taskInputs = target === "docx"
-        ? await snapshot.getDeclaredMarkdownInputs() ?? snapshot.inputs
-        : snapshot.inputs;
+      const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
+      const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
       this.capabilities.requireTaskInputs(route, taskInputs);
 
       return this.docwen.convert({
         ...options,
+        markdownResourceBindings: declaredMarkdown?.resourceBindings,
         inputs: taskInputs,
         sourceInput,
         outputDirectory,

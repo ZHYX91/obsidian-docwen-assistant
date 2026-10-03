@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
 import { describe, expect, it, vi } from "vitest";
@@ -85,20 +86,21 @@ describe("VaultReadSnapshot", () => {
     });
   });
 
-  it("builds source-native DOCX inputs without consulting Number Suite plugins", async () => {
+  it.each([false, true])("builds source-native DOCX inputs without consulting Number Suite plugins (BOM=%s)", async (bom) => {
     const { TFile } = await import("obsidian");
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = Object.assign(new TFile(), { path: "notes/note.md", extension: "md" });
     const image = Object.assign(new TFile(), { path: "assets/chart.png", extension: "png" });
     const token = "![[chart.png]]";
     const source = `# Scope\n\nFigure: Chart ^chart\n\n${token}\n`;
+    const sourceBytes = Buffer.from((bom ? "\uFEFF" : "") + source);
     const tokenStart = source.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
       vault: {
         readBinary: vi.fn(async (target: unknown) =>
           target === file
-            ? new TextEncoder().encode(source).buffer
+            ? Uint8Array.from(sourceBytes).buffer
             : Uint8Array.from([1, 2, 3]).buffer),
       },
       metadataCache: {
@@ -120,12 +122,17 @@ describe("VaultReadSnapshot", () => {
       file as never,
       new AbortController().signal,
       async (snapshot) => {
-        const inputs = await snapshot.getDeclaredMarkdownInputs();
+        const declared = await snapshot.getDeclaredMarkdownInputs();
+        const inputs = declared?.inputs;
+        expect(declared?.resourceBindings).toEqual({
+          authored_sha256: createHash("sha256").update(sourceBytes).digest("hex"),
+          images: [{ authored_token: token, logical_path: "assets/chart.png" }],
+        });
         expect(inputs).toMatchObject([
           { role: "source", logicalPath: "notes/note.md", mediaType: "text/markdown" },
           { role: "linked_resource", logicalPath: "assets/chart.png", mediaType: "image/png" },
         ]);
-        expect(await readFile(inputs![0].path, "utf8")).toBe(source);
+        expect(await readFile(inputs![0].path)).toEqual(sourceBytes);
         expect([...await readFile(inputs![1].path)]).toEqual([1, 2, 3]);
       },
     );

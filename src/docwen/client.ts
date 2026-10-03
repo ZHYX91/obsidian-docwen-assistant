@@ -45,7 +45,13 @@ const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordproce
 export type ProofreadCheck = "typo" | "symbol" | "punct" | "sensitive" | "all" | "none";
 export type ConvertTarget = "md" | "docx" | "xlsx";
 
+export interface MarkdownResourceBindings {
+  readonly authored_sha256: string;
+  readonly images: readonly { readonly authored_token: string; readonly logical_path: string }[];
+}
+
 export interface ConvertOptions {
+  markdownResourceBindings?: MarkdownResourceBindings;
   target: ConvertTarget;
   template?: string;
   optimization?: string;
@@ -679,6 +685,12 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
 
   setOption("template_name", request.template);
   setOption("markdown_extensions", request.markdownExtensions);
+  if (request.markdownResourceBindings !== undefined) {
+    if (!accepts("markdown_resource_bindings")) {
+      throw new LocalCliError("cli_input_invalid", "This DocWen capability cannot bind authored image resources.");
+    }
+    setOption("markdown_resource_bindings", request.markdownResourceBindings);
+  }
   if (request.target === "md") {
     const resourceOption = preferredSupportedOption(
       supported,

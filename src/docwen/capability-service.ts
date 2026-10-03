@@ -15,8 +15,6 @@ const MARKDOWN_TO_DOCX_CAPABILITY_ID = "convert.markdown.to_docx";
 const MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID = "convert.markdown_source.to_docx";
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
 const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-const RESOLVED_DOCUMENT_MEDIA_TYPE = "application/vnd.docwen.resolved-document+json";
-const NUMBERING_EXPORT_PLAN_MEDIA_TYPE = "application/vnd.docwen.numbering-export-plan+json";
 
 export interface FileCapability {
   readonly inspection: FileInspection;
@@ -315,21 +313,6 @@ function isCurrentSourceMarkdownToDocxCapability(capability: MachineCapability):
     && resources.media_types.length > 0;
 }
 
-
-function isCurrentResolvedMarkdownToDocxCapability(capability: MachineCapability): boolean {
-  if (
-    capability.operation !== "convert"
-    || capability.input_shape.undeclared_roles !== "reject"
-    || capability.output_media_types.length !== 1
-    || capability.output_media_types[0] !== DOCX_MEDIA_TYPE
-    || capability.input_shape.slots.length !== 2
-  ) return false;
-  const slots = new Map(capability.input_shape.slots.map((slot) => [slot.role, slot]));
-  const neutral = slots.get("neutral_document");
-  const plan = slots.get("numbering_export_plan");
-  return exactInputSlot(neutral, "document", RESOLVED_DOCUMENT_MEDIA_TYPE)
-    && exactInputSlot(plan, "resource", NUMBERING_EXPORT_PLAN_MEDIA_TYPE);
-}
 
 function exactInputSlot(
   slot: MachineCapability["input_shape"]["slots"][number] | undefined,

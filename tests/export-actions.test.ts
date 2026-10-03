@@ -44,7 +44,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
         sourceInput: unknown;
         inputs: unknown[];
-        getDeclaredMarkdownInputs: () => Promise<unknown[]>;
+        getDeclaredMarkdownInputs: () => Promise<{ inputs: unknown[] }>;
         getResolvedMarkdownInputs: () => Promise<unknown[]>;
       }) => Promise<T>,
     ): Promise<{ value: T; warnings: [] }> {
@@ -65,7 +65,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
           mediaType: "image/png",
         },
       ];
-      state.getDeclaredMarkdownInputs.mockResolvedValue(declaredInputs);
+      state.getDeclaredMarkdownInputs.mockResolvedValue({ inputs: declaredInputs, resourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }] } });
       state.getResolvedMarkdownInputs.mockResolvedValue([
         {
           path: "D:\\Temp\\resolved-document.json",
