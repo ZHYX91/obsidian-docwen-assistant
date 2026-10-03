@@ -38,6 +38,9 @@ describe("settings page definitions", () => {
       "tableMergeStrategy",
       "docToMdCleanNumbering",
       "headingMergeMode",
+      "mdToDocCleanNumbering",
+      "mdToDocAddNumbering",
+      "headingNumberingRenderMode",
       "proofreadOnConvert",
       "proofreadTypo",
       "proofreadSymbol",
@@ -74,7 +77,7 @@ describe("settings page definitions", () => {
     expect(readDisabled(controls.get("ocrLanguage"))).toBe(false);
   });
 
-  it("keeps legacy numbering controls off the resolved Markdown-to-DOCX page", () => {
+  it("exposes request-scoped numbering controls on the source-native Word page", () => {
     const definitions = getSettingsPages({
       settings: { ...DEFAULT_SETTINGS },
       renderCliPath: vi.fn(),
@@ -89,7 +92,12 @@ describe("settings page definitions", () => {
 
     expect(collectControlKeys(definitions[1].items ?? [])).toContain("docToMdCleanNumbering");
     expect(collectControlKeys(definitions[1].items ?? [])).not.toContain("mdToDocCleanNumbering");
-    expect(collectControlKeys(definitions[2].items ?? [])).toEqual(new Set(["headingMergeMode"]));
+    expect(collectControlKeys(definitions[2].items ?? [])).toEqual(new Set([
+      "headingMergeMode",
+      "mdToDocCleanNumbering",
+      "mdToDocAddNumbering",
+      "headingNumberingRenderMode",
+    ]));
     expect(collectControlKeys(definitions[2].items ?? [])).not.toContain("docToMdCleanNumbering");
   });
 
