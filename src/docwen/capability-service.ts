@@ -104,7 +104,7 @@ export class DocWenCapabilityService {
     ) {
       const sourceNative = matches.filter((route) =>
         route.capabilityId === MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID);
-      if (sourceNative.length === 1) return sourceNative[0];
+      return sourceNative.length === 1 ? sourceNative[0] : null;
     }
     return matches.length === 1 ? matches[0] : null;
   }
@@ -288,7 +288,7 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
 
 function capabilitySupportsInspectedMediaType(capability: MachineCapability, mediaType: string): boolean {
   if (capability.capability_id === MARKDOWN_TO_DOCX_CAPABILITY_ID) {
-    return mediaType === MARKDOWN_MEDIA_TYPE && isCurrentResolvedMarkdownToDocxCapability(capability);
+    return false;
   }
   if (capability.capability_id === MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID) {
     return mediaType === MARKDOWN_MEDIA_TYPE && isCurrentSourceMarkdownToDocxCapability(capability);
