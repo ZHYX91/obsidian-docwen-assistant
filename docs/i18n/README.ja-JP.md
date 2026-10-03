@@ -37,6 +37,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 - Windows または Linux と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
 - Windows では Store 版または完全に展開したポータブル版の DocWen 0.13.0 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux の結果ディレクトリエクスポートには x64 とアトミック no-replace 対応ファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
+- DocWen デスクトップアプリの起動・オープンには公開ローカル CLI の `gui open` を使用するため、Machine のネゴシエーションに失敗しても DocWen 自体は開けます。
 
 Store のインストールがこれらの要件を満たさない場合は、互換性のあるポータブル版を使用し、手動インストールで選択してください。
 
