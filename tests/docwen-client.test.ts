@@ -29,7 +29,7 @@ afterEach(async () => {
 });
 
 async function temporaryRoot(): Promise<string> {
-  const root = realpathSync(await mkdtemp(path.join(tmpdir(), "docwen-assistant-test-")));
+  const root = realpathSync.native(await mkdtemp(path.join(tmpdir(), "docwen-assistant-test-")));
   roots.push(root);
   return root;
 }
@@ -85,7 +85,7 @@ function bundleFor(
       media_type: mediaType,
       size_bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"),
-      absolutePath: realpathSync(artifactPath),
+      absolutePath: realpathSync.native(artifactPath),
     }],
     entries: [{
       artifact_id: "artifact.1",
@@ -128,7 +128,7 @@ function bundleWithRelated(
         media_type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         size_bytes: primaryBytes.length,
         sha256: createHash("sha256").update(primaryBytes).digest("hex"),
-        absolutePath: realpathSync(primaryPath),
+        absolutePath: realpathSync.native(primaryPath),
       },
       {
         artifact_id: "artifact.related",
@@ -139,7 +139,7 @@ function bundleWithRelated(
         media_type: "image/png",
         size_bytes: relatedBytes.length,
         sha256: createHash("sha256").update(relatedBytes).digest("hex"),
-        absolutePath: realpathSync(relatedPath),
+        absolutePath: realpathSync.native(relatedPath),
       },
     ],
     entries: [

@@ -88,7 +88,7 @@ const expectedWindowsProvenance = {
   commit: "d7ad7294b9cadcfea0d430d0dc42ea0bdb48fc10",
   sourcePath: "native/windows-job.c",
   license: "MIT",
-  adaptation: "Assistant target environment name plus distinct target-not-found exit status",
+  adaptation: "Assistant target environment and reserved controller statuses distinct from target exits",
 };
 if (
   JSON.stringify(Object.keys(windowsBuild.provenance ?? {}).sort())

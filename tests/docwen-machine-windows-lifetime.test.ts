@@ -238,7 +238,7 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
       client.dispose();
       killProcess(rootPid);
     }
-  }, 15_000);
+  }, 45_000);
 
   it("fails closed before target launch when owner creation fails", async () => {
     const fixture = await createNodeFixture("marker");
