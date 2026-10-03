@@ -150,9 +150,6 @@ export class ExportActions {
         }
       }
       if (target === "docx" && capability.source.category === "markdown") {
-        options.markdownExtensions = {
-          input: { captions_references: true },
-        };
         Object.assign(
           options,
           buildNumberingOptions(
