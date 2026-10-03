@@ -307,7 +307,10 @@ export class DocWenClient {
         }, inspection.mediaType);
         return prepared;
       }, signal);
-      if (capabilityId === "convert.markdown.to_docx") requireSingleDocx(result.bundle);
+      if (
+        capabilityId === "convert.markdown.to_docx"
+        || capabilityId === "convert.markdown_source.to_docx"
+      ) requireSingleDocx(result.bundle);
       const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
       return {
         ...outputs,
@@ -777,7 +780,7 @@ function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
     || entry.ordinal !== 0
     || entry.preferred !== true
   ) {
-    throw new LocalCliError("cli_integrity_error", "Resolved Markdown to DOCX requires one preferred DOCX document.");
+    throw new LocalCliError("cli_integrity_error", "Markdown to DOCX requires one preferred DOCX document.");
   }
 }
 
