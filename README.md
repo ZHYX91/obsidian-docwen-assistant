@@ -79,7 +79,7 @@ Choose an output folder. Each conversion creates its own result folder, preservi
 
 Word export produces an independent DOCX inside its result folder. Keep the original Markdown yourself. Reverse conversion reads DOCX content and structures without an original-source companion. Optional Markdown extensions are selected in DocWen settings; identical spelling and whitespace are not guaranteed.
 
-With a compatible [Number Suite](https://github.com/ZHYX91/obsidian-number-suite) version enabled, Word export preserves its validated virtual heading and caption numbers plus same-note references without adding those numbers to the Markdown note.
+Word export interprets the public Number Suite caption/reference dialect directly from the Markdown source. Installing Number Suite is optional and does not change export semantics; heading/caption numbering for this export is controlled by the explicit Word-export numbering settings.
 
 ## Settings
 
