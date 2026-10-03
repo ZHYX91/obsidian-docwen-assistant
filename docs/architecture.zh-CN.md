@@ -26,13 +26,11 @@ Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALA
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
-Markdown 转 DOCX 时，Assistant 始终使用 DocWen 的 source-native Markdown 能力；隔离后的作者原文仍是唯一语义权威。Assistant 通过 Obsidian metadata cache 解析该笔记明确写出的图片嵌入，支持 PNG、JPEG、GIF、BMP 与 WebP，并把它们作为声明式 `linked_resource` 输入传给 DocWen，携带规范逻辑路径、字节、媒体类型、大小与 SHA-256 身份。短 Wiki 链接、跨目录链接和带空格文件名都遵循 Obsidian 自己的解析结果。Assistant 不枚举 Vault、不扫描同名文件，DocWen 也不会为资源再次搜索 Vault。
+Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。短 Wiki 链接、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索图片。
 
-Assistant 不使用 Number Suite 的运行时状态决定转换语义或编号。因此，在作者 Markdown、声明式资源、DocWen Markdown 扩展配置和本次导出偏好相同的前提下，安装、禁用或卸载 Number Suite 都不得改变 Word 导出。Number Suite 方言由 DocWen 自己的 source consumer 解释；现有 `number-suite.interop.v2` 兼容代码不再是导出 authority，Word 导出动作不会读取它。
+本次导出的编号由转换请求拥有，而不是由任何已安装的编辑插件拥有。Assistant 会随请求发送清理/保持选择、可选的编号方案 ID、标题序号渲染模式，以及公开的 `captions_references` Markdown 扩展开关。DocWen 的 source-native consumer 直接从作者 Markdown 解释 Number Suite 题注/引用方言，并应用本次选择的 DocWen 编号策略。因此安装、停用或配置 Number Suite 都不能改变其他输入完全相同的 Assistant Word 导出结果。
 
-Word 编号属于本次请求。Assistant 只在所选 source-native capability 明确声明支持时，发送自身“Markdown→Word 清理序号/新增序号”偏好、选中的 DocWen numbering-scheme ID 和标题序号渲染方式。它不会把 Number Suite 当前的 `enabled`、`derivedNumber`、显示模板或其他插件私有状态复制进转换请求。未显式覆盖的偏好继续由 DocWen capability/config 默认值决定。Markdown 扩展开关也归 DocWen 所有；Assistant 不再暗中强制打开 `captions_references` 或其他方言。
-
-声明式 Markdown 输入只在所选 Word 导出需要时延迟构建，每个快照只构建一次；原文操作不会读取 Number Suite 语义元数据。延迟构建仍保留取消与原文冲突检查。
+provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 
 ## 产物与提交
 
