@@ -292,7 +292,9 @@ export class VaultReadSnapshot {
       resourceBindings: imageBindings.size === 0 && wikiLinkBindings.size === 0 ? undefined : {
         authored_sha256: sourceSha256,
         images: [...imageBindings].map(([authored_token, logical_path]) => ({ authored_token, logical_path })),
-        wiki_links: [...wikiLinkBindings].map(([authored_token, href]) => ({ authored_token, href })),
+        ...(wikiLinkBindings.size === 0 ? {} : {
+          wiki_links: [...wikiLinkBindings].map(([authored_token, href]) => ({ authored_token, href })),
+        }),
       },
     };
   }
