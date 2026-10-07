@@ -15,7 +15,7 @@ translation_status: source
 
 子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
 
-Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.13.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
+Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.17.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
 
 ## 请求数据流
 

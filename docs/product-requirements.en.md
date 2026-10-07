@@ -14,7 +14,7 @@ DocWen Assistant is a Windows and Linux desktop Obsidian plugin that connects th
 
 ## Compatibility prerequisites
 
-The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocWen 0.13.0 or later. Windows can use Microsoft Store or a fully extracted portable package; Linux uses a fully extracted package selected manually. Result-directory export on Linux requires x64 for atomic no-replace publication; unsupported architectures or filesystems fail closed before publication. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
+The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocWen 0.17.0 or later. Windows can use Microsoft Store or a fully extracted portable package; Linux uses a fully extracted package selected manually. Result-directory export on Linux requires x64 for atomic no-replace publication; unsupported architectures or filesystems fail closed before publication. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
 
 ## Core capabilities
 

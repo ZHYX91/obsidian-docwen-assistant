@@ -13,7 +13,7 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 
 ## 兼容性前提
 
-插件要求 Windows 或 Linux 桌面端、Obsidian 1.12.7 或更高版本，以及 DocWen 0.13.0 或更高版本。Windows 可使用 Microsoft Store 安装版或完整解压的便携包；Linux 使用手动选择的完整解压包。Linux 的结果目录导出要求 x64，以提供原子 no-replace 发布；不满足该架构或文件系统原子能力时在发布前失败关闭。转换、校对、编号、发现和连接检查只接受 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；其他 Bundle schema、低于最低产品版本以及不兼容的进程信封均失败关闭。启动或打开 DocWen 使用独立的本机 `gui open --json` 控制命令，不以 Machine 协商成功作为打开桌面应用的前提。
+插件要求 Windows 或 Linux 桌面端、Obsidian 1.12.7 或更高版本，以及 DocWen 0.17.0 或更高版本。Windows 可使用 Microsoft Store 安装版或完整解压的便携包；Linux 使用手动选择的完整解压包。Linux 的结果目录导出要求 x64，以提供原子 no-replace 发布；不满足该架构或文件系统原子能力时在发布前失败关闭。转换、校对、编号、发现和连接检查只接受 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；其他 Bundle schema、低于最低产品版本以及不兼容的进程信封均失败关闭。启动或打开 DocWen 使用独立的本机 `gui open --json` 控制命令，不以 Machine 协商成功作为打开桌面应用的前提。
 
 ## 核心能力
 

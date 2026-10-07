@@ -2,7 +2,7 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.13.0 이상 버전이 필요합니다.
+DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.17.0 이상 버전이 필요합니다.
 
 > **DocWen 본체가 필요합니다.** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환 버전을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 완전히 압축 해제하세요.
 
@@ -35,7 +35,7 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 ## 요구 사항 및 호환성
 
 - Windows 또는 Linux와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
-- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.13.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 결과 디렉터리 내보내기에는 x64와 원자적 no-replace를 지원하는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
+- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.17.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 결과 디렉터리 내보내기에는 x64와 원자적 no-replace를 지원하는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 - DocWen 데스크톱 앱 시작/열기는 공개 로컬 CLI `gui open`을 사용하므로 Machine 협상에 실패해도 DocWen 자체를 열 수 있습니다.
 

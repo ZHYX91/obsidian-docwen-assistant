@@ -381,7 +381,7 @@ process.stdin.on("data", (chunk) => {
       reply(message.id, {
         protocol: { name: "docwen.machine", major: 2, minor: 0 },
         artifact_bundle_schema: "docwen.artifact_bundle.v3",
-        server: { name: "DocWen", version: "0.13.0" },
+        server: { name: "DocWen", version: "0.17.0" },
         methods: [],
         features: { progress: true, cancellation: true },
         max_concurrent_tasks: 1,
