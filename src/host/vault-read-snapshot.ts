@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
 
-import { TFile, type App } from "obsidian";
+import { parseLinktext, TFile, type App } from "obsidian";
 
 import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
@@ -213,7 +213,7 @@ export class VaultReadSnapshot {
       if (!authoredToken.startsWith("[[") || !authoredToken.endsWith("]]") || authoredToken !== link.original) {
         continue;
       }
-      const linked = metadataCache.getFirstLinkpathDest(link.link, file.path);
+      const linked = metadataCache.getFirstLinkpathDest(parseLinktext(link.link).path, file.path);
       if (!(linked instanceof TFile)) continue;
       const href = obsidianNavigationHref(this.app.vault.getName(), linked.path, link.link);
       const previous = wikiLinkBindings.get(authoredToken);

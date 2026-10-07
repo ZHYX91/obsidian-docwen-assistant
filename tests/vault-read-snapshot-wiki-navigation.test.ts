@@ -2,15 +2,28 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
+vi.mock("obsidian", () => ({
+  MarkdownView: class MarkdownView {},
+  TFile: class TFile {},
+  parseLinktext: (linktext: string) => {
+    const selector = linktext.indexOf("#");
+    return selector < 0
+      ? { path: linktext, subpath: "" }
+      : { path: linktext.slice(0, selector), subpath: linktext.slice(selector) };
+  },
+}));
 
 describe("VaultReadSnapshot WikiLink navigation bindings", () => {
-  it("binds Obsidian-resolved local WikiLinks to stable Obsidian navigation URIs", async () => {
+  it.each([
+    { link: "Other", encodedSubpath: "" },
+    { link: "Other#Section", encodedSubpath: "%23Section" },
+    { link: "Other#^block-id", encodedSubpath: "%23%5Eblock-id" },
+  ])("resolves only the file path and preserves the selector for $link", async ({ link, encodedSubpath }) => {
     const { TFile } = await import("obsidian");
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = Object.assign(new TFile(), { path: "Notes/Current.md", extension: "md" });
     const target = Object.assign(new TFile(), { path: "Notes/Other.md", extension: "md" });
-    const token = "[[Other#Section|Other note]]";
+    const token = `[[${link}|Other note]]`;
     const source = "See " + token + ".\n";
     const start = source.indexOf(token);
     const app = {
@@ -26,12 +39,13 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
         getFileCache: vi.fn(() => ({
           embeds: [],
           links: [{
-            link: "Other#Section",
+            link,
             original: token,
             position: { start: { offset: start }, end: { offset: start + token.length } },
           }],
         })),
-        getFirstLinkpathDest: vi.fn(() => target),
+        // Obsidian's public API accepts a linkpath, without heading/block subpath.
+        getFirstLinkpathDest: vi.fn((linkpath: string) => linkpath === "Other" ? target : null),
       },
     };
 
@@ -49,11 +63,12 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
       images: [],
       wiki_links: [{
         authored_token: token,
-        href: "obsidian://open?vault=Knowledge%20Base&file=Notes%2FOther.md%23Section",
+        href: `obsidian://open?vault=Knowledge%20Base&file=Notes%2FOther.md${encodedSubpath}`,
       }],
     });
     expect(app.vault.readBinary).toHaveBeenCalled();
     expect(app.vault.readBinary.mock.calls.every(([requested]) => requested === file)).toBe(true);
+    expect(app.metadataCache.getFirstLinkpathDest).toHaveBeenCalledWith("Other", "Notes/Current.md");
   });
 
   it("fails closed when a current local WikiLink is absent from Obsidian metadata", async () => {
