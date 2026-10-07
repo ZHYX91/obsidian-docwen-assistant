@@ -35,6 +35,27 @@ describe("VaultReadSnapshot image cache coverage", () => {
     },
   );
 
+  it.each([
+    "![photo](<media/my photo.png>)",
+    "![photo](media/photo(1).png)",
+  ])("rejects uncovered Markdown image destinations: %s", async (image) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const source = "# Current\n\n" + image + "\n";
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      metadataCache: {
+        getFileCache: vi.fn(() => ({ embeds: [] })),
+        getFirstLinkpathDest: vi.fn(),
+      },
+    };
+    await expect(new VaultReadSnapshot(app as never).run(
+      { path: "notes/current.md", extension: "md" } as never,
+      new AbortController().signal,
+      async (snapshot) => snapshot.getDeclaredMarkdownInputs(),
+    )).rejects.toMatchObject({ code: "vault_input_invalid" });
+  });
+
   it("does not treat an ordinary Markdown note embed as a missing image declaration", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "notes/current.md", extension: "md" };

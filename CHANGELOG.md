@@ -4,6 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-07
+
+- Bind ordinary local WikiLink navigation to the authored source hash and Obsidian-resolved target without reading linked note contents.
+- Reject stale image or navigation metadata before declared-source export, including images with angle-bracket or parenthesized destinations. Ignore syntax inside protected source regions and Markdown link destinations.
+- Update the pinned source-map parser to address indexed source-map denial of service.
+
 ## [3.2.0] - 2026-10-04
 
 - Own every Windows Machine session with an embedded integrity-checked Job Object controller so normal root exit, timeout, cancellation, broken stdin and plugin unload collect descendants without stale-PID `taskkill` authority.

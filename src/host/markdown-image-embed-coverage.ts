@@ -28,7 +28,7 @@ export function findUncoveredImageEmbeds(
 }
 
 export function scanAuthoredImageEmbeds(source: string): readonly ScannedImageEmbed[] {
-  const masked = maskProtectedSource(source);
+  const masked = maskProtectedSource(source, { preserveImageDestinations: true });
   const output: ScannedImageEmbed[] = [];
 
   for (const match of masked.matchAll(/!\[\[([^\]\r\n]+)\]\]/gu)) {
@@ -40,18 +40,62 @@ export function scanAuthoredImageEmbeds(source: string): readonly ScannedImageEm
     output.push({ start: match.index, end: match.index + match[0].length, token, link });
   }
 
-  for (const match of masked.matchAll(/!\[[^\]\r\n]*\]\(\s*(<[^>\r\n]+>|[^\s)\r\n]+)[^\r\n)]*\)/gu)) {
+  for (const match of masked.matchAll(/!\[(?:\\.|[^\]\\\r\n])*\]\(/gu)) {
     if (match.index == null || isBackslashEscaped(source, match.index)) continue;
-    const token = source.slice(match.index, match.index + match[0].length);
-    const captured = match[1] ?? "";
-    const link = captured.startsWith("<") && captured.endsWith(">")
-      ? captured.slice(1, -1)
-      : captured;
+    const destination = scanImageDestination(source, match.index + match[0].length);
+    if (destination === null) continue;
+    const token = source.slice(match.index, destination.end);
+    const link = destination.link;
     if (!isLocalImageLocator(link)) continue;
-    output.push({ start: match.index, end: match.index + match[0].length, token, link });
+    output.push({ start: match.index, end: destination.end, token, link });
   }
 
   return output.sort((left, right) => left.start - right.start);
+}
+
+function scanImageDestination(source: string, start: number): { link: string; end: number } | null {
+  let cursor = start;
+  while (source[cursor] === " " || source[cursor] === "\t") cursor += 1;
+  const angled = source[cursor] === "<";
+  if (angled) cursor += 1;
+  const destinationStart = cursor;
+  let depth = 0;
+  while (cursor < source.length) {
+    const character = source[cursor];
+    if (character === "\n" || character === "\r") return null;
+    if (character === "\\" && cursor + 1 < source.length) {
+      cursor += 2;
+      continue;
+    }
+    if (angled) {
+      if (character === ">") break;
+      if (character === "<") return null;
+    } else {
+      if (character === "(") depth += 1;
+      else if (character === ")") {
+        if (depth === 0) break;
+        depth -= 1;
+      } else if (/\s/u.test(character ?? "")) break;
+    }
+    cursor += 1;
+  }
+  if (cursor === source.length || depth !== 0 || (angled && source[cursor] !== ">")) return null;
+  const link = source.slice(destinationStart, cursor).replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/gu, "$1");
+  if (angled) cursor += 1;
+  while (source[cursor] === " " || source[cursor] === "\t") cursor += 1;
+  const titleDelimiter = source[cursor];
+  if (titleDelimiter === "\"" || titleDelimiter === "'" || titleDelimiter === "(") {
+    const closer = titleDelimiter === "(" ? ")" : titleDelimiter;
+    cursor += 1;
+    while (cursor < source.length && source[cursor] !== closer) {
+      if (source[cursor] === "\n" || source[cursor] === "\r") return null;
+      cursor += source[cursor] === "\\" ? 2 : 1;
+    }
+    if (source[cursor] !== closer) return null;
+    cursor += 1;
+    while (source[cursor] === " " || source[cursor] === "\t") cursor += 1;
+  }
+  return source[cursor] === ")" ? { link, end: cursor + 1 } : null;
 }
 
 function isLocalImageLocator(value: string): boolean {
@@ -73,7 +117,10 @@ function isBackslashEscaped(source: string, start: number): boolean {
   return count % 2 === 1;
 }
 
-export function maskProtectedSource(source: string): string {
+export function maskProtectedSource(
+  source: string,
+  { preserveImageDestinations = false }: { preserveImageDestinations?: boolean } = {},
+): string {
   const characters = source.split("");
   const mask = (start: number, end: number): void => {
     for (let index = start; index < end; index += 1) {
@@ -128,7 +175,19 @@ export function maskProtectedSource(source: string): string {
 
   let masked = characters.join("");
   for (const match of masked.matchAll(/<[^>\r\n]*>/gu)) {
-    if (match.index != null) mask(match.index, match.index + match[0].length);
+    if (match.index == null) continue;
+    const prefix = masked.slice(0, match.index);
+    if (preserveImageDestinations && /!\[(?:\\.|[^\]\\\r\n])*\]\([ \t]*$/u.test(prefix)) continue;
+    mask(match.index, match.index + match[0].length);
+  }
+
+  masked = characters.join("");
+  for (const match of masked.matchAll(/!?\[(?:\\.|[^\]\\\r\n])*\]\(/gu)) {
+    if (match.index == null || isBackslashEscaped(source, match.index)) continue;
+    if (preserveImageDestinations && match[0].startsWith("!")) continue;
+    const start = match.index + match[0].length;
+    const destination = scanImageDestination(source, start);
+    if (destination !== null) mask(start, destination.end);
   }
 
   masked = characters.join("");
@@ -138,8 +197,12 @@ export function maskProtectedSource(source: string): string {
     if (start < 0) break;
     let delimiterEnd = start;
     while (delimiterEnd < masked.length && masked[delimiterEnd] === BACKTICK) delimiterEnd += 1;
+    if (isBackslashEscaped(source, start)) {
+      cursor = delimiterEnd;
+      continue;
+    }
     const delimiter = masked.slice(start, delimiterEnd);
-    const closing = masked.indexOf(delimiter, delimiterEnd);
+    const closing = findExactBacktickCloser(masked, delimiterEnd, delimiter.length);
     if (closing < 0) {
       cursor = delimiterEnd;
       continue;
@@ -151,6 +214,21 @@ export function maskProtectedSource(source: string): string {
   }
 
   return characters.join("");
+}
+
+function findExactBacktickCloser(source: string, start: number, length: number): number {
+  const paragraphBreak = source.slice(start).search(/\r?\n[ \t]*\r?\n/u);
+  const limit = paragraphBreak < 0 ? source.length : start + paragraphBreak;
+  let cursor = start;
+  while (cursor < limit) {
+    const tick = source.indexOf(BACKTICK, cursor);
+    if (tick < 0 || tick >= limit) return -1;
+    let end = tick;
+    while (source[end] === BACKTICK) end += 1;
+    if (end - tick === length) return tick;
+    cursor = end;
+  }
+  return -1;
 }
 
 function maskPairedSource(

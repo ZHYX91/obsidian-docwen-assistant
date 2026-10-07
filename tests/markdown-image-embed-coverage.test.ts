@@ -6,6 +6,23 @@ import {
 } from "../src/host/markdown-image-embed-coverage";
 
 describe("Markdown image embed cache coverage", () => {
+  it.each([
+    ["![photo](<media/my photo.png>)", "media/my photo.png"],
+    ["![photo](media/photo(1).png)", "media/photo(1).png"],
+    ["![photo](media/photo\\(1\\).png \"title (1)\")", "media/photo(1).png"],
+  ])("requires exact cache coverage for %s", (source, link) => {
+    const missing = findUncoveredImageEmbeds(source, []);
+    expect(missing).toEqual([{ start: 0, end: source.length, token: source, link }]);
+  });
+
+  it("matches whole backtick delimiters and treats escaped openers as text", () => {
+    const source = "`unclosed `` ![[active.png]]\n\n\\` ![[also-active.png]]\n\n"
+      + "``literal ` ![[hidden.png]] `` ![[last.png]]";
+    expect(scanAuthoredImageEmbeds(source).map((item) => item.link)).toEqual([
+      "active.png", "also-active.png", "last.png",
+    ]);
+  });
+
   it("finds active local Wiki and Markdown image embeds with exact source ranges", () => {
     const source = [
       "# Note",

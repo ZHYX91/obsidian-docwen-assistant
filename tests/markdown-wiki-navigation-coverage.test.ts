@@ -6,6 +6,12 @@ import {
 } from "../src/host/markdown-wiki-navigation-coverage";
 
 describe("Markdown WikiLink navigation cache coverage", () => {
+  it("ignores WikiLink-looking text in Markdown destinations and titles", () => {
+    const source = '[label](https://example.test/[[Destination]] "[[Title]]") '
+      + '![photo](media/[[ImagePath]].png) [[Real]]';
+    expect(scanAuthoredWikiNavigations(source).map((item) => item.link)).toEqual(["Real"]);
+  });
+
   it("finds active local ordinary WikiLinks and ignores embeds/fragment-only/remote links", () => {
     const source = [
       "# Note",
