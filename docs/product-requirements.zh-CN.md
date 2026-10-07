@@ -25,7 +25,7 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 
 ## 数据与写入边界
 
-插件只为用户选择的文件创建隔离快照：优先读取按路径唯一匹配的已打开 Markdown 编辑器内容（包括后台分栏中的未保存正文），文件关闭时才读取 Vault；同一路径打开多个编辑器则失败关闭。插件不为 DocWen 枚举整个 Vault，也不上传文档。Markdown 转 DOCX 时，只解析该笔记 metadata cache 中明确出现的图片嵌入，把 Obsidian 已确定的文件内容封装为中性资源；缺失、过大或不支持的图片失败关闭。导出目标必须由用户明确选择；校对不改写源笔记；独立编号操作只在源快照和目标身份仍一致时，通过 Obsidian Editor 或 Vault API 一次提交。CLI 不直接写 Vault 路径。
+插件只为用户选择的文件创建隔离快照：优先读取按路径唯一匹配的已打开 Markdown 编辑器内容（包括后台分栏中的未保存正文），文件关闭时才读取 Vault；同一路径打开多个编辑器则失败关闭。插件不为 DocWen 枚举整个 Vault，也不上传文档。Markdown 转 DOCX 时，通过该笔记 metadata cache 解析声明的图片嵌入和普通本地 Wiki 导航。Obsidian 已确定的图片字节封装为中性资源；普通 Wiki 链接封装为经源哈希认证的 `obsidian://` 导航绑定，指向已确定的笔记、标题或块。不读取链接笔记正文，不展开内容嵌入，也不向 DocWen 暴露 Vault 的绝对路径。缺失、过大或不支持的图片失败关闭；所选 capability 未声明必要的绑定选项时也失败关闭。导出目标必须由用户明确选择；校对不改写源笔记；独立编号操作只在源快照和目标身份仍一致时，通过 Obsidian Editor 或 Vault API 一次提交。CLI 不直接写 Vault 路径。
 
 ## 失败语义
 
