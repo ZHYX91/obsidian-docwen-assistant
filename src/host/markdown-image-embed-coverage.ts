@@ -60,7 +60,8 @@ function isLocalImageLocator(value: string): boolean {
   const withoutQuery = locator.split("?", 1)[0] ?? locator;
   const withoutAnchor = withoutQuery.split("#", 1)[0] ?? withoutQuery;
   const normalized = withoutAnchor.replace(/\\/gu, "/");
-  const finalSegment = normalized.split("/").at(-1) ?? "";
+  const segments = normalized.split("/");
+  const finalSegment = segments[segments.length - 1] ?? "";
   const dot = finalSegment.lastIndexOf(".");
   if (dot < 0) return false;
   return IMAGE_EXTENSIONS.has(finalSegment.slice(dot + 1).toLowerCase());
