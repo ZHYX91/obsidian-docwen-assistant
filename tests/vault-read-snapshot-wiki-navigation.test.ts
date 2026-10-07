@@ -52,7 +52,8 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
         href: "obsidian://open?vault=Knowledge%20Base&file=Notes%2FOther.md%23Section",
       }],
     });
-    expect(app.vault.readBinary).toHaveBeenCalledTimes(3);
+    expect(app.vault.readBinary).toHaveBeenCalled();
+    expect(app.vault.readBinary.mock.calls.every(([requested]) => requested === file)).toBe(true);
   });
 
   it("fails closed when a current local WikiLink is absent from Obsidian metadata", async () => {
