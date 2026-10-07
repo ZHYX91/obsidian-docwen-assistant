@@ -73,7 +73,7 @@ function isBackslashEscaped(source: string, start: number): boolean {
   return count % 2 === 1;
 }
 
-function maskProtectedSource(source: string): string {
+export function maskProtectedSource(source: string): string {
   const characters = source.split("");
   const mask = (start: number, end: number): void => {
     for (let index = start; index < end; index += 1) {
