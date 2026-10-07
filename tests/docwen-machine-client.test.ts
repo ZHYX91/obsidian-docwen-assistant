@@ -618,6 +618,80 @@ describe("DocWenMachineClient", () => {
     }
   });
 
+  it.skipIf(process.platform !== "win32").each(["false", "throw"] as const)(
+    "preserves a pipe failure when an exiting owner reports kill %s before close",
+    async (killResult) => {
+      const child = new FakeChild();
+      serverState.holdHealth = true;
+      spawnMock.mockReturnValueOnce(child);
+      vi.spyOn(child, "kill").mockImplementation(() => {
+        // OS termination is already in flight, but Node has not delivered exit/close.
+        setTimeout(() => child.emit("close", 0), 10);
+        child.emit("error", Object.assign(new Error("already exiting"), { code: "ESRCH" }));
+        if (killResult === "throw") throw new Error("already exiting");
+        return false;
+      });
+      const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+      try {
+        const pending = client.query("health/check", {}, undefined, 5_000);
+        void pending.catch(() => undefined);
+        await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+        child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+        await expect(pending).rejects.toMatchObject({ code: "cli_protocol_error", details: { systemCode: "EPIPE" } });
+        expect(child.exitCode).toBe(0);
+      } finally {
+        client.dispose();
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "win32")("keeps cleanup unconfirmed when kill fails and no owner exit follows", async () => {
+    const child = new FakeChild();
+    serverState.holdHealth = true;
+    spawnMock.mockReturnValueOnce(child);
+    vi.spyOn(child, "kill").mockImplementation(() => {
+      child.emit("error", Object.assign(new Error("not terminated"), { code: "EPERM" }));
+      return false;
+    });
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      void pending.catch(() => undefined);
+      await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+      child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job" },
+      });
+      expect(child.exitCode).toBeNull();
+    } finally {
+      client.dispose();
+    }
+  });
+
+  it.skipIf(process.platform !== "win32")("keeps cleanup unconfirmed when the owner reports a fatal cleanup exit", async () => {
+    const child = new FakeChild();
+    serverState.holdHealth = true;
+    spawnMock.mockReturnValueOnce(child);
+    vi.spyOn(child, "kill").mockImplementation(() => {
+      queueMicrotask(() => child.emit("close", 125));
+      return false;
+    });
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      void pending.catch(() => undefined);
+      await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+      child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job", primaryCode: "cli_protocol_error" },
+      });
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {
     for (const failure of ["timeout", "stderr", "queue"] as const) {
       const child = new FakeChild();

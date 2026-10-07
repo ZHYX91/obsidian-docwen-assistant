@@ -206,6 +206,7 @@ class MachineSession {
   private readonly ownedLinuxProcessGroupId: number | null;
   private readonly knownLinuxProcesses = new Map<number, string>();
   private readonly closed: Promise<number | null>;
+  private readonly processClosed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
 
   static async create(
@@ -252,6 +253,9 @@ class MachineSession {
     }
     this.child.once("exit", () => {
       this.childProcessExited = true;
+    });
+    this.processClosed = new Promise((resolve) => {
+      this.child.once("close", resolve);
     });
     this.closed = new Promise((resolve) => {
       this.child.once("close", resolve);
@@ -494,19 +498,21 @@ class MachineSession {
         || this.child.exitCode !== null
         || this.child.signalCode !== null;
       if (!alreadyExited) {
-        let signalled = false;
         try {
-          signalled = this.child.kill("SIGKILL");
+          this.child.kill("SIGKILL");
         } catch {
-          signalled = false;
-        }
-        if (!signalled && !this.childProcessExited && this.child.exitCode === null && this.child.signalCode === null) {
-          throw windowsOwnerCleanupUnconfirmed("Unable to terminate the Windows Machine lifetime owner.");
+          // The owner may already be exiting before Node delivers exit/close.
+          // A failed signal is not proof that the process remains alive.
         }
       }
-      const closeResult = await waitForExit(this.closed, FORCE_KILL_WAIT_MS);
+      // A process error can settle the transport promise without releasing the
+      // Job owner. Require its actual close event within the cleanup deadline.
+      const closeResult = await waitForExit(this.processClosed, FORCE_KILL_WAIT_MS);
       if (closeResult === EXIT_WAIT_EXPIRED) {
         throw windowsOwnerCleanupUnconfirmed("Windows Machine lifetime-owner cleanup did not settle.");
+      }
+      if (closeResult === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
+        throw windowsOwnerCleanupUnconfirmed("The Windows Machine lifetime owner failed during cleanup.");
       }
       return;
     }
