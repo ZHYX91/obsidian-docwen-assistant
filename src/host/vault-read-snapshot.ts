@@ -9,6 +9,7 @@ import { TFile, type App } from "obsidian";
 
 import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
+import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
 import {
   isSameOpenMarkdownTarget,
   locateOpenMarkdownTarget,
@@ -181,6 +182,7 @@ export class VaultReadSnapshot {
     const fileCache = metadataCache?.getFileCache(file);
     const resources = new Map<string, TaskInput>();
     const imageBindings = new Map<string, string>();
+    const wikiLinkBindings = new Map<string, string>();
     let totalResourceBytes = 0;
     const embeds = [...(fileCache?.embeds ?? [])]
       .sort((left, right) => left.position.start.offset - right.position.start.offset);
@@ -190,6 +192,38 @@ export class VaultReadSnapshot {
         "vault_input_invalid",
         "Obsidian image metadata is incomplete for the current Markdown snapshot: " + missingImage.link,
       );
+    }
+
+    const links = [...(fileCache?.links ?? [])]
+      .sort((left, right) => left.position.start.offset - right.position.start.offset);
+    const [missingNavigation] = findUncoveredWikiNavigations(authoredMarkdown, links);
+    if (missingNavigation !== undefined) {
+      throw new VaultWriteError(
+        "vault_input_invalid",
+        "Obsidian WikiLink metadata is incomplete for the current Markdown snapshot: " + missingNavigation.link,
+      );
+    }
+    for (const link of links) {
+      throwIfAborted(signal);
+      if (!isLocalWikiNavigationLink(link.link)) continue;
+      const authoredToken = authoredMarkdown.slice(
+        link.position.start.offset,
+        link.position.end.offset,
+      );
+      if (!authoredToken.startsWith("[[") || !authoredToken.endsWith("]]") || authoredToken !== link.original) {
+        continue;
+      }
+      const linked = metadataCache.getFirstLinkpathDest(link.link, file.path);
+      if (!(linked instanceof TFile)) continue;
+      const href = obsidianNavigationHref(this.app.vault.getName(), linked.path, link.link);
+      const previous = wikiLinkBindings.get(authoredToken);
+      if (previous !== undefined && previous !== href) {
+        throw new VaultWriteError(
+          "vault_input_invalid",
+          "The link cache maps identical WikiLink tokens to different navigation targets.",
+        );
+      }
+      wikiLinkBindings.set(authoredToken, href);
     }
 
     for (const embed of embeds) {
@@ -255,9 +289,10 @@ export class VaultReadSnapshot {
 
     return {
       inputs: [sourceInput, ...resources.values()],
-      resourceBindings: imageBindings.size === 0 ? undefined : {
+      resourceBindings: imageBindings.size === 0 && wikiLinkBindings.size === 0 ? undefined : {
         authored_sha256: sourceSha256,
         images: [...imageBindings].map(([authored_token, logical_path]) => ({ authored_token, logical_path })),
+        wiki_links: [...wikiLinkBindings].map(([authored_token, href]) => ({ authored_token, href })),
       },
     };
   }
@@ -1302,6 +1337,20 @@ function sortJsonValue(value: unknown): unknown {
   }
   return value;
 }
+
+function isLocalWikiNavigationLink(link: string): boolean {
+  const target = (link.split("|", 1)[0] ?? "").trim();
+  if (!target || target.startsWith("#") || target.startsWith("//")) return false;
+  return !/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(target);
+}
+
+function obsidianNavigationHref(vaultName: string, resolvedPath: string, authoredLink: string): string {
+  const fragmentIndex = authoredLink.indexOf("#");
+  const fragment = fragmentIndex < 0 ? "" : authoredLink.slice(fragmentIndex);
+  const file = encodeURIComponent(resolvedPath + fragment);
+  return `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${file}`;
+}
+
 
 function extensionForLink(link: string): string {
   const withoutAnchor = link.split("#", 1)[0] ?? link;
