@@ -1137,7 +1137,7 @@ describe("VaultReadSnapshot Number Suite authentication", () => {
   it("requires a caption target to cover its complete physical source line", async () => {
     const completeCaption = "Figure: Miao ^figure-id";
     const authenticatedPrefix = "Figure: Miao";
-    const source = `${completeCaption}\n\n![[miao.png]]`;
+    const source = `${completeCaption}\n\nBody`;
     const snapshot = semanticSnapshot({
       captions: [{
         sourceStartUtf16: 0,
