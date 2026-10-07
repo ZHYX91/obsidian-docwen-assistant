@@ -8,6 +8,7 @@ import { setTimeout as yieldToHost } from "node:timers/promises";
 import { TFile, type App } from "obsidian";
 
 import { mediaTypeForPath, normalizeLogicalPath, sourceKindForPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
+import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
 import {
   isSameOpenMarkdownTarget,
   locateOpenMarkdownTarget,
@@ -183,6 +184,13 @@ export class VaultReadSnapshot {
     let totalResourceBytes = 0;
     const embeds = [...(fileCache?.embeds ?? [])]
       .sort((left, right) => left.position.start.offset - right.position.start.offset);
+    const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
+    if (missingImage !== undefined) {
+      throw new VaultWriteError(
+        "vault_input_invalid",
+        "Obsidian image metadata is incomplete for the current Markdown snapshot: " + missingImage.link,
+      );
+    }
 
     for (const embed of embeds) {
       throwIfAborted(signal);
@@ -272,6 +280,13 @@ export class VaultReadSnapshot {
     const fileCache = metadataCache?.getFileCache(file);
     const embeds = [...(fileCache?.embeds ?? [])]
       .sort((left, right) => left.position.start.offset - right.position.start.offset);
+    const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
+    if (missingImage !== undefined) {
+      throw new VaultWriteError(
+        "vault_input_invalid",
+        "Obsidian image metadata is incomplete for the current Markdown snapshot: " + missingImage.link,
+      );
+    }
     for (const embed of embeds) {
       throwIfAborted(signal);
       const linked = metadataCache.getFirstLinkpathDest(embed.link, file.path);
