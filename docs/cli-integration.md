@@ -73,7 +73,7 @@ Direct Markdown proofreading always selects the `validate.markdown` capability, 
 | `src/docwen/path.ts` | Fixed execution-alias target plus deterministic manual `DocWenCLI.exe` validation |
 | `src/docwen/connection-monitor.ts` | Transient connection checking, product version, and typed status state |
 | `src/docwen/errors.ts` | Local boundary errors and remote Machine failures |
-| `src/host/vault-read-snapshot.ts` | Isolated source snapshots plus Obsidian-resolved declared Markdown/image inputs |
+| `src/host/vault-read-snapshot.ts` | Isolated source snapshots plus Obsidian-resolved declared Markdown/image inputs and ordinary WikiLink navigation bindings |
 | `src/host/vault-write-transaction.ts` | Editor/Vault conflict-safe numbering commit |
 
 New DocWen operations require a versioned Machine capability, mocked process-boundary tests, Bundle/commit negative tests, and packaged CLI verification before UI exposure. Automatic-discovery changes additionally require a signed MSIX install/upgrade/alias-disable/uninstall matrix; the portable package remains a separate fallback claim.
