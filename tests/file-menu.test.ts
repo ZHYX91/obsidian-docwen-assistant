@@ -202,6 +202,7 @@ describe("file menu capability states", () => {
     await Promise.resolve();
     expect(actions.proofread.activateView).toHaveBeenCalledOnce();
     expect(actions.proofread.run).toHaveBeenCalledOnce();
+    expect(actions.proofread.run).toHaveBeenCalledWith({ path: "note.md" }, { proofreadTarget: true });
     expectValidSections(submenu);
   });
 
@@ -299,7 +300,7 @@ async function register(
       remove: vi.fn().mockResolvedValue(undefined),
     },
     proofread: {
-      activateView: vi.fn().mockResolvedValue(undefined),
+      activateView: vi.fn().mockResolvedValue({ proofreadTarget: true }),
       run: vi.fn().mockResolvedValue(undefined),
     },
     capabilities,

@@ -23,6 +23,7 @@ The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocW
 - Add or remove heading numbering within one Markdown file.
 - Show Markdown proofreading results in a read-only sidebar.
 - Refresh the note associated with the displayed proofreading results, including in detached windows; a missing source must not silently select another note.
+- Publish proofreading results only to the initiating view while that view remains open. Closing another results view must not cancel the task; closing its owner or unloading the plugin cancels it.
 - Check the DocWen connection and expose a failure state when the installation, protocol, health, or a capability is unavailable.
 
 ## Data and write boundaries

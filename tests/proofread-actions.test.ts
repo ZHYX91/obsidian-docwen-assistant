@@ -49,9 +49,9 @@ describe("ProofreadActions", () => {
       {} as never, {} as never, () => ({} as never), {} as never,
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
-    await actions.refresh(file.path);
+    await actions.refresh(file.path, {} as never);
     expect(getFileByPath).toHaveBeenCalledWith(file.path);
-    expect(run).toHaveBeenCalledWith(file);
+    expect(run).toHaveBeenCalledWith(file, {});
     expect(getActiveFile).not.toHaveBeenCalled();
   });
 
@@ -63,7 +63,7 @@ describe("ProofreadActions", () => {
       {} as never, {} as never, () => ({} as never), {} as never,
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
-    await actions.refresh("Deleted.md");
+    await actions.refresh("Deleted.md", {} as never);
     expect(run).not.toHaveBeenCalled();
     expect(getActiveFile).not.toHaveBeenCalled();
     expect(state.notices).toEqual(["noticeProofreadNoMdFile"]);
@@ -77,8 +77,8 @@ describe("ProofreadActions", () => {
       {} as never, {} as never, () => ({} as never), {} as never,
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
-    await actions.refresh("");
-    expect(run).toHaveBeenCalledWith(file);
+    await actions.refresh("", {} as never);
+    expect(run).toHaveBeenCalledWith(file, {});
   });
 
   it("labels results with the Vault file name instead of the temporary snapshot name", async () => {
@@ -120,7 +120,7 @@ describe("ProofreadActions", () => {
     );
     const file = { name: "Proofread example.md", path: "Examples/Proofread example.md" };
 
-    await actions.run(file as never);
+    await actions.run(file as never, { ownOperation: () => () => true, updateResults: state.updateResults } as never);
 
     expect(capabilities.requireAction).toHaveBeenCalledWith(
       expect.objectContaining({ path: "D:\\Temp\\source.md" }),

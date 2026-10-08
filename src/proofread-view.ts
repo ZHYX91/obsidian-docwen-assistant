@@ -16,6 +16,7 @@ import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-
 import {
   type OperationCoordinator,
   type OperationItem,
+  type OperationLease,
   type OperationSnapshot,
 } from "./runtime/operation-coordinator";
 
@@ -41,10 +42,13 @@ export class ProofreadView extends ItemView {
   private activeOperation: OperationItem | null = null;
   private cancelled = false;
   private unsubscribeOperations: (() => void) | null = null;
+  private open = false;
+  private lifecycle = 0;
+  private ownedGeneration: number | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
-    private readonly refresh: (vaultPath: string) => Promise<void>,
+    private readonly refresh: (vaultPath: string, view: ProofreadView) => Promise<void>,
     private readonly operations: OperationCoordinator,
   ) {
     super(leaf);
@@ -63,6 +67,8 @@ export class ProofreadView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this.open = true;
+    this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = this.operations.subscribe((snapshot) => {
@@ -71,13 +77,29 @@ export class ProofreadView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.open = false;
+    this.lifecycle += 1;
     this.resultsRevision += 1;
-    const generation = this.activeOperation?.generation;
+    const generation = this.ownedGeneration;
+    this.ownedGeneration = null;
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
     this.activeOperation = null;
     (this.containerEl.children[1] as HTMLElement).removeClass("docwen-proofread-root");
-    if (generation !== undefined) this.operations.cancelGeneration(generation);
+    if (generation !== null) this.operations.cancelGeneration(generation);
+  }
+
+  /** Bind publication and cancellation to this exact open view lifetime. */
+  ownOperation(lease: OperationLease): () => boolean {
+    const lifecycle = this.lifecycle;
+    if (!this.open) {
+      this.operations.cancelGeneration(lease.generation);
+      return () => false;
+    }
+    this.ownedGeneration = lease.generation;
+    this.updateOperation(this.operations.getSnapshot());
+    return () => this.open && this.lifecycle === lifecycle
+      && this.ownedGeneration === lease.generation && lease.isCurrent();
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
@@ -95,7 +117,7 @@ export class ProofreadView extends ItemView {
     const previousOperation = this.activeOperation;
     this.activeOperation = [...snapshot.operations]
       .reverse()
-      .find(({ kind }) => kind === "proofread") ?? null;
+      .find(({ generation }) => generation === this.ownedGeneration) ?? null;
     if (this.activeOperation && this.activeOperation.generation !== previousOperation?.generation) {
       this.resultsRevision += 1;
     }
@@ -126,7 +148,7 @@ export class ProofreadView extends ItemView {
     setIcon(refreshBtn, "refresh-cw");
     if (this.activeOperation) refreshBtn.setAttribute("disabled", "");
     else refreshBtn.addEventListener("click", () => {
-      void this.refresh(this.vaultPath);
+      void this.refresh(this.vaultPath, this);
     });
 
     const sortBtn = toolbar.createEl("button", {

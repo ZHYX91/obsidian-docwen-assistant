@@ -7,6 +7,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 ## [3.3.0] - 2026-10-07
 
 - Keep proofreading refresh bound to the displayed note in detached windows, and preserve the command's selected note when opening the results view.
+- Route proofreading results and cancellation to the initiating results view; discard late results after that view closes or is replaced.
 - Require DocWen 0.17.0 or later for the declared WikiLink contract; reject older backends before content operations and retain the independent desktop-app launch path.
 - Bind ordinary local WikiLink navigation to the authored source hash and Obsidian-resolved target without reading linked note contents.
 - Reject stale image or navigation metadata before declared-source export, including images with angle-bracket or parenthesized destinations. Ignore syntax inside protected source regions and Markdown link destinations.

@@ -22,18 +22,18 @@ export class ProofreadActions {
     this.snapshots = new VaultReadSnapshot(app);
   }
 
-  async runActive(): Promise<void> {
+  async runActive(view: ProofreadView): Promise<void> {
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) {
       showNotice(t("noticeProofreadNoMdFile"));
       return;
     }
-    await this.run(activeFile);
+    await this.run(activeFile, view);
   }
 
-  async refresh(vaultPath: string): Promise<void> {
+  async refresh(vaultPath: string, view: ProofreadView): Promise<void> {
     if (!vaultPath) {
-      await this.runActive();
+      await this.runActive(view);
       return;
     }
     const file = this.app.vault.getFileByPath(vaultPath);
@@ -41,15 +41,16 @@ export class ProofreadActions {
       showNotice(t("noticeProofreadNoMdFile"));
       return;
     }
-    await this.run(file);
+    await this.run(file, view);
   }
 
-  async run(file: TFile): Promise<void> {
-    const view = this.getView();
+  async run(file: TFile, view: ProofreadView): Promise<void> {
     await this.runner.run(
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
       async (lease) => {
+        const canPublish = view.ownOperation(lease);
+        if (!canPublish()) return null;
         const completed = await this.snapshots.run(file, lease.signal, async (snapshot) => {
           await this.capabilities.requireAction(snapshot.inputs[0], "validate", lease.signal);
           const report = await this.docwen.validate(
@@ -57,14 +58,14 @@ export class ProofreadActions {
             buildProofreadChecks(this.getSettings()),
             lease.signal,
           );
-          if (!lease.isCurrent()) return null;
+          if (!canPublish()) return null;
           return snapshot.publish(async () => {
-            if (!lease.isCurrent()) return null;
-            view?.updateResults(report.issues, file.name, file.path, snapshot.contentSha256);
+            if (!canPublish()) return null;
+            view.updateResults(report.issues, file.name, file.path, snapshot.contentSha256);
             return report;
           });
         });
-        if (completed.value && lease.isCurrent()) {
+        if (completed.value && canPublish()) {
           this.runner.presentCompletion(
             t("noticeProofreadSuccess", { count: String(completed.value.issues.length) }),
             [...completed.value.warnings, ...completed.warnings],
@@ -85,13 +86,9 @@ export class ProofreadActions {
       }
     }
     if (leaf) await this.app.workspace.revealLeaf(leaf);
-    const view = this.getView();
+    const view = leaf?.view as ProofreadView | undefined;
     if (!view) throw new Error("Proofread view is unavailable.");
     return view;
   }
 
-  private getView(): ProofreadView | null {
-    const leaf = this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE)[0];
-    return leaf ? (leaf.view as ProofreadView) : null;
-  }
 }

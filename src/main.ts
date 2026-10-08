@@ -294,7 +294,7 @@ export default class DocWenPlugin extends Plugin {
       PROOFREAD_VIEW_TYPE,
       (leaf) => new ProofreadView(
         leaf,
-        (vaultPath) => this.proofreadActions.refresh(vaultPath),
+        (vaultPath, view) => this.proofreadActions.refresh(vaultPath, view),
         this.operations,
       ),
     );

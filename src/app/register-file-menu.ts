@@ -173,8 +173,8 @@ function actionSections(
   }
   if (cached.inspection.supportedActions.includes("validate")) {
     editing.push(actionEntry("contextMenuProofread", "check-circle", async () => {
-      await actions.proofread.activateView();
-      if (isActive()) await actions.proofread.run(file);
+      const view = await actions.proofread.activateView();
+      if (isActive()) await actions.proofread.run(file, view);
     }));
   }
   if (editing.length > 0) sections.push(editing);
