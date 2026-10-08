@@ -14,7 +14,7 @@ DocWen Assistant is a Windows and Linux desktop Obsidian plugin that connects th
 
 ## Compatibility prerequisites
 
-The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocWen 0.13.0 or later. Windows can use Microsoft Store or a fully extracted portable package; Linux uses a fully extracted package selected manually. Result-directory export on Linux requires x64 for atomic no-replace publication; unsupported architectures or filesystems fail closed before publication. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
+The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocWen 0.17.0 or later. Windows can use Microsoft Store or a fully extracted portable package; Linux uses a fully extracted package selected manually. Result-directory export on Linux requires x64 for atomic no-replace publication; unsupported architectures or filesystems fail closed before publication. Conversion, proofreading, numbering, discovery, and connection checks accept only `docwen.machine.v2` and `docwen.artifact_bundle.v3`; older product releases, other Bundle schemas, and incompatible process envelopes fail closed. Launch/open uses the independent local `gui open --json` control command and does not require a successful Machine negotiation to open the desktop app.
 
 ## Core capabilities
 
@@ -22,11 +22,13 @@ The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocW
 - Offer Word, Excel, and Markdown export according to file inspection and Machine capabilities.
 - Add or remove heading numbering within one Markdown file.
 - Show Markdown proofreading results in a read-only sidebar.
+- Refresh the note associated with the displayed proofreading results, including in detached windows; a missing source must not silently select another note.
+- Publish proofreading results only to the initiating view while that view remains open. Closing another results view must not cancel the task; closing its owner or unloading the plugin cancels it.
 - Check the DocWen connection and expose a failure state when the installation, protocol, health, or a capability is unavailable.
 
 ## Data and write boundaries
 
-The plugin creates an isolated snapshot only for a user-selected file, using its uniquely path-matched open Markdown editor content, including unsaved text in a background split, or the Vault file when it is closed. Multiple open editors for the same path fail closed. It does not enumerate the Vault for DocWen or upload documents. For Markdown-to-DOCX it resolves only image embeds explicitly present in that note's metadata cache and packages Obsidian's chosen file bytes as neutral resources. Missing, oversized, or unsupported images fail closed. Export targets are explicit, proofreading does not rewrite the source, and the separate numbering action commits once through the Obsidian Editor or Vault API only while the source snapshot and target identity still match. The CLI never writes a Vault path directly.
+The plugin creates an isolated snapshot only for a user-selected file, using its uniquely path-matched open Markdown editor content, including unsaved text in a background split, or the Vault file when it is closed. Multiple open editors for the same path fail closed. It does not enumerate the Vault for DocWen or upload documents. For Markdown-to-DOCX it resolves declared image embeds and ordinary local Wiki navigation through that note's metadata cache. Obsidian's chosen image bytes become neutral resources; ordinary Wiki links become authenticated `obsidian://` navigation bindings for the chosen note, heading, or block. It does not read linked note contents, expand transclusions, or expose absolute Vault paths to DocWen. Missing, oversized, or unsupported images fail closed; required bindings also fail closed when the selected capability does not advertise them. Export targets are explicit, proofreading does not rewrite the source, and the separate numbering action commits once through the Obsidian Editor or Vault API only while the source snapshot and target identity still match. The CLI never writes a Vault path directly.
 
 ## Failure semantics
 

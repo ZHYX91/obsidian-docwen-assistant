@@ -132,9 +132,7 @@ export function registerCommands(actions: CommandActions): void {
       if (activeFile && actions.activeFileSupports((capability) =>
         capability.inspection.supportedActions.includes("validate"))) {
         if (!checking) {
-          void actions.proofreadActions.activateView().then(() => {
-            void actions.proofreadActions.runActive();
-          });
+          void actions.proofreadActions.activateAndRun(activeFile);
         }
         return true;
       }

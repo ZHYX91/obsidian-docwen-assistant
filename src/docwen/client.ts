@@ -48,6 +48,7 @@ export type ConvertTarget = "md" | "docx" | "xlsx";
 export interface MarkdownResourceBindings {
   readonly authored_sha256: string;
   readonly images: readonly { readonly authored_token: string; readonly logical_path: string }[];
+  readonly wiki_links?: readonly { readonly authored_token: string; readonly href: string }[];
 }
 
 export interface ConvertOptions {
@@ -687,7 +688,7 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
   setOption("markdown_extensions", request.markdownExtensions);
   if (request.markdownResourceBindings !== undefined) {
     if (!accepts("markdown_resource_bindings")) {
-      throw new LocalCliError("cli_input_invalid", "This DocWen capability cannot bind authored image resources.");
+      throw new LocalCliError("cli_input_invalid", "This DocWen capability cannot bind authored Markdown resources.");
     }
     setOption("markdown_resource_bindings", request.markdownResourceBindings);
   }

@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const DOCWEN_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
-const MINIMUM_DOCWEN_VERSION = "0.13.0";
+const MINIMUM_DOCWEN_VERSION = "0.17.0";
 const ACCEPTANCE_RECEIPT_SCHEMA = "docwen.assistant.package_acceptance.v1";
 const ACCEPTANCE_RECEIPT_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_RECEIPT";
 const ACCEPTANCE_TOKEN_ENV = "DOCWEN_PACKAGE_ACCEPTANCE_TOKEN";

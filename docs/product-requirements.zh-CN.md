@@ -13,7 +13,7 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 
 ## 兼容性前提
 
-插件要求 Windows 或 Linux 桌面端、Obsidian 1.12.7 或更高版本，以及 DocWen 0.13.0 或更高版本。Windows 可使用 Microsoft Store 安装版或完整解压的便携包；Linux 使用手动选择的完整解压包。Linux 的结果目录导出要求 x64，以提供原子 no-replace 发布；不满足该架构或文件系统原子能力时在发布前失败关闭。转换、校对、编号、发现和连接检查只接受 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；其他 Bundle schema、低于最低产品版本以及不兼容的进程信封均失败关闭。启动或打开 DocWen 使用独立的本机 `gui open --json` 控制命令，不以 Machine 协商成功作为打开桌面应用的前提。
+插件要求 Windows 或 Linux 桌面端、Obsidian 1.12.7 或更高版本，以及 DocWen 0.17.0 或更高版本。Windows 可使用 Microsoft Store 安装版或完整解压的便携包；Linux 使用手动选择的完整解压包。Linux 的结果目录导出要求 x64，以提供原子 no-replace 发布；不满足该架构或文件系统原子能力时在发布前失败关闭。转换、校对、编号、发现和连接检查只接受 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；其他 Bundle schema、低于最低产品版本以及不兼容的进程信封均失败关闭。启动或打开 DocWen 使用独立的本机 `gui open --json` 控制命令，不以 Machine 协商成功作为打开桌面应用的前提。
 
 ## 核心能力
 
@@ -21,11 +21,13 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 - 根据文件检查和 Machine capability 提供 Word、Excel、Markdown 导出；
 - 为一个 Markdown 文件添加或删除标题编号；
 - 在只读侧栏展示 Markdown 校对结果；
+- 刷新当前校对结果所属的笔记，包括独立窗口；源文件缺失时不得静默改选其他笔记；
+- 校对结果只发布到仍然打开的发起视图；关闭其他结果视图不得取消该任务，关闭任务所属视图或卸载插件则取消任务；
 - 检查 DocWen 连接，并在安装、协议、健康状态或能力不可用时给出失败状态。
 
 ## 数据与写入边界
 
-插件只为用户选择的文件创建隔离快照：优先读取按路径唯一匹配的已打开 Markdown 编辑器内容（包括后台分栏中的未保存正文），文件关闭时才读取 Vault；同一路径打开多个编辑器则失败关闭。插件不为 DocWen 枚举整个 Vault，也不上传文档。Markdown 转 DOCX 时，只解析该笔记 metadata cache 中明确出现的图片嵌入，把 Obsidian 已确定的文件内容封装为中性资源；缺失、过大或不支持的图片失败关闭。导出目标必须由用户明确选择；校对不改写源笔记；独立编号操作只在源快照和目标身份仍一致时，通过 Obsidian Editor 或 Vault API 一次提交。CLI 不直接写 Vault 路径。
+插件只为用户选择的文件创建隔离快照：优先读取按路径唯一匹配的已打开 Markdown 编辑器内容（包括后台分栏中的未保存正文），文件关闭时才读取 Vault；同一路径打开多个编辑器则失败关闭。插件不为 DocWen 枚举整个 Vault，也不上传文档。Markdown 转 DOCX 时，通过该笔记 metadata cache 解析声明的图片嵌入和普通本地 Wiki 导航。Obsidian 已确定的图片字节封装为中性资源；普通 Wiki 链接封装为经源哈希认证的 `obsidian://` 导航绑定，指向已确定的笔记、标题或块。不读取链接笔记正文，不展开内容嵌入，也不向 DocWen 暴露 Vault 的绝对路径。缺失、过大或不支持的图片失败关闭；所选 capability 未声明必要的绑定选项时也失败关闭。导出目标必须由用户明确选择；校对不改写源笔记；独立编号操作只在源快照和目标身份仍一致时，通过 Obsidian Editor 或 Vault API 一次提交。CLI 不直接写 Vault 路径。
 
 ## 失败语义
 

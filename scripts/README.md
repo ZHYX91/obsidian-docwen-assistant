@@ -8,7 +8,7 @@ an independent clone.
 ## DocWen compatibility
 
 `npm run release:docwen-compatibility` checks the highest stable numeric immutable DocWen
-Release at or above 0.12.0 and its canonical Windows package metadata using read-only GitHub access. This external
+Release at or above 0.17.0 and its canonical Windows package metadata using read-only GitHub access. This external
 compatibility check stays separate from the offline source checks.
 
 `npm run acceptance:docwen-package` validates the actual packaged CLI. Its inputs and product

@@ -3,6 +3,23 @@ import { createHash } from "node:crypto";
 import { MarkdownView, TFile } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
+vi.mock("../src/utils/suggest-modal", () => ({ pickItem: vi.fn() }));
+vi.mock("../src/host/vault-files", () => ({
+  resolveTargetFile: (file: unknown) => file,
+  resolveAbsoluteFilePath: () => "D:/Vault/Notes/B.md",
+}));
+vi.mock("../src/host/vault-read-snapshot", () => ({
+  VaultReadSnapshot: class {
+    async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
+      return { value: await work({
+        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64),
+        publish: async (commit: () => Promise<unknown>) => commit(),
+      }), warnings: [] };
+    }
+  },
+}));
+
 class FakeElement {
   readonly children: Array<{ tag: string; element: FakeElement; options: Record<string, unknown> }> = [];
   readonly classes = new Set<string>();
@@ -27,6 +44,8 @@ vi.mock("obsidian", () => ({
     readonly app = { vault: {}, workspace: {} };
     readonly containerEl = { children: [new FakeElement(), new FakeElement()] };
     constructor(_leaf: unknown) {}
+    async open(): Promise<void> { await this.onOpen(); }
+    async onOpen(): Promise<void> {}
   },
   MarkdownView: class MarkdownView {},
   TFile: class TFile {},
@@ -35,7 +54,192 @@ vi.mock("obsidian", () => ({
 }));
 
 describe("ProofreadView", () => {
-  it("cancels only the observed proofread generation when the view closes", async () => {
+  it("opens through the host view lifecycle without shadowing its open method", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const view = new ProofreadView({} as never, async () => {}, new OperationCoordinator());
+    const hostView = view as unknown as { open(): Promise<void> };
+    await hostView.open();
+    expect(view.captureLifetime()()).toBe(true);
+    expect(findByClass(view.containerEl.children[1] as unknown as FakeElement,
+      "docwen-proofread-toolbar")).toBeDefined();
+    await view.onClose();
+    expect(view.captureLifetime()()).toBe(false);
+  });
+
+  it.each([
+    "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
+    "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
+    "command-close", "command-replace", "command-error", "menu-close", "menu-replace", "menu-error", "menu-dispose",
+    "menu-dispose-error",
+  ])(
+    "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
+      const { ProofreadView } = await import("../src/proofread-view");
+      const { ProofreadActions } = await import("../src/actions/proofread-actions");
+      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+      const operations = new OperationCoordinator();
+      const file = { name: "B.md", path: "Notes/B.md" };
+      let complete!: (report: unknown) => void;
+      let signal!: AbortSignal;
+      const validate = vi.fn((_input, _checks, receivedSignal: AbortSignal) => {
+        // Keep B pending, but let an unexpected second request settle so failures
+        // report cancellation/publication errors rather than a test timeout.
+        if (validate.mock.calls.length > 1) return Promise.resolve({ issues: [], warnings: [] });
+        signal = receivedSignal;
+        return new Promise((resolve) => { complete = resolve; });
+      });
+      const completion = vi.fn();
+      const presentFailure = vi.fn();
+      const runner = {
+        presentCompletion: completion,
+        presentFailure,
+        run: async (request: Parameters<typeof operations.begin>[0], _notice: string,
+          work: (lease: ReturnType<typeof operations.begin>) => Promise<unknown>) => {
+          const lease = operations.begin(request);
+          try { return await work(lease); } finally { lease.finish(); }
+        },
+      };
+      const leaves: Array<{ view: InstanceType<typeof ProofreadView> }> = [];
+      let reveal!: () => void;
+      let rejectReveal!: (error: Error) => void;
+      const app = {
+        vault: { getFileByPath: () => file },
+        workspace: {
+          getLeavesOfType: () => leaves, getActiveFile: () => file,
+          revealLeaf: () => new Promise<void>((resolve, reject) => { reveal = resolve; rejectReveal = reject; }),
+        },
+      };
+      const actions = new ProofreadActions({
+        ...app,
+      } as never, { validate } as never, { requireAction: async () => ({}) } as never,
+      () => ({} as never), runner as never);
+      let pending: Promise<void> | undefined;
+      const refresh = (path: string, target: InstanceType<typeof ProofreadView>) => {
+        pending = actions.refresh(path, target);
+        return pending;
+      };
+      const a = new ProofreadView({} as never, refresh, operations);
+      const b = new ProofreadView({} as never, refresh, operations);
+      leaves.push({ view: a }, { view: b });
+      await a.onOpen();
+      await b.onOpen();
+      a.updateResults([], "A.md", "Notes/A.md", digest("A"));
+      b.updateResults([], file.name, file.path, digest("old B"));
+      const updateA = vi.spyOn(a, "updateResults");
+      const updateB = vi.spyOn(b, "updateResults");
+      findByClass(b.containerEl.children[1] as unknown as FakeElement,
+        "docwen-proofread-btn")?.element.listeners.get("click")?.();
+      await vi.waitFor(() => expect(validate).toHaveBeenCalledOnce());
+      if (change.startsWith("command-") || change.startsWith("menu-")) {
+        const activated = vi.spyOn(actions, "activateAndRun");
+        let dispose = () => {};
+        if (change.startsWith("command-")) {
+          const { registerCommands } = await import("../src/app/register-commands");
+          let invoke!: (checking: boolean) => boolean;
+          registerCommands({ app, proofreadActions: actions, activeFileSupports: () => true,
+            addLocalizedCommand: (key: string, command: { checkCallback: typeof invoke }) => {
+              if (key === "commandProofread") invoke = command.checkCallback;
+            },
+          } as never);
+          expect(invoke(false)).toBe(true);
+        } else {
+          const { registerFileMenu } = await import("../src/app/register-file-menu");
+          let handler!: (menu: unknown, file: unknown) => void;
+          let invoke!: () => void;
+          registerFileMenu({ app: { ...app, workspace: { ...app.workspace,
+            on: (_event: string, callback: typeof handler) => { handler = callback; },
+          } }, register: (callback: () => void) => { dispose = callback; }, registerEvent: () => {},
+          } as never, { proofread: actions,
+            capabilities: { peek: () => ({ inspection: { supportedActions: ["validate"] } }),
+              findConversionRoute: () => null },
+          } as never);
+          handler({ addItem: (build: (item: unknown) => void) => {
+            let icon = "";
+            const item = { setTitle: () => item, setIcon: (value: string) => { icon = value; return item; },
+              onClick: (callback: () => void) => { if (icon === "check-circle") invoke = callback; return item; },
+              setDisabled: () => item };
+            build(item);
+          } }, file);
+          invoke();
+        }
+        expect(activated).toHaveBeenCalledOnce();
+        const activation = activated.mock.results[0].value;
+        if (change.endsWith("close")) await a.onClose();
+        if (change.endsWith("replace")) {
+          const newView = new ProofreadView({} as never, refresh, operations);
+          await newView.onOpen();
+          leaves[0].view = newView;
+        }
+        if (change.startsWith("menu-dispose")) dispose();
+        const failure = new Error("host reveal failed");
+        if (change.endsWith("error")) rejectReveal(failure);
+        else reveal();
+        await expect(activation).resolves.toBeUndefined();
+        if (change.endsWith("error") && !change.startsWith("menu-dispose")) {
+          expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
+        } else expect(presentFailure).not.toHaveBeenCalled();
+      }
+      if (change.startsWith("activate-")) {
+        const rejected = vi.fn();
+        const activation = actions.activateView().then((view) => actions.run(file as never, view)).catch(rejected);
+        if (change === "activate-close" || change === "activate-reopen") await a.onClose();
+        if (change === "activate-reopen") await a.onOpen();
+        if (change === "activate-replace") {
+          const replacement = new ProofreadView({} as never, refresh, operations);
+          await replacement.onOpen();
+          leaves[0].view = replacement;
+        }
+        if (change === "activate-detach") leaves.shift();
+        reveal();
+        await activation;
+        expect.soft(rejected).toHaveBeenCalledOnce();
+      }
+      if (change === "closed-before-run") {
+        await a.onClose();
+        await actions.run(file as never, a);
+      }
+      expect.soft(validate).toHaveBeenCalledOnce();
+      expect.soft(findByClass(a.containerEl.children[1] as unknown as FakeElement,
+        "docwen-proofread-cancel")).toBeUndefined();
+      if (change === "close-observer") await a.onClose();
+      const cancelled = ["close-owner", "reopen-owner", "replace-owner", "unload"].includes(change);
+      if (cancelled && change !== "unload") await b.onClose();
+      if (change === "reopen-owner") await b.onOpen();
+      const replacement = new ProofreadView({} as never, refresh, operations);
+      const updateReplacement = vi.spyOn(replacement, "updateResults");
+      if (change === "replace-owner") {
+        leaves[1] = { view: replacement };
+        await replacement.onOpen();
+      }
+      if (change === "unload") operations.cancelAll();
+      expect.soft(signal.aborted).toBe(cancelled);
+      complete({ issues: [], warnings: [] });
+      await pending;
+      expect.soft(updateA).not.toHaveBeenCalled();
+      expect(updateReplacement).not.toHaveBeenCalled();
+      if (cancelled) {
+        expect(updateB).not.toHaveBeenCalled();
+        expect(completion).not.toHaveBeenCalled();
+      } else {
+        expect(updateB).toHaveBeenCalledWith([], file.name, file.path, "a".repeat(64));
+        expect(completion).toHaveBeenCalledOnce();
+      }
+      expect(operations.getSnapshot().operations).toEqual([]);
+    },
+  );
+
+  it("passes the displayed source path when refreshing a detached view", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const view = new ProofreadView({} as never, refresh, new OperationCoordinator());
+    view.updateResults([], "Source.md", "Notes/Source.md", digest("source"));
+    const content = view.containerEl.children[1] as unknown as FakeElement;
+    findByClass(content, "docwen-proofread-btn")?.element.listeners.get("click")?.();
+    expect(refresh).toHaveBeenCalledWith("Notes/Source.md", view);
+  });
+
+  it("cancels only its owned proofread generation when the view closes", async () => {
     const { ProofreadView } = await import("../src/proofread-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const operations = new OperationCoordinator();
@@ -43,9 +247,11 @@ describe("ProofreadView", () => {
     const exportLease = operations.begin({ key: "export", kind: "export" });
     const view = new ProofreadView({} as never, async () => undefined, operations);
     await view.onOpen();
+    view.ownOperation(proofread);
     expect((view.containerEl.children[1] as unknown as FakeElement).classes)
       .toContain("docwen-proofread-root");
     await view.onClose();
+    view.ownOperation(proofread);
     expect((view.containerEl.children[1] as unknown as FakeElement).classes)
       .not.toContain("docwen-proofread-root");
     expect(proofread.signal.aborted).toBe(true);
@@ -59,6 +265,7 @@ describe("ProofreadView", () => {
     const view = new ProofreadView({} as never, async () => undefined, operations);
     await view.onOpen();
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(lease);
 
     let content = view.containerEl.children[1] as unknown as FakeElement;
     let cancel = findByClass(content, "docwen-proofread-cancel");
@@ -119,6 +326,7 @@ describe("ProofreadView", () => {
     await view.onOpen();
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(lease);
     operations.cancelGeneration(lease.generation);
     lease.finish();
     const content = view.containerEl.children[1] as unknown as FakeElement;
@@ -129,6 +337,7 @@ describe("ProofreadView", () => {
     expect(findByClass(content, "docwen-proofread-status")?.options.text)
       .toBe("Proofreading cancelled. Run it again to update the results.");
     const retry = operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(retry);
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     retry.finish();
     expect(findByClass(content, "docwen-proofread-status")?.options.text).toBe("No issues found");
@@ -219,7 +428,11 @@ describe("ProofreadView", () => {
     f.clickIssue();
     if (change === "new-report") f.publishCurrent();
     else if (change === "close") await f.view.onClose();
-    else f.operations.begin({ key: "proofread", kind: "proofread" }).finish();
+    else {
+      const lease = f.operations.begin({ key: "proofread", kind: "proofread" });
+      f.view.ownOperation(lease);
+      lease.finish();
+    }
     resume();
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(f.editor.setSelection).not.toHaveBeenCalled();

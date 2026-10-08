@@ -2,9 +2,9 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
 
-DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91/docwen)，提供转换、校对、标题编号和文件打开能力。需要 Windows 或 Linux、Obsidian 1.12.7 或更高版本，以及 DocWen 0.13.0 或更高稳定版本。
+DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91/docwen)，提供转换、校对、标题编号和文件打开能力。需要 Windows 或 Linux、Obsidian 1.12.7 或更高版本，以及 DocWen 0.17.0 或更高稳定版本。
 
-> **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.13.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
+> **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
 ## 截图
 
@@ -39,7 +39,7 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 ## 使用要求与兼容性
 
 - 需要 Windows 或 Linux 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
-- Windows 可使用 Microsoft Store 安装版或完整解压的便携版 DocWen 0.13.0 或更高版本；Linux 使用手动选择的完整解压包。Linux 结果目录导出要求 x64 且文件系统支持原子 no-replace；插件不会自动下载 DocWen；
+- Windows 可使用 Microsoft Store 安装版或完整解压的便携版 DocWen 0.17.0 或更高版本；Linux 使用手动选择的完整解压包。Linux 结果目录导出要求 x64 且文件系统支持原子 no-replace；插件不会自动下载 DocWen；
 - 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
 - 启动或打开 DocWen 桌面应用使用公开的本机 `gui open` CLI 控制命令，因此 Machine 协商失败不会阻止打开 DocWen 本身。
 
@@ -51,7 +51,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 
 ### 安装 DocWen 与插件
 
-1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.13.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包；Linux x64 请从同一 Releases 页面下载并完整解压兼容的 Linux 包；
+1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包；Linux x64 请从同一 Releases 页面下载并完整解压兼容的 Linux 包；
 2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) 下载 `docwen-assistant-x.y.z.zip`，将其中的 `main.js`、`manifest.json` 和 `styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
 3. 重新加载第三方插件并启用 DocWen Assistant；
 4. Windows 自动检测无需选择文件；Windows 便携版和所有 Linux 用户都应打开 **设置 → DocWen Assistant → 常规**，选择“手动安装”，再选择解压后的 DocWen 文件夹或可执行文件。

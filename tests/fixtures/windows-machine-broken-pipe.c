@@ -52,7 +52,7 @@ int main(void) {
   if (!CloseHandle(input)) return 99;
   SetStdHandle(STD_INPUT_HANDLE, INVALID_HANDLE_VALUE);
   record("stdin_closed", id);
-  reply(output, id, "{\"protocol\":{\"name\":\"docwen.machine\",\"major\":2,\"minor\":0},\"server\":{\"name\":\"DocWen\",\"version\":\"0.13.0\"},\"artifact_bundle_schema\":\"docwen.artifact_bundle.v3\",\"methods\":[],\"features\":{\"progress\":true,\"cancellation\":true},\"max_concurrent_tasks\":1}");
+  reply(output, id, "{\"protocol\":{\"name\":\"docwen.machine\",\"major\":2,\"minor\":0},\"server\":{\"name\":\"DocWen\",\"version\":\"0.17.0\"},\"artifact_bundle_schema\":\"docwen.artifact_bundle.v3\",\"methods\":[],\"features\":{\"progress\":true,\"cancellation\":true},\"max_concurrent_tasks\":1}");
   Sleep(INFINITE);
   return 0;
 }

@@ -172,10 +172,8 @@ function actionSections(
     editing.push(actionEntry("contextMenuRemoveNumbering", "list-x", () => actions.numbering.remove(file)));
   }
   if (cached.inspection.supportedActions.includes("validate")) {
-    editing.push(actionEntry("contextMenuProofread", "check-circle", async () => {
-      await actions.proofread.activateView();
-      if (isActive()) await actions.proofread.run(file);
-    }));
+    editing.push(actionEntry("contextMenuProofread", "check-circle",
+      () => actions.proofread.activateAndRun(file, isActive)));
   }
   if (editing.length > 0) sections.push(editing);
   return sections;

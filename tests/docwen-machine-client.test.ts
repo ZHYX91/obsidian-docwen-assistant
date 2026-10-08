@@ -23,10 +23,10 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     holdTask: false,
     ignoreCancellation: false,
     serverName: "DocWen",
-    serverVersion: "0.13.0",
+    serverVersion: "0.17.0",
     stderrOverflow: false,
     taskAccepted: false,
-    bundleVersion: "0.13.0",
+    bundleVersion: "0.17.0",
     artifactBundleSchema: "docwen.artifact_bundle.v3",
     protocolMajor: 2,
     protocolMinor: 0,
@@ -289,10 +289,10 @@ describe("DocWenMachineClient", () => {
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.13.0";
+    serverState.serverVersion = "0.17.0";
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
-    serverState.bundleVersion = "0.13.0";
+    serverState.bundleVersion = "0.17.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v3";
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
@@ -428,17 +428,17 @@ describe("DocWenMachineClient", () => {
     });
   });
 
-  it("rejects DocWen product versions older than 0.13.0 while preserving GUI-independent compatibility facts", async () => {
-    serverState.serverVersion = "0.12.1";
-    serverState.bundleVersion = "0.12.1";
+  it.each(["0.12.1", "0.13.0", "0.16.0"])("rejects unsupported DocWen %s before content operations", async (version) => {
+    serverState.serverVersion = version;
+    serverState.bundleVersion = version;
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
     await expect(client.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
       details: {
         incompatibility: "product_version",
-        minimumProductVersion: "0.13.0",
-        actualProductVersion: "0.12.1",
+        minimumProductVersion: "0.17.0",
+        actualProductVersion: version,
       },
     });
     expect(serverState.requests.map((request) => request.method)).toEqual(["initialize"]);
@@ -618,6 +618,80 @@ describe("DocWenMachineClient", () => {
     }
   });
 
+  it.skipIf(process.platform !== "win32").each(["false", "throw"] as const)(
+    "preserves a pipe failure when an exiting owner reports kill %s before close",
+    async (killResult) => {
+      const child = new FakeChild();
+      serverState.holdHealth = true;
+      spawnMock.mockReturnValueOnce(child);
+      vi.spyOn(child, "kill").mockImplementation(() => {
+        // OS termination is already in flight, but Node has not delivered exit/close.
+        setTimeout(() => child.emit("close", 0), 10);
+        child.emit("error", Object.assign(new Error("already exiting"), { code: "ESRCH" }));
+        if (killResult === "throw") throw new Error("already exiting");
+        return false;
+      });
+      const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+      try {
+        const pending = client.query("health/check", {}, undefined, 5_000);
+        void pending.catch(() => undefined);
+        await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+        child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+        await expect(pending).rejects.toMatchObject({ code: "cli_protocol_error", details: { systemCode: "EPIPE" } });
+        expect(child.exitCode).toBe(0);
+      } finally {
+        client.dispose();
+      }
+    },
+  );
+
+  it.skipIf(process.platform !== "win32")("keeps cleanup unconfirmed when kill fails and no owner exit follows", async () => {
+    const child = new FakeChild();
+    serverState.holdHealth = true;
+    spawnMock.mockReturnValueOnce(child);
+    vi.spyOn(child, "kill").mockImplementation(() => {
+      child.emit("error", Object.assign(new Error("not terminated"), { code: "EPERM" }));
+      return false;
+    });
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      void pending.catch(() => undefined);
+      await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+      child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job" },
+      });
+      expect(child.exitCode).toBeNull();
+    } finally {
+      client.dispose();
+    }
+  });
+
+  it.skipIf(process.platform !== "win32")("keeps cleanup unconfirmed when the owner reports a fatal cleanup exit", async () => {
+    const child = new FakeChild();
+    serverState.holdHealth = true;
+    spawnMock.mockReturnValueOnce(child);
+    vi.spyOn(child, "kill").mockImplementation(() => {
+      queueMicrotask(() => child.emit("close", 125));
+      return false;
+    });
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      void pending.catch(() => undefined);
+      await vi.waitFor(() => expect(serverState.requests.some((request) => request.method === "health/check")).toBe(true));
+      child.stdin.emit("error", Object.assign(new Error("broken pipe"), { code: "EPIPE" }));
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "windows_job", primaryCode: "cli_protocol_error" },
+      });
+    } finally {
+      client.dispose();
+    }
+  });
+
   it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {
     for (const failure of ["timeout", "stderr", "queue"] as const) {
       const child = new FakeChild();
@@ -737,13 +811,13 @@ describe("DocWenMachineClient", () => {
       code: "cli_incompatible_version",
       details: expect.objectContaining({
         incompatibility: "product_version",
-        minimumProductVersion: "0.13.0",
+        minimumProductVersion: "0.17.0",
         actualProductVersion: "0.12.1",
       }),
     });
 
-    serverState.serverVersion = "0.14.0";
-    serverState.bundleVersion = "0.14.0";
+    serverState.serverVersion = "0.18.0";
+    serverState.bundleVersion = "0.18.0";
     const futureProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
@@ -753,17 +827,17 @@ describe("DocWenMachineClient", () => {
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.13.0",
+      "0.17.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.13.0", actualProductVersion: "0.14.0" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.17.0", actualProductVersion: "0.18.0" }),
     });
 
     const matchingCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.14.0",
+      "0.18.0",
     );
     await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });

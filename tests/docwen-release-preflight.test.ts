@@ -24,12 +24,14 @@ describe("public DocWen compatibility preflight", () => {
       release("0.10.99"),
       release("0.11.0"),
       release("0.11.7"),
-      release("0.12.1"),
-      release("0.13.0", { prerelease: true }),
+      release("0.16.0"),
+      release("0.17.0"),
+      release("0.17.1"),
+      release("0.18.0", { prerelease: true }),
     ]);
 
-    expect(selected.release.tag_name).toBe("0.12.1");
-    expect(selected.version).toEqual(["0", "12", "1"]);
+    expect(selected.release.tag_name).toBe("0.17.1");
+    expect(selected.version).toEqual(["0", "17", "1"]);
     expect(selected.asset.name).toBe("DocWen-windows-x64.zip");
     expect(PUBLIC_DOCWEN_REPOSITORY).toBe("ZHYX91/docwen");
     expect(PUBLIC_DOCWEN_ASSET).toBe("DocWen-windows-x64.zip");
@@ -37,29 +39,29 @@ describe("public DocWen compatibility preflight", () => {
 
   it("rejects mutable, incomplete, untrusted, or wrongly named packages", () => {
     expect(() => selectPublicDocWenRelease([
-      release("0.12.2", { immutable: false }),
+      release("0.17.2", { immutable: false }),
     ])).toThrow("is not immutable");
     expect(() => selectPublicDocWenRelease([
-      release("0.12.2", { assets: [asset("0.12.2", { state: "starter" })] }),
+      release("0.17.2", { assets: [asset("0.17.2", { state: "starter" })] }),
     ])).toThrow("is not fully uploaded");
     expect(() => selectPublicDocWenRelease([
-      release("0.12.2", { assets: [asset("0.12.2", { digest: null })] }),
+      release("0.17.2", { assets: [asset("0.17.2", { digest: null })] }),
     ])).toThrow("has no trusted SHA-256 digest");
     expect(() => selectPublicDocWenRelease([
-      release("0.12.2", { assets: [asset("0.12.2", { name: "DocWen.zip" })] }),
+      release("0.17.2", { assets: [asset("0.17.2", { name: "DocWen.zip" })] }),
     ])).toThrow("must contain exactly one DocWen-windows-x64.zip");
     expect(() => selectPublicDocWenRelease([
-      release("0.12.2", {
-        assets: [asset("0.12.2", { browser_download_url: "https://example.test/package.zip" })],
+      release("0.17.2", {
+        assets: [asset("0.17.2", { browser_download_url: "https://example.test/package.zip" })],
       }),
     ])).toThrow("asset URL is outside the canonical GitHub repository");
   });
 
   it("rejects prefixed tags and releases below the supported packaged baseline", () => {
-    expect(() => selectPublicDocWenRelease([release("v0.12.2")]))
-      .toThrow("No public stable DocWen Release at or above 0.12.0 exists");
+    expect(() => selectPublicDocWenRelease([release("v0.17.2")]))
+      .toThrow("No public stable DocWen Release at or above 0.17.0 exists");
     expect(() => selectPublicDocWenRelease([release("0.10.99")]))
-      .toThrow("No public stable DocWen Release at or above 0.12.0 exists");
+      .toThrow("No public stable DocWen Release at or above 0.17.0 exists");
   });
 });
 
