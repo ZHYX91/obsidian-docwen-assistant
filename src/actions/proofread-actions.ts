@@ -9,6 +9,8 @@ import type { PluginSettings } from "../settings-model";
 import { ActionRunner } from "./action-runner";
 import { buildProofreadChecks } from "./conversion-options";
 
+class ProofreadViewExpiredError extends Error {}
+
 export class ProofreadActions {
   private readonly snapshots: VaultReadSnapshot;
 
@@ -78,6 +80,20 @@ export class ProofreadActions {
     );
   }
 
+  async activateAndRun(file: TFile, isActive: () => boolean = () => true): Promise<void> {
+    try {
+      if (!isActive()) return;
+      const view = await this.activateView();
+      if (isActive()) await this.run(file, view);
+    } catch (error) {
+      // Closing the requested view is a controlled cancellation. Other host
+      // activation failures retain the normal proofreading error surface.
+      if (!(error instanceof ProofreadViewExpiredError)) {
+        this.runner.presentFailure("noticeProofreadFailed", error);
+      }
+    }
+  }
+
   async activateView(): Promise<ProofreadView> {
     let leaf = this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE)[0];
     if (!leaf) {
@@ -93,7 +109,7 @@ export class ProofreadActions {
     await this.app.workspace.revealLeaf(leaf);
     if (!isOpen() || leaf.view !== view
       || !this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE).includes(leaf)) {
-      throw new Error("Proofread view is unavailable.");
+      throw new ProofreadViewExpiredError("Proofread view is unavailable.");
     }
     return view;
   }

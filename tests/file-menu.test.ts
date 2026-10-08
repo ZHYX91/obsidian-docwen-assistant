@@ -200,9 +200,8 @@ describe("file menu capability states", () => {
     expect(submenu.entries.filter((entry) => entry === "separator")).toHaveLength(2);
     submenu.items[4].click?.();
     await Promise.resolve();
-    expect(actions.proofread.activateView).toHaveBeenCalledOnce();
-    expect(actions.proofread.run).toHaveBeenCalledOnce();
-    expect(actions.proofread.run).toHaveBeenCalledWith({ path: "note.md" }, { proofreadTarget: true });
+    expect(actions.proofread.activateAndRun).toHaveBeenCalledOnce();
+    expect(actions.proofread.activateAndRun).toHaveBeenCalledWith({ path: "note.md" }, expect.any(Function));
     expectValidSections(submenu);
   });
 
@@ -222,7 +221,7 @@ describe("file menu capability states", () => {
     expect(actions.exports.toXlsx).not.toHaveBeenCalled();
     expect(actions.numbering.add).not.toHaveBeenCalled();
     expect(actions.numbering.remove).not.toHaveBeenCalled();
-    expect(actions.proofread.activateView).not.toHaveBeenCalled();
+    expect(actions.proofread.activateAndRun).not.toHaveBeenCalled();
     expect(actions.gui.open).not.toHaveBeenCalled();
   });
 
@@ -300,8 +299,7 @@ async function register(
       remove: vi.fn().mockResolvedValue(undefined),
     },
     proofread: {
-      activateView: vi.fn().mockResolvedValue({ proofreadTarget: true }),
-      run: vi.fn().mockResolvedValue(undefined),
+      activateAndRun: vi.fn().mockResolvedValue(undefined),
     },
     capabilities,
     presentCapabilityFailure,

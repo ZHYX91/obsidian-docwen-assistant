@@ -39,6 +39,18 @@ describe("ProofreadActions", () => {
     state.updateResults.mockReset();
   });
 
+  it("runs the captured file in the activated view through the shared entry", async () => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const file = { path: "Selected.md" };
+    const view = {};
+    const actions = new ProofreadActions({} as never, {} as never, {} as never,
+      () => ({} as never), {} as never);
+    vi.spyOn(actions, "activateView").mockResolvedValue(view as never);
+    const run = vi.spyOn(actions, "run").mockResolvedValue();
+    await actions.activateAndRun(file as never);
+    expect(run).toHaveBeenCalledWith(file, view);
+  });
+
   it.each([null, { path: "Other.md" }])("refreshes the displayed source despite active file %s", async (activeFile) => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
     const file = { name: "Source.md", path: "Notes/Source.md" };

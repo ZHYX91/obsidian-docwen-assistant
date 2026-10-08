@@ -5,7 +5,6 @@ import { registerCommands } from "../src/app/register-commands";
 describe("proofread command target", () => {
   it("retains the selected note when activating the results changes focus", async () => {
     const source = { path: "Source.md" };
-    const view = {};
     let activeFile: typeof source | null = source;
     const commands = new Map<string, Omit<Command, "name">>();
     const run = vi.fn().mockResolvedValue(undefined);
@@ -14,14 +13,12 @@ describe("proofread command target", () => {
       addLocalizedCommand: (key: string, command: Omit<Command, "name">) => commands.set(key, command),
       activeFileSupports: () => true,
       proofreadActions: {
-        activateView: async () => { activeFile = null; return view; },
-        run,
-        runActive: vi.fn(),
+        activateAndRun: async (file: typeof source) => { activeFile = null; await run(file); },
       },
     } as never);
     expect(commands.get("commandProofread")?.checkCallback?.(true)).toBe(true);
     expect(run).not.toHaveBeenCalled();
     commands.get("commandProofread")?.checkCallback?.(false);
-    await vi.waitFor(() => expect(run).toHaveBeenCalledWith(source, view));
+    await vi.waitFor(() => expect(run).toHaveBeenCalledWith(source));
   });
 });

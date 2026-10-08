@@ -4,6 +4,11 @@ import { MarkdownView, TFile } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
+vi.mock("../src/utils/suggest-modal", () => ({ pickItem: vi.fn() }));
+vi.mock("../src/host/vault-files", () => ({
+  resolveTargetFile: (file: unknown) => file,
+  resolveAbsoluteFilePath: () => "D:/Vault/Notes/B.md",
+}));
 vi.mock("../src/host/vault-read-snapshot", () => ({
   VaultReadSnapshot: class {
     async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
@@ -50,6 +55,7 @@ describe("ProofreadView", () => {
   it.each([
     "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
     "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
+    "command-close", "command-replace", "command-error", "menu-close", "menu-replace", "menu-error", "menu-dispose",
   ])(
     "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
       const { ProofreadView } = await import("../src/proofread-view");
@@ -67,8 +73,10 @@ describe("ProofreadView", () => {
         return new Promise((resolve) => { complete = resolve; });
       });
       const completion = vi.fn();
+      const presentFailure = vi.fn();
       const runner = {
         presentCompletion: completion,
+        presentFailure,
         run: async (request: Parameters<typeof operations.begin>[0], _notice: string,
           work: (lease: ReturnType<typeof operations.begin>) => Promise<unknown>) => {
           const lease = operations.begin(request);
@@ -77,12 +85,16 @@ describe("ProofreadView", () => {
       };
       const leaves: Array<{ view: InstanceType<typeof ProofreadView> }> = [];
       let reveal!: () => void;
-      const actions = new ProofreadActions({
+      let rejectReveal!: (error: Error) => void;
+      const app = {
         vault: { getFileByPath: () => file },
         workspace: {
-          getLeavesOfType: () => leaves, getActiveFile: () => null,
-          revealLeaf: () => new Promise<void>((resolve) => { reveal = resolve; }),
+          getLeavesOfType: () => leaves, getActiveFile: () => file,
+          revealLeaf: () => new Promise<void>((resolve, reject) => { reveal = resolve; rejectReveal = reject; }),
         },
+      };
+      const actions = new ProofreadActions({
+        ...app,
       } as never, { validate } as never, { requireAction: async () => ({}) } as never,
       () => ({} as never), runner as never);
       let pending: Promise<void> | undefined;
@@ -102,6 +114,54 @@ describe("ProofreadView", () => {
       findByClass(b.containerEl.children[1] as unknown as FakeElement,
         "docwen-proofread-btn")?.element.listeners.get("click")?.();
       await vi.waitFor(() => expect(validate).toHaveBeenCalledOnce());
+      if (change.startsWith("command-") || change.startsWith("menu-")) {
+        const activated = vi.spyOn(actions, "activateAndRun");
+        let dispose = () => {};
+        if (change.startsWith("command-")) {
+          const { registerCommands } = await import("../src/app/register-commands");
+          let invoke!: (checking: boolean) => boolean;
+          registerCommands({ app, proofreadActions: actions, activeFileSupports: () => true,
+            addLocalizedCommand: (key: string, command: { checkCallback: typeof invoke }) => {
+              if (key === "commandProofread") invoke = command.checkCallback;
+            },
+          } as never);
+          expect(invoke(false)).toBe(true);
+        } else {
+          const { registerFileMenu } = await import("../src/app/register-file-menu");
+          let handler!: (menu: unknown, file: unknown) => void;
+          let invoke!: () => void;
+          registerFileMenu({ app: { ...app, workspace: { ...app.workspace,
+            on: (_event: string, callback: typeof handler) => { handler = callback; },
+          } }, register: (callback: () => void) => { dispose = callback; }, registerEvent: () => {},
+          } as never, { proofread: actions,
+            capabilities: { peek: () => ({ inspection: { supportedActions: ["validate"] } }),
+              findConversionRoute: () => null },
+          } as never);
+          handler({ addItem: (build: (item: unknown) => void) => {
+            let icon = "";
+            const item = { setTitle: () => item, setIcon: (value: string) => { icon = value; return item; },
+              onClick: (callback: () => void) => { if (icon === "check-circle") invoke = callback; return item; },
+              setDisabled: () => item };
+            build(item);
+          } }, file);
+          invoke();
+        }
+        expect(activated).toHaveBeenCalledOnce();
+        const activation = activated.mock.results[0].value;
+        if (change.endsWith("close")) await a.onClose();
+        if (change.endsWith("replace")) {
+          const newView = new ProofreadView({} as never, refresh, operations);
+          await newView.onOpen();
+          leaves[0].view = newView;
+        }
+        if (change === "menu-dispose") dispose();
+        const failure = new Error("host reveal failed");
+        if (change.endsWith("error")) rejectReveal(failure);
+        else reveal();
+        await expect(activation).resolves.toBeUndefined();
+        if (change.endsWith("error")) expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
+        else expect(presentFailure).not.toHaveBeenCalled();
+      }
       if (change.startsWith("activate-")) {
         const rejected = vi.fn();
         const activation = actions.activateView().then((view) => actions.run(file as never, view)).catch(rejected);
