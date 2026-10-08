@@ -47,7 +47,10 @@ vi.mock("obsidian", () => ({
 }));
 
 describe("ProofreadView", () => {
-  it.each(["keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload"])(
+  it.each([
+    "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
+    "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
+  ])(
     "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
       const { ProofreadView } = await import("../src/proofread-view");
       const { ProofreadActions } = await import("../src/actions/proofread-actions");
@@ -57,6 +60,9 @@ describe("ProofreadView", () => {
       let complete!: (report: unknown) => void;
       let signal!: AbortSignal;
       const validate = vi.fn((_input, _checks, receivedSignal: AbortSignal) => {
+        // Keep B pending, but let an unexpected second request settle so failures
+        // report cancellation/publication errors rather than a test timeout.
+        if (validate.mock.calls.length > 1) return Promise.resolve({ issues: [], warnings: [] });
         signal = receivedSignal;
         return new Promise((resolve) => { complete = resolve; });
       });
@@ -70,9 +76,13 @@ describe("ProofreadView", () => {
         },
       };
       const leaves: Array<{ view: InstanceType<typeof ProofreadView> }> = [];
+      let reveal!: () => void;
       const actions = new ProofreadActions({
         vault: { getFileByPath: () => file },
-        workspace: { getLeavesOfType: () => leaves, getActiveFile: () => null },
+        workspace: {
+          getLeavesOfType: () => leaves, getActiveFile: () => null,
+          revealLeaf: () => new Promise<void>((resolve) => { reveal = resolve; }),
+        },
       } as never, { validate } as never, { requireAction: async () => ({}) } as never,
       () => ({} as never), runner as never);
       let pending: Promise<void> | undefined;
@@ -92,6 +102,26 @@ describe("ProofreadView", () => {
       findByClass(b.containerEl.children[1] as unknown as FakeElement,
         "docwen-proofread-btn")?.element.listeners.get("click")?.();
       await vi.waitFor(() => expect(validate).toHaveBeenCalledOnce());
+      if (change.startsWith("activate-")) {
+        const rejected = vi.fn();
+        const activation = actions.activateView().then((view) => actions.run(file as never, view)).catch(rejected);
+        if (change === "activate-close" || change === "activate-reopen") await a.onClose();
+        if (change === "activate-reopen") await a.onOpen();
+        if (change === "activate-replace") {
+          const replacement = new ProofreadView({} as never, refresh, operations);
+          await replacement.onOpen();
+          leaves[0].view = replacement;
+        }
+        if (change === "activate-detach") leaves.shift();
+        reveal();
+        await activation;
+        expect.soft(rejected).toHaveBeenCalledOnce();
+      }
+      if (change === "closed-before-run") {
+        await a.onClose();
+        await actions.run(file as never, a);
+      }
+      expect.soft(validate).toHaveBeenCalledOnce();
       expect.soft(findByClass(a.containerEl.children[1] as unknown as FakeElement,
         "docwen-proofread-cancel")).toBeUndefined();
       if (change === "close-observer") await a.onClose();

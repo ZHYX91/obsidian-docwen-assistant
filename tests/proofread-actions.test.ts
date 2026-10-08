@@ -120,7 +120,7 @@ describe("ProofreadActions", () => {
     );
     const file = { name: "Proofread example.md", path: "Examples/Proofread example.md" };
 
-    await actions.run(file as never, { ownOperation: () => () => true, updateResults: state.updateResults } as never);
+    await actions.run(file as never, { captureLifetime: () => () => true, ownOperation: () => () => true, updateResults: state.updateResults } as never);
 
     expect(capabilities.requireAction).toHaveBeenCalledWith(
       expect.objectContaining({ path: "D:\\Temp\\source.md" }),

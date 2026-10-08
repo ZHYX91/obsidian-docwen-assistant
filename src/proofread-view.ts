@@ -91,15 +91,19 @@ export class ProofreadView extends ItemView {
 
   /** Bind publication and cancellation to this exact open view lifetime. */
   ownOperation(lease: OperationLease): () => boolean {
-    const lifecycle = this.lifecycle;
-    if (!this.open) {
+    const isOpen = this.captureLifetime();
+    if (!isOpen()) {
       this.operations.cancelGeneration(lease.generation);
       return () => false;
     }
     this.ownedGeneration = lease.generation;
     this.updateOperation(this.operations.getSnapshot());
-    return () => this.open && this.lifecycle === lifecycle
-      && this.ownedGeneration === lease.generation && lease.isCurrent();
+    return () => isOpen() && this.ownedGeneration === lease.generation && lease.isCurrent();
+  }
+
+  captureLifetime(): () => boolean {
+    const lifecycle = this.lifecycle;
+    return () => this.open && this.lifecycle === lifecycle;
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {

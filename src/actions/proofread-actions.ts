@@ -45,6 +45,8 @@ export class ProofreadActions {
   }
 
   async run(file: TFile, view: ProofreadView): Promise<void> {
+    // No asynchronous gap before begin: a stale request must not replace live work.
+    if (!view.captureLifetime()()) return;
     await this.runner.run(
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
@@ -85,9 +87,14 @@ export class ProofreadActions {
         await leaf.setViewState({ type: PROOFREAD_VIEW_TYPE, active: true });
       }
     }
-    if (leaf) await this.app.workspace.revealLeaf(leaf);
-    const view = leaf?.view as ProofreadView | undefined;
-    if (!view) throw new Error("Proofread view is unavailable.");
+    const view = leaf?.view;
+    if (!leaf || !(view instanceof ProofreadView)) throw new Error("Proofread view is unavailable.");
+    const isOpen = view.captureLifetime();
+    await this.app.workspace.revealLeaf(leaf);
+    if (!isOpen() || leaf.view !== view
+      || !this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE).includes(leaf)) {
+      throw new Error("Proofread view is unavailable.");
+    }
     return view;
   }
 
