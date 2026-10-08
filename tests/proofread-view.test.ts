@@ -56,6 +56,7 @@ describe("ProofreadView", () => {
     "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
     "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
     "command-close", "command-replace", "command-error", "menu-close", "menu-replace", "menu-error", "menu-dispose",
+    "menu-dispose-error",
   ])(
     "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
       const { ProofreadView } = await import("../src/proofread-view");
@@ -154,13 +155,14 @@ describe("ProofreadView", () => {
           await newView.onOpen();
           leaves[0].view = newView;
         }
-        if (change === "menu-dispose") dispose();
+        if (change.startsWith("menu-dispose")) dispose();
         const failure = new Error("host reveal failed");
         if (change.endsWith("error")) rejectReveal(failure);
         else reveal();
         await expect(activation).resolves.toBeUndefined();
-        if (change.endsWith("error")) expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
-        else expect(presentFailure).not.toHaveBeenCalled();
+        if (change.endsWith("error") && !change.startsWith("menu-dispose")) {
+          expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
+        } else expect(presentFailure).not.toHaveBeenCalled();
       }
       if (change.startsWith("activate-")) {
         const rejected = vi.fn();

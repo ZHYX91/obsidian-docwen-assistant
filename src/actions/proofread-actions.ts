@@ -88,7 +88,7 @@ export class ProofreadActions {
     } catch (error) {
       // Closing the requested view is a controlled cancellation. Other host
       // activation failures retain the normal proofreading error surface.
-      if (!(error instanceof ProofreadViewExpiredError)) {
+      if (isActive() && !(error instanceof ProofreadViewExpiredError)) {
         this.runner.presentFailure("noticeProofreadFailed", error);
       }
     }
