@@ -44,7 +44,7 @@ export class ProofreadView extends ItemView {
 
   constructor(
     leaf: WorkspaceLeaf,
-    private readonly refresh: () => Promise<void>,
+    private readonly refresh: (vaultPath: string) => Promise<void>,
     private readonly operations: OperationCoordinator,
   ) {
     super(leaf);
@@ -126,7 +126,7 @@ export class ProofreadView extends ItemView {
     setIcon(refreshBtn, "refresh-cw");
     if (this.activeOperation) refreshBtn.setAttribute("disabled", "");
     else refreshBtn.addEventListener("click", () => {
-      void this.refresh();
+      void this.refresh(this.vaultPath);
     });
 
     const sortBtn = toolbar.createEl("button", {

@@ -39,6 +39,48 @@ describe("ProofreadActions", () => {
     state.updateResults.mockReset();
   });
 
+  it.each([null, { path: "Other.md" }])("refreshes the displayed source despite active file %s", async (activeFile) => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const file = { name: "Source.md", path: "Notes/Source.md" };
+    const getActiveFile = vi.fn().mockReturnValue(activeFile);
+    const getFileByPath = vi.fn().mockReturnValue(file);
+    const actions = new ProofreadActions(
+      { vault: { getFileByPath }, workspace: { getActiveFile } } as never,
+      {} as never, {} as never, () => ({} as never), {} as never,
+    );
+    const run = vi.spyOn(actions, "run").mockResolvedValue();
+    await actions.refresh(file.path);
+    expect(getFileByPath).toHaveBeenCalledWith(file.path);
+    expect(run).toHaveBeenCalledWith(file);
+    expect(getActiveFile).not.toHaveBeenCalled();
+  });
+
+  it("does not switch to another active note when the displayed source is missing", async () => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const getActiveFile = vi.fn().mockReturnValue({ path: "Other.md" });
+    const actions = new ProofreadActions(
+      { vault: { getFileByPath: () => null }, workspace: { getActiveFile } } as never,
+      {} as never, {} as never, () => ({} as never), {} as never,
+    );
+    const run = vi.spyOn(actions, "run").mockResolvedValue();
+    await actions.refresh("Deleted.md");
+    expect(run).not.toHaveBeenCalled();
+    expect(getActiveFile).not.toHaveBeenCalled();
+    expect(state.notices).toEqual(["noticeProofreadNoMdFile"]);
+  });
+
+  it("uses the active note only when the view has no previous source", async () => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const file = { path: "First.md" };
+    const actions = new ProofreadActions(
+      { workspace: { getActiveFile: () => file } } as never,
+      {} as never, {} as never, () => ({} as never), {} as never,
+    );
+    const run = vi.spyOn(actions, "run").mockResolvedValue();
+    await actions.refresh("");
+    expect(run).toHaveBeenCalledWith(file);
+  });
+
   it("labels results with the Vault file name instead of the temporary snapshot name", async () => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
     const signal = new AbortController().signal;

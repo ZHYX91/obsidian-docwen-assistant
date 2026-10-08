@@ -35,6 +35,17 @@ vi.mock("obsidian", () => ({
 }));
 
 describe("ProofreadView", () => {
+  it("passes the displayed source path when refreshing a detached view", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const view = new ProofreadView({} as never, refresh, new OperationCoordinator());
+    view.updateResults([], "Source.md", "Notes/Source.md", digest("source"));
+    const content = view.containerEl.children[1] as unknown as FakeElement;
+    findByClass(content, "docwen-proofread-btn")?.element.listeners.get("click")?.();
+    expect(refresh).toHaveBeenCalledWith("Notes/Source.md");
+  });
+
   it("cancels only the observed proofread generation when the view closes", async () => {
     const { ProofreadView } = await import("../src/proofread-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");

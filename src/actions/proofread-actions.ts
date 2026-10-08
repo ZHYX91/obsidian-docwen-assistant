@@ -31,6 +31,19 @@ export class ProofreadActions {
     await this.run(activeFile);
   }
 
+  async refresh(vaultPath: string): Promise<void> {
+    if (!vaultPath) {
+      await this.runActive();
+      return;
+    }
+    const file = this.app.vault.getFileByPath(vaultPath);
+    if (!file) {
+      showNotice(t("noticeProofreadNoMdFile"));
+      return;
+    }
+    await this.run(file);
+  }
+
   async run(file: TFile): Promise<void> {
     const view = this.getView();
     await this.runner.run(
