@@ -44,6 +44,8 @@ vi.mock("obsidian", () => ({
     readonly app = { vault: {}, workspace: {} };
     readonly containerEl = { children: [new FakeElement(), new FakeElement()] };
     constructor(_leaf: unknown) {}
+    async open(): Promise<void> { await this.onOpen(); }
+    async onOpen(): Promise<void> {}
   },
   MarkdownView: class MarkdownView {},
   TFile: class TFile {},
@@ -52,6 +54,19 @@ vi.mock("obsidian", () => ({
 }));
 
 describe("ProofreadView", () => {
+  it("opens through the host view lifecycle without shadowing its open method", async () => {
+    const { ProofreadView } = await import("../src/proofread-view");
+    const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+    const view = new ProofreadView({} as never, async () => {}, new OperationCoordinator());
+    const hostView = view as unknown as { open(): Promise<void> };
+    await hostView.open();
+    expect(view.captureLifetime()()).toBe(true);
+    expect(findByClass(view.containerEl.children[1] as unknown as FakeElement,
+      "docwen-proofread-toolbar")).toBeDefined();
+    await view.onClose();
+    expect(view.captureLifetime()()).toBe(false);
+  });
+
   it.each([
     "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
     "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",

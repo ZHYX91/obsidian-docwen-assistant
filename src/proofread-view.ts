@@ -42,7 +42,8 @@ export class ProofreadView extends ItemView {
   private activeOperation: OperationItem | null = null;
   private cancelled = false;
   private unsubscribeOperations: (() => void) | null = null;
-  private open = false;
+  // Keep lifecycle state separate from the host View.open() method.
+  private proofreadViewOpen = false;
   private lifecycle = 0;
   private ownedGeneration: number | null = null;
 
@@ -67,7 +68,7 @@ export class ProofreadView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    this.open = true;
+    this.proofreadViewOpen = true;
     this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
     this.unsubscribeOperations?.();
@@ -77,7 +78,7 @@ export class ProofreadView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    this.open = false;
+    this.proofreadViewOpen = false;
     this.lifecycle += 1;
     this.resultsRevision += 1;
     const generation = this.ownedGeneration;
@@ -103,7 +104,7 @@ export class ProofreadView extends ItemView {
 
   captureLifetime(): () => boolean {
     const lifecycle = this.lifecycle;
-    return () => this.open && this.lifecycle === lifecycle;
+    return () => this.proofreadViewOpen && this.lifecycle === lifecycle;
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
