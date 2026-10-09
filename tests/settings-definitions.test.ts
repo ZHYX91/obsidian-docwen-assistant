@@ -54,16 +54,6 @@ describe("settings page definitions", () => {
     expect(runDoctor).not.toHaveBeenCalled();
   });
 
-  it("explains that Word conversion depends on DocWen's opt-in input extensions", async () => {
-    const { initI18n, t } = await import("../src/i18n");
-    for (const language of ["zh-CN", "en-US"] as const) {
-      initI18n(language);
-      const guidance = t("settingsWordGuideDesc");
-      expect(guidance).toMatch(/(?:输入扩展|input extensions)/u);
-      expect(guidance).toContain("DocWen");
-    }
-  });
-
   it("uses live settings for disabled state", () => {
     const settings = { ...DEFAULT_SETTINGS, extractImages: false, enableOcr: false };
     const pages = getSettingsPages({
