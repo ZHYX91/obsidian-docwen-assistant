@@ -68,7 +68,22 @@ export class VaultReadSnapshot {
     signal: AbortSignal,
     work: (snapshot: IsolatedSnapshot) => Promise<T>,
   ): Promise<Completed<T>> {
-    const targetLookup = locateOpenMarkdownTarget(this.app.workspace, file.path);
+    // Pin the path and Vault identity before any async source read. A rename,
+    // delete, or replacement must never approve publication under a new owner.
+    const originalPath = file.path;
+    const assertSourceIdentity = (): void => {
+      if (file.path !== originalPath) {
+        throw new VaultWriteError("vault_target_changed", "The source path changed during the DocWen operation.");
+      }
+      // getFileByPath is guaranteed by Obsidian's Vault API. Minimal host
+      // doubles without that method are still used by source-only tests.
+      const resolveFile = this.app.vault.getFileByPath;
+      if (typeof resolveFile === "function" && resolveFile.call(this.app.vault, originalPath) !== file) {
+        throw new VaultWriteError("vault_target_changed", "The source file was deleted or replaced during the DocWen operation.");
+      }
+    };
+    assertSourceIdentity();
+    const targetLookup = locateOpenMarkdownTarget(this.app.workspace, originalPath);
     if (targetLookup.kind === "ambiguous") {
       throw new VaultWriteError(
         "vault_target_changed",
@@ -78,6 +93,7 @@ export class VaultReadSnapshot {
     const target = targetLookup.kind === "open" ? targetLookup.target : null;
     const editor = target?.editor ?? null;
     const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
+    assertSourceIdentity();
     const authoredMarkdown = ["md", "markdown"].includes(file.extension.toLowerCase())
       ? decodeMarkdown(original)
       : null;
@@ -85,17 +101,19 @@ export class VaultReadSnapshot {
     let published = false;
     const assertCurrent = async (): Promise<void> => {
       throwIfAborted(signal);
+      assertSourceIdentity();
       if (editor) {
-        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, file.path, target)) {
+        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)) {
           throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
         }
         if (sha256(editor.getValue()) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
         }
       } else {
-        assertNoOpenMarkdownTarget(this.app, file.path);
+        assertNoOpenMarkdownTarget(this.app, originalPath);
         const current = await this.app.vault.readBinary(file);
-        assertNoOpenMarkdownTarget(this.app, file.path);
+        assertSourceIdentity();
+        assertNoOpenMarkdownTarget(this.app, originalPath);
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
         }
@@ -117,10 +135,10 @@ export class VaultReadSnapshot {
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
-        kind: sourceKindForPath(file.path),
+        kind: sourceKindForPath(originalPath),
         role: "source",
-        logicalPath: logicalPathFor(file.path),
-        mediaType: mediaTypeForPath(file.path),
+        logicalPath: logicalPathFor(originalPath),
+        mediaType: mediaTypeForPath(originalPath),
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {

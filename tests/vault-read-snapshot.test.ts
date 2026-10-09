@@ -236,6 +236,70 @@ describe("VaultReadSnapshot", () => {
       }))).resolves.toEqual({ value: "published", warnings: [] });
   });
 
+  it.each([
+    ["renamed", (file: { path: string }, identity: { current: object | null }) => { file.path = "renamed.md"; }],
+    ["deleted", (_file: { path: string }, identity: { current: object | null }) => { identity.current = null; }],
+    ["replaced", (_file: { path: string }, identity: { current: object | null }) => {
+      identity.current = { path: "note.md", extension: "md" };
+    }],
+  ])("rejects a %s closed-source identity before publishing any result", async (_case, mutate) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const identity: { current: object | null } = { current: file };
+    const contents = "# Unchanged source\\n";
+    const publishResult = vi.fn(async () => "must not publish");
+    const vault = {
+      getFileByPath: vi.fn(() => identity.current),
+      readBinary: vi.fn(async () => new TextEncoder().encode(contents).buffer),
+    };
+    const app = { vault, workspace: { getLeavesOfType: () => [] } };
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, async (snapshot) => {
+        mutate(file, identity);
+        return snapshot.publish(publishResult);
+      },
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publishResult).not.toHaveBeenCalled();
+  });
+
+  it("rejects a rename that happens during the initial asynchronous source read", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async () => {
+          file.path = "renamed.md";
+          return new TextEncoder().encode("# Same contents\\n").buffer;
+        },
+      },
+    };
+    const work = vi.fn();
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, work,
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it("rejects a renamed source that is still open in the original editor", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const editor = { getValue: () => "# Unchanged\\n" };
+    const app = {
+      workspace: { getLeavesOfType: () => [{ view: { file, editor } }] },
+      vault: { getFileByPath: (path: string) => path === file.path ? file : null },
+    };
+    const publish = vi.fn();
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, async snapshot => {
+        file.path = "renamed.md";
+        return snapshot.publish(publish);
+      },
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publish).not.toHaveBeenCalled();
+  });
+
   it("copies an unsaved editor buffer from a background Markdown split", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
