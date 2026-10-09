@@ -4,6 +4,8 @@ export interface Translations {
   noticeConversionDiagnostics: string;
   noticeCleanupWarning: string;
   errorOutputUnconfirmed: string;
+  errorOutputFilesystemUnsupported: string;
+  errorOutputPreflightFailed: string;
   dialogDiagnosticsPrivacy: string;
   dialogContinue: string;
   dialogDetectedFormat: string;

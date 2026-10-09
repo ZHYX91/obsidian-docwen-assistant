@@ -22,7 +22,7 @@ import { LocalCliError } from "./errors";
 import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
-import { atomicCommitDirectory, captureOutputDirectory, type DirectoryPublication } from "./output-directory";
+import { atomicCommitDirectory, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
   type JsonObject,
@@ -295,6 +295,7 @@ export class DocWenClient {
 
   async convert(request: ConvertRequest, signal?: AbortSignal): Promise<ConversionOutcome> {
     const destination = await captureOutputDirectory(request.outputDirectory, signal);
+    await preflightOutputDirectory(destination, signal);
     const source = request.sourceInput ?? requiredSourceInput(request.inputs);
     const inspectionHandle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     return this.withTaskStaging(async (stagingRoot) => {

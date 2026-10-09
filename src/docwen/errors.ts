@@ -2,6 +2,8 @@ export type LocalCliErrorCode =
   | "cli_path_not_configured"
   | "cli_alias_not_found"
   | "cli_platform_unsupported"
+  | "cli_output_filesystem_unsupported"
+  | "cli_output_preflight_failed"
   | "cli_not_found"
   | "cli_not_file"
   | "cli_not_executable"

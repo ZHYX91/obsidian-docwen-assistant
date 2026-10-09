@@ -58,8 +58,8 @@ export async function publishDirectoryNoReplace(source: string, destination: str
   if (code === "EEXIST" || code === "ENOTEMPTY") throw collisionError(destination);
   if (code === "ENOSYS" || code === "ENOTSUP" || code === "EOPNOTSUPP" || code === "EINVAL") {
     throw new LocalCliError(
-      "cli_platform_unsupported",
-      "The selected Linux filesystem cannot provide atomic no-replace directory publication.",
+      "cli_output_filesystem_unsupported",
+      "The selected filesystem cannot safely publish a result directory. Choose another output folder, such as a native Linux folder instead of a Windows drive mounted in WSL.",
       { systemCode: code },
     );
   }
@@ -148,7 +148,7 @@ function collisionError(target: string): LocalCliError {
   return new LocalCliError(
     "cli_commit_failed",
     "The result directory already exists. Run again to create a new result.",
-    { target },
+    { target, systemCode: "EEXIST" },
   );
 }
 
