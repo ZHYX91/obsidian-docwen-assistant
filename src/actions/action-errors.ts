@@ -22,6 +22,8 @@ export function getErrorMessage(error: unknown): string {
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
   if (code === "cli_capability_unavailable") return t("errorCapabilityUnavailable");
   if (code === "cli_timeout") return t("errorOperationTimeout");
+  if (code === "cli_output_filesystem_unsupported") return t("errorOutputFilesystemUnsupported");
+  if (code === "cli_output_preflight_failed") return t("errorOutputPreflightFailed");
   if (["vault_target_changed", "vault_content_conflict"].includes(code)) {
     return t("errorContentConflict");
   }

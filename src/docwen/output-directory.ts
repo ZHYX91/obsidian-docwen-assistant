@@ -36,6 +36,51 @@ export async function captureOutputDirectory(directory: string, signal?: AbortSi
   return snapshot;
 }
 
+/** Probe owned empty entries on the selected filesystem, never a user result. */
+export async function preflightOutputDirectory(parent: OutputDirectorySnapshot, signal?: AbortSignal): Promise<void> {
+  assertDirectoryPublicationSupported();
+  await parent.assertCurrent();
+  let root: string | undefined;
+  let identity: Awaited<ReturnType<typeof directoryIdentity>> | undefined;
+  let failure: Error | undefined;
+  try {
+    throwIfAborted(signal);
+    root = await mkdtemp(path.join(parent.path, ".docwen-preflight-"));
+    identity = await directoryIdentity(root);
+    const source = path.join(root, "source");
+    const target = path.join(root, "target");
+    await mkdir(source);
+    await publishDirectoryNoReplace(source, target);
+    await mkdir(source);
+    try {
+      await publishDirectoryNoReplace(source, target);
+      throw new LocalCliError("cli_output_filesystem_unsupported", "The filesystem did not prevent replacement. Choose another output folder.");
+    } catch (error) {
+      if (!(error instanceof LocalCliError && error.code === "cli_commit_failed" && error.details.systemCode === "EEXIST")) throw error;
+    }
+    await parent.assertCurrent();
+    throwIfAborted(signal);
+  } catch (error) {
+    failure = error instanceof Error && ((error instanceof LocalCliError && error.code !== "cli_commit_failed") || signal?.aborted) ? error : new LocalCliError(
+      "cli_output_preflight_failed", "Cannot safely save to this folder. Check its permissions or choose another output folder.",
+      error instanceof LocalCliError ? error.details : {},
+    );
+  }
+  if (root) {
+    try {
+      const current = await directoryIdentity(root);
+      if (!identity || current.dev !== identity.dev || current.ino !== identity.ino) {
+        throw new LocalCliError("cli_integrity_error", "Output probe identity changed; the directory was preserved.");
+      }
+      await rm(root, { recursive: true, force: true });
+    } catch (error) {
+      if (failure) recordFailureWarning(failure, operationWarning("output_cleanup_failed", error));
+      else failure = new LocalCliError("cli_output_preflight_failed", "Output probe cleanup failed. Check the selected output folder.");
+    }
+  }
+  if (failure) throw failure;
+}
+
 async function directoryIdentity(directory: string) {
   const value = await lstat(directory, { bigint: true });
   if (!value.isDirectory() || value.isSymbolicLink()) {

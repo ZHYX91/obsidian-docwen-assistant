@@ -5,10 +5,56 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as integrity from "../src/docwen/output-integrity";
 import type { ValidatedArtifactBundle } from "../src/docwen/machine-client";
-import { atomicCommitDirectory, captureOutputDirectory } from "../src/docwen/output-directory";
+import { atomicCommitDirectory, captureOutputDirectory, preflightOutputDirectory } from "../src/docwen/output-directory";
+import { LocalCliError } from "../src/docwen/errors";
+import { DocWenClient } from "../src/docwen/client";
 import * as publication from "../src/docwen/publish-path";
 
 const roots: string[] = [];
+
+describe("output filesystem preflight", () => {
+  it("checks real publication and collision refusal without leaving probe entries", async () => {
+    const f = await fixture();
+    await writeFile(path.join(f.output, "keep.txt"), "original");
+    await preflightOutputDirectory(await captureOutputDirectory(f.output));
+    expect(await readdir(f.output)).toEqual(["keep.txt"]);
+    expect(await readFile(path.join(f.output, "keep.txt"), "utf8")).toBe("original");
+  });
+
+  it("rejects unsupported storage before starting the Machine task", async () => {
+    const f = await fixture();
+    vi.spyOn(publication, "publishDirectoryNoReplace").mockRejectedValue(new LocalCliError(
+      "cli_output_filesystem_unsupported", "Choose another folder", { systemCode: "EINVAL" },
+    ));
+    const runTask = vi.fn();
+    await expect(new DocWenClient({ runTask } as never).convert({
+      inputs: [], target: "docx", outputDirectory: f.output,
+    })).rejects.toMatchObject({ code: "cli_output_filesystem_unsupported" });
+    expect(runTask).not.toHaveBeenCalled();
+    expect(await readdir(f.output)).toEqual([]);
+  });
+
+  it("rejects a publisher that replaces an existing target", async () => {
+    const f = await fixture();
+    vi.spyOn(publication, "publishDirectoryNoReplace").mockImplementation(async (source, target) => {
+      await rm(target, { recursive: true, force: true });
+      await rename(source, target);
+    });
+    await expect(preflightOutputDirectory(await captureOutputDirectory(f.output)))
+      .rejects.toMatchObject({ code: "cli_output_filesystem_unsupported" });
+    expect(await readdir(f.output)).toEqual([]);
+  });
+
+  it("reports inaccessible storage with an actionable category", async () => {
+    const f = await fixture();
+    vi.spyOn(publication, "publishDirectoryNoReplace").mockRejectedValue(new LocalCliError(
+      "cli_commit_failed", "Publication failed", { systemCode: "EACCES" },
+    ));
+    await expect(preflightOutputDirectory(await captureOutputDirectory(f.output)))
+      .rejects.toMatchObject({ code: "cli_output_preflight_failed", details: { systemCode: "EACCES" } });
+    expect(await readdir(f.output)).toEqual([]);
+  });
+});
 afterEach(async () => {
   vi.restoreAllMocks();
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
