@@ -64,6 +64,8 @@ Xuất Word tạo một tệp DOCX độc lập trong thư mục kết quả. H�
 
 ## Cài đặt plugin
 
+Để giữ ô gộp của Structural Tables, chú thích và tham chiếu của Number Suite, tiêu đề H7–H9 hoặc chú thích cuối có kiểu khi xuất Word, hãy bật **phần mở rộng đầu vào** phù hợp tại **DocWen → Cài đặt → Cú pháp Markdown** hoặc chọn cấu hình Obsidian. Các phần mở rộng mặc định tắt khi cài mới. Muốn chuyển Word về Markdown mở rộng, hãy bật cả **phần mở rộng đầu ra**. Cách đánh số trong Word theo tùy chọn xuất của DocWen; hãy kiểm tra kết quả.
+
 Obsidian 1.12.7 trở lên dùng bốn thẻ trên cùng có thể cuộn ngang: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Hướng dẫn theo ngữ cảnh nằm trong thẻ liên quan, không có trang Cách dùng riêng. Các thẻ hỗ trợ phím mũi tên kể cả RTL, Home/End, chữ giao diện 20 px và vùng bấm lớn cho con trỏ thô. Ngôn ngữ mặc định theo Obsidian và có thể đổi sang một trong 11 ngôn ngữ được hỗ trợ.
 
 ## Giới hạn
