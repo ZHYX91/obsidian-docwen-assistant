@@ -368,6 +368,45 @@ describe("DocWenCapabilityService", () => {
     });
   });
 
+  it.each([false, true])("keeps the replacement preload after invalidation (whole cache=%s)", async (all) => {
+    const stale = deferred<ReturnType<typeof inspection>>();
+    const replacement = deferred<ReturnType<typeof inspection>>();
+    const inspect = vi.fn()
+      .mockImplementationOnce(() => stale.promise)
+      .mockImplementationOnce(() => replacement.promise);
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    const path = "D:\\note.md";
+    const old = service.preload(path);
+    service.invalidate(all ? undefined : path);
+    const current = service.preload(path);
+    stale.resolve(inspection({ reasonCode: "stale" }));
+    await old;
+    expect(service.peek(path)).toBeNull();
+    expect(service.preload(path)).toBe(current);
+    expect(inspect).toHaveBeenCalledTimes(2);
+    replacement.resolve(inspection({ reasonCode: "replacement" }));
+    await current;
+    expect(service.peek(path)).toMatchObject({ inspection: { reasonCode: "replacement" } });
+  });
+
+  it.each([false, true])("ignores a superseded preload error (whole cache=%s)", async (all) => {
+    const stale = deferred<ReturnType<typeof inspection>>();
+    const service = new DocWenCapabilityService({
+      inspect: vi.fn().mockImplementationOnce(() => stale.promise)
+        .mockResolvedValueOnce(inspection({ reasonCode: "replacement" })),
+      runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    const path = "D:\\note.md";
+    const old = service.preload(path);
+    service.invalidate(all ? undefined : path);
+    await service.preload(path);
+    stale.reject(new Error("late failure from the removed source"));
+    await old;
+    expect(service.peek(path)).toMatchObject({ inspection: { reasonCode: "replacement" } });
+  });
+
   it("does not let an old projection rejection clear its replacement", async () => {
     const oldProjection = deferred<ReturnType<typeof projection>>();
     const replacementProjection = deferred<ReturnType<typeof projection>>();

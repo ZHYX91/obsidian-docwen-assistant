@@ -9,6 +9,9 @@ const state = vi.hoisted(() => ({
   loadData: async (): Promise<unknown> => ({}),
   operationItems: [] as Array<{ generation: number; kind: string; state: string }>,
   cancelled: [] as number[],
+  capabilityInvalidations: [] as Array<string | undefined>,
+  capabilityPreloads: [] as string[],
+  vaultEvents: new Map<string, (...args: unknown[]) => unknown>(),
   cancelAllCalls: 0,
   capabilityResetCalls: 0,
   monitorResetCalls: 0,
@@ -36,7 +39,10 @@ vi.mock("obsidian", () => ({
         detachLeavesOfType: () => state.cleanup.push("view"),
       },
       vault: {
-        on: () => ({ unload: () => undefined }),
+        on: (name: string, callback: (...args: unknown[]) => unknown) => {
+          state.vaultEvents.set(name, callback);
+          return { unload: () => undefined };
+        },
       },
     };
     loadData = () => state.loadData();
@@ -66,6 +72,8 @@ vi.mock("../src/host-language", () => ({
 vi.mock("../src/host/vault-files", () => ({
   resolveAbsoluteFilePath: (_vault: unknown, file: { path: string } | null) =>
     file ? `D:\\Vault\\${file.path}` : null,
+  resolveAbsoluteVaultPath: (_vault: unknown, vaultPath: string) =>
+    `D:\\Vault\\${vaultPath}`,
 }));
 vi.mock("../src/host/notices", () => ({ showNotice: () => undefined }));
 vi.mock("../src/proofread-view", () => ({
@@ -93,7 +101,8 @@ vi.mock("../src/docwen", () => ({
     }
   },
   DocWenCapabilityService: class DocWenCapabilityService {
-    preload(): void {}
+    preload(filePath: string): void { state.capabilityPreloads.push(filePath); }
+    invalidate(filePath?: string): void { state.capabilityInvalidations.push(filePath); }
     peek(): typeof state.cachedCapability {
       return state.cachedCapability;
     }
@@ -146,6 +155,9 @@ describe("DocWenPlugin lifecycle", () => {
     state.cachedCapability = null;
     state.operationItems.length = 0;
     state.cancelled.length = 0;
+    state.capabilityInvalidations.length = 0;
+    state.capabilityPreloads.length = 0;
+    state.vaultEvents.clear();
     state.cancelAllCalls = 0;
     state.capabilityResetCalls = 0;
     state.monitorResetCalls = 0;
@@ -155,6 +167,63 @@ describe("DocWenPlugin lifecycle", () => {
     state.shutdown = async () => true;
     state.hasPendingWork = false;
     state.loadData = async () => createSettingsSnapshot(normalizeSettings(null));
+  });
+
+  it("invalidates old/new source paths on rename and the deleted path on removal", async () => {
+    const { TFile } = await import("obsidian");
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    const newFile = Object.assign(new TFile(), { path: "new.md" });
+    const rename = state.vaultEvents.get("rename");
+    const remove = state.vaultEvents.get("delete");
+    expect(rename).toBeDefined();
+    expect(remove).toBeDefined();
+    rename?.(newFile, "old.md");
+    expect(state.capabilityInvalidations).toEqual(["D:\\Vault\\old.md", "D:\\Vault\\new.md"]);
+    expect(state.capabilityPreloads).toContain("D:\\Vault\\new.md");
+    remove?.(newFile);
+    expect(state.capabilityInvalidations.at(-1)).toBe("D:\\Vault\\new.md");
+    plugin.onunload();
+  });
+
+  it("invalidates all cached paths on folder rename or delete", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    state.activeFile = { path: "subfolder/current.md" };
+    await plugin.onload();
+    state.vaultEvents.get("rename")?.({ path: "subfolder" }, "oldfolder");
+    state.vaultEvents.get("delete")?.({ path: "subfolder" });
+    expect(state.capabilityInvalidations).toEqual([undefined, undefined]);
+    expect(state.capabilityPreloads.filter(p => p === "D:\\Vault\\subfolder/current.md")).toHaveLength(3);
+    plugin.onunload();
+  });
+
+  it.each(["delete", "rename", "folder-delete", "folder-rename"])("keeps the real cache fresh after %s and same-path recreation", async (event) => {
+    const { TFile } = await import("obsidian");
+    const { DocWenCapabilityService } = await import("../src/docwen/capability-service");
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    let rejectOld!: (error: Error) => void;
+    const oldInspection = new Promise<never>((_resolve, reject) => { rejectOld = reject; });
+    const replacement = new Error("current source inspection failed");
+    const inspect = vi.fn().mockImplementationOnce(() => oldInspection).mockRejectedValue(replacement);
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: async () => ({ capabilities: [] }),
+    } as never);
+    (plugin as unknown as { capabilities: InstanceType<typeof DocWenCapabilityService> }).capabilities = service;
+    const path = "D:\\Vault\\old.md";
+    const old = service.preload(path);
+    const source = event.startsWith("folder-") ? { path: "folder" }
+      : Object.assign(new TFile(), { path: event === "rename" ? "new.md" : "old.md" });
+    state.vaultEvents.get(event.endsWith("rename") ? "rename" : "delete")?.(source, "old.md");
+    state.workspaceEvents.get("file-open")?.(Object.assign(new TFile(), { path: "old.md" }));
+    await vi.waitFor(() => expect(service.peek(path)).toBe(replacement));
+    rejectOld(new Error("stale source inspection failed later"));
+    await old;
+    expect(service.peek(path)).toBe(replacement);
+    plugin.onunload();
   });
 
   it("registers cancelled operation settlement with the host quit task collector", async () => {
