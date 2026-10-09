@@ -7,6 +7,9 @@ import * as integrity from "../src/docwen/output-integrity";
 import type { ValidatedArtifactBundle } from "../src/docwen/machine-client";
 import { atomicCommitDirectory, captureOutputDirectory } from "../src/docwen/output-directory";
 import * as publication from "../src/docwen/publish-path";
+import { VaultReadSnapshot } from "../src/host/vault-read-snapshot";
+
+vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -51,6 +54,34 @@ async function fixture() {
 }
 
 describe("conversion directory publication", () => {
+  it.each(["rename", "delete", "replace"])("rejects a source %s after the host guard while acquiring the output lock", async (change) => {
+    const f = await fixture();
+    const file = { path: "source.md", extension: "md" };
+    let currentFile: typeof file | null = file;
+    let publicationStarted = false;
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: () => currentFile,
+        readBinary: async () => new TextEncoder().encode("# source\n").buffer,
+      },
+    };
+    const checkParent = f.parent.assertCurrent.bind(f.parent);
+    vi.spyOn(f.parent, "assertCurrent").mockImplementation(async () => {
+      await checkParent();
+      if (!publicationStarted) return;
+      if (change === "rename") file.path = "moved.md";
+      else currentFile = change === "delete" ? null : { ...file };
+    });
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) =>
+      atomicCommitDirectory(f.bundle, f.parent, undefined, async (_target, commit) => snapshot.publish(async (assertIdentity) => {
+        publicationStarted = true;
+        return commit(assertIdentity);
+      })),
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(await readdir(f.output)).toEqual([]);
+  });
+
   it("publishes nested links and resources without a node manifest and chooses the preferred output explicitly", async () => {
     const f = await fixture();
     const result = await atomicCommitDirectory(f.bundle, f.parent);

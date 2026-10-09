@@ -34,7 +34,7 @@ export interface IsolatedSnapshot {
   readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
   readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
-  readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
+  readonly publish: <T>(commit: (assertIdentity: () => void) => Promise<T>) => Promise<T>;
 }
 
 export interface DeclaredMarkdownSnapshot {
@@ -96,7 +96,7 @@ export class VaultReadSnapshot {
       : null;
     const contentSha256 = sha256(original);
     let published = false;
-    const assertCurrent = async (): Promise<void> => {
+    const assertPublicationIdentity = (): void => {
       throwIfAborted(signal);
       assertSourceIdentity();
       if (editor) {
@@ -108,18 +108,22 @@ export class VaultReadSnapshot {
         }
       } else {
         assertNoOpenMarkdownTarget(this.app, originalPath);
+      }
+    };
+    const assertCurrent = async (): Promise<void> => {
+      assertPublicationIdentity();
+      if (!editor) {
         const current = await this.app.vault.readBinary(file);
-        assertSourceIdentity();
-        assertNoOpenMarkdownTarget(this.app, originalPath);
+        assertPublicationIdentity();
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
         }
       }
       throwIfAborted(signal);
     };
-    const publish = async <U>(commit: () => Promise<U>): Promise<U> => {
+    const publish = async <U>(commit: (assertIdentity: () => void) => Promise<U>): Promise<U> => {
       await assertCurrent();
-      const committed = await commit();
+      const committed = await commit(assertPublicationIdentity);
       published = true;
       return committed;
     };

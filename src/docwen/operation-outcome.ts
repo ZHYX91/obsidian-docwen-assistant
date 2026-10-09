@@ -18,6 +18,10 @@ export interface Completed<T> {
   warnings: OperationWarning[];
 }
 
+/** Synchronous host identity check, invoked immediately before the publish primitive. */
+export type PublicationGuard = () => void;
+export type PublicationCommit<T> = (beforePublish?: PublicationGuard) => Promise<T>;
+
 const failureWarnings = new WeakMap<object, OperationWarning[]>();
 
 export function recordFailureWarning(error: unknown, warning: OperationWarning): unknown {
@@ -42,13 +46,13 @@ export function operationWarning(code: OperationWarningCode, error: unknown): Op
 
 /** Only the owned commit determines publication; host callbacks cannot invent or undo it. */
 export async function publishOnce<T>(
-  commit: () => Promise<T>,
-  publish?: (commit: () => Promise<T>) => Promise<unknown>,
+  commit: PublicationCommit<T>,
+  publish?: (commit: PublicationCommit<T>) => Promise<unknown>,
 ): Promise<Completed<T>> {
   const state: { attempt: Promise<T> | null; completed: Completed<T> | null } = { attempt: null, completed: null };
-  const guardedCommit = (): Promise<T> => {
+  const guardedCommit: PublicationCommit<T> = (beforePublish) => {
     if (state.attempt) return Promise.reject(new LocalCliError("cli_commit_failed", "Publication can be attempted only once."));
-    state.attempt = Promise.resolve().then(commit).then((value) => {
+    state.attempt = Promise.resolve().then(() => commit(beforePublish)).then((value) => {
       state.completed = { value, warnings: [] };
       return value;
     });
