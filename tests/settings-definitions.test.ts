@@ -56,12 +56,15 @@ describe("settings page definitions", () => {
 
   it("explains that Word conversion depends on DocWen's opt-in input extensions", async () => {
     const { initI18n, t } = await import("../src/i18n");
-    for (const language of ["zh-CN", "en-US"] as const) {
+    for (const language of ["zh-CN", "en-US", "ko-KR", "es-ES"] as const) {
       initI18n(language);
       const guidance = t("settingsWordGuideDesc");
-      expect(guidance).toMatch(/(?:输入扩展|input extensions)/u);
+      if (language === "ko-KR") expect(guidance).toMatch(/입력 확장/u);
+      else if (language === "es-ES") expect(guidance).toMatch(/extensiones de entrada/u);
+      else expect(guidance).toMatch(/(?:输入扩展|input extensions)/u);
       expect(guidance).toContain("DocWen");
     }
+    initI18n("en-US");
   });
 
   it("uses live settings for disabled state", () => {
