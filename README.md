@@ -83,6 +83,8 @@ Word export interprets the public Number Suite caption/reference dialect directl
 
 ## Settings
 
+To keep merged Structural Tables, Number Suite captions and cross-references, H7–H9 headings, or typed endnotes when exporting Word, open **DocWen → Settings → Markdown syntax** and enable the matching **input** extensions (or the **Use Obsidian extensions** input preset). Optional extensions are off in a new DocWen installation. Converting Word back into extended Markdown also requires the relevant **output** extensions. DocWen's Word-export numbering options—not Number Suite's display-only numbers—control the exported document; review the resulting table and reference formatting.
+
 - Obsidian 1.12.7 or later uses four horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Contextual help appears on the relevant tab instead of a separate Usage page.
 - Plugin language defaults to **Follow Obsidian** and can be overridden with any of DocWen Assistant's 11 languages. Resource discovery receives the same resolved locale.
 - **Connection method** defaults to **Detect automatically** for Windows Microsoft Store installs. Linux users must choose **Manual installation**; the same manual picker also supports portable Windows packages. The status row checks the product identity, minimum supported version, Machine protocol, Bundle contract, and health without exposing package paths; protocol conflicts show the Assistant request and DocWen-supported versions separately.

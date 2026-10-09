@@ -70,6 +70,8 @@ Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的
 
 ## 設定
 
+若筆記使用 Structural Tables 合併表格、Number Suite 題註與交互參照、七至九級標題或類型化尾註，匯出 Word 前請到 **DocWen → 設定 → Markdown 語法** 啟用對應的**輸入擴充**，或使用輸入方向的 **Obsidian 擴充**預設。新安裝時擴充預設關閉；若要從 Word 轉回擴充 Markdown，還需啟用對應的**輸出擴充**。Word 編號由 DocWen 匯出選項決定，請檢查輸出表格及參照。
+
 Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word和校對；說明放在相關頁籤內，不再另設「使用方法」頁。「連線方式」預設為「自動偵測」，此模式僅適用 Windows Microsoft Store；Linux 必須選擇「手動安裝」，Windows 可攜版亦使用同一選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
 
 ## 限制
