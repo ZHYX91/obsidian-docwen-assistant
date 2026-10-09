@@ -31,7 +31,7 @@ import {
   getDocWenLanguage,
   initializePluginI18n,
 } from "./host-language";
-import { resolveAbsoluteFilePath } from "./host/vault-files";
+import { resolveAbsoluteFilePath, resolveAbsoluteVaultPath } from "./host/vault-files";
 import { ProofreadView, PROOFREAD_VIEW_TYPE } from "./proofread-view";
 import {
   DocWenMachineClient,
@@ -245,6 +245,29 @@ export default class DocWenPlugin extends Plugin {
         this.capabilities.invalidate(filePath);
         preloadCapabilities(modifiedFile);
       }
+    }));
+    this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+      if (!(file instanceof TFile)) {
+        // A folder move may change every cached descendant path. Invalidate
+        // the complete map rather than guessing which children were reported.
+        this.capabilities.invalidate();
+        preloadCapabilities(this.app.workspace.getActiveFile());
+        return;
+      }
+      const oldAbsolute = resolveAbsoluteVaultPath(this.app.vault, oldPath);
+      if (oldAbsolute) this.capabilities.invalidate(oldAbsolute);
+      const currentAbsolute = resolveAbsoluteFilePath(this.app.vault, file);
+      if (currentAbsolute) this.capabilities.invalidate(currentAbsolute);
+      preloadCapabilities(file);
+    }));
+    this.registerEvent(this.app.vault.on("delete", (file) => {
+      if (!(file instanceof TFile)) {
+        this.capabilities.invalidate();
+        preloadCapabilities(this.app.workspace.getActiveFile());
+        return;
+      }
+      const oldAbsolute = resolveAbsoluteFilePath(this.app.vault, file);
+      if (oldAbsolute) this.capabilities.invalidate(oldAbsolute);
     }));
     preloadCapabilities(this.app.workspace.getActiveFile());
     this.exportActions = new ExportActions(

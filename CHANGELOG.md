@@ -4,6 +4,13 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-10-09
+
+- Reject stale source snapshots when a note is moved, deleted or replaced before export publication, including changes during the final output checks.
+- Invalidate capability caches after file and folder changes and discard outdated asynchronous results.
+- Check atomic output-directory publication support before conversion starts and provide actionable filesystem diagnostics.
+- Clarify the independent Markdown input and output extension settings and correct Korean and Spanish guidance.
+
 ## [3.3.0] - 2026-10-07
 
 - Keep proofreading refresh bound to the displayed note in detached windows, and preserve the command's selected note when opening the results view.

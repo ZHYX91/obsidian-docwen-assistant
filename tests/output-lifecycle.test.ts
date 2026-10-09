@@ -192,14 +192,15 @@ describe("publication and cleanup boundaries", () => {
 
   it.each([false, true])("reports snapshot cleanup without masking publication or primary failure (failure=%s)", async (fail) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "source.md", extension: "md" };
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode("source").buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode("source").buffer },
     };
     faults.remove = /docwen-assistant-snapshot-/u;
     const primary = new Error("source changed");
     const pending = new VaultReadSnapshot(app as never).run(
-      { path: "source.md", extension: "md" } as never, new AbortController().signal,
+      file as never, new AbortController().signal,
       async (snapshot) => {
         roots.push(path.dirname(snapshot.inputPath));
         if (fail) throw primary;

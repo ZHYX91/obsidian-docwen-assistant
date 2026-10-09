@@ -64,6 +64,8 @@ La exportación a Word genera un DOCX independiente dentro de la carpeta de resu
 
 ## Configuración
 
+Para conservar celdas combinadas de Structural Tables, leyendas y referencias de Number Suite, títulos H7–H9 o notas finales tipadas al exportar a Word, activa las **extensiones de entrada** correspondientes en **DocWen → Configuración → Sintaxis Markdown**, o el ajuste preestablecido de Obsidian. Están desactivadas al instalar. Para volver de Word a Markdown extendido, activa también las **extensiones de salida**. La numeración del Word se basa en las opciones de DocWen; revisa el resultado.
+
 Obsidian 1.12.7 o posterior usa cuatro pestañas superiores con desplazamiento horizontal: General, Exportar a Markdown, Exportar a Word y Corrección. La ayuda contextual aparece en la pestaña correspondiente, sin una página Uso separada. Las pestañas admiten flechas, incluida la dirección RTL, Inicio/Fin, texto de interfaz de 20 px y objetivos amplios para punteros gruesos. El idioma sigue a Obsidian de forma predeterminada y puede cambiarse a cualquiera de los 11 idiomas compatibles.
 
 ## Limitaciones

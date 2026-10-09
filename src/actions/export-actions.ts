@@ -180,7 +180,7 @@ export class ExportActions {
         outputDirectory,
         capabilityId: route.capabilityId,
         selectedCapability: route.capability,
-        publish: (root, commit) => snapshot.publish(() => destination.publish(root, commit)),
+        publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
       }, signal);
     });
     if (completed.value) {

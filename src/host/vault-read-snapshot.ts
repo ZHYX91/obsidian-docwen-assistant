@@ -34,7 +34,7 @@ export interface IsolatedSnapshot {
   readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
   readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
-  readonly publish: <T>(commit: () => Promise<T>) => Promise<T>;
+  readonly publish: <T>(commit: (assertIdentity: () => void) => Promise<T>) => Promise<T>;
 }
 
 export interface DeclaredMarkdownSnapshot {
@@ -68,7 +68,19 @@ export class VaultReadSnapshot {
     signal: AbortSignal,
     work: (snapshot: IsolatedSnapshot) => Promise<T>,
   ): Promise<Completed<T>> {
-    const targetLookup = locateOpenMarkdownTarget(this.app.workspace, file.path);
+    // Pin the path and Vault identity before any async source read. A rename,
+    // delete, or replacement must never approve publication under a new owner.
+    const originalPath = file.path;
+    const assertSourceIdentity = (): void => {
+      if (file.path !== originalPath) {
+        throw new VaultWriteError("vault_target_changed", "The source path changed during the DocWen operation.");
+      }
+      if (this.app.vault.getFileByPath(originalPath) !== file) {
+        throw new VaultWriteError("vault_target_changed", "The source file was deleted or replaced during the DocWen operation.");
+      }
+    };
+    assertSourceIdentity();
+    const targetLookup = locateOpenMarkdownTarget(this.app.workspace, originalPath);
     if (targetLookup.kind === "ambiguous") {
       throw new VaultWriteError(
         "vault_target_changed",
@@ -78,33 +90,40 @@ export class VaultReadSnapshot {
     const target = targetLookup.kind === "open" ? targetLookup.target : null;
     const editor = target?.editor ?? null;
     const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
+    assertSourceIdentity();
     const authoredMarkdown = ["md", "markdown"].includes(file.extension.toLowerCase())
       ? decodeMarkdown(original)
       : null;
     const contentSha256 = sha256(original);
     let published = false;
-    const assertCurrent = async (): Promise<void> => {
+    const assertPublicationIdentity = (): void => {
       throwIfAborted(signal);
+      assertSourceIdentity();
       if (editor) {
-        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, file.path, target)) {
+        if (target === null || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)) {
           throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
         }
         if (sha256(editor.getValue()) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
         }
       } else {
-        assertNoOpenMarkdownTarget(this.app, file.path);
+        assertNoOpenMarkdownTarget(this.app, originalPath);
+      }
+    };
+    const assertCurrent = async (): Promise<void> => {
+      assertPublicationIdentity();
+      if (!editor) {
         const current = await this.app.vault.readBinary(file);
-        assertNoOpenMarkdownTarget(this.app, file.path);
+        assertPublicationIdentity();
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
         }
       }
       throwIfAborted(signal);
     };
-    const publish = async <U>(commit: () => Promise<U>): Promise<U> => {
+    const publish = async <U>(commit: (assertIdentity: () => void) => Promise<U>): Promise<U> => {
       await assertCurrent();
-      const committed = await commit();
+      const committed = await commit(assertPublicationIdentity);
       published = true;
       return committed;
     };
@@ -117,10 +136,10 @@ export class VaultReadSnapshot {
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
-        kind: sourceKindForPath(file.path),
+        kind: sourceKindForPath(originalPath),
         role: "source",
-        logicalPath: logicalPathFor(file.path),
-        mediaType: mediaTypeForPath(file.path),
+        logicalPath: logicalPathFor(originalPath),
+        mediaType: mediaTypeForPath(originalPath),
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {

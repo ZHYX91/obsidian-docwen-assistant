@@ -28,7 +28,7 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
     const start = source.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: {
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null,
         getName: () => "Knowledge Base",
         readBinary: vi.fn(async (requested: unknown) => {
           if (requested === file) return new TextEncoder().encode(source).buffer;
@@ -78,7 +78,7 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
     const getFirstLinkpathDest = vi.fn();
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { getName: () => "Knowledge", readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, getName: () => "Knowledge", readBinary: async () => new TextEncoder().encode(source).buffer },
       metadataCache: {
         getFileCache: vi.fn(() => ({ embeds: [], links: [] })),
         getFirstLinkpathDest,
@@ -105,7 +105,7 @@ describe("VaultReadSnapshot WikiLink navigation bindings", () => {
     const source = token + "\n";
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { getName: () => "Knowledge", readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, getName: () => "Knowledge", readBinary: async () => new TextEncoder().encode(source).buffer },
       metadataCache: {
         getFileCache: vi.fn(() => ({
           embeds: [],

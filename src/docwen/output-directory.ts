@@ -4,12 +4,12 @@ import { constants as fsConstants } from "node:fs";
 import { copyFile, lstat, mkdir, mkdtemp, open, realpath, rm } from "node:fs/promises";
 import * as path from "node:path";
 import { LocalCliError } from "./errors";
-import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning } from "./operation-outcome";
+import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning, type PublicationCommit, type PublicationGuard } from "./operation-outcome";
 import type { ValidatedArtifactBundle } from "./machine-client";
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
 
-export type DirectoryPublication = <T>(outputRoot: string, commit: () => Promise<T>) => Promise<T>;
+export type DirectoryPublication = <T>(outputRoot: string, commit: PublicationCommit<T>) => Promise<T>;
 
 export interface OutputDirectorySnapshot {
   readonly path: string;
@@ -34,6 +34,51 @@ export async function captureOutputDirectory(directory: string, signal?: AbortSi
   };
   await snapshot.assertCurrent();
   return snapshot;
+}
+
+/** Probe owned empty entries on the selected filesystem, never a user result. */
+export async function preflightOutputDirectory(parent: OutputDirectorySnapshot, signal?: AbortSignal): Promise<void> {
+  assertDirectoryPublicationSupported();
+  await parent.assertCurrent();
+  let root: string | undefined;
+  let identity: Awaited<ReturnType<typeof directoryIdentity>> | undefined;
+  let failure: Error | undefined;
+  try {
+    throwIfAborted(signal);
+    root = await mkdtemp(path.join(parent.path, ".docwen-preflight-"));
+    identity = await directoryIdentity(root);
+    const source = path.join(root, "source");
+    const target = path.join(root, "target");
+    await mkdir(source);
+    await publishDirectoryNoReplace(source, target);
+    await mkdir(source);
+    try {
+      await publishDirectoryNoReplace(source, target);
+      throw new LocalCliError("cli_output_filesystem_unsupported", "The filesystem did not prevent replacement. Choose another output folder.");
+    } catch (error) {
+      if (!(error instanceof LocalCliError && error.code === "cli_commit_failed" && error.details.systemCode === "EEXIST")) throw error;
+    }
+    await parent.assertCurrent();
+    throwIfAborted(signal);
+  } catch (error) {
+    failure = error instanceof Error && ((error instanceof LocalCliError && error.code !== "cli_commit_failed") || signal?.aborted) ? error : new LocalCliError(
+      "cli_output_preflight_failed", "Cannot safely save to this folder. Check its permissions or choose another output folder.",
+      error instanceof LocalCliError ? error.details : {},
+    );
+  }
+  if (root) {
+    try {
+      const current = await directoryIdentity(root);
+      if (!identity || current.dev !== identity.dev || current.ino !== identity.ino) {
+        throw new LocalCliError("cli_integrity_error", "Output probe identity changed; the directory was preserved.");
+      }
+      await rm(root, { recursive: true, force: true });
+    } catch (error) {
+      if (failure) recordFailureWarning(failure, operationWarning("output_cleanup_failed", error));
+      else failure = new LocalCliError("cli_output_preflight_failed", "Output probe cleanup failed. Check the selected output folder.");
+    }
+  }
+  if (failure) throw failure;
 }
 
 async function directoryIdentity(directory: string) {
@@ -111,7 +156,7 @@ export async function atomicCommitDirectory(
       await verifyArtifactIdentity(artifact, file, false, signal);
       return { file, identity: await lstat(file, { bigint: true }) };
     }));
-    const commit = async () => {
+    const commit = async (beforePublish?: PublicationGuard) => {
       if (committed) throw new LocalCliError("cli_commit_failed", "The conversion was already published.");
       await parent.assertCurrent();
       const currentTemporary = await directoryIdentity(temporary);
@@ -135,6 +180,7 @@ export async function atomicCommitDirectory(
         await parent.assertCurrent();
         await requireAbsent(finalRoot);
         throwIfAborted(signal);
+        beforePublish?.();
         await publishDirectoryNoReplace(temporary, finalRoot);
         committed = true;
       } finally {

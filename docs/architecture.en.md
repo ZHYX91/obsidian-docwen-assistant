@@ -44,7 +44,7 @@ Source-native Markdown-to-DOCX contains one preferred DOCX and one primary entry
 
 ## Vault writes
 
-Export captures the chosen parent directory identity before conversion. Publication rechecks the parent, source snapshot and prepared bytes, rejects an existing result root or an editor open inside that root, and checks cancellation before the atomic no-replace rename. The final collision check is only an early diagnostic; safety does not depend on there being no external writer between that check and publication. Unrelated files and editors in the chosen parent do not block export.
+Export captures the chosen parent directory identity before conversion and probes atomic publication and collision refusal using private empty directories on that filesystem. A failed probe stops the task before Machine conversion and asks the user to choose another output folder or check permissions. The probe is not cached and does not replace commit checks. Publication rechecks the parent, source snapshot and prepared bytes, rejects an existing result root or an editor open inside that root, and checks cancellation before the atomic no-replace rename. The final collision check is only an early diagnostic; safety does not depend on there being no external writer between that check and publication. Unrelated files and editors in the chosen parent do not block export.
 
 Proofreading only reads a report. Numbering is generated in an isolated file, and `VaultWriteTransaction` compares the original snapshot with the uniquely path-matched Markdown leaf, view, and editor state. It commits once through the Editor or Vault API only when all still match. A second matching view, an open/closed transition, plugin unload, view closure, or a conflict cancels or refuses the write.
 

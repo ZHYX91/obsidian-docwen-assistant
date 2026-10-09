@@ -27,7 +27,7 @@ describe("VaultReadSnapshot", () => {
     ].join("\n");
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
       get plugins(): never { throw new Error("Source export must not consult editing plugins"); },
     };
     await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
@@ -51,7 +51,7 @@ describe("VaultReadSnapshot", () => {
       const file = { path: filePath, extension };
       const app = {
         workspace: { getLeavesOfType: () => [] },
-        vault: { readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
+        vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
       };
 
       await new VaultReadSnapshot(app as never).run(
@@ -82,7 +82,7 @@ describe("VaultReadSnapshot", () => {
       const file = { path: filePath, extension };
       const app = {
         workspace: { getLeavesOfType: () => [] },
-        vault: { readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
+        vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => Uint8Array.from([1, 2, 3]).buffer },
       };
       const service = new DocWenCapabilityService({} as never);
       const route = {
@@ -108,7 +108,7 @@ describe("VaultReadSnapshot", () => {
     const file = { path: "long.md", extension: "md" };
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
       get metadataCache(): never { throw new Error("Raw operations must not read metadata"); },
       get plugins(): never { throw new Error("Raw operations must not load interop plugins"); },
     };
@@ -128,7 +128,7 @@ describe("VaultReadSnapshot", () => {
     const tokenStart = source.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: {
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null,
         readBinary: vi.fn(async (target: unknown) =>
           target === file
             ? Uint8Array.from(sourceBytes).buffer
@@ -175,7 +175,7 @@ describe("VaultReadSnapshot", () => {
     const metadataCache = { getFileCache: vi.fn(() => ({})) };
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode("# Title\n").buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode("# Title\n").buffer },
       metadataCache,
     };
     await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
@@ -200,7 +200,7 @@ describe("VaultReadSnapshot", () => {
     const source = "# 标题\n\n当前正文。\n";
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
     };
     await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
       const resolvedInputs = await snapshot.getResolvedMarkdownInputs();
@@ -219,7 +219,7 @@ describe("VaultReadSnapshot", () => {
     const leaf = { view: { file, editor } };
     const app = {
       workspace: { getLeavesOfType: () => [leaf] },
-      vault: { readBinary: vi.fn() },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn() },
     };
     const publishResult = vi.fn(async () => "visible");
     await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal,
@@ -236,6 +236,97 @@ describe("VaultReadSnapshot", () => {
       }))).resolves.toEqual({ value: "published", warnings: [] });
   });
 
+  it.each([
+    ["renamed", (file: { path: string }, identity: { current: object | null }) => { file.path = "renamed.md"; }],
+    ["deleted", (_file: { path: string }, identity: { current: object | null }) => { identity.current = null; }],
+    ["replaced", (_file: { path: string }, identity: { current: object | null }) => {
+      identity.current = { path: "note.md", extension: "md" };
+    }],
+  ])("rejects a %s closed-source identity before publishing any result", async (_case, mutate) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const identity: { current: object | null } = { current: file };
+    const contents = "# Unchanged source\\n";
+    const publishResult = vi.fn(async () => "must not publish");
+    const vault = {
+      getFileByPath: vi.fn(() => identity.current),
+      readBinary: vi.fn(async () => new TextEncoder().encode(contents).buffer),
+    };
+    const app = { vault, workspace: { getLeavesOfType: () => [] } };
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, async (snapshot) => {
+        mutate(file, identity);
+        return snapshot.publish(publishResult);
+      },
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publishResult).not.toHaveBeenCalled();
+  });
+
+  it("rejects a rename that happens during the initial asynchronous source read", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async () => {
+          file.path = "renamed.md";
+          return new TextEncoder().encode("# Same contents\\n").buffer;
+        },
+      },
+    };
+    const work = vi.fn();
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, work,
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(work).not.toHaveBeenCalled();
+  });
+
+  it.each(["renamed", "deleted", "replaced"])("rejects a source %s during the final asynchronous read", async (change) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    let current: object | null = file;
+    let reads = 0;
+    const publish = vi.fn();
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: () => current,
+        readBinary: async () => {
+          if (++reads === 2) {
+            await Promise.resolve();
+            if (change === "renamed") file.path = "renamed.md";
+            else current = change === "deleted" ? null : { path: "note.md", extension: "md" };
+          }
+          return new TextEncoder().encode("# Same contents\n").buffer;
+        },
+      },
+    };
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, snapshot => snapshot.publish(publish),
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publish).not.toHaveBeenCalled();
+    expect(reads).toBe(2);
+  });
+
+  it("rejects a renamed source that is still open in the original editor", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const editor = { getValue: () => "# Unchanged\\n" };
+    const app = {
+      workspace: { getLeavesOfType: () => [{ view: { file, editor } }] },
+      vault: { getFileByPath: (path: string) => path === file.path ? file : null },
+    };
+    const publish = vi.fn();
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, async snapshot => {
+        file.path = "renamed.md";
+        return snapshot.publish(publish);
+      },
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publish).not.toHaveBeenCalled();
+  });
+
   it("copies an unsaved editor buffer from a background Markdown split", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
@@ -244,7 +335,7 @@ describe("VaultReadSnapshot", () => {
     const leaf = { view };
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => [leaf]) },
-      vault: { readBinary: vi.fn() },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn() },
     };
 
     const content = await new VaultReadSnapshot(app as never).run(
@@ -265,7 +356,7 @@ describe("VaultReadSnapshot", () => {
     });
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => [createLeaf(), createLeaf()]) },
-      vault: { readBinary: vi.fn() },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn() },
     };
 
     await expect(new VaultReadSnapshot(app as never).run(
@@ -286,7 +377,7 @@ describe("VaultReadSnapshot", () => {
       .mockResolvedValueOnce(changed);
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary },
     };
 
     const pending = new VaultReadSnapshot(app as never).run(
@@ -320,7 +411,7 @@ describe("VaultReadSnapshot", () => {
     });
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary },
       metadataCache: {
         getFileCache: vi.fn(() => ({
           embeds: [
@@ -389,7 +480,7 @@ describe("VaultReadSnapshot", () => {
     const headingStart = source.indexOf(headingLine);
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
       metadataCache: {
         getFileCache: vi.fn(() => ({
           headings: [{
@@ -523,7 +614,7 @@ describe("VaultReadSnapshot", () => {
     const exportSemanticSnapshot = vi.fn(() => semanticSnapshot);
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
       plugins: {
         getPlugin: vi.fn(() => ({
           getInteropApi: () => ({
@@ -619,7 +710,7 @@ describe("VaultReadSnapshot", () => {
     };
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
       plugins: {
         getPlugin: vi.fn(() => ({
           getInteropApi: () => ({
@@ -710,7 +801,7 @@ describe("VaultReadSnapshot", () => {
     };
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
       plugins: {
         getPlugin: vi.fn(() => ({
           getInteropApi: () => ({
@@ -762,7 +853,7 @@ describe("VaultReadSnapshot", () => {
     ].join("\n");
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
       metadataCache: {
         getFileCache: vi.fn(() => ({
           headings: [{
@@ -1377,7 +1468,7 @@ async function captureNumberSuiteProjection(
   const file = Object.assign(new TFile(), { path: "notes/interop.md", extension: "md" });
   const app = {
     workspace: { getLeavesOfType: vi.fn(() => []) },
-    vault: { readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
+    vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: vi.fn(async () => new TextEncoder().encode(source).buffer) },
     plugins: {
       getPlugin: vi.fn(() => ({
         getInteropApi: () => ({

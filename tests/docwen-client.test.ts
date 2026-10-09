@@ -200,9 +200,10 @@ describe("DocWenClient Machine semantics", () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const root = await temporaryRoot();
     const original = Buffer.from("snapshot bytes");
+    const file = { path: `inputs/source.${extension}`, extension };
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => Uint8Array.from(original).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => Uint8Array.from(original).buffer },
     };
     const capability: MachineCapability = {
       ...conversionCapability(), capability_id: "convert.resource.to_markdown",
@@ -210,7 +211,7 @@ describe("DocWenClient Machine semantics", () => {
       output_media_types: ["text/markdown"], options_schema: { type: "object", properties: {}, additionalProperties: false },
     };
     await new VaultReadSnapshot(app as never).run(
-      { path: `inputs/source.${extension}`, extension } as never,
+      file as never,
       new AbortController().signal,
       async (snapshot) => {
         const query = vi.fn(async () => ({
