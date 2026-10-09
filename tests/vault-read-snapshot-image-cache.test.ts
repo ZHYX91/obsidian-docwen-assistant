@@ -12,7 +12,7 @@ describe("VaultReadSnapshot image cache coverage", () => {
       const getFirstLinkpathDest = vi.fn();
       const app = {
         workspace: { getLeavesOfType: () => [] },
-        vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+        vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
         metadataCache: {
           getFileCache: vi.fn(() => ({ embeds: [] })),
           getFirstLinkpathDest,
@@ -41,16 +41,17 @@ describe("VaultReadSnapshot image cache coverage", () => {
   ])("rejects uncovered Markdown image destinations: %s", async (image) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const source = "# Current\n\n" + image + "\n";
+    const file = { path: "notes/current.md", extension: "md" };
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
       metadataCache: {
         getFileCache: vi.fn(() => ({ embeds: [] })),
         getFirstLinkpathDest: vi.fn(),
       },
     };
     await expect(new VaultReadSnapshot(app as never).run(
-      { path: "notes/current.md", extension: "md" } as never,
+      file as never,
       new AbortController().signal,
       async (snapshot) => snapshot.getDeclaredMarkdownInputs(),
     )).rejects.toMatchObject({ code: "vault_input_invalid" });
@@ -62,7 +63,7 @@ describe("VaultReadSnapshot image cache coverage", () => {
     const source = "# Current\n\n![[Other Note]]\n";
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { readBinary: async () => new TextEncoder().encode(source).buffer },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary: async () => new TextEncoder().encode(source).buffer },
       metadataCache: {
         getFileCache: vi.fn(() => ({ embeds: [] })),
         getFirstLinkpathDest: vi.fn(),

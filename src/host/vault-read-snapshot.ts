@@ -75,10 +75,7 @@ export class VaultReadSnapshot {
       if (file.path !== originalPath) {
         throw new VaultWriteError("vault_target_changed", "The source path changed during the DocWen operation.");
       }
-      // getFileByPath is guaranteed by Obsidian's Vault API. Minimal host
-      // doubles without that method are still used by source-only tests.
-      if (typeof this.app.vault.getFileByPath === "function"
-        && this.app.vault.getFileByPath(originalPath) !== file) {
+      if (this.app.vault.getFileByPath(originalPath) !== file) {
         throw new VaultWriteError("vault_target_changed", "The source file was deleted or replaced during the DocWen operation.");
       }
     };
