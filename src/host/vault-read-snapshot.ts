@@ -77,8 +77,8 @@ export class VaultReadSnapshot {
       }
       // getFileByPath is guaranteed by Obsidian's Vault API. Minimal host
       // doubles without that method are still used by source-only tests.
-      const resolveFile = this.app.vault.getFileByPath;
-      if (typeof resolveFile === "function" && resolveFile.call(this.app.vault, originalPath) !== file) {
+      if (typeof this.app.vault.getFileByPath === "function"
+        && this.app.vault.getFileByPath(originalPath) !== file) {
         throw new VaultWriteError("vault_target_changed", "The source file was deleted or replaced during the DocWen operation.");
       }
     };
