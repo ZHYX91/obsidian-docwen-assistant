@@ -31,7 +31,7 @@ describe("plugin language", () => {
   });
 
   it("lets plugin locale rules fall back for an unsupported host language", () => {
-    getLanguage.mockReturnValue("ar");
+    getLanguage.mockReturnValue("he");
 
     initializePluginI18n("auto");
 
@@ -46,8 +46,18 @@ describe("plugin language", () => {
     ["en-GB", "en_US"],
     ["pt-PT", "pt_BR"],
     ["ja", "ja_JP"],
+    ["ar-SA", "ar_SA"],
   ])("maps Obsidian language %s to DocWen locale %s", (host, expected) => {
     expect(getDocWenLanguage(resolveObsidianLanguage(host))).toBe(expected);
+  });
+
+  it("uses Arabic from Obsidian and its separate explicit locale", () => {
+    getLanguage.mockReturnValue("ar");
+    initializePluginI18n("auto");
+    expect(t("settingsLanguage")).toBe("لغة الواجهة");
+    expect(getDocWenLanguage("ar")).toBe("ar_SA");
+    expect(getDocWenLanguage("auto")).toBe("ar_SA");
+    expect(getLanguage).toHaveBeenCalled();
   });
 
   it("uses the same Obsidian language for CLI calls", () => {
@@ -58,7 +68,7 @@ describe("plugin language", () => {
   });
 
   it("falls back to English for an unsupported Obsidian language", () => {
-    expect(resolveObsidianLanguage("ar")).toBe("en");
+    expect(resolveObsidianLanguage("he")).toBe("en");
   });
 
   it("lets an explicit plugin language override Obsidian", () => {

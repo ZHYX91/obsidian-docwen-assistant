@@ -30,6 +30,7 @@ describe("settings model", () => {
   it("defaults to following Obsidian and keeps only supported explicit languages", () => {
     expect(normalizeSettings({}).language).toBe("auto");
     expect(normalizeSettings({ language: "pt-BR" }).language).toBe("pt-BR");
+    expect(normalizeSettings({ language: "ar" }).language).toBe("ar");
     expect(normalizeSettings({ language: "pt" }).language).toBe("auto");
   });
 

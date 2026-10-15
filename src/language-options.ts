@@ -17,6 +17,7 @@ export const LANGUAGE_AUTONYMS: ReadonlyArray<{
   { value: "ko", label: "한국어" },
   { value: "es", label: "Español" },
   { value: "vi", label: "Tiếng Việt" },
+  { value: "ar", label: "العربية" },
 ];
 
 export function languageDropdownOptions(autoLabel: string): Record<PluginLanguage, string> {

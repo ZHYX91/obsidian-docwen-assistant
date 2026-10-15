@@ -17,6 +17,7 @@ const CLI_LOCALES: Readonly<Record<ResolvedPluginLocale, string>> = {
   ko: "ko_KR",
   es: "es_ES",
   vi: "vi_VN",
+  ar: "ar_SA",
 };
 
 /**
@@ -77,6 +78,7 @@ export function resolveObsidianLanguage(locale: string): ResolvedPluginLocale {
     pt: "pt-BR",
     ru: "ru",
     vi: "vi",
+    ar: "ar",
   };
 
   return supportedLocales[languageBase] ?? "en";
