@@ -1,0 +1,112 @@
+# DocWen Assistant
+
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+
+أضف قدرات DocWen إلى Obsidian دون الخروج من ملاحظاتك. يمكنك تحويل الملفات إلى Word أو Excel أو Markdown، وتدقيق النص، وإضافة أرقام للعناوين. تُنفّذ العمليات محليًا عبر برنامج [DocWen](https://github.com/ZHYX91/docwen).
+
+> **يجب تثبيت DocWen أولًا.** استخدم الإصدار 0.17.0 أو أحدث المتوافق مع الإضافة. على Windows يمكنك تثبيته من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو تنزيل الحزمة المناسبة من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases) وفك ضغطها بالكامل.
+
+## لقطات الشاشة
+
+### الشريط الجانبي للتدقيق
+
+اعرض المشكلات بحسب السطر أو نوعها، ثم انتقل إلى موضعها في الملاحظة. لا يغيّر التدقيق النص.
+
+![الشريط الجانبي للتدقيق](../assets/docwen-assistant-proofread-en.png)
+
+### إعدادات DocWen والاتصال
+
+تأكد من اتصال الإضافة ببرنامج DocWen واضبط التحويل والتدقيق من صفحات الإعدادات الأربع.
+
+![إعدادات DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+
+### تصدير الملفات
+
+اختر الصيغة ومجلد الحفظ قبل التصدير. تظل الملاحظة الأصلية كما هي.
+
+![نافذة تصدير الملفات](../assets/docwen-assistant-export-en.png)
+
+## الميزات
+
+- فتح DocWen من Obsidian، مع الملف الحالي عند الحاجة.
+- تصدير الملاحظات إلى Word أو Excel أو Markdown، مع اختيار مجلد الناتج.
+- إضافة ترقيم عناوين Markdown أو إزالته.
+- تدقيق Markdown داخل شريط جانبي دون تغيير النص.
+- فحص الاتصال ببرنامج DocWen واستخدام الأوامر من قائمة الملفات أو لوحة الأوامر.
+- واجهة مترجمة إلى 12 لغة، بينها العربية.
+
+## المتطلبات والتوافق
+
+- إصدار Obsidian لسطح المكتب 1.12.7 أو أحدث على Windows أو Linux. لا يدعم إصدار الهاتف.
+- برنامج DocWen متوافق، الإصدار 0.17.0 أو أحدث. البرنامج منفصل عن الإضافة ولا تُنزّله الإضافة تلقائيًا.
+- يحتاج التصدير والتدقيق والترقيم إلى `docwen.machine.v2` و`docwen.artifact_bundle.v3`. تظهر رسالة واضحة إذا كان إصدار البرنامج غير متوافق.
+- على Linux يلزم اختيار التثبيت يدويًا. يتطلب التصدير إلى مجلد نتائج على Linux معمارية x64 ونظام ملفات يدعم الحفظ الآمن دون استبدال ملفات الآخرين.
+
+يكتشف Windows تثبيت Microsoft Store من اختصار التشغيل المسجّل `docwen.exe`. يمكن اختيار المجلد بعد فك ضغطه أو الملف التنفيذي يدويًا على النظامين.
+
+## التثبيت
+
+### تثبيت DocWen والإضافة
+
+1. ثبّت DocWen من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) على Windows، أو نزّل الحزمة الملائمة من [صفحة الإصدارات](https://github.com/ZHYX91/docwen/releases) وفك ضغطها بالكامل.
+2. ثبّت DocWen Assistant من إضافات Obsidian المجتمعية. ويمكن تثبيتها يدويًا بنسخ `main.js` و`manifest.json` و`styles.css` إلى المجلد `<Vault>/.obsidian/plugins/docwen-assistant/`.
+3. أعد تحميل الإضافات وفعّل DocWen Assistant.
+4. على Linux أو مع نسخة محمولة من Windows، افتح **الإعدادات ← DocWen Assistant ← عام**، واختر التثبيت اليدوي وحدد مجلد DocWen أو الملف التنفيذي.
+
+### التثبيت دون فقد الإعدادات
+
+عند التحديث، استبدل ملفات التشغيل الثلاثة فقط: `main.js` و`manifest.json` و`styles.css`. لا تحذف `data.json` لأنه يحفظ إعداداتك. معرّف الإضافة ثابت: `docwen-assistant`.
+
+## الاستخدام
+
+افتح لوحة الأوامر في Obsidian وابحث عن DocWen، أو استخدم أيقونة الإضافة أو قائمة الزر الأيمن على الملف. تتوفر أوامر الفتح والتصدير والتدقيق والترقيم وفحص الاتصال.
+
+عند التصدير، اختر مجلد النتائج أولًا. تُحفظ الملفات الناتجة ومواردها في مجلد مستقل؛ لا تُستبدل ملفاتك الأصلية أو مجلد نتائج موجود. تدعم الإضافة تصدير Word إلى DOCX، لكن التحويل بين الصيغ قد يغيّر بعض التنسيق أو المسافات.
+
+إذا كانت الملاحظة تستخدم جداول Structural Tables المدمجة أو تسميات Number Suite أو مراجعها أو عناوين H7–H9، فعّل امتدادات الإدخال المناسبة في إعدادات صيغة Markdown داخل DocWen. هذه الامتدادات معطّلة افتراضيًا.
+
+## الإعدادات
+
+- **عام:** لغة الواجهة، وطريقة الاتصال، وموقع DocWen. اختر «اتباع Obsidian» أو إحدى اللغات الاثنتي عشرة.
+- **تصدير إلى Markdown:** الصور والتعرف على النص وخيارات النتائج.
+- **تصدير إلى Word:** القوالب، ودمج العناوين، والترقيم.
+- **التدقيق:** القواعد التي تريد فحصها، بصورة مستقلة.
+
+تظهر الواجهة العربية من اليمين إلى اليسار. لا تغيّر إعدادات الإضافة تفضيلات DocWen المحفوظة.
+
+## القيود
+
+- تحتاج الإضافة إلى DocWen على الجهاز نفسه؛ لا تدعم Obsidian على الهاتف.
+- الكشف التلقائي عن DocWen متاح على Windows فقط. على Linux وعلى Windows المحمول اختر المجلد أو الملف التنفيذي يدويًا.
+- التصدير يحتاج إلى مجلد ناتج تختاره بنفسك، والتدقيق لا يعدّل الملاحظة.
+- قد تُرفض العملية إذا تغيّر الملف أثناء التنفيذ أو تعذّر التأكد من سلامة النتيجة.
+
+## الخصوصية والأمان
+
+تظل الملاحظات محليًا: لا ترفع الإضافة ملفاتك إلى خدمة تحويل. تستخدم نص المحرر الحالي، بما فيه التغييرات غير المحفوظة، أو الملف المحفوظ حسب العملية. الصور التي تشير إليها الملاحظة صراحةً فقط يمكن تمريرها إلى DocWen؛ لا تفحص الإضافة بقية Vault بحثًا عن ملفات مشابهة.
+
+تُراجع النتائج قبل حفظها، وتُرفض الكتابة إذا تغيّر المصدر أو الوجهة بشكل يجعلها غير آمنة. يستخدم الاتصال بروتوكول JSON-RPC المحلي، ولا يُعدّل الترقيم النص الأصلي إلا بعد التحقق من عدم تغيّره. تفاصيل الاتصال للمطورين في [وثيقة التكامل](../cli-integration.md).
+
+## التطوير
+
+استخدم Node.js 24.19.0 وnpm 11.17.0، ثم نفّذ:
+
+```bash
+npm ci
+npm run check
+npm run release
+```
+
+المصدر في `src/` والاختبارات في `tests/`. للمزيد: [المتطلبات](../product-requirements.en.md)، [مواصفات الواجهة](../ux-spec.en.md)، [البنية](../architecture.en.md)، [الاختبارات](../testing-strategy.en.md)، و[دليل مبسّط بالصينية](README.zh-CN.md).
+
+يمكنك أيضًا مراجعة [سجل التغييرات](../../CHANGELOG.md) و[دليل المساهمة](../../CONTRIBUTING.md) و[سياسة الأمان](../../SECURITY.md).
+
+## الدعم
+
+للاستفسارات استخدم [المناقشات](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions). وللأعطال أو المقترحات، افتح [بلاغًا](https://github.com/ZHYX91/obsidian-docwen-assistant/issues/new/choose). إذا كانت المشكلة في التحويل خارج Obsidian فاستخدم [مشكلات DocWen](https://github.com/ZHYX91/docwen/issues). وأبلغ عن الثغرات بشكل خاص عبر [سياسة الأمان](https://github.com/ZHYX91/obsidian-docwen-assistant/security/policy).
+
+احذف المسارات والمحتوى الخاص وبيانات الاعتماد من أي بلاغ عام.
+
+## الترخيص
+
+MIT © ZhengYX

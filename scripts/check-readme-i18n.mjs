@@ -87,6 +87,12 @@ const config = {
       sections: ["Ảnh chụp màn hình", "Tính năng", "Yêu cầu và khả năng tương thích", "Cài đặt", "Cách sử dụng", "Cài đặt plugin", "Giới hạn", "Quyền riêng tư và bảo mật", "Phát triển", "Hỗ trợ", "Giấy phép"],
       subsections: ["Thanh bên soát lỗi", "Cài đặt bằng thẻ trên cùng và khả năng CLI", "Xuất theo khả năng", "Cài DocWen và plugin", "An toàn khi cài đặt"],
     },
+    {
+      label: "العربية",
+      path: "docs/i18n/README.ar.md",
+      sections: ["لقطات الشاشة", "الميزات", "المتطلبات والتوافق", "التثبيت", "الاستخدام", "الإعدادات", "القيود", "الخصوصية والأمان", "التطوير", "الدعم", "الترخيص"],
+      subsections: ["الشريط الجانبي للتدقيق", "إعدادات DocWen والاتصال", "تصدير الملفات", "تثبيت DocWen والإضافة", "التثبيت دون فقد الإعدادات"],
+    },
   ],
   packagedReadmeDir: null,
   requiredTokens: [

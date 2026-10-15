@@ -1,30 +1,30 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
 
-DocWen Assistant connects Obsidian to the local [DocWen](https://github.com/ZHYX91/docwen) desktop application for conversion, proofreading, numbering, and file opening.
+Use DocWen without leaving Obsidian. Export notes to Word or Excel, convert documents to Markdown, check text for problems, and number headings. The work is done by [DocWen](https://github.com/ZHYX91/docwen) installed on your computer; this plugin is the connection between the two.
 
 > **DocWen is required.** Install a compatible DocWen 0.17.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 ## Screenshots
 
-These screenshots show the packaged plugin running in desktop Obsidian with local DocWen.
+These are the main places you will use the plugin in desktop Obsidian.
 
 ### Proofreading sidebar
 
-Review issues by line or rule and jump back to the matching source range without rewriting the note.
+Read the issues found during proofreading and jump to the relevant line in your note. Proofreading never edits the note.
 
 ![DocWen proofreading sidebar](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-proofread-en.png)
 
 ### Top-tab settings and DocWen connection
 
-Use the four top tabs and their contextual help cards to connect automatically to the Microsoft Store installation, configure a portable installation when needed, and tune conversion and proofreading.
+Check the connection to DocWen and set up export or proofreading in the four settings tabs.
 
 ![DocWen Assistant top-tab settings](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-settings-en.png)
 
 ### Capability-selected export
 
-Choose an available conversion route and an explicit output location while keeping the source note unchanged.
+Choose the output format and where to save it. Your original note stays untouched.
 
 ![DocWen Assistant capability-selected export](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-export-en.png)
 
@@ -36,18 +36,18 @@ Choose an available conversion route and an explicit output location while keepi
 - Proofread Markdown in an Obsidian sidebar.
 - Check the local DocWen connection.
 - Use file-explorer context menu actions.
-- Use localized UI in 11 languages.
+- Choose from 12 interface languages, including Arabic.
 
 ## Requirements and compatibility
 
-- Windows or Linux and Obsidian 1.12.7 or later. The plugin is desktop-only.
+- Obsidian Desktop 1.12.7 or later on Windows or Linux. Mobile Obsidian is not supported.
 - On Windows, use a compatible DocWen 0.17.0 or later installation from Microsoft Store or a fully extracted portable package. On Linux, use a compatible fully extracted package and select it manually. Linux result-directory export requires x64 and an atomic no-replace filesystem. The plugin does not download DocWen automatically.
-- Background conversion, proofreading, numbering, discovery, and connection checks require `docwen.machine.v2` and `docwen.artifact_bundle.v3`; incompatible DocWen versions fail validation instead of using a fallback protocol.
+- Export, proofreading, and numbering require DocWen's Machine Protocol v2 and Artifact Bundle v3. If your DocWen version is incompatible, the plugin explains what needs updating rather than attempting an older protocol.
 - Launching/opening the DocWen desktop app uses the public local `gui open` CLI control surface, so a Machine negotiation failure does not prevent opening DocWen itself.
 
 If the Windows Store installation does not meet these requirements, use a compatible portable package and select it with Manual installation. Linux always uses Manual installation.
 
-Automatic detection is Windows-only and uses the registered `docwen.exe` application execution alias, so Microsoft Store updates do not invalidate a saved package path. Manual installation accepts the extracted DocWen folder, `DocWen.exe`, or `DocWenCLI.exe` on Windows and the extracted folder, `DocWen`, or `DocWenCLI` on Linux. The plugin never scans `WindowsApps`, recursively searches for executables, exchanges command files, downloads software, or falls back to an older protocol.
+On Windows, the plugin can detect the Microsoft Store installation using the registered `docwen.exe` app alias. For a portable Windows installation or Linux, select the extracted DocWen folder or executable manually. Windows accepts `DocWen.exe` or `DocWenCLI.exe`; Linux accepts `DocWen` or `DocWenCLI`. The plugin does not search your disk for programs or download DocWen for you.
 
 ## Installation
 
@@ -77,7 +77,7 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 
 Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
 
-Word export produces an independent DOCX inside its result folder. Keep the original Markdown yourself. Reverse conversion reads DOCX content and structures without an original-source companion. Optional Markdown extensions are selected in DocWen settings; identical spelling and whitespace are not guaranteed.
+Word export saves a separate DOCX inside the result folder; it does not replace your Markdown note. You can convert a DOCX back to Markdown without keeping its original source. Some formatting or whitespace can change during conversion, especially when optional Markdown syntax is involved.
 
 Word export interprets the public Number Suite caption/reference dialect directly from the Markdown source. Installing Number Suite is optional and does not change export semantics; heading/caption numbering for this export is controlled by the explicit Word-export numbering settings.
 
@@ -86,7 +86,7 @@ Word export interprets the public Number Suite caption/reference dialect directl
 To keep merged Structural Tables, Number Suite captions and cross-references, H7–H9 headings, or typed endnotes when exporting Word, open **DocWen → Settings → Markdown syntax** and enable the matching **input** extensions (or the **Use Obsidian extensions** input preset). Optional extensions are off in a new DocWen installation. Converting Word back into extended Markdown also requires the relevant **output** extensions. DocWen's Word-export numbering options—not Number Suite's display-only numbers—control the exported document; review the resulting table and reference formatting.
 
 - Obsidian 1.12.7 or later uses four horizontally scrollable top tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Contextual help appears on the relevant tab instead of a separate Usage page.
-- Plugin language defaults to **Follow Obsidian** and can be overridden with any of DocWen Assistant's 11 languages. Resource discovery receives the same resolved locale.
+- Plugin language defaults to **Follow Obsidian**. You can choose one of 12 languages manually, including Arabic. Arabic settings use right-to-left layout. Resource discovery receives the same resolved locale.
 - **Connection method** defaults to **Detect automatically** for Windows Microsoft Store installs. Linux users must choose **Manual installation**; the same manual picker also supports portable Windows packages. The status row checks the product identity, minimum supported version, Machine protocol, Bundle contract, and health without exposing package paths; protocol conflicts show the Assistant request and DocWen-supported versions separately.
 - Tabs support arrow keys (including RTL direction), Home/End, visible keyboard focus, 20 px UI text, and coarse-pointer targets. Runtime numbering schemes are queried only when their tab is rendered.
 
@@ -99,7 +99,11 @@ To keep merged Structural Tables, Number Suite captions and cross-references, H7
 
 ## Privacy and security
 
-The plugin takes a snapshot of the current Obsidian editor buffer (including unsaved text) or Vault file and gives DocWen only isolated temporary inputs. It intentionally accesses files outside the Vault only to start the registered DocWen execution alias or the manually selected portable executable, manage isolated temporary inputs and validated artifacts, and write to an output path explicitly chosen by the user; this access is required for local conversion and export. It never opens or stores the versioned Microsoft Store package path. For Markdown-to-DOCX, Obsidian resolves image embeds explicitly present in that note, including cross-folder short Wiki links and filenames with spaces; the plugin authenticates those bytes and supplies them as declared linked-resource inputs beside the isolated Markdown source. It never scans the Vault for matching filenames. Conversion publishes the complete validated result folder inside the selected directory. It preserves the producer's relative paths and identifies the main output separately from its linked resources. Proofreading is read-only. Numbering is produced in an isolated output, then committed once through the current Obsidian editor or Vault API only if the source snapshot still matches. The plugin does not upload documents or enumerate the Vault for DocWen operations.
+**Your documents stay on your computer.** The plugin does not upload them to a conversion service. Proofreading reads the note without changing it. Export saves files only to a folder you choose.
+
+For an operation, the plugin uses the current Obsidian text (including unsaved changes), or the saved Vault file, in an isolated temporary workspace. It can read images explicitly linked from the note, even when their paths contain spaces or point to another Vault folder. It does **not** search the entire Vault for matching files or send unrelated notes to DocWen.
+
+When you add or remove heading numbers, the plugin writes changes back only if the note has not changed since the operation began. It checks conversion results before saving them and never overwrites new destination data silently. Outside the Vault, it accesses only the chosen DocWen executable, temporary files, and the destination folder you approve. The Microsoft Store package's private installation path is not stored.
 
 Content operations use JSON-RPC 2.0 Machine Protocol with canonical `Content-Length` framing. Every task uses integrity-pinned input handles and a request-owned staging directory; every returned Artifact Bundle is graph-, path-, size-, and SHA-256-validated before the plugin commits outputs atomically. Launch/open is intentionally separate: the plugin runs the fixed local `gui open --json` control command and validates its bounded CLI protocol-3 success envelope without negotiating Machine first. Both process paths use fixed launch targets, bounded environments, timeouts, output limits, and cleanup.
 
