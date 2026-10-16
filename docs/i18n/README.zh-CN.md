@@ -2,29 +2,29 @@
 
 [English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
 
-DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91/docwen)，提供转换、校对、标题编号和文件打开能力。需要 Windows 或 Linux、Obsidian 1.12.7 或更高版本，以及 DocWen 0.17.0 或更高稳定版本。
+在 Obsidian 里就能用 DocWen 转换文件、校对 Markdown、给标题编号，不用每次切到另一个程序。实际处理由你电脑上安装的 [DocWen](https://github.com/ZHYX91/docwen) 完成；插件负责把 Obsidian 和它连接起来。
 
 > **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
 ## 截图
 
-以下截图展示了打包后的插件与本机 DocWen 在桌面版 Obsidian 中运行的界面。
+以下是日常最常用的三个界面。
 
 ### 校对侧边栏
 
-按行或规则检查问题，并跳转到对应源码范围，不改写笔记。
+查看校对发现的问题，并跳回笔记中的对应位置。校对不会修改原文。
 
 ![DocWen 校对侧边栏](../assets/docwen-assistant-proofread-en.png)
 
 ### 顶部页签设置与 DocWen 连接
 
-通过四个顶部页签及其中的说明卡片自动连接 Microsoft Store 安装版、按需配置便携版，并调整转换与校对。
+在四个设置页签里检查 DocWen 连接、选择导出方式和校对规则。
 
 ![DocWen Assistant 顶部页签设置](../assets/docwen-assistant-settings-en.png)
 
 ### 按能力选择导出
 
-选择当前可用的转换路径和明确的输出位置，同时保持源笔记不变。
+选择文件要导出的格式和保存位置。原始笔记不会被转换结果覆盖。
 
 ![DocWen Assistant 按能力选择导出](../assets/docwen-assistant-export-en.png)
 
@@ -38,14 +38,14 @@ DocWen Assistant 将 Obsidian 连接到本机 [DocWen](https://github.com/ZHYX91
 
 ## 使用要求与兼容性
 
-- 需要 Windows 或 Linux 和 Obsidian 1.12.7 或更高版本，插件仅支持桌面端；
-- Windows 可使用 Microsoft Store 安装版或完整解压的便携版 DocWen 0.17.0 或更高版本；Linux 使用手动选择的完整解压包。Linux 结果目录导出要求 x64 且文件系统支持原子 no-replace；插件不会自动下载 DocWen；
-- 插件要求 `docwen.machine.v2` 和 `docwen.artifact_bundle.v3`；DocWen 版本不兼容时会停止并提示，不会降级使用其他协议。
-- 启动或打开 DocWen 桌面应用使用公开的本机 `gui open` CLI 控制命令，因此 Machine 协商失败不会阻止打开 DocWen 本身。
+- 需要 Windows 或 Linux 上的 Obsidian 桌面版 1.12.7 或更高版本；移动版不支持；
+- 需要另行安装兼容的 DocWen 0.17.0 或更高版本。Windows 可以使用 Microsoft Store 或便携版；Linux 要手动选择安装位置，结果目录导出要求 x64 和支持安全写入的文件系统。插件不会代你下载安装 DocWen；
+- 导出、校对和编号需要 DocWen 支持 Machine Protocol v2 和 Artifact Bundle v3。如果版本不兼容，插件会提示你更新，不会尝试不安全的旧接口。
+- 即使后台转换接口不兼容，仍可尝试单独打开 DocWen 桌面程序。
 
 Windows 商店安装版不满足以上要求时，请使用兼容的便携包并在“手动安装”中选择；Linux 始终使用“手动安装”。
 
-自动检测仅适用于 Windows，并使用系统注册的 `docwen.exe` 执行别名，因此 Microsoft Store 更新不会导致保存的程序路径失效。手动安装在 Windows 接受解压后的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受解压后的文件夹、`DocWen` 或 `DocWenCLI`。插件不会扫描 `WindowsApps`、递归搜索程序、写命令文件、自动下载软件或降级到旧协议。
+自动检测只用于 Windows 的 Microsoft Store 安装版。手动模式可以选择解压后的 DocWen 文件夹，或直接选择程序文件：Windows 支持 `DocWen.exe`、`DocWenCLI.exe`，Linux 支持 `DocWen`、`DocWenCLI`。插件不会在硬盘上到处搜索程序，也不会自动下载软件。
 
 ## 安装
 
@@ -58,7 +58,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 
 ### 安装安全边界
 
-发布包只包含 `main.js`、`manifest.json` 和 `styles.css`，不会包含、覆盖或删除 `data.json`。请保留 `data.json`，只替换三个运行时文件。固定的 `manifest.id` 是 `docwen-assistant`，由此固定已安装插件身份和设置文件位置。只有明确希望清空全部插件偏好时才删除 `data.json`。
+升级时只替换 `main.js`、`manifest.json` 和 `styles.css`。**不要删除 `data.json`**，它保存了插件设置。只有确实想重置所有偏好时才删除它。插件文件夹的名称应保持为 `docwen-assistant`。
 
 ## 使用
 
@@ -70,32 +70,32 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 - 在 Obsidian 侧边栏校对当前 Markdown；
 - 检查 DocWen 连接。
 
-选择输出目录后，每次转换会创建独立结果文件夹，保留生成的文件名和关联资源。文件名包含原文件名、时间戳和本次传入格式；不会覆盖已有结果文件夹。
+导出时先选择保存目录。每次转换都会生成独立的结果文件夹，图片等关联文件也保存在其中，不会直接覆盖已有结果。
 
-Word 导出在结果文件夹中生成独立 DOCX，请自行保留原始 Markdown。反向转换读取 DOCX 的实际内容和结构，不依赖原文伴随文件，也不保证完全相同的写法和空白。可在 DocWen 设置中选择 Markdown 扩展语法。
+导出 Word 会另存为 DOCX，不会改写原笔记。Word 转回 Markdown 时不要求保留原始 Markdown，但格式、空格或标记的写法可能有变化；建议检查转换结果。
 
 
 ## 设置
 
 如果笔记用了 Structural Tables 的合并表格、Number Suite 的题注或交叉引用、七至九级标题或带类型的尾注，导出 Word 前请到 **DocWen → 设置 → Markdown 语法** 开启对应的**输入扩展**，或使用输入方向的**使用 Obsidian 扩展**预设。新安装 DocWen 时这些可选扩展默认关闭；如果还要将 Word 转回扩展 Markdown，需要开启相应的**输出扩展**。Word 中的编号按 DocWen 导出选项生成，不直接复制 Number Suite 的纯显示编号；请检查输出的表格与引用。
 
-- Obsidian 1.12.7 或更高版本使用四个可横向滚动的顶部页签：常规、转为 Markdown、转为 Word和校对；说明放在相关页签内，不再单设“使用方法”页；
-- 插件语言默认“跟随 Obsidian”，也可明确选择 11 种语言之一；界面、通知和资源查询始终使用同一解析结果；
-- “连接方式”默认“自动检测”，该模式仅用于 Windows Microsoft Store 安装版；Linux 必须切换到“手动安装”，Windows 便携版也使用同一选择器。状态行会核验产品身份、版本、协议和程序健康状态，不向普通用户暴露包路径；
-- 页签支持方向键（含 RTL）、Home/End、清晰的键盘焦点、20 px 界面字号和粗指针点击区；仅在显示相应页签时查询运行时编号方案。
+- 设置分为四页：常规、转为 Markdown、转为 Word、校对。页签可横向滚动，相关说明就在每页中；
+- 界面语言默认“跟随 Obsidian”，也可以手动选择 12 种语言，包括阿拉伯语。阿拉伯语设置界面使用从右到左布局；
+- Windows 的 Microsoft Store 版可以自动检测；Linux 和 Windows 便携版需要手动选择安装位置。连接状态会告诉你 DocWen 是否可用以及是否需要更新；
+- 你可以用方向键及 Home/End 切换设置页签；触摸屏也提供足够大的点击区域。
 
 ## 限制
 
-- 支持 Windows 与 Linux 桌面端，并要求本机存在兼容的 DocWen；Linux 结果目录导出要求 x64，不支持原子 no-replace 的文件系统会失败关闭，不会退回“先检查再 rename”；
-- Windows 自动模式只使用固定的 `docwen.exe` 注册别名；手动模式在 Windows 接受 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受文件夹、`DocWen` 或 `DocWenCLI`；两种模式都不会搜索任意目录；
+- 只支持 Windows 与 Linux 桌面版 Obsidian，并需要本机安装兼容的 DocWen。Linux 结果目录导出要求 x64；无法安全保存结果的文件系统会直接报错，不会冒险覆盖原有文件；
+- Windows 自动模式使用系统注册的 `docwen.exe`；手动模式由你选择具体文件夹或程序，插件不会搜索其他目录；
 - 后台导出必须明确选择输出目录，校对不会直接重写源笔记；
-- 无法安全核验 CLI 响应、源快照、编辑器状态或目标时，操作会被拒绝。
+- 如果文件在处理过程中发生变化，或者插件无法确认结果是否安全，操作会停止并提示你检查。
 
 ## 隐私与安全
 
-插件会把当前编辑器（包括未保存正文）或 Vault 文件复制成隔离快照再交给本机 DocWen。它仅为启动系统注册的 DocWen 执行别名或用户手动选择的便携版程序、管理隔离的临时输入和已验证产物，以及写入用户明确选择的输出路径而访问 Vault 外部文件；不会打开或保存版本化的 Microsoft Store 包路径。转换会在所选目录内发布完整且经过验证的结果文件夹，保持相对路径，并单独标识主输出文件。校对只读；编号先生成隔离输出，确认文件、视图和原快照未变化后，才通过 Obsidian Editor 或 Vault API 一次提交。插件不会上传文档或为 DocWen 枚举整个 Vault。完整协议见[Machine 集成契约](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+**文件留在你的电脑上。** 插件把当前笔记（包括尚未保存的编辑内容）或已保存的文件交给本机 DocWen 处理，不会上传到在线转换服务，也不会遍历整个 Vault 寻找无关文件。只有笔记明确引用的图片等资源才会按需要一并处理。校对不会修改笔记；编号修改前会检查笔记是否仍是开始处理时的版本。输出仅写入你选择的目录。更详细的实现边界见[集成技术文档](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
 
-内容操作通过 Machine Protocol 的 JSON-RPC 2.0 和规范 `Content-Length` framing 执行；所有输入均固定大小与 SHA-256，所有 Artifact Bundle 在原子提交前都要校验图、路径、大小和哈希。启动或打开 DocWen 则使用独立且有界的本机 `gui open --json` 控制命令，不先协商 Machine。两条路径都使用固定启动目标、受限环境、超时、输出上限和子进程清理。
+转换和打开程序使用不同的本机接口。插件会检查输入、结果和错误状态；如果无法确认写入是否成功，不会自动重复写入，避免生成重复文件或误覆盖。
 
 ## 开发
 
