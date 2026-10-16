@@ -105,7 +105,7 @@ For an operation, the plugin uses the current Obsidian text (including unsaved c
 
 When you add or remove heading numbers, the plugin writes changes back only if the note has not changed since the operation began. It checks conversion results before saving them and never overwrites new destination data silently. Outside the Vault, it accesses only the chosen DocWen executable, temporary files, and the destination folder you approve. The Microsoft Store package's private installation path is not stored.
 
-Content operations use JSON-RPC 2.0 Machine Protocol with canonical `Content-Length` framing. Every task uses integrity-pinned input handles and a request-owned staging directory; every returned Artifact Bundle is graph-, path-, size-, and SHA-256-validated before the plugin commits outputs atomically. Launch/open is intentionally separate: the plugin runs the fixed local `gui open --json` control command and validates its bounded CLI protocol-3 success envelope without negotiating Machine first. Both process paths use fixed launch targets, bounded environments, timeouts, output limits, and cleanup.
+For technical details about the local connection, file integrity checks, and error recovery, see the integration specification. They do not change the basic rule: files are not uploaded, and changes are saved only after validation.
 
 See [Machine integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md) for the exact methods, capabilities, and Bundle rules.
 
