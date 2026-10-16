@@ -191,6 +191,27 @@ function conversionQuery(file: string, capability = conversionCapability(), form
 }
 
 describe("DocWenClient Machine semantics", () => {
+  it.each([true, false])("passes Arabic only to locale-aware conversion capabilities (%s)", async (supportsLocale) => {
+    const root = await temporaryRoot();
+    const source = path.join(root, "عربي.md");
+    await writeFile(source, "# مرحبا");
+    const capability: MachineCapability = {
+      ...conversionCapability(), capability_id: "convert.markdown_source.to_docx",
+      input_shape: { slots: [{ role: "source", kind: "document", media_types: ["text/markdown"], min_items: 1, max_items: 1 }], undeclared_roles: "reject" },
+      options_schema: { properties: supportsLocale ? { locale: { type: "string", enum: ["ar_SA"] } } : {} },
+    };
+    const runTask = vi.fn(async (request: MachineTaskRequest) => {
+      expect(request.options).toEqual(supportsLocale ? { locale: "ar_SA" } : {});
+      throw new Error("captured Arabic plan");
+    });
+    const transport = machine(conversionQuery(source, capability), runTask);
+    vi.spyOn(transport, "locale").mockReturnValue("ar_SA");
+    await expect(new DocWenClient(transport).convert({
+      inputs: [sourceInput(source)], target: "docx", outputDirectory: root,
+    })).rejects.toThrow("captured Arabic plan");
+    expect(runTask).toHaveBeenCalledOnce();
+  });
+
   it.each([
     ["pdf", "application/pdf"],
     ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
