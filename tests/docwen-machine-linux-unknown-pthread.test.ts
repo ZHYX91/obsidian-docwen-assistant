@@ -14,6 +14,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const procFault = vi.hoisted(() => ({
+  hiddenChildAncestryPid: null as number | null,
   hiddenChildrenParentPid: null as number | null,
   unreadableUnknownTaskPid: null as number | null,
 }));
@@ -39,7 +40,20 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       ) {
         throw Object.assign(new Error("synthetic unavailable task children"), { code: "ENOENT" });
       }
-      return actualReadFile(target, ...args);
+      const value = await actualReadFile(target, ...args);
+      if (
+        procFault.hiddenChildAncestryPid !== null
+        && target === `/proc/${procFault.hiddenChildAncestryPid}/stat`
+        && typeof value === "string"
+      ) {
+        // Hide ancestry from both discovery sources while leaving PID,
+        // starttime, PGID and SID intact: this helper must remain unknown.
+        const closingParen = value.lastIndexOf(")");
+        const fields = value.slice(closingParen + 1).trim().split(/\s+/u);
+        fields[1] = "0";
+        return `${value.slice(0, closingParen + 1)} ${fields.join(" ")}`;
+      }
+      return value;
     },
     readdir: async (target: unknown, ...args: unknown[]) => {
       if (
@@ -64,11 +78,13 @@ const roots: string[] = [];
 const controls: ChildProcess[] = [];
 
 beforeEach(() => {
+  procFault.hiddenChildAncestryPid = null;
   procFault.hiddenChildrenParentPid = null;
   procFault.unreadableUnknownTaskPid = null;
 });
 
 afterEach(() => {
+  procFault.hiddenChildAncestryPid = null;
   procFault.hiddenChildrenParentPid = null;
   procFault.unreadableUnknownTaskPid = null;
   for (const child of controls.splice(0)) killDetached(child);
@@ -76,7 +92,7 @@ afterEach(() => {
 });
 
 describe.skipIf(!nativeFixtureAvailable)("Linux unknown pthread group members", () => {
-  it("rejects success while an unknown zombie leader still has a live same-group task", async () => {
+  it("cleans a zombie child with live threads when only the children interface is absent", async () => {
     const fixture = createFixture();
     const sentinel = startSentinel();
     const client = new DocWenMachineClient(() => fixture.machineExecutable, () => "en_US");
@@ -88,7 +104,34 @@ describe.skipIf(!nativeFixtureAvailable)("Linux unknown pthread group members", 
       procFault.hiddenChildrenParentPid = ids.rootPid;
       writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
       await waitForFileText(fixture.healthFile, "health");
-      await assertUnknownZombieLeaderWithLiveWorker(ids);
+      await assertZombieLeaderWithLiveWorker(ids);
+
+      writeFileSync(fixture.healthReleaseFile, "release\n", "utf8");
+      await expect(pending).resolves.toMatchObject({ all_ok: true });
+      expect(readText(fixture.signalFile)).toContain("term");
+      await expectTaskNotLive(ids.helperWorkerTid);
+      await assertHeartbeatStopped(fixture.heartbeatFile);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      if (ids) killPids([ids.helperPid, ids.helperWorkerTid]);
+    }
+  }, 12_000);
+
+  it("rejects success while an unknown zombie leader still has a live same-group task", async () => {
+    const fixture = createFixture();
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.machineExecutable, () => "en_US");
+    let ids: FixtureIds | null = null;
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      ids = await waitForFixtureIds(fixture);
+      procFault.hiddenChildAncestryPid = ids.helperPid;
+      procFault.hiddenChildrenParentPid = ids.rootPid;
+      writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+      await waitForFileText(fixture.healthFile, "health");
+      await assertZombieLeaderWithLiveWorker(ids);
       await assertHeartbeatAdvances(fixture.heartbeatFile);
       expectProcessLive(requiredPid(sentinel));
 
@@ -121,10 +164,11 @@ describe.skipIf(!nativeFixtureAvailable)("Linux unknown pthread group members", 
     try {
       const pending = client.query("health/check", {}, undefined, 5_000);
       ids = await waitForFixtureIds(fixture);
+      procFault.hiddenChildAncestryPid = ids.helperPid;
       procFault.hiddenChildrenParentPid = ids.rootPid;
       writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
       await waitForFileText(fixture.healthFile, "health");
-      await assertUnknownZombieLeaderWithLiveWorker(ids);
+      await assertZombieLeaderWithLiveWorker(ids);
       await assertHeartbeatAdvances(fixture.heartbeatFile);
 
       writeFileSync(fixture.helperReleaseFile, "release\n", "utf8");
@@ -150,11 +194,12 @@ describe.skipIf(!nativeFixtureAvailable)("Linux unknown pthread group members", 
     try {
       const pending = client.query("health/check", {}, undefined, 5_000);
       ids = await waitForFixtureIds(fixture);
+      procFault.hiddenChildAncestryPid = ids.helperPid;
       procFault.hiddenChildrenParentPid = ids.rootPid;
       procFault.unreadableUnknownTaskPid = ids.helperPid;
       writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
       await waitForFileText(fixture.healthFile, "health");
-      await assertUnknownZombieLeaderWithLiveWorker(ids);
+      await assertZombieLeaderWithLiveWorker(ids);
       await assertHeartbeatAdvances(fixture.heartbeatFile);
 
       writeFileSync(fixture.healthReleaseFile, "release\n", "utf8");
@@ -338,7 +383,7 @@ async function waitForFixtureIds(fixture: Fixture): Promise<FixtureIds> {
   throw new Error("Unknown pthread helper did not become ready");
 }
 
-async function assertUnknownZombieLeaderWithLiveWorker(ids: FixtureIds): Promise<void> {
+async function assertZombieLeaderWithLiveWorker(ids: FixtureIds): Promise<void> {
   const deadline = Date.now() + 1_500;
   while (Date.now() < deadline) {
     const helper = readLinuxStat(ids.helperPid);

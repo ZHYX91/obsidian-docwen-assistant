@@ -59,8 +59,8 @@ describe("OperationStatus", () => {
     status.dispose();
   });
 
-  it("ships complete cancellation labels in all eleven locales", () => {
-    expect(Object.keys(translations)).toHaveLength(11);
+  it("ships complete cancellation labels in all twelve locales", () => {
+    expect(Object.keys(translations)).toHaveLength(12);
     for (const table of Object.values(translations)) {
       expect(table.operationProofread).not.toBe("");
       expect(table.operationExport).not.toBe("");

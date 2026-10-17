@@ -18,6 +18,7 @@ const languageAliases: Record<string, string> = {
   "es-es": "es",
   "es-mx": "es",
   "vi-vn": "vi",
+  "ar-sa": "ar",
 };
 
 // Current locale cache

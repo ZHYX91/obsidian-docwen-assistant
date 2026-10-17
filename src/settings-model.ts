@@ -13,7 +13,8 @@ export type PluginLanguage =
   | "ja"
   | "ko"
   | "es"
-  | "vi";
+  | "vi"
+  | "ar";
 
 export interface PluginSettings {
   language: PluginLanguage;
@@ -226,7 +227,7 @@ function isSettingValue(key: SettingsControlKey, value: unknown): boolean {
     case "docwenConnectionMode":
       return ["automatic", "manual"].includes(value);
     case "language":
-      return ["auto", "en", "zh-CN", "zh-TW", "de", "fr", "ru", "pt-BR", "ja", "ko", "es", "vi"].includes(value);
+      return ["auto", "en", "zh-CN", "zh-TW", "de", "fr", "ru", "pt-BR", "ja", "ko", "es", "vi", "ar"].includes(value);
     case "ocrLanguage":
       return ["auto", "chinese", "chinese_cht", "english", "japanese", "korean", "latin", "cyrillic"].includes(value);
     case "imageMode":

@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md)
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
 
 DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.17.0 이상 버전이 필요합니다.
 
@@ -66,7 +66,7 @@ Word 내보내기는 결과 폴더에 독립된 DOCX를 생성합니다. 원본 
 
 Structural Tables의 병합 셀, Number Suite의 캡션·상호 참조, H7–H9 제목 또는 유형별 미주를 Word로 내보내려면 **DocWen → 설정 → Markdown 문법**에서 해당 **입력 확장**을 켜거나 Obsidian 사전 설정을 사용하세요. 새 설치에서는 확장이 기본적으로 꺼져 있습니다. Word에서 확장 Markdown으로 되돌리려면 **출력 확장**도 켜야 합니다. Word 번호는 DocWen 내보내기 설정을 따르므로 결과를 확인하세요.
 
-Obsidian 1.12.7 이상은 가로로 스크롤할 수 있는 상단 탭 4개(일반, Markdown으로, Word로, 교정)를 사용합니다. 설명은 관련 탭 안에 표시되며 별도의 사용 방법 페이지는 없습니다. 탭은 RTL을 포함한 화살표 키, Home/End, 20px UI 글자 및 굵은 포인터용 큰 터치 영역을 지원합니다. 언어는 기본적으로 Obsidian을 따르며 지원되는 11개 언어 중 하나로 지정할 수 있습니다.
+설정은 일반, Markdown으로, Word로, 교정의 네 탭으로 나뉩니다. 각 탭에서 관련 설명을 확인할 수 있습니다. 언어는 기본적으로 Obsidian을 따르며 일반 설정에서 바꿀 수 있습니다. 화살표 키나 Home/End 키로 탭을 전환할 수 있습니다.
 
 ## 제한 사항
 

@@ -1274,6 +1274,7 @@ type LinuxProcessIdentity = {
 
 type LinuxProcessMetadata = LinuxProcessIdentity & {
   state: string;
+  parentPid: number;
   processGroup: number;
   session: number;
 };
@@ -1735,7 +1736,7 @@ async function discoverKnownLinuxDescendants(
       issues.push(linuxProcessGroupIssue(error));
       continue;
     }
-    if (parentBefore.startTime !== expectedStartTime) {
+    if (parentBefore.pid !== pid || parentBefore.startTime !== expectedStartTime) {
       issues.push({ kind: "identity_changed", identity: parentIdentity });
       continue;
     }
@@ -1758,6 +1759,7 @@ async function discoverKnownLinuxDescendants(
       continue;
     }
 
+    let childrenUnavailable = false;
     for (const taskId of new Set(taskIds)) {
       const taskIssues = await discoverLinuxTaskChildren(
         groupId,
@@ -1767,15 +1769,24 @@ async function discoverKnownLinuxDescendants(
         knownProcesses,
         queue,
       );
-      issues.push(...taskIssues);
+      if (taskIssues === "children_unavailable") {
+        childrenUnavailable = true;
+      } else {
+        issues.push(...taskIssues);
+      }
     }
 
+    let parentUnchanged = false;
     try {
       const parentAfter = await readLinuxProcessMetadata(pid);
-      if (parentAfter.startTime !== expectedStartTime) {
+      if (parentAfter.pid !== pid || parentAfter.startTime !== expectedStartTime) {
         issues.push({ kind: "identity_changed", identity: parentIdentity });
       } else if (parentAfter.processGroup !== groupId || parentAfter.session !== groupId) {
         issues.push({ kind: "group_changed", identity: parentIdentity });
+      } else if (parentAfter.parentPid !== parentBefore.parentPid) {
+        issues.push({ kind: "task_changed", identity: parentIdentity });
+      } else {
+        parentUnchanged = true;
       }
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
@@ -1783,6 +1794,16 @@ async function discoverKnownLinuxDescendants(
       } else {
         issues.push(linuxProcessGroupIssue(error));
       }
+    }
+    if (childrenUnavailable && parentUnchanged) {
+      // PROC_CHILDREN is optional. Scan once per verified parent, not once
+      // per task; PPID refers to the parent process even for a thread's child.
+      issues.push(...await discoverLinuxChildrenFromProc(
+        groupId,
+        parentIdentity,
+        knownProcesses,
+        queue,
+      ));
     }
   }
   return issues;
@@ -1795,7 +1816,7 @@ async function discoverLinuxTaskChildren(
   ownerIdentity: LinuxProcessIdentity,
   knownProcesses: Map<number, string>,
   queue: number[],
-): Promise<LinuxProcessGroupIssue[]> {
+): Promise<LinuxProcessGroupIssue[] | "children_unavailable"> {
   const issues: LinuxProcessGroupIssue[] = [];
   let taskBefore: LinuxProcessMetadata;
   try {
@@ -1813,14 +1834,14 @@ async function discoverLinuxTaskChildren(
     return [{ kind: "group_changed", identity: ownerIdentity }];
   }
 
-  let children: string;
+  let children: string | null = null;
   try {
     children = await readFile(`/proc/${processId}/task/${taskId}/children`, "utf8");
   } catch (error) {
-    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+    if (isErrno(error, "ESRCH")) {
       return [{ kind: "task_changed", identity: ownerIdentity }];
     }
-    return [linuxProcessGroupIssue(error)];
+    if (!isErrno(error, "ENOENT")) return [linuxProcessGroupIssue(error)];
   }
 
   let taskAfter: LinuxProcessMetadata;
@@ -1835,10 +1856,18 @@ async function discoverLinuxTaskChildren(
   if (
     taskAfter.pid !== taskBefore.pid
     || taskAfter.startTime !== taskBefore.startTime
+    || taskAfter.parentPid !== taskBefore.parentPid
     || taskAfter.processGroup !== taskBefore.processGroup
     || taskAfter.session !== taskBefore.session
   ) {
     return [{ kind: "task_changed", identity: ownerIdentity }];
+  }
+  if (children === null) {
+    // ENOENT is an absent interface only when the same task is still live
+    // on both sides of the read. A disappearing task must not enable fallback.
+    return isLiveLinuxProcessState(taskBefore.state) && isLiveLinuxProcessState(taskAfter.state)
+      ? "children_unavailable"
+      : [{ kind: "task_changed", identity: ownerIdentity }];
   }
 
   for (const child of children.trim().split(/\s+/u)) {
@@ -1874,6 +1903,104 @@ async function discoverLinuxTaskChildren(
     } catch (error) {
       if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) continue;
       issues.push(linuxProcessGroupIssue(error));
+    }
+  }
+  return issues;
+}
+
+async function discoverLinuxChildrenFromProc(
+  groupId: number,
+  ownerIdentity: LinuxProcessIdentity,
+  knownProcesses: Map<number, string>,
+  queue: number[],
+): Promise<LinuxProcessGroupIssue[]> {
+  const issues: LinuxProcessGroupIssue[] = [];
+  let parentBefore: LinuxProcessMetadata;
+  let candidatePids: number[];
+  try {
+    parentBefore = await readLinuxProcessMetadata(ownerIdentity.pid);
+    if (
+      parentBefore.pid !== ownerIdentity.pid
+      || parentBefore.startTime !== ownerIdentity.startTime
+    ) return [{ kind: "identity_changed", identity: ownerIdentity }];
+    if (parentBefore.processGroup !== groupId || parentBefore.session !== groupId) {
+      return [{ kind: "group_changed", identity: ownerIdentity }];
+    }
+    candidatePids = (await readdir("/proc"))
+      .filter((entry) => /^\d+$/u.test(entry))
+      .map(Number);
+  } catch (error) {
+    if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+      return [{ kind: "task_changed", identity: ownerIdentity }];
+    }
+    return [linuxProcessGroupIssue(error)];
+  }
+
+  for (const childPid of new Set(candidatePids)) {
+    if (childPid === ownerIdentity.pid) continue;
+    let childBefore: LinuxProcessMetadata;
+    try {
+      childBefore = await readLinuxProcessMetadata(childPid);
+    } catch (error) {
+      if (!isErrno(error, "ENOENT") && !isErrno(error, "ESRCH")) {
+        issues.push(linuxProcessGroupIssue(error));
+      }
+      continue;
+    }
+    // Group membership is a constraint, never a substitute for ancestry.
+    if (childBefore.parentPid !== ownerIdentity.pid) continue;
+    const childIdentity = { pid: childPid, startTime: childBefore.startTime };
+    if (childBefore.pid !== childPid) {
+      issues.push({ kind: "identity_changed", identity: childIdentity });
+      continue;
+    }
+    if (childBefore.processGroup !== groupId || childBefore.session !== groupId) continue;
+
+    try {
+      const childAfter = await readLinuxProcessMetadata(childPid);
+      const parentAfter = await readLinuxProcessMetadata(ownerIdentity.pid);
+      if (
+        parentAfter.pid !== parentBefore.pid
+        || parentAfter.startTime !== parentBefore.startTime
+        || childAfter.pid !== childBefore.pid
+        || childAfter.startTime !== childBefore.startTime
+      ) {
+        issues.push({ kind: "identity_changed", identity: childIdentity });
+        continue;
+      }
+      if (
+        parentAfter.processGroup !== groupId
+        || parentAfter.session !== groupId
+        || childAfter.processGroup !== groupId
+        || childAfter.session !== groupId
+      ) {
+        issues.push({ kind: "group_changed", identity: childIdentity });
+        continue;
+      }
+      if (
+        parentAfter.parentPid !== parentBefore.parentPid
+        || childAfter.parentPid !== childBefore.parentPid
+      ) {
+        issues.push({ kind: "task_changed", identity: ownerIdentity });
+        continue;
+      }
+      const namespaceIssue = await linuxProcNamespaceIssue();
+      if (namespaceIssue) return [...issues, namespaceIssue];
+      const existingStartTime = knownProcesses.get(childPid);
+      if (existingStartTime !== undefined && existingStartTime !== childAfter.startTime) {
+        issues.push({ kind: "identity_changed", identity: { pid: childPid, startTime: existingStartTime } });
+        continue;
+      }
+      // Commit only after both lifetimes and their parent relation survive all
+      // checks. A zombie leader can have live threads; inspection decides liveness.
+      knownProcesses.set(childPid, childAfter.startTime);
+      queue.push(childPid);
+    } catch (error) {
+      if (isErrno(error, "ENOENT") || isErrno(error, "ESRCH")) {
+        issues.push({ kind: "task_changed", identity: ownerIdentity });
+      } else {
+        issues.push(linuxProcessGroupIssue(error));
+      }
     }
   }
   return issues;
@@ -1936,12 +2063,15 @@ function parseLinuxProcessMetadata(raw: string): LinuxProcessMetadata {
   }
   const pid = Number(raw.slice(0, openingParen).trim());
   const fields = raw.slice(closingParen + 1).trim().split(/\s+/u);
+  const parentPid = Number(fields[1]);
   const processGroup = Number(fields[2]);
   const session = Number(fields[3]);
   const startTime = fields[19] ?? "";
   if (
     !Number.isSafeInteger(pid)
     || pid <= 0
+    || !Number.isSafeInteger(parentPid)
+    || parentPid < 0
     || !Number.isSafeInteger(processGroup)
     || !Number.isSafeInteger(session)
     || !/^\d+$/u.test(startTime)
@@ -1951,6 +2081,7 @@ function parseLinuxProcessMetadata(raw: string): LinuxProcessMetadata {
   return {
     pid,
     state: fields[0] ?? "",
+    parentPid,
     processGroup,
     session,
     startTime,

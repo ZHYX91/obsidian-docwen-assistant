@@ -8,6 +8,7 @@ import type { OperationCoordinator } from "../runtime/operation-coordinator";
 type CommandActions = {
   app: App;
   addLocalizedCommand: (key: keyof Translations, command: Omit<Command, "name">) => void;
+  launchDocWen: () => Promise<void>;
   launchOrSendFile: () => Promise<void>;
   activeFileSupports: (predicate: (capability: FileCapability) => boolean) => boolean;
   capabilities: DocWenCapabilityService;
@@ -25,7 +26,7 @@ export function registerCommands(actions: CommandActions): void {
   actions.addLocalizedCommand("commandLaunch", {
     id: "launch-docwen",
     callback: () => {
-      void actions.launchOrSendFile();
+      void actions.launchDocWen();
     },
   });
 

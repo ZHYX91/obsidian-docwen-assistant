@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { SettingsPageDefinition } from "../src/settings-definitions";
 import { SettingsTabs } from "../src/settings-tabs";
+import { initI18n } from "../src/i18n";
 
 interface ElementOptions {
   attr?: Record<string, string>;
@@ -121,6 +122,42 @@ describe("settings top tabs", () => {
     expect(root.children.some((child) => /^h[1-6]$/iu.test(child.tagName))).toBe(false);
     expect(renderPage).toHaveBeenCalledOnce();
     expect(renderPage.mock.calls[0][1].id).toBe("general");
+  });
+
+  it("marks Arabic settings RTL even if the host language is LTR", () => {
+    initI18n("ar");
+    try {
+      const container = new FakeElement(new FakeDocument());
+      new SettingsTabs({
+        ariaLabel: "الإعدادات",
+        containerEl: container as unknown as HTMLElement,
+        initialPageId: "general",
+        pages,
+        renderPage: vi.fn(),
+      });
+      expect(container.children[0].attributes.get("dir")).toBe("rtl");
+    } finally {
+      initI18n("en");
+    }
+  });
+
+  it.each(["en", "zh-CN"])("keeps %s settings LTR when Obsidian uses RTL", (locale) => {
+    initI18n(locale);
+    try {
+      const document = new FakeDocument();
+      document.direction = "rtl";
+      const container = new FakeElement(document);
+      new SettingsTabs({
+        ariaLabel: "Settings",
+        containerEl: container as unknown as HTMLElement,
+        initialPageId: "general",
+        pages,
+        renderPage: vi.fn(),
+      });
+      expect(container.children[0].attributes.get("dir")).toBe("ltr");
+    } finally {
+      initI18n("en");
+    }
   });
 
   it("supports roving focus, Home/End, wrapping arrows, and RTL direction", () => {

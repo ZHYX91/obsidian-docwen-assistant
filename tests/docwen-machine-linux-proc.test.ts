@@ -18,6 +18,7 @@ const procFault = vi.hoisted(() => ({
   deniedStatPid: null as number | null,
   enumerationCode: null as string | null,
   namespacePidDelta: 0,
+  statTransform: null as ((target: string, value: string) => string) | null,
   taskChildrenCode: null as string | null,
   taskStatDisappearOnce: false,
 }));
@@ -63,6 +64,9 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       if (target === "/proc/self/stat" && procFault.namespacePidDelta !== 0) {
         return value.replace(/^\d+/u, String(process.pid + procFault.namespacePidDelta));
       }
+      if (typeof target === "string" && procFault.statTransform) {
+        return procFault.statTransform(target, value);
+      }
       if (
         procFault.changedStartTimePid !== null
         && target === `/proc/${procFault.changedStartTimePid}/stat`
@@ -100,6 +104,7 @@ beforeEach(() => {
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
+  procFault.statTransform = null;
   procFault.taskChildrenCode = null;
   procFault.taskStatDisappearOnce = false;
 });
@@ -111,6 +116,7 @@ afterEach(() => {
   procFault.deniedStatPid = null;
   procFault.enumerationCode = null;
   procFault.namespacePidDelta = 0;
+  procFault.statTransform = null;
   procFault.taskChildrenCode = null;
   procFault.taskStatDisappearOnce = false;
   vi.restoreAllMocks();
@@ -119,6 +125,236 @@ afterEach(() => {
 });
 
 describe.skipIf(process.platform !== "linux")("Linux process-group evidence failures", () => {
+  it("completes a normal query and cleans a resistant child when the children interface is absent", async () => {
+    procFault.taskChildrenCode = "ENOENT";
+    const fixture = createHeldMachine("success");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+      writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+      await expect(pending).resolves.toMatchObject({ all_ok: true });
+      expect(readEvents(fixture.rootTrace)).toContain("root_normal_exit");
+      expect(readEvents(fixture.helperTrace)).toContain("helper_term");
+      for (const pid of pids) await expectProcessNotLive(pid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 10_000);
+
+  it.each([
+    ["parent", "pid"],
+    ["parent", "ppid"],
+    ["parent", "starttime"],
+    ["parent", "pgid"],
+    ["parent", "sid"],
+    ["child", "pid"],
+    ["child", "ppid"],
+    ["child", "starttime"],
+    ["child", "pgid"],
+    ["child", "sid"],
+  ] as const)(
+    "does not commit fallback ownership when the %s %s changes during ancestry verification",
+    async (role, field) => {
+      procFault.taskChildrenCode = "ENOENT";
+      const fixture = createHeldMachine("success");
+      const sentinel = startSentinel();
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+      let pids: number[] = [];
+      let mutations = 0;
+      let childReadsSinceParent = 0;
+
+      try {
+        const pending = client.query("health/check", {}, undefined, 5_000);
+        pids = await waitForPids(fixture.pidFile);
+        await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+        procFault.statTransform = (target, value) => {
+          if (target === `/proc/${pids[0]}/stat`) {
+            const changeParent = role === "parent" && childReadsSinceParent >= 2;
+            childReadsSinceParent = 0;
+            if (changeParent) {
+              mutations += 1;
+              return changeStatField(value, field);
+            }
+          }
+          if (target === `/proc/${pids[1]}/stat`) {
+            childReadsSinceParent += 1;
+            if (role === "child" && childReadsSinceParent === 2) {
+              mutations += 1;
+              return changeStatField(value, field);
+            }
+          }
+          return value;
+        };
+        writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+        await expect(pending).rejects.toMatchObject({
+          code: "cli_cleanup_failed",
+          details: { cleanupState: "unconfirmed", ownershipState: "unconfirmed" },
+        });
+        expect(mutations).toBeGreaterThan(0);
+        expect(readEvents(fixture.rootTrace)).toContain("root_normal_exit");
+        // If a candidate is committed before the final ancestry check, it can
+        // become the only signal anchor after the root exits and kill this child.
+        expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+        expectProcessLive(pids[1]);
+        expectProcessLive(requiredPid(sentinel));
+      } finally {
+        client.dispose();
+        killPids(pids);
+      }
+    },
+    10_000,
+  );
+
+  it("does not promote a same-group process without PPID ancestry when children are absent", async () => {
+    procFault.taskChildrenCode = "ENOENT";
+    const fixture = createHeldMachine("success");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+      procFault.statTransform = (target, value) => target === `/proc/${pids[1]}/stat`
+        ? replaceStatField(value, "ppid", "0")
+        : value;
+      writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { ownershipIssue: "unknown_group_member", ownershipState: "unconfirmed" },
+      });
+      expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+      expectProcessLive(pids[1]);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 10_000);
+
+  it("retains permission failures from the PPID fallback instead of declaring cleanup complete", async () => {
+    procFault.taskChildrenCode = "ENOENT";
+    const fixture = createHeldMachine("success");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+      procFault.deniedStatPid = pids[1];
+      writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", systemCode: "EACCES" },
+      });
+      expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+      expectProcessLive(pids[1]);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 10_000);
+
+  it("does not commit a fallback candidate if the proc namespace changes during verification", async () => {
+    procFault.taskChildrenCode = "ENOENT";
+    const fixture = createHeldMachine("success");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let pids: number[] = [];
+    let childReadsSinceParent = 0;
+    let changeNextNamespace = false;
+    let namespaceChanges = 0;
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      pids = await waitForPids(fixture.pidFile);
+      await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+      procFault.statTransform = (target, value) => {
+        if (target === `/proc/${pids[1]}/stat`) childReadsSinceParent += 1;
+        if (target === `/proc/${pids[0]}/stat`) {
+          changeNextNamespace ||= childReadsSinceParent >= 2;
+          childReadsSinceParent = 0;
+        }
+        if (target === "/proc/self/stat" && changeNextNamespace) {
+          changeNextNamespace = false;
+          namespaceChanges += 1;
+          return changeStatField(value, "pid");
+        }
+        return value;
+      };
+      writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+      await expect(pending).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: { cleanupState: "unconfirmed", ownershipState: "unconfirmed" },
+      });
+      expect(namespaceChanges).toBeGreaterThan(0);
+      expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+      expectProcessLive(pids[1]);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      killPids(pids);
+    }
+  }, 10_000);
+
+  it.each(["ESRCH", "changing task identity"])(
+    "does not enable the PPID fallback for %s at the children interface",
+    async (fault) => {
+      procFault.taskChildrenCode = fault === "ESRCH" ? "ESRCH" : "ENOENT";
+      const fixture = createHeldMachine("success");
+      const sentinel = startSentinel();
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+      let pids: number[] = [];
+      const taskReads = new Map<string, number>();
+
+      try {
+        const pending = client.query("health/check", {}, undefined, 5_000);
+        pids = await waitForPids(fixture.pidFile);
+        await waitForEvent(fixture.helperTrace, "helper_ready", 2_000);
+        if (fault !== "ESRCH") {
+          procFault.statTransform = (target, value) => {
+            if (target.startsWith(`/proc/${pids[0]}/task/`) && target.endsWith("/stat")) {
+              const reads = (taskReads.get(target) ?? 0) + 1;
+              taskReads.set(target, reads);
+              if (reads % 2 === 0) return changeStatField(value, "starttime");
+            }
+            return value;
+          };
+        }
+        writeFileSync(fixture.initializeReleaseFile, "release\n", "utf8");
+
+        await expect(pending).rejects.toMatchObject({
+          code: "cli_cleanup_failed",
+          details: { ownershipIssue: "unknown_group_member", ownershipState: "unconfirmed" },
+        });
+        if (fault !== "ESRCH") expect([...taskReads.values()].some((reads) => reads >= 2)).toBe(true);
+        expect(readEvents(fixture.helperTrace)).not.toContain("helper_term");
+        expectProcessLive(pids[1]);
+        expectProcessLive(requiredPid(sentinel));
+      } finally {
+        client.dispose();
+        killPids(pids);
+      }
+    },
+    10_000,
+  );
+
   it("still cleans the owned group when an unrelated proc stat is unreadable, but does not claim complete proof", async () => {
     const fixture = createHeldMachine();
     const sentinel = startSentinel();
@@ -298,6 +534,8 @@ describe.skipIf(process.platform !== "linux")("Linux process-group evidence fail
     try {
       const pending = client.query("health/check", {}, undefined, 1_000);
       pids = await waitForPids(fixture.pidFile);
+      // health/check is sent only after initialize captures descendant identity.
+      await waitForEvent(fixture.rootTrace, "health_seen", 2_000);
       procFault.enumerationCode = "EACCES";
       const error = await rejected(pending);
 
@@ -313,11 +551,12 @@ describe.skipIf(process.platform !== "linux")("Linux process-group evidence fail
   }, 8_000);
 });
 
-function createHeldMachine(): {
+function createHeldMachine(mode: "timeout" | "success" = "timeout"): {
   executable: string;
   pidFile: string;
   rootTrace: string;
   helperTrace: string;
+  initializeReleaseFile: string;
 } {
   const root = mkdtempSync(path.join(tmpdir(), "docwen-proc-evidence-"));
   roots.push(root);
@@ -325,12 +564,23 @@ function createHeldMachine(): {
   const pidFile = path.join(root, "pids.txt");
   const rootTrace = path.join(root, "root.jsonl");
   const helperTrace = path.join(root, "helper.jsonl");
-  writeFileSync(executable, heldMachineSource(pidFile, rootTrace, helperTrace), "utf8");
+  const initializeReleaseFile = path.join(root, "initialize-release");
+  writeFileSync(
+    executable,
+    heldMachineSource(pidFile, rootTrace, helperTrace, mode, initializeReleaseFile),
+    "utf8",
+  );
   chmodSync(executable, 0o755);
-  return { executable, pidFile, rootTrace, helperTrace };
+  return { executable, pidFile, rootTrace, helperTrace, initializeReleaseFile };
 }
 
-function heldMachineSource(pidFile: string, rootTrace: string, helperTrace: string): string {
+function heldMachineSource(
+  pidFile: string,
+  rootTrace: string,
+  helperTrace: string,
+  mode: "timeout" | "success",
+  initializeReleaseFile: string,
+): string {
   const helperSource = String.raw`
 const { appendFileSync } = require("node:fs");
 const trace = process.argv[1];
@@ -344,12 +594,14 @@ setInterval(() => undefined, 1000);
 
   return `#!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, writeFileSync } from "node:fs";
 
 const pidFile = ${JSON.stringify(pidFile)};
 const rootTrace = ${JSON.stringify(rootTrace)};
 const helperTrace = ${JSON.stringify(helperTrace)};
 const helperSource = ${JSON.stringify(helperSource)};
+const mode = ${JSON.stringify(mode)};
+const initializeReleaseFile = ${JSON.stringify(initializeReleaseFile)};
 
 function record(event) {
   appendFileSync(rootTrace, JSON.stringify({ event, pid: process.pid }) + "\\n", "utf8");
@@ -378,17 +630,33 @@ process.stdin.on("data", (chunk) => {
     const message = JSON.parse(buffered.subarray(headerEnd + 4, frameEnd).toString("utf8"));
     buffered = buffered.subarray(frameEnd);
     if (message.method === "initialize") {
-      reply(message.id, {
+      const result = {
         protocol: { name: "docwen.machine", major: 2, minor: 0 },
         artifact_bundle_schema: "docwen.artifact_bundle.v3",
         server: { name: "DocWen", version: "0.17.0" },
         methods: [],
         features: { progress: true, cancellation: true },
         max_concurrent_tasks: 1,
-      });
+      };
+      if (mode === "success") {
+        const release = setInterval(() => {
+          if (!existsSync(initializeReleaseFile)) return;
+          clearInterval(release);
+          reply(message.id, result);
+        }, 5);
+      } else {
+        reply(message.id, result);
+      }
     } else if (message.method === "health/check") {
       record("health_seen");
+      if (mode === "success") reply(message.id, { all_ok: true, checks: [] });
     }
+  }
+});
+process.stdin.on("end", () => {
+  if (mode === "success") {
+    record("root_normal_exit");
+    process.exit(0);
   }
 });
 process.stdin.resume();
@@ -466,6 +734,24 @@ function statIdentity(raw: string): {
     session: Number(fields[3]),
     startTime: fields[19] ?? "",
   };
+}
+
+type StatField = "pid" | "ppid" | "starttime" | "pgid" | "sid";
+
+function changeStatField(raw: string, field: StatField): string {
+  const fields = raw.slice(raw.lastIndexOf(")") + 1).trim().split(/\s+/u);
+  const value = field === "pid"
+    ? raw.slice(0, raw.indexOf("(")).trim()
+    : fields[{ ppid: 1, pgid: 2, sid: 3, starttime: 19 }[field]];
+  return replaceStatField(raw, field, String(BigInt(value) + 1n));
+}
+
+function replaceStatField(raw: string, field: StatField, value: string): string {
+  if (field === "pid") return raw.replace(/^\d+/u, value);
+  const closingParen = raw.lastIndexOf(")");
+  const fields = raw.slice(closingParen + 1).trim().split(/\s+/u);
+  fields[{ ppid: 1, pgid: 2, sid: 3, starttime: 19 }[field]] = value;
+  return `${raw.slice(0, closingParen + 1)} ${fields.join(" ")}`;
 }
 
 async function waitForEvent(filename: string, expected: string, timeoutMs: number): Promise<void> {
