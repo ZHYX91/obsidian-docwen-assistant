@@ -10,20 +10,73 @@ import {
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+const procFault = vi.hoisted(() => ({ missingChildren: false }));
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return {
+    ...actual,
+    readFile: (target: Parameters<typeof actual.readFile>[0], ...args: unknown[]) => {
+      if (
+        procFault.missingChildren
+        && typeof target === "string"
+        && /^\/proc\/\d+\/task\/\d+\/children$/u.test(target)
+      ) {
+        return Promise.reject(Object.assign(new Error("synthetic absent children interface"), { code: "ENOENT" }));
+      }
+      return (actual.readFile as (...values: unknown[]) => unknown)(target, ...args);
+    },
+  };
+});
 
 import { DocWenMachineClient } from "../src/docwen/machine-client";
 
-const nativeThreadChildrenAvailable = process.platform === "linux"
+const nativeThreadFixtureAvailable = process.platform === "linux"
   && spawnSync("python3", ["--version"], { stdio: "ignore" }).status === 0
+  && existsSync("/proc/self/stat");
+const nativeThreadChildrenAvailable = nativeThreadFixtureAvailable
   && existsSync(`/proc/self/task/${process.pid}/children`);
 
 const roots: string[] = [];
 const controls: ChildProcess[] = [];
 
 afterEach(() => {
+  procFault.missingChildren = false;
   for (const child of controls.splice(0)) killDetached(child);
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+describe.skipIf(!nativeThreadFixtureAvailable)("Linux non-leader thread PPID fallback", () => {
+  it("uses the parent TGID to clean a non-leader thread's child when children files are absent", async () => {
+    procFault.missingChildren = true;
+    const fixture = createThreadedFixture("normal");
+    const sentinel = startSentinel();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US");
+    let owned: ThreadedFixturePids | null = null;
+
+    try {
+      const pending = client.query("health/check", {}, undefined, 5_000);
+      owned = await waitForFixturePids(fixture.pidFile);
+      expect(owned.creatorTid).not.toBe(owned.rootPid);
+      expectProcessLive(owned.creatorTid);
+      const raw = readFileSync(`/proc/${owned.helperPid}/stat`, "utf8");
+      const parentPid = Number(raw.slice(raw.lastIndexOf(")") + 1).trim().split(/\s+/u)[1]);
+      expect(parentPid).toBe(owned.rootPid);
+      writeFileSync(fixture.releaseFile, "release\n", "utf8");
+
+      await expect(pending).resolves.toMatchObject({ all_ok: true });
+      expect(readEvents(fixture.rootTrace)).toContain("root_normal_exit");
+      expect(readEvents(fixture.helperTrace)).toContain("helper_term");
+      await expectProcessNotLive(owned.rootPid);
+      await expectProcessNotLive(owned.helperPid);
+      expectProcessLive(requiredPid(sentinel));
+    } finally {
+      client.dispose();
+      if (owned) killPids([owned.rootPid, owned.helperPid]);
+    }
+  }, 12_000);
 });
 
 describe.skipIf(!nativeThreadChildrenAvailable)(
