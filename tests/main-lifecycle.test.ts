@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   cachedCapability: null as null | Error | { inspection: { supportedActions: string[] } },
   cleanup: [] as string[],
   commands: [] as Array<Record<string, unknown>>,
+  guiPaths: [] as Array<string | undefined>,
   loadData: async (): Promise<unknown> => ({}),
   operationItems: [] as Array<{ generation: number; kind: string; state: string }>,
   cancelled: [] as number[],
@@ -83,7 +84,11 @@ vi.mock("../src/proofread-view", () => ({
 vi.mock("../src/app/register-file-menu", () => ({ registerFileMenu: () => undefined }));
 vi.mock("../src/actions/action-runner", () => ({ ActionRunner: class ActionRunner {} }));
 vi.mock("../src/actions/export-actions", () => ({ ExportActions: class ExportActions {} }));
-vi.mock("../src/actions/gui-actions", () => ({ GuiActions: class GuiActions {} }));
+vi.mock("../src/actions/gui-actions", () => ({
+  GuiActions: class GuiActions {
+    async open(filePath?: string): Promise<void> { state.guiPaths.push(filePath); }
+  },
+}));
 vi.mock("../src/actions/numbering-actions", () => ({ NumberingActions: class NumberingActions {} }));
 vi.mock("../src/actions/proofread-actions", () => ({ ProofreadActions: class ProofreadActions {} }));
 vi.mock("../src/docwen", () => ({
@@ -151,6 +156,7 @@ describe("DocWenPlugin lifecycle", () => {
   beforeEach(() => {
     state.cleanup.length = 0;
     state.commands.length = 0;
+    state.guiPaths.length = 0;
     state.activeFile = null;
     state.cachedCapability = null;
     state.operationItems.length = 0;
@@ -167,6 +173,30 @@ describe("DocWenPlugin lifecycle", () => {
     state.shutdown = async () => true;
     state.hasPendingWork = false;
     state.loadData = async () => createSettingsSnapshot(normalizeSettings(null));
+  });
+
+  it("launches the app without sending the active file unless the file command is used", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    state.activeFile = { path: "current.md" };
+    await plugin.onload();
+
+    const launch = state.commands.find((command) => command.id === "launch-docwen");
+    (launch?.callback as () => void)();
+    expect(state.guiPaths).toEqual([undefined]);
+
+    const withFile = state.commands.find((command) => command.id === "launch-docwen-with-file");
+    const checkCallback = withFile?.checkCallback as (checking: boolean) => boolean;
+    expect(checkCallback(true)).toBe(true);
+    expect(state.guiPaths).toEqual([undefined]);
+    expect(checkCallback(false)).toBe(true);
+    expect(state.guiPaths).toEqual([undefined, "D:\\Vault\\current.md"]);
+
+    state.activeFile = null;
+    expect(checkCallback(true)).toBe(false);
+    (launch?.callback as () => void)();
+    expect(state.guiPaths).toEqual([undefined, "D:\\Vault\\current.md", undefined]);
+    plugin.onunload();
   });
 
   it("invalidates old/new source paths on rename and the deleted path on removal", async () => {

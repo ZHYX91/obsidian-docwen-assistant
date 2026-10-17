@@ -33,7 +33,7 @@ afterEach(async () => {
 });
 
 describe("README standardization contract", () => {
-  it("accepts all eleven synchronized READMEs", () => {
+  it("accepts all synchronized READMEs", () => {
     expect(runReadmeCheck()).toMatchObject({ status: 0 });
   });
 

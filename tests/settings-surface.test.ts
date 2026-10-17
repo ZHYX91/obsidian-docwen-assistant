@@ -256,7 +256,7 @@ describe("settings surface lifecycle", () => {
     expect(warning.descEl.textContent).toContain("supports schema 2");
     expect(warning.descEl.textContent).toContain("was not rewritten");
 
-    const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings persistence")!;
+    const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings save status")!;
     expect(persistence.descEl.textContent).toContain("unsupported schema 3");
     expect(buttons.every((button) => button.disabled)).toBe(true);
     expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
@@ -281,10 +281,10 @@ describe("settings surface lifecycle", () => {
     tabButtons[3].dispatch("click");
 
     const guide = settings.find((setting) =>
-      setting.settingEl.attributes.get("aria-label") === "Choose checks independently")!;
+      setting.settingEl.attributes.get("aria-label") === "Choose what to check")!;
     expect(guide.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
     expect(guide.settingEl.attributes.get("role")).toBe("note");
-    expect(guide.settingEl.children[0].children[1].textContent).toBe("Choose checks independently");
+    expect(guide.settingEl.children[0].children[1].textContent).toBe("Choose what to check");
     expect(guide.settingEl.children[1].textContent).toContain("toggled independently");
   });
 

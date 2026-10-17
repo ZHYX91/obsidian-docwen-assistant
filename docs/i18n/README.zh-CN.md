@@ -16,17 +16,17 @@
 
 ![DocWen 校对侧边栏](../assets/docwen-assistant-proofread-en.png)
 
-### 顶部页签设置与 DocWen 连接
+### 设置与 DocWen 连接
 
 在四个设置页签里检查 DocWen 连接、选择导出方式和校对规则。
 
 ![DocWen Assistant 顶部页签设置](../assets/docwen-assistant-settings-en.png)
 
-### 按能力选择导出
+### 导出文件
 
 选择文件要导出的格式和保存位置。原始笔记不会被转换结果覆盖。
 
-![DocWen Assistant 按能力选择导出](../assets/docwen-assistant-export-en.png)
+![DocWen Assistant 导出文件](../assets/docwen-assistant-export-en.png)
 
 ## 功能
 
@@ -40,10 +40,10 @@
 
 - 需要 Windows 或 Linux 上的 Obsidian 桌面版 1.12.7 或更高版本；移动版不支持；
 - 需要另行安装兼容的 DocWen 0.17.0 或更高版本。Windows 可以使用 Microsoft Store 或便携版；Linux 要手动选择安装位置，结果目录导出要求 x64 和支持安全写入的文件系统。插件不会代你下载安装 DocWen；
-- 导出、校对和编号需要 DocWen 支持 Machine Protocol v2 和 Artifact Bundle v3。如果版本不兼容，插件会提示你更新，不会尝试不安全的旧接口。
+- 导出、校对和编号需要 DocWen 支持 Machine Protocol v2 和 Artifact Bundle v3。如果版本不兼容，插件会提示你更新，请按提示更新后重试。
 - 即使后台转换接口不兼容，仍可尝试单独打开 DocWen 桌面程序。
 
-Windows 商店安装版不满足以上要求时，请使用兼容的便携包并在“手动安装”中选择；Linux 始终使用“手动安装”。
+Windows 商店安装版不满足以上要求时，请使用兼容的便携包，在插件设置中手动选择解压目录。Linux 也需要手动选择安装位置。
 
 自动检测只用于 Windows 的 Microsoft Store 安装版。手动模式可以选择解压后的 DocWen 文件夹，或直接选择程序文件：Windows 支持 `DocWen.exe`、`DocWenCLI.exe`，Linux 支持 `DocWen`、`DocWenCLI`。插件不会在硬盘上到处搜索程序，也不会自动下载软件。
 
@@ -54,9 +54,9 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包；Linux x64 请从同一 Releases 页面下载并完整解压兼容的 Linux 包；
 2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) 下载 `docwen-assistant-x.y.z.zip`，将其中的 `main.js`、`manifest.json` 和 `styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
 3. 重新加载第三方插件并启用 DocWen Assistant；
-4. Windows 自动检测无需选择文件；Windows 便携版和所有 Linux 用户都应打开 **设置 → DocWen Assistant → 常规**，选择“手动安装”，再选择解压后的 DocWen 文件夹或可执行文件。
+4. Windows 自动检测无需选择文件；Windows 便携版和所有 Linux 用户都应打开 **设置 → DocWen Assistant → 常规**，将“连接方式”设为“手动选择安装位置”，再选择解压后的 DocWen 文件夹或可执行文件。
 
-### 安装安全边界
+### 升级时保留设置
 
 升级时只替换 `main.js`、`manifest.json` 和 `styles.css`。**不要删除 `data.json`**，它保存了插件设置。只有确实想重置所有偏好时才删除它。插件文件夹的名称应保持为 `docwen-assistant`。
 
@@ -64,7 +64,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 
 可以通过侧边栏图标、文件列表的 **DocWen** 子菜单或命令面板执行以下操作：
 
-- 启动 DocWen，或使用当前文件启动；
+- “启动 DocWen”打开或激活程序；“使用当前文件启动 DocWen”还会打开当前文件；
 - 后台导出 Word、Excel 或 Markdown，并明确选择输出目录；
 - 添加或删除 Markdown 标题序号；
 - 在 Obsidian 侧边栏校对当前 Markdown；
@@ -80,7 +80,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包并
 如果笔记用了 Structural Tables 的合并表格、Number Suite 的题注或交叉引用、七至九级标题或带类型的尾注，导出 Word 前请到 **DocWen → 设置 → Markdown 语法** 开启对应的**输入扩展**，或使用输入方向的**使用 Obsidian 扩展**预设。新安装 DocWen 时这些可选扩展默认关闭；如果还要将 Word 转回扩展 Markdown，需要开启相应的**输出扩展**。Word 中的编号按 DocWen 导出选项生成，不直接复制 Number Suite 的纯显示编号；请检查输出的表格与引用。
 
 - 设置分为四页：常规、转为 Markdown、转为 Word、校对。页签可横向滚动，相关说明就在每页中；
-- 界面语言默认“跟随 Obsidian”，也可以手动选择 12 种语言，包括阿拉伯语。阿拉伯语设置界面使用从右到左布局；
+- 界面语言默认“跟随 Obsidian”，也可以在“常规”页手动选择；
 - Windows 的 Microsoft Store 版可以自动检测；Linux 和 Windows 便携版需要手动选择安装位置。连接状态会告诉你 DocWen 是否可用以及是否需要更新；
 - 你可以用方向键及 Home/End 切换设置页签；触摸屏也提供足够大的点击区域。
 

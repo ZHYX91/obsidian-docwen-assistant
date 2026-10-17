@@ -66,7 +66,7 @@ L’export Word produit un DOCX autonome dans le dossier de résultats. Conserve
 
 Pour conserver les cellules fusionnées de Structural Tables, les légendes et renvois de Number Suite, les titres H7–H9 ou les notes de fin typées, activez avant l’export Word les **extensions d’entrée** correspondantes dans **DocWen → Paramètres → Syntaxe Markdown**, ou le préréglage Obsidian. Elles sont désactivées par défaut. Pour retrouver les extensions dans le Markdown issu de Word, activez aussi les **extensions de sortie**. La numérotation Word dépend des options DocWen : vérifiez le résultat.
 
-Obsidian 1.12.7 ou ultérieur utilise quatre onglets supérieurs à défilement horizontal : Général, Exporter en Markdown, Exporter vers Word et Relecture. L’aide contextuelle apparaît dans l’onglet concerné plutôt que dans une page Utilisation séparée. Les onglets prennent en charge les flèches, y compris RTL, Début/Fin, le texte d'interface à 20 px et de grandes cibles tactiles. La langue suit Obsidian par défaut et peut être remplacée par l'une des 11 langues prises en charge.
+Les paramètres sont répartis entre quatre onglets : Général, Exporter en Markdown, Exporter vers Word et Relecture. Chaque onglet contient les explications utiles. La langue suit Obsidian par défaut et peut être choisie dans les paramètres généraux. Utilisez les flèches ou les touches Début/Fin pour changer d’onglet.
 
 ## Limitations
 

@@ -66,7 +66,7 @@ Der Word-Export erzeugt eine eigenständige DOCX-Datei im Ergebnisordner. Bewahr
 
 Für verbundene Structural-Tables-Zellen, Number-Suite-Beschriftungen und Querverweise, H7–H9-Überschriften oder typisierte Endnoten aktivieren Sie vor dem Word-Export in **DocWen → Einstellungen → Markdown-Syntax** die entsprechenden **Eingabe-Erweiterungen** oder die Obsidian-Voreinstellung. Diese Erweiterungen sind bei Neuinstallationen ausgeschaltet. Für die Rückkonvertierung nach Markdown müssen die passenden **Ausgabe-Erweiterungen** aktiviert sein. Die Word-Nummerierung richtet sich nach den DocWen-Exportoptionen; prüfen Sie das Ergebnis.
 
-Obsidian 1.12.7 oder neuer verwendet vier horizontal scrollbare Registerkarten: Allgemein, In Markdown exportieren, In Word exportieren und Korrekturlesen. Kontextbezogene Hinweise stehen auf der jeweiligen Registerkarte statt auf einer eigenen Verwendungsseite. Die Registerkarten unterstützen Pfeiltasten einschließlich RTL, Pos1/Ende, 20-px-Oberflächentext und große Ziele für grobe Zeiger. Die Sprache folgt standardmäßig Obsidian und kann auf eine der 11 unterstützten Sprachen festgelegt werden.
+Die Einstellungen sind auf vier Registerkarten verteilt: Allgemein, In Markdown exportieren, In Word exportieren und Korrekturlesen. Hinweise stehen direkt bei den jeweiligen Optionen. Die Sprache folgt standardmäßig Obsidian und lässt sich in den allgemeinen Einstellungen ändern. Mit den Pfeiltasten sowie Pos1/Ende können Sie zwischen den Registerkarten wechseln.
 
 ## Einschränkungen
 

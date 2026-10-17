@@ -388,7 +388,7 @@ describe("ActionRunner", () => {
     expect(state.modals).toHaveLength(1);
     expect(allText(state.modals[0].contentEl)).toContain("cli_path_not_configured");
     expect(allText(state.modals[0].contentEl)).toContain("Copy details");
-    const button = findByText(state.modals[0].contentEl, "Open DocWen settings");
+    const button = findByText(state.modals[0].contentEl, "Open plugin settings");
     expect(button).toBeDefined();
     button?.listeners.get("click")?.();
     expect(openSettings).toHaveBeenCalledOnce();

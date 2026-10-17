@@ -16,17 +16,17 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ![DocWen 校對側邊欄](../assets/docwen-assistant-proofread-en.png)
 
-### 頂部分頁設定與 DocWen 連線
+### 設定與 DocWen 連線
 
 使用四個頂部分頁及其中的說明卡片自動連線 Microsoft Store 安裝版、按需設定可攜版，並調整轉換與校對。
 
 ![DocWen Assistant 頂部分頁設定](../assets/docwen-assistant-settings-en.png)
 
-### 依能力選擇匯出
+### 匯出檔案
 
 選擇目前可用的轉換路徑和明確的輸出位置，同時保持來源筆記不變。
 
-![DocWen Assistant 依能力選擇匯出](../assets/docwen-assistant-export-en.png)
+![DocWen Assistant 匯出檔案](../assets/docwen-assistant-export-en.png)
 
 ## 功能
 
@@ -43,7 +43,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 - 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 - 啟動或開啟 DocWen 桌面應用使用公開的本機 `gui open` CLI 控制命令，因此 Machine 協商失敗不會阻止開啟 DocWen 本身。
 
-Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並透過「手動安裝」選取；Linux 一律使用「手動安裝」。
+Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並透過「手動選擇安裝位置」選取；Linux 一律使用「手動選擇安裝位置」。
 
 自動偵測僅適用於 Windows，並使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。手動安裝在 Windows 接受解壓縮後的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
 
@@ -53,9 +53,9 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝 DocWen，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版；Linux x64 請從同一 Releases 頁面下載並完整解壓縮相容的 Linux 套件；
 2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，將 `main.js`、`manifest.json` 和 `styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
-3. 重新載入並啟用外掛；Windows 自動偵測無須選擇檔案。Windows 可攜版與所有 Linux 使用者都應在設定中選擇「手動安裝」和 DocWen 資料夾或執行檔。
+3. 重新載入並啟用外掛；Windows 自動偵測無須選擇檔案。Windows 可攜版與所有 Linux 使用者都應在設定中選擇「手動選擇安裝位置」和 DocWen 資料夾或執行檔。
 
-### 安裝安全界線
+### 更新時保留設定
 
 發行套件只包含 `main.js`、`manifest.json` 和 `styles.css`，不會包含、覆蓋或刪除 `data.json`。只有明確要清除全部偏好時才刪除 `data.json`；啟用外掛後再選擇 DocWen 位置。
 
@@ -72,7 +72,7 @@ Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的
 
 若筆記使用 Structural Tables 合併表格、Number Suite 題註與交互參照、七至九級標題或類型化尾註，匯出 Word 前請到 **DocWen → 設定 → Markdown 語法** 啟用對應的**輸入擴充**，或使用輸入方向的 **Obsidian 擴充**預設。新安裝時擴充預設關閉；若要從 Word 轉回擴充 Markdown，還需啟用對應的**輸出擴充**。Word 編號由 DocWen 匯出選項決定，請檢查輸出表格及參照。
 
-Obsidian 1.12.7 以上使用四個可水平捲動的頂部頁籤：一般、轉為 Markdown、轉為 Word和校對；說明放在相關頁籤內，不再另設「使用方法」頁。「連線方式」預設為「自動偵測」，此模式僅適用 Windows Microsoft Store；Linux 必須選擇「手動安裝」，Windows 可攜版亦使用同一選擇器。頁籤支援方向鍵（包括 RTL）、Home/End、20 px 介面文字和粗指標點擊區。外掛語言預設「跟隨 Obsidian」，也可選擇 11 種語言之一。
+設定分為四頁：一般、轉為 Markdown、轉為 Word、校對。每頁都有相關說明，分頁也可水平捲動。介面語言預設「跟隨 Obsidian」，也可以在「一般」頁手動選擇。Windows 的 Microsoft Store 版可自動偵測；Linux 與 Windows 可攜版需要手動選擇安裝位置。可用方向鍵及 Home/End 切換分頁。
 
 ## 限制
 

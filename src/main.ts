@@ -325,6 +325,7 @@ export default class DocWenPlugin extends Plugin {
     registerCommands({
       app: this.app,
       addLocalizedCommand: (key, command) => this.addLocalizedCommand(key, command),
+      launchDocWen: () => this.guiActions.open(),
       launchOrSendFile: () => this.launchOrSendFile(),
       activeFileSupports: (predicate) => this.activeFileSupports(predicate),
       capabilities: this.capabilities,

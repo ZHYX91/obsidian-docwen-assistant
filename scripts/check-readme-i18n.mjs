@@ -25,19 +25,19 @@ const config = {
       label: "English",
       path: "README.md",
       sections: ["Screenshots", "Features", "Requirements and compatibility", "Installation", "Usage", "Settings", "Limitations", "Privacy and security", "Development", "Support", "License"],
-      subsections: ["Proofreading sidebar", "Top-tab settings and DocWen connection", "Capability-selected export", "Install DocWen and the plugin", "Installation safety"],
+      subsections: ["Proofreading sidebar", "Settings and DocWen connection", "Export files", "Install DocWen and the plugin", "Keep your settings when updating"],
     },
     {
       label: "简体中文",
       path: "docs/i18n/README.zh-CN.md",
       sections: ["截图", "功能", "使用要求与兼容性", "安装", "使用", "设置", "限制", "隐私与安全", "开发", "支持", "许可证"],
-      subsections: ["校对侧边栏", "顶部页签设置与 DocWen 连接", "按能力选择导出", "安装 DocWen 与插件", "安装安全边界"],
+      subsections: ["校对侧边栏", "设置与 DocWen 连接", "导出文件", "安装 DocWen 与插件", "升级时保留设置"],
     },
     {
       label: "繁體中文",
       path: "docs/i18n/README.zh-TW.md",
       sections: ["螢幕截圖", "功能", "使用要求與相容性", "安裝", "使用", "設定", "限制", "隱私與安全性", "開發", "支援", "授權"],
-      subsections: ["校對側邊欄", "頂部分頁設定與 DocWen 連線", "依能力選擇匯出", "安裝 DocWen 與外掛", "安裝安全界線"],
+      subsections: ["校對側邊欄", "設定與 DocWen 連線", "匯出檔案", "安裝 DocWen 與外掛", "更新時保留設定"],
     },
     {
       label: "Deutsch",

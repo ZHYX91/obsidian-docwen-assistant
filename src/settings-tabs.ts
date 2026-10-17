@@ -25,8 +25,8 @@ export class SettingsTabs {
     this.activeIndex = initialIndex < 0 ? 0 : initialIndex;
 
     const rootEl = options.containerEl.createDiv({ cls: "docwen-settings-root" });
-    // The plugin language may differ from Obsidian's. Scope RTL to our settings UI.
-    if (getCurrentLocale() === "ar") rootEl.setAttribute("dir", "rtl");
+    // The plugin language may differ from Obsidian's in either direction.
+    rootEl.setAttribute("dir", getCurrentLocale() === "ar" ? "rtl" : "ltr");
     this.tabListEl = rootEl.createDiv({
       cls: "docwen-settings-tabs",
       attr: {
