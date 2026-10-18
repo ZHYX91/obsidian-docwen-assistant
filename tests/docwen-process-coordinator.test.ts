@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { DocWenProcessCoordinator } from "../src/docwen/process-coordinator";
+import { LocalCliError } from "../src/docwen/errors";
 
 function deferred() {
   let resolve!: () => void;
@@ -9,6 +10,25 @@ function deferred() {
 }
 
 describe("DocWen Store process coordination", () => {
+  it("rejects queued and future starts after unconfirmed process cleanup", async () => {
+    const coordinator = new DocWenProcessCoordinator();
+    const failed = deferred();
+    const error = new LocalCliError("cli_cleanup_failed", "Process exit is unconfirmed.", { cleanupState: "unconfirmed" });
+    const active = coordinator.run(async () => { await failed.promise; throw error; }, [], 1000);
+    const launch = vi.fn(async () => undefined);
+    const queued = coordinator.run(launch, [], 1000);
+    const queuedSecond = coordinator.run(launch, [], 1000);
+    const results = Promise.allSettled([active, queued, queuedSecond]);
+    failed.resolve();
+    expect(await results).toEqual([
+      { status: "rejected", reason: error },
+      { status: "rejected", reason: error },
+      { status: "rejected", reason: error },
+    ]);
+    await expect(coordinator.run(launch, [], 1000)).rejects.toBe(error);
+    expect(launch).not.toHaveBeenCalled();
+  });
+
   it("queues discovery and capability preload until GUI activation closes", async () => {
     const coordinator = new DocWenProcessCoordinator();
     const closed = deferred();

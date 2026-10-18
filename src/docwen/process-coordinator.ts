@@ -5,19 +5,29 @@ import { LocalCliError } from "./errors";
 /** Store activation and an owned Machine Job cannot attach concurrently. */
 export class DocWenProcessCoordinator {
   private busy = false;
+  private blocked: LocalCliError | undefined;
   private readonly waiting: Array<() => void> = [];
 
   async run<T>(operation: () => Promise<T>, signals: readonly (AbortSignal | undefined)[], timeoutMs: number): Promise<T> {
     const release = await this.acquire(signals, timeoutMs);
     try {
+      if (this.blocked) throw this.blocked;
       if (signals.some((signal) => signal?.aborted)) throw this.cancelled();
       return await operation();
+    } catch (error) {
+      if (error instanceof LocalCliError && error.code === "cli_cleanup_failed") {
+        // Releasing a queue slot is not evidence that the native process ended.
+        // A fresh plugin instance is required before any further activation.
+        this.blocked = error;
+      }
+      throw error;
     } finally {
       release();
     }
   }
 
   private acquire(signals: readonly (AbortSignal | undefined)[], timeoutMs: number): Promise<() => void> {
+    if (this.blocked) return Promise.reject(this.blocked);
     if (signals.some((signal) => signal?.aborted)) return Promise.reject(this.cancelled());
     return new Promise((resolve, reject) => {
       let timer: ReturnType<typeof setTimeout> | undefined;

@@ -38,6 +38,8 @@ cancellable queue. This also covers capability preload requests, so a GUI-contro
 cannot overlap a Machine Job attachment. Initial connection discovery awaits GUI-control completion
 before checking Machine health. Waiting Machine requests are cancelled on unload. This coordination
 does not claim control over independently launched processes outside the plugin.
+If either client reports unconfirmed process cleanup, queued and subsequent starts fail closed with
+the original cleanup error until the plugin is reloaded; freeing a queue slot never proves process exit.
 
 Windows Machine sessions use a minimal x64 controller embedded in `main.js`. The controller creates
 a Job Object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` and passes that Job through
