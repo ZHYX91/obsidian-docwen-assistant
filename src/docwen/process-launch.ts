@@ -35,7 +35,7 @@ export function docWenChildEnvironment(): NodeJS.ProcessEnv {
     if (process.env[key]) environment[key] = process.env[key];
   }
   const profileKeys = process.platform === "win32"
-    ? ["USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
+    ? ["USERNAME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
     : ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"];
   for (const key of profileKeys) {
     if (process.env[key]) environment[key] = process.env[key];

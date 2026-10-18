@@ -522,7 +522,7 @@ describe("DocWenMachineClient", () => {
 
   it("keeps the parent profile roots when a Machine child uses a different working directory", async () => {
     const profileKeys = process.platform === "win32"
-      ? ["USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
+      ? ["USERNAME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOMEDRIVE", "HOMEPATH"]
       : ["HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"];
     for (const key of profileKeys) vi.stubEnv(key, `profile-${key}`);
     vi.stubEnv("DOCWEN_DATA_DIR", "./selected-profile");

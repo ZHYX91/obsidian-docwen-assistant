@@ -12,6 +12,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Retain Linux process ownership checks when per-thread descendant files are unavailable, using verified process identity evidence.
 - Preserve numeric Windows process-creation errors separately from cleanup results, without exposing executable paths or arguments in shareable diagnostics.
 - Forward an explicitly configured runtime root to the owned Machine process.
+- Preserve the Windows username in the restricted child environment so local Machine startup can resolve its user namespace.
 
 ## [3.3.1] - 2026-10-09
 
