@@ -20,8 +20,8 @@
   {
     "format": "rtf",
     "file": "04-rtf.rtf",
-    "bytes": 18333,
-    "sha256": "9810972125f66f76efdca9c769bd7e10ecc2fe9710471e92c07af3eb13ebb4ed"
+    "bytes": 18174,
+    "sha256": "3eac8e9baaea6a1fad3a8cedff224f2c2683020e09279211685eba797003dd71"
   },
   {
     "format": "wps",
@@ -32,8 +32,8 @@
   {
     "format": "txt",
     "file": "06-txt.txt",
-    "bytes": 48,
-    "sha256": "cfec443f594e41a7d1bc475e5fd903b447b957d2546ba272f20647c7a43f1d86"
+    "bytes": 45,
+    "sha256": "9a2d0364fd79dcd4895e6f9425a5495bbd9fed5e58cb63c35058501fad1c2b5d"
   },
   {
     "format": "xlsx",
@@ -62,14 +62,14 @@
   {
     "format": "csv",
     "file": "11-csv.csv",
-    "bytes": 24,
-    "sha256": "f015235675348da66e4597dbea64a48ca93705419b481d3ce3a216df6709a569"
+    "bytes": 22,
+    "sha256": "15775f7fa4dff482880568674d0f73f4bd1585c865d5f40ea8ca397259b35c5b"
   },
   {
     "format": "tsv",
     "file": "12-tsv.tsv",
-    "bytes": 24,
-    "sha256": "a7f3a713350bc559664be74e78451422ad66c15b29ee7c0d64799232b85f12a7"
+    "bytes": 22,
+    "sha256": "f135a7de1b994ae62be358c1fcdda93cafda464465262ab37a586ba5c3f13b9b"
   },
   {
     "format": "png",
@@ -158,8 +158,8 @@
   {
     "format": "markdown",
     "file": "27-markdown.markdown",
-    "bytes": 121,
-    "sha256": "3567fde6823ff9797701846b4a64a63799fadf24e98c4e484839cee8ba706c89"
+    "bytes": 114,
+    "sha256": "6845fbafbab3ec2d7747802df4504c2b14e86dd6aac9a638f0cf03a32d829259"
   },
   {
     "format": "html",
@@ -176,14 +176,14 @@
   {
     "format": "mhtml",
     "file": "30-mhtml.mhtml",
-    "bytes": 361,
-    "sha256": "12757fbedd72802ba517de3c9daff9f83110badbe37fe467827df40fa926cf9b"
+    "bytes": 352,
+    "sha256": "ad4ca81fddd9fb477e5b4d0855110baf34ee76aea34e2948f383623f91ad5239"
   },
   {
     "format": "mht",
     "file": "31-mht.mht",
-    "bytes": 361,
-    "sha256": "12757fbedd72802ba517de3c9daff9f83110badbe37fe467827df40fa926cf9b"
+    "bytes": 352,
+    "sha256": "ad4ca81fddd9fb477e5b4d0855110baf34ee76aea34e2948f383623f91ad5239"
   },
   {
     "format": "epub",

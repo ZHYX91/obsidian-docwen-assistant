@@ -13,8 +13,8 @@
   },
   "scenarios": [
     {
-      "id": "desktop-docwen-operations",
-      "title": "Desktop DocWen operations and Vault-safe commits",
+      "id": "desktop-settings-surface",
+      "title": "Four-tab settings, persistence, and desktop layout",
       "surfaces": [
         "desktop"
       ],
@@ -22,16 +22,197 @@
         "desktop": []
       },
       "steps": [
-        "Exercise the four imperative settings tabs, contextual help cards, and capability discovery",
-        "Open every Formats example in DocWen from the file explorer; inspect the selected-file controls in single and batch modes, including repeated opens and unsupported-action explanations",
-        "Run proofread, conversion, validation, and numbering against the deterministic notes",
-        "Inject unsaved-buffer and concurrent-target conflicts before output commit"
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, record desktop host and DocWen package identities, reset temporary settings and scratch inputs to baseline, and configure that package in General with no active operation",
+        "On this run's recorded Obsidian host/version, open General, Export to Markdown, Export to Word, and Proofreading; inspect each contextual help card, without a separate Usage tab; minimum 1.12.7 and current 1.13.x coverage requires separate host runs",
+        "Use keyboard tab navigation, Home/End and RTL arrow navigation; repeat at narrow width, 16/20 px UI text, default and third-party themes, and in a popout window",
+        "Change language and dependent image/OCR controls, close and reopen settings, and verify the saved values, tab labels, ribbon and command text; exercise all supported locales including zh-Hant-HK and zh-Hans-SG host fallback",
+        "Arrange a settings-save failure only in this run's temporary profile before changing a control; observe pending changes, restore writing, and use General's Retry; restore the declared settings baseline and idle state afterward"
       ],
       "expected": [
-        "Typed capability failures remain visible and successful empty results remain empty",
-        "Only a confirmed staged result may replace an allowed target",
-        "Cancellation, conflict, and unload leave no child process or transaction residue",
-        "Every open request selects the requested file without silently executing or reusing a previous input"
+        "The imperative four-tab surface, help cards, focus and owning-window behavior remain usable on each declared host/layout combination",
+        "Dependent disabled states and translations follow the selected values; a successful save retains the current page",
+        "A failed save keeps the changed model visible until Retry succeeds",
+        "Unprepared save-failure or host/layout cases remain unverified rather than passing from source tests"
+      ]
+    },
+    {
+      "id": "desktop-connection-discovery",
+      "title": "DocWen location, Doctor, and capability discovery",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, record host and full DocWen package identities, reset temporary settings and scratch inputs from acceptance/fixtures, and start with no active operation",
+        "In General select the full package folder, DocWen.exe, then DocWenCLI.exe using the native location controls; after each successful save run Check connection and the Doctor command; on Windows also check the automatic Store alias when installed",
+        "Try an unrelated executable, a folder missing the CLI sibling, and a parent whose only CLI is in a child folder; inspect the visible failure and Details, then restore the recorded valid package",
+        "Open Conversion.md's DocWen menu and the numbering selectors on the Markdown/Word settings tabs; observe discovery and available actions/resources",
+        "In this run's temporary settings prepare an identity-recorded controlled DocWen endpoint for successful empty capabilities/resources, a typed discovery failure, and a delayed obsolete reply; repeat discovery, Retry and connection replacement for each response, then restore the real package and idle state"
+      ],
+      "expected": [
+        "All three valid manual selections save the same canonical CLI path and trigger Doctor; invalid selections fail visibly without recursive executable guessing",
+        "Real-package Doctor and discovery report their actual health and supported actions; missing Store installation is recorded separately from manual-package success",
+        "Successful empty lists remain empty, unavailable saved schemes stay visible, and typed failures expose Retry/Details without inventing default actions",
+        "An obsolete reply cannot replace the current connection or capability state; GUI launch remains available after background discovery failure",
+        "Controlled-endpoint observations prove Assistant boundary handling only; absent fault setup or untested responses remain unverified"
+      ]
+    },
+    {
+      "id": "desktop-file-handoff",
+      "title": "Format admission and explicit Open in DocWen handoff",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded full DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure its location with no active operation, enable detection of all file extensions, and verify all 35 Formats identities against acceptance/format-fixtures.json",
+        "For every listed Formats example, invoke Open in DocWen from the file explorer and inspect the requested selected file and controls in both single and batch modes",
+        "Alternate two different files, repeat an open request, then open the active file through the command palette and ribbon; also launch with no active file",
+        "Reopen each file's DocWen submenu after capability discovery and inspect supported operations and unsupported-action explanations without running those operations"
+      ],
+      "expected": [
+        "Every open request selects the requested file without silently executing or reusing a previous input; repeated requests and single/batch mode transitions remain explicit",
+        "Menus and controls follow current inspection/capabilities rather than extension guesses; unsupported actions are explained",
+        "All 35 examples are accounted for by per-file observations; WPS/ET aliases prove extension admission only and do not prove native WPS-produced conversion",
+        "The original materialized format bytes remain unchanged; handoff does not claim that conversion or Office rendering passed"
+      ]
+    },
+    {
+      "id": "desktop-proofread-validation",
+      "title": "Markdown validation and read-only proofreading results",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, enable typo/symbol/punctuation checks, open Proofread.md, and record its source digest",
+        "Run Proofread Markdown from the command palette and from the file menu; inspect the source filename, actual issue/empty result, completion notice, and line/rule sorting",
+        "Activate an issue by keyboard and verify the selected source range; edit the source, try an old issue, and Refresh the report before navigating again",
+        "Prepare an identity-recorded delayed validation endpoint in this run's temporary settings, start validation for Proofread.md, then start it for Conversion.md before the first reply; release the replies, inspect the final sidebar source/results, and restore the recorded real package and idle state"
+      ],
+      "expected": [
+        "Proofreading uses direct Markdown validation and reports the captured Vault filename; validation is this operation's engine, not a separate unsupported command",
+        "Results and issue navigation are read-only; sorting does not change the note, and changed-source positions require Refresh",
+        "Only the latest live proofreading generation publishes results; unavailable delayed-response setup remains unverified",
+        "Issue count and ranges are checked against the actual packaged validator result, without assuming this English fixture yields every rule type"
+      ]
+    },
+    {
+      "id": "desktop-conversion-exports",
+      "title": "Capability-selected conversions and complete result directories",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, record Conversion.md and Formats/01-docx.docx digests, and create an empty owned output parent",
+        "From Conversion.md run the advertised DOCX and XLSX exports, selecting the offered template or direct spreadsheet option; from Formats/01-docx.docx run the advertised Markdown export and choose only a route-applicable optimization or None",
+        "Choose the owned output parent in the native directory dialog for each conversion; run a second export into that same parent and inspect both complete result directories, business outputs and linked resources",
+        "Inspect DOCX paragraph/table content, XLSX cells and Markdown text for the source markers; repeat Markdown-to-DOCX with advisory proofreading enabled then disabled and inspect the notifications",
+        "In this Vault create a byte-identical scratch copy of Formats/01-docx.docx named Detected-format.txt; invoke its capability-selected Markdown conversion, first Cancel then Continue the detected-format confirmation"
+      ],
+      "expected": [
+        "Template/optimization choices match the exact advertised route; an unavailable required route is reported unverified or failed, never silently omitted from this scenario",
+        "Each export publishes a new complete result directory under the chosen parent, preserves generated names/resources, and never overwrites an earlier result",
+        "Output content preserves the tested table/text markers and source digests remain unchanged; file existence alone is insufficient",
+        "Advisory validation obeys the setting; Cancel publishes nothing and Continue explicitly accepts detected content rather than trusting the scratch extension"
+      ]
+    },
+    {
+      "id": "desktop-heading-numbering",
+      "title": "Numbering live editor buffers and inactive Markdown files",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, record Unsaved numbering.md's baseline, and ensure no other Markdown leaf has that file open",
+        "Open Unsaved numbering.md, append a new heading in the unsaved editor buffer, immediately run Add heading numbering, and select an actual returned scheme; inspect both headings and then Remove heading numbering",
+        "Restore a fresh copy of Unsaved numbering.md under a new scratch name, close every editor for that file, then run Add and Remove heading numbering from its file explorer menu",
+        "Verify the live editor or inactive Vault contents after each completion and inspect notifications for warnings or unconfirmed-write details"
+      ],
+      "expected": [
+        "The unique open editor buffer, including its new heading, is numbered through one reconciled editor transaction; it is not replaced with the old disk snapshot",
+        "Inactive-file numbering uses a current Vault snapshot and returns the expected scheme/removal result without losing unrelated text",
+        "The CLI works on isolated inputs/outputs and never writes the Vault file in place; successful completion does not hide reconciliation or cleanup warnings"
+      ]
+    },
+    {
+      "id": "desktop-vault-conflicts",
+      "title": "Source, editor, and reconciliation conflicts fail closed",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, reset temporary settings and scratch inputs from acceptance/fixtures with no active operation, configure a recorded DocWen endpoint with a controllable completion barrier, record scratch source digests, and release/reset the barrier and restore a fresh source copy before every case",
+        "On a unique open copy of Unsaved numbering.md start Add heading numbering, then edit the buffer before releasing completion; repeat with a leaf/view replacement and with two editors for the same source",
+        "On an inactive source start numbering, then edit, rename, replace, or open that source before completion; run each mutation on a separate restored copy",
+        "Start proofreading and conversion on copies of Proofread.md and Conversion.md, then change the source before publication; inspect rejected or stale results",
+        "Arrange an identity-recorded host write/reconciliation failure only in this run's temporary profile, run numbering, and inspect the unconfirmed-write message before any retry; remove fault setup and restore the real package and idle state afterward"
+      ],
+      "expected": [
+        "Concurrent edits and changed/ambiguous file, leaf, view or editor identity reject the old numbering result and preserve the newer user content",
+        "A changed proofreading/export source cannot publish a stale report or conversion result",
+        "Unconfirmed writes remain unconfirmed, ask the user to inspect the destination, and are not automatically retried or recorded as successful rollback",
+        "Only request-owned temporary inputs/transactions are cleaned; missing barriers or fault injection remain unverified and source mocks do not count as real-host proof"
+      ]
+    },
+    {
+      "id": "desktop-output-conflicts",
+      "title": "Export destination and staged artifact conflicts",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, reset temporary settings and scratch inputs from acceptance/fixtures with no active operation, and configure an identity-recorded conversion endpoint that exposes the intended result root and pauses before publication; use a new owned output parent and a fresh Conversion.md copy for every case",
+        "Run DOCX export and choose that parent; before releasing completion create the intended result root as an empty directory, a directory containing sentinel bytes, a regular file, and a supported symlink in separate cases",
+        "In separate cases replace the selected parent at its same path, open a Markdown editor inside the intended result root, or mutate a declared staged artifact before publication",
+        "Prepare a conversion response with colliding related-output logical paths, run export, and inspect failure details; compare every competing target's identity and sentinel bytes after rejection"
+      ],
+      "expected": [
+        "Publication refuses an occupied result root, changed parent, open output editor, staged artifact drift or colliding output paths without replacing the competing content or following links",
+        "Only an identity-checked complete staged result can publish to an absent result root in the confirmed parent; there is no save-file overwrite path",
+        "Rejected publication removes only owned unchanged staging/lock entries; foreign or identity-changed entries are preserved and any cleanup warning stays visible",
+        "Unsupported symlink creation or unavailable controlled-publication setup is explicitly unverified, never inferred from static regression tests"
+      ]
+    },
+    {
+      "id": "desktop-cancellation-unload",
+      "title": "Picker, task, view-close, and plugin-unload cleanup",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, reset temporary settings and scratch inputs from acceptance/fixtures with no active operation, and configure a recorded delayable DocWen endpoint; record owned process-tree identities and a separate sentinel process, and restore fresh inputs, output parent and idle state before each cancellation case",
+        "Create a byte-identical scratch copy of Formats/01-docx.docx named Detected-format.txt for confirmation cases; start Add heading numbering or export and cancel while its scheme/template/optimization picker, native output dialog, or detected-format confirmation is open; dismiss any returned native selection after cancellation",
+        "Start accepted proofreading, export and numbering tasks; use the sidebar Cancel, Cancel active operation and Cancel all operations commands in separate cases, including two simultaneous different operation kinds",
+        "Start proofreading in a popout, close its owning view, and verify that only its generation is cancelled; start fresh delayed tasks and disable the plugin during execution, then re-enable it and run a normal operation",
+        "With an endpoint deliberately withholding completion, observe the bounded timeout and failure Details; normally close the host after settlement and compare owned processes and staging/transaction paths with the recorded baseline"
+      ],
+      "expected": [
+        "Cancellation closes plugin-owned pickers and prevents stale choices or late native-dialog results from starting work or publishing output",
+        "Running/cancelling state is visible and keyboard operable; closing the view cancels its owned proofreading generation",
+        "Cancellation, timeout and plugin unload settle all owned child processes and descendants, retain the unrelated sentinel, and leave no request-owned transaction residue after successful cleanup",
+        "Re-enable starts a fresh operation; failed cleanup remains a visible warning/unverified boundary, and missing delayed-task setup cannot count as cancellation success"
       ]
     }
   ]

@@ -13,3 +13,8 @@ PDF with PyMuPDF. Markup, EPUB, ENEX, XPS, and OFD containers were authored dire
 The files are provided under this repository's MIT license. Their identities are
 listed in `acceptance/format-fixtures.json`. Enable Obsidian's detection of all
 file extensions when inspecting the non-Markdown examples in the file explorer.
+
+The inventory binds the repository's canonical fixture bytes. Text examples use
+the LF policy in `.gitattributes`; hashes from their original CRLF authoring
+outputs do not identify the committed fixtures. Acceptance records the copied
+input identities separately and never changes these originals.
