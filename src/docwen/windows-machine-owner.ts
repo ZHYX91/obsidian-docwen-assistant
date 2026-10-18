@@ -132,6 +132,7 @@ export async function spawnWindowsOwnedMachineProcess(
       env: {
         ...docWenChildEnvironment(),
         [WINDOWS_MACHINE_OWNER_TARGET_ENV]: target.executable,
+        DOCWEN_ASSISTANT_JOB_STORE: target.mode === "automatic" ? "1" : "",
       },
       detached: false,
       shell: false,

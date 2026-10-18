@@ -31,6 +31,30 @@ afterEach(async () => {
 });
 
 describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifetime ownership", () => {
+  it("never executes a supplied alias target in automatic Store mode", async () => {
+    const fixture = await createNodeFixture("root-exit");
+    for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_LOG_DIR", "DOCWEN_RUNTIME_ROOT"]) {
+      const directory = path.join(fixture.root, key);
+      await mkdir(directory);
+      vi.stubEnv(key, directory);
+    }
+    const client = new DocWenMachineClient(() => ({
+      executable: fixture.executable,
+      cwd: fixture.root,
+      mode: "automatic",
+    }), () => "en_US");
+    try {
+      // A registered Store package may answer; machines without one must fail
+      // closed. In neither case may the supplied alias stand-in execute.
+      await client.query("health/check", {}, undefined, 5_000).catch((error: unknown) => {
+        expect(error).toBeInstanceOf(LocalCliError);
+      });
+      await expect(lstat(fixture.trace)).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      client.dispose();
+    }
+  }, 10_000);
+
   it("retains the Windows startup error alongside an unconfirmed cleanup result", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "docwen-invalid-executable-"));
     roots.push(root);
@@ -167,10 +191,10 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     }
   }, 10_000);
 
-  it("keeps an early target exit 126 separate from a missing automatic alias", async () => {
+  it("keeps an early target exit 126 separate from target discovery failure", async () => {
     const fixture = await createNodeFixture("target-exit-126");
     const client = new DocWenMachineClient(() => ({
-      executable: fixture.executable, cwd: fixture.root, mode: "automatic",
+      executable: fixture.executable, cwd: fixture.root, mode: "manual",
     }), () => "en_US");
     try {
       await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({

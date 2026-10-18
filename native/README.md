@@ -26,6 +26,13 @@ depend on another repository at runtime.
 
 ## Windows Machine lifetime ownership
 
+For automatic background connections, the controller queries the current user's fixed
+`ZHYX.DocWen_sncv8jc4ytfdj` package family with Windows package APIs and launches the registered
+package's `DocWenCLI.exe`. Missing or ambiguous registration fails closed; no arbitrary alias
+reparse target, PATH search, or guessed installation directory is trusted. The public execution
+alias must still be enabled for automatic discovery. Manual paths and GUI-control activation retain
+their existing behavior. Both Machine modes use the same atomic Job membership and cleanup below.
+
 Windows Machine sessions use a minimal x64 controller embedded in `main.js`. The controller creates
 a Job Object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` and passes that Job through
 `PROC_THREAD_ATTRIBUTE_JOB_LIST` while `CreateProcessW` creates DocWen suspended. Membership is

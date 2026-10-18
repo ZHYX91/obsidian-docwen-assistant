@@ -68,7 +68,7 @@ const record = {
   peMagic: "0x020b",
   subsystem: "windows-cui",
   timestamp: 0,
-  compiler: toolIdentity(tools.compiler, /C\/C\+\+.*Compiler/iu),
+  compiler: toolIdentity(tools.compiler, /C\/C\+\+.*\d+\.\d+/iu),
   librarian: toolIdentity(tools.librarian, /Library Manager/iu),
   linker: toolIdentity(tools.linker, /Linker Version/iu),
   compilerTarget: "x64-msvc",

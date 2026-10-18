@@ -69,6 +69,8 @@ __declspec(dllimport) DWORD WINAPI GetLastError(void);
 __declspec(dllimport) BOOL WINAPI SetEnvironmentVariableW(LPCWSTR, LPCWSTR);
 __declspec(dllimport) BOOL WINAPI WriteFile(HANDLE, LPCVOID, DWORD, DWORD *, LPVOID);
 __declspec(dllimport) void WINAPI ExitProcess(UINT);
+__declspec(dllimport) long WINAPI GetPackagesByPackageFamily(LPCWSTR, UINT *, LPWSTR *, UINT *, LPWSTR);
+__declspec(dllimport) long WINAPI GetPackagePathByFullName(LPCWSTR, UINT *, LPWSTR);
 
 struct IO_COUNTERS {
   ULONGLONG ReadOperationCount;
@@ -140,8 +142,10 @@ _Static_assert(sizeof(struct PROCESS_INFORMATION) == 24, "process info size");
 _Static_assert(sizeof(struct STARTUPINFOEXW) == 112, "extended startup size");
 
 static WCHAR target[MAX_TARGET];
+static WCHAR packageName[MAX_TARGET];
 static WCHAR commandLine[MAX_COMMAND];
 static const WCHAR targetVariable[] = {'D','O','C','W','E','N','_','A','S','S','I','S','T','A','N','T','_','J','O','B','_','T','A','R','G','E','T',0};
+static const WCHAR storeVariable[] = L"DOCWEN_ASSISTANT_JOB_STORE";
 static struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits;
 static struct STARTUPINFOEXW startup;
 static struct PROCESS_INFORMATION processInfo;
@@ -212,8 +216,32 @@ static BOOL build_command_line(DWORD targetLength) {
   return TRUE;
 }
 
+/* Resolve the current user's registered package, never an alias reparse target or
+   a guessed WindowsApps directory. Ambiguous registrations fail closed. */
+static DWORD resolve_store_target(void) {
+  UINT count = 1, nameLength = MAX_TARGET, pathLength = MAX_TARGET;
+  LPWSTR fullName = (LPWSTR)0;
+  static const WCHAR family[] = L"ZHYX.DocWen_sncv8jc4ytfdj";
+  static const WCHAR suffix[] = L"\\DocWenCLI.exe";
+  if (GetPackagesByPackageFamily(family, &count, &fullName, &nameLength, packageName) != 0 ||
+      count != 1 || !fullName ||
+      GetPackagePathByFullName(fullName, &pathLength, target) != 0 ||
+      pathLength < 4 || pathLength + sizeof(suffix) / sizeof(WCHAR) > MAX_TARGET) {
+    ExitProcess(TARGET_NOT_FOUND);
+  }
+  /* Windows returns the path length including its terminating NUL. */
+  DWORD length = pathLength - 1;
+  if (target[length] != 0 || target[1] != L':' || target[2] != L'\\') ExitProcess(TARGET_NOT_FOUND);
+  for (DWORD index = 0; index < sizeof(suffix) / sizeof(WCHAR); index++) target[length + index] = suffix[index];
+  return length + (DWORD)(sizeof(suffix) / sizeof(WCHAR)) - 1;
+}
+
 void entry(void) {
-  DWORD targetLength = GetEnvironmentVariableW(targetVariable, target, MAX_TARGET);
+  WCHAR store[2];
+  DWORD storeLength = GetEnvironmentVariableW(storeVariable, store, 2);
+  if (!SetEnvironmentVariableW(storeVariable, (LPCWSTR)0)) ExitProcess(WRAPPER_ERROR);
+  if (storeLength && (storeLength != 1 || store[0] != L'1')) ExitProcess(WRAPPER_ERROR);
+  DWORD targetLength = storeLength ? resolve_store_target() : GetEnvironmentVariableW(targetVariable, target, MAX_TARGET);
   if (targetLength == 0 || targetLength >= MAX_TARGET || !build_command_line(targetLength)) {
     ExitProcess(WRAPPER_ERROR);
   }

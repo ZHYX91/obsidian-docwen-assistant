@@ -8,6 +8,8 @@ EXPORTS
   GetEnvironmentVariableW
   GetExitCodeProcess
   GetLastError
+  GetPackagePathByFullName
+  GetPackagesByPackageFamily
   GetProcessHeap
   GetStdHandle
   HeapAlloc
