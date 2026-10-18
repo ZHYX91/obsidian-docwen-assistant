@@ -6,6 +6,8 @@ Use DocWen without leaving Obsidian. Export notes to Word, convert documents and
 
 > **DocWen is required.** Install a compatible DocWen 0.17.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
+The interface language changes Assistant’s own text and layout. Conversion language, templates and OCR are controlled by the task options and DocWen settings.
+
 ## Screenshots
 
 These are the main places you will use the plugin in desktop Obsidian.

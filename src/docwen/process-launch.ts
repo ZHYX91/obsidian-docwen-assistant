@@ -40,7 +40,7 @@ export function docWenChildEnvironment(): NodeJS.ProcessEnv {
   for (const key of profileKeys) {
     if (process.env[key]) environment[key] = process.env[key];
   }
-  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_DATA_DIR", "DOCWEN_LOG_DIR"]) {
+  for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_DATA_DIR", "DOCWEN_LOG_DIR", "DOCWEN_RUNTIME_ROOT"]) {
     const value = process.env[key]?.trim();
     if (value) environment[key] = profileDirectory(value);
   }

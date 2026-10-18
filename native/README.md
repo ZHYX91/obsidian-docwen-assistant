@@ -44,6 +44,11 @@ Windows x64 host with the recorded MSVC toolset. It resolves the installed x64 c
 and does not download a toolchain. Two clean build directories must produce identical bytes before the
 embedded payload is updated.
 
+When target process creation fails, the controller emits only the fixed
+`DOCWEN_OWNER_CREATE_ERROR:<Win32 code>` record. Assistant retains that numeric
+startup error separately from the cleanup result. It never exports the target
+path, command line or arbitrary stderr as shareable diagnostics.
+
 At runtime Assistant decodes the pinned bytes into a random owned temporary directory and verifies the
 SHA-256 plus PE32+/x64/subsystem/timestamp identity both when materializing and before reuse. Failure to
 create or verify that owner rejects the Machine launch; it never falls back to directly spawning

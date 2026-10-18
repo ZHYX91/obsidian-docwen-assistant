@@ -313,9 +313,6 @@ export class DocWenClient {
         prepared.options = buildConversionMachineOptions({
           ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
         }, inspection.mediaType);
-        if (Object.prototype.hasOwnProperty.call(asObject(selected.options_schema.properties), "locale")) {
-          prepared.options.locale = this.machine.locale();
-        }
         return prepared;
       }, signal);
       if (

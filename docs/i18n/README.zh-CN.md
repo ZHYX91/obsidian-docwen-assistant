@@ -6,6 +6,8 @@
 
 > **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
+界面语言只改变 Assistant 自身的文案和布局。转换语言、模板与 OCR 由任务选项和 DocWen 设置控制。
+
 ## 截图
 
 以下是日常最常用的三个界面。

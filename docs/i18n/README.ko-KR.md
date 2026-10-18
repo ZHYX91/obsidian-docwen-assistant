@@ -6,6 +6,8 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 > **DocWen 본체가 필요합니다.** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환 버전을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 완전히 압축 해제하세요.
 
+인터페이스 언어는 Assistant 자체의 문구와 레이아웃만 바꿉니다. 변환 언어, 템플릿 및 OCR은 작업 옵션과 DocWen 설정에서 관리합니다.
+
 ## 스크린샷
 
 다음 화면은 패키징된 플러그인과 DocWen CLI가 데스크톱 Obsidian에서 실행되는 모습입니다.

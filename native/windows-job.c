@@ -67,6 +67,7 @@ __declspec(dllimport) BOOL WINAPI SetHandleInformation(HANDLE, DWORD, DWORD);
 __declspec(dllimport) DWORD WINAPI GetEnvironmentVariableW(LPCWSTR, LPWSTR, DWORD);
 __declspec(dllimport) DWORD WINAPI GetLastError(void);
 __declspec(dllimport) BOOL WINAPI SetEnvironmentVariableW(LPCWSTR, LPCWSTR);
+__declspec(dllimport) BOOL WINAPI WriteFile(HANDLE, LPCVOID, DWORD, DWORD *, LPVOID);
 __declspec(dllimport) void WINAPI ExitProcess(UINT);
 
 struct IO_COUNTERS {
@@ -160,6 +161,20 @@ static void fail(HANDLE job, HANDLE process, HANDLE thread) {
 }
 
 static void fail_target_create(HANDLE job, DWORD createError) {
+  /* A fixed numeric record preserves the primary Windows error without
+     exposing paths, arguments or arbitrary target stderr. */
+  static const char prefix[] = "DOCWEN_OWNER_CREATE_ERROR:";
+  char message[64];
+  char digits[10];
+  DWORD length = 0, count = 0, written = 0, remaining = createError;
+  for (DWORD index = 0; index < sizeof(prefix) - 1u; index++) message[length++] = prefix[index];
+  do {
+    digits[count++] = (char)('0' + remaining % 10u);
+    remaining /= 10u;
+  } while (remaining);
+  while (count) message[length++] = digits[--count];
+  message[length++] = '\n';
+  WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, length, &written, (LPVOID)0);
   if (job && job != INVALID_HANDLE_VALUE) {
     TerminateJobObject(job, WRAPPER_ERROR);
     CloseHandle(job);

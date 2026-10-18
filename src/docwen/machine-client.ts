@@ -306,7 +306,7 @@ class MachineSession {
       }
       if (!this.normalClose) {
         this.queue.fail(this.windowsOwned
-          ? windowsOwnerEarlyExit(target.mode, code)
+          ? windowsOwnerEarlyExit(target.mode, code, Buffer.concat(this.stderr).toString("utf8"))
           : new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
               exitCode: code,
             }));
@@ -823,6 +823,10 @@ export class DocWenMachineClient {
           throw new LocalCliError("cli_cleanup_failed", cleanupError.message, {
             ...cleanupError.details,
             primaryCode: primary instanceof LocalCliError ? primary.code : undefined,
+            ...(primary instanceof LocalCliError ? {
+              primaryPhase: primary.details.phase,
+              primarySystemCode: primary.details.systemCode,
+            } : {}),
           });
         }
         throw new LocalCliError("cli_cleanup_failed", "Unable to clean up the DocWen process tree.", {
@@ -2193,21 +2197,26 @@ function waitForExit(
 function windowsOwnerEarlyExit(
   mode: DocWenLaunchTarget["mode"],
   exitCode: number | null,
+  stderr: string,
 ): LocalCliError {
+  const createError = /^DOCWEN_OWNER_CREATE_ERROR:(0|[1-9]\d{0,9})\r?\n$/u.exec(stderr);
+  const systemError = createError && Number(createError[1]) <= 0xffffffff
+    ? { phase: "create_process", systemCode: `WIN32_${createError[1]}` }
+    : {};
   if (exitCode === WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT) {
     return new LocalCliError(
       mode === "automatic" ? "cli_alias_not_found" : "cli_spawn_failed",
       mode === "automatic"
         ? "The DocWen application execution alias is unavailable."
         : "The configured DocWen Machine executable could not be started.",
-      { exitCode, mode, ownershipState: "windows_job" },
+      { exitCode, mode, ownershipState: "windows_job", ...systemError },
     );
   }
   if (exitCode === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
     return new LocalCliError(
       "cli_spawn_failed",
       "The Windows Machine lifetime owner failed before the operation completed.",
-      { exitCode, mode, ownershipState: "windows_job" },
+      { exitCode, mode, ownershipState: "windows_job", ...systemError },
     );
   }
   return new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {

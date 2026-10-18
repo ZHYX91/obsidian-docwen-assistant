@@ -6,6 +6,8 @@ DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZH
 
 > **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP di động trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
+Ngôn ngữ giao diện chỉ thay đổi văn bản và bố cục của Assistant. Ngôn ngữ chuyển đổi, mẫu và OCR được điều khiển bằng tùy chọn tác vụ và cài đặt DocWen.
+
 ## Ảnh chụp màn hình
 
 Các ảnh sau cho thấy plugin đã đóng gói cùng DocWen CLI chạy trong Obsidian trên máy tính.

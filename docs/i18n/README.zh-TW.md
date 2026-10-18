@@ -6,6 +6,8 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 > **必須安裝 DocWen 本體。** 請從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容版本，或完整解壓縮 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 提供的 ZIP 可攜版。
 
+介面語言只改變 Assistant 本身的文字與版面。轉換語言、範本與 OCR 由工作選項及 DocWen 設定控制。
+
 ## 螢幕截圖
 
 以下截圖展示打包後的外掛與本機 DocWen 在桌面版 Obsidian 中執行的介面。

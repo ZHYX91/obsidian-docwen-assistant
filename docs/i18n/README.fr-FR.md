@@ -6,6 +6,8 @@ DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://g
 
 > **DocWen est requis.** Installez une version compatible depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez entièrement le ZIP portable proposé dans [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
+La langue de l’interface change uniquement les textes et la disposition d’Assistant. La langue de conversion, les modèles et l’OCR dépendent des options de la tâche et des réglages de DocWen.
+
 ## Captures d’écran
 
 Ces captures montrent le plugin empaqueté avec DocWen CLI dans Obsidian pour ordinateur.

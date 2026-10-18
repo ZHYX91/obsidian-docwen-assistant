@@ -31,6 +31,27 @@ afterEach(async () => {
 });
 
 describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifetime ownership", () => {
+  it("retains the Windows startup error alongside an unconfirmed cleanup result", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "docwen-invalid-executable-"));
+    roots.push(root);
+    const executable = path.join(root, "invalid.exe");
+    await writeFile(executable, "This is not a Windows executable.");
+    const client = new DocWenMachineClient(() => executable, () => "ar_SA");
+    try {
+      await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({
+        code: "cli_cleanup_failed",
+        details: {
+          cleanupState: "unconfirmed",
+          primaryCode: "cli_spawn_failed",
+          primaryPhase: "create_process",
+          primarySystemCode: expect.stringMatching(/^WIN32_(193|216)$/u),
+        },
+      });
+    } finally {
+      client.dispose();
+    }
+  }, 10_000);
+
   it("cleans an independent-stdio descendant after the direct root exits normally", async () => {
     const fixture = await createNodeFixture("root-exit");
     const sentinel = startSentinel();

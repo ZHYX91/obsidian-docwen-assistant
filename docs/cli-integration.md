@@ -19,6 +19,8 @@ DocWen Assistant requires DocWen 0.17.0 or later. Content operations consume `do
 
 ## Methods used
 
+The resource-query locale is a display preference, not a conversion default. Conversion tasks do not derive `options.locale` from Assistant's interface language; the connected Core owns omitted output-language defaults. Numeric Windows owner startup diagnostics are retained separately from unconfirmed cleanup and pass through the finite shareable-diagnostic filter.
+
 Optimization choices join `resource/list` IDs to available `transform` capabilities through
 `optimization_id`. Input slots and output media types must match, and the match must be unique.
 Ordinary conversion excludes optimizer capabilities. The chosen capability and its supported options

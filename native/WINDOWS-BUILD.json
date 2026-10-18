@@ -1,7 +1,7 @@
 {
-  "sourceSha256": "4131ffe2f92d28555e5965440c766b72e6c4434aea00abee29d075daf6d407cc",
-  "defSha256": "0b23eb8186cea04c6abe18b96b17aeb54fec862870c22dee5c6289acf192b20e",
-  "binarySha256": "f7bfd55b3cc95a6216ccda87a439b24dc2c2c96a09f8e098e8eae67f2cb3275b",
+  "sourceSha256": "55a1b0bf903dfa60b51616aa9c442b7183af2dc73162fbbf7440a79ef96f86fc",
+  "defSha256": "e9d0ec045dc122c473a8fdc83cf1910bebb24501677207e22c4d25468f66b640",
+  "binarySha256": "360ff0a5b0bee7906d1a7fc457e362cffb7162c4002594df3313e88e39f805cc",
   "binaryBytes": 5120,
   "platform": "win32",
   "arch": "x64",
@@ -10,9 +10,9 @@
   "peMagic": "0x020b",
   "subsystem": "windows-cui",
   "timestamp": 0,
-  "compiler": "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64",
-  "librarian": "Microsoft (R) Library Manager Version 14.51.36260.0",
-  "linker": "Microsoft (R) Incremental Linker Version 14.51.36260.0",
+  "compiler": "用法: cl [ 选项... ] 文件名... [ /link 链接选项... ]",
+  "librarian": "Microsoft (R) Library Manager Version 14.44.35228.0",
+  "linker": "Microsoft (R) Incremental Linker Version 14.44.35228.0",
   "compilerTarget": "x64-msvc",
   "compilerFlags": [
     "/nologo",

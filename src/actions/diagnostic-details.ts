@@ -22,6 +22,8 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
   }
   const incompatibility = read("incompatibility");
   if (read("phase") === "initialize") details.phase = "initialize";
+  if (read("phase") === "create_process") details.phase = "create_process";
+  if (read("primaryPhase") === "create_process") details.primaryPhase = "create_process";
   if (
     incompatibility === "machine_protocol"
     || incompatibility === "artifact_bundle"
@@ -54,6 +56,8 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
   if (primaryCode) details.primaryCode = primaryCode;
   const systemCode = diagnosticCode(read("systemCode"));
   if (systemCode) details.systemCode = systemCode;
+  const primarySystemCode = diagnosticCode(read("primarySystemCode"));
+  if (primarySystemCode) details.primarySystemCode = primarySystemCode;
   const cleanupState = read("cleanupState");
   if (cleanupState === "unconfirmed") details.cleanupState = cleanupState;
   const unconfirmedEvidenceCount = read("unconfirmedEvidenceCount");

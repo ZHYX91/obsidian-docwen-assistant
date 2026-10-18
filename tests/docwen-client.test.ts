@@ -191,7 +191,7 @@ function conversionQuery(file: string, capability = conversionCapability(), form
 }
 
 describe("DocWenClient Machine semantics", () => {
-  it.each([true, false])("passes Arabic only to locale-aware conversion capabilities (%s)", async (supportsLocale) => {
+  it.each([true, false])("keeps Arabic display language out of conversion options (%s)", async (supportsLocale) => {
     const root = await temporaryRoot();
     const source = path.join(root, "عربي.md");
     await writeFile(source, "# مرحبا");
@@ -201,14 +201,14 @@ describe("DocWenClient Machine semantics", () => {
       options_schema: { properties: supportsLocale ? { locale: { type: "string", enum: ["ar_SA"] } } : {} },
     };
     const runTask = vi.fn(async (request: MachineTaskRequest) => {
-      expect(request.options).toEqual(supportsLocale ? { locale: "ar_SA" } : {});
-      throw new Error("captured Arabic plan");
+      expect(request.options).toEqual({});
+      throw new Error("captured language-independent plan");
     });
     const transport = machine(conversionQuery(source, capability), runTask);
     vi.spyOn(transport, "locale").mockReturnValue("ar_SA");
     await expect(new DocWenClient(transport).convert({
       inputs: [sourceInput(source)], target: "docx", outputDirectory: root,
-    })).rejects.toThrow("captured Arabic plan");
+    })).rejects.toThrow("captured language-independent plan");
     expect(runTask).toHaveBeenCalledOnce();
   });
 

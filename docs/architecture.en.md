@@ -20,6 +20,8 @@ Windows automatic mode directly starts the fixed `%LOCALAPPDATA%\\Microsoft\\Win
 
 ## Request data flow
 
+Assistant's interface language controls its own text and direction. Resource queries may request localized display names, while conversion requests retain stable resource IDs and do not copy that display preference into task `locale`. Omitted task language follows Core's output settings. Templates, explicit OCR choices and proofreading rules keep their independent owners. A fixed task therefore keeps the same options after an Assistant display-language change.
+
 Optimizer selection joins resource IDs to executable `transform` capabilities by `optimization_id`,
 typed input shape, output media type, and availability. `conversion-selection.ts` validates the exact
 selected capability against the prepared input handles. Actions pass their discovered capability to

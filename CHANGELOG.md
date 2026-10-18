@@ -4,6 +4,15 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-18
+
+- Add Arabic translations and scoped right-to-left layout, with shared language navigation in all README guides.
+- Keep interface language independent of conversion language, templates and OCR configuration; localize resource display names without adding implicit task options.
+- Make Launch DocWen available without an active file and clarify setup, commands and compatibility guidance.
+- Retain Linux process ownership checks when per-thread descendant files are unavailable, using verified process identity evidence.
+- Preserve numeric Windows process-creation errors separately from cleanup results, without exposing executable paths or arguments in shareable diagnostics.
+- Forward an explicitly configured runtime root to the owned Machine process.
+
 ## [3.3.1] - 2026-10-09
 
 - Reject stale source snapshots when a note is moved, deleted or replaced before export publication, including changes during the final output checks.
