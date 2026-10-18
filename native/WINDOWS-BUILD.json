@@ -1,7 +1,7 @@
 {
   "sourceSha256": "7c3264e3b9d09f5e6cde88eb5abbae15a60b1e0e3d4d007bcb286de7faf701fa",
   "defSha256": "0d0b9f4129e57bc3a1296c8dc3a97b2a268be24e626851b246acbb16f5ae8ac9",
-  "binarySha256": "4a8b01e957d90720723f603ce4995f65acc652eea1c67692fbde7c2eba3b29cf",
+  "binarySha256": "bf61078c7bd897cb2d46852c09ed33cced951cebbd7d94c73577d5d351b4bc52",
   "binaryBytes": 6144,
   "platform": "win32",
   "arch": "x64",
@@ -10,9 +10,9 @@
   "peMagic": "0x020b",
   "subsystem": "windows-cui",
   "timestamp": 0,
-  "compiler": "用于 x64 的 Microsoft (R) C/C++ 优化编译器 19.44.35228 版",
-  "librarian": "Microsoft (R) Library Manager Version 14.44.35228.0",
-  "linker": "Microsoft (R) Incremental Linker Version 14.44.35228.0",
+  "compiler": "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64",
+  "librarian": "Microsoft (R) Library Manager Version 14.51.36260.0",
+  "linker": "Microsoft (R) Incremental Linker Version 14.51.36260.0",
   "compilerTarget": "x64-msvc",
   "compilerFlags": [
     "/nologo",
