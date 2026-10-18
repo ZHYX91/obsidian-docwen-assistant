@@ -14,6 +14,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Forward an explicitly configured runtime root to the owned Machine process.
 - Preserve the Windows username in the restricted child environment so local Machine startup can resolve its user namespace.
 - Resolve automatic background connections through the registered Microsoft Store package, avoiding execution-alias activation failures while preserving Job Object ownership.
+- Coordinate Windows GUI-control and background sessions so initial discovery and capability preloading cannot overlap Store activation with an owned Machine process.
 
 ## [3.3.1] - 2026-10-09
 

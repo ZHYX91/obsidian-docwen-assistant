@@ -8,6 +8,8 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LocalCliError } from "../src/docwen/errors";
+import { DocWenProcessCoordinator } from "../src/docwen/process-coordinator";
+import { DocWenCapabilityService } from "../src/docwen/capability-service";
 import { DocWenMachineClient, type MachineTaskRequest } from "../src/docwen/machine-client";
 import {
   materializeWindowsMachineOwner,
@@ -31,6 +33,54 @@ afterEach(async () => {
 });
 
 describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifetime ownership", () => {
+  it("keeps both capability preload queries behind GUI activation", async () => {
+    const fixture = await createNodeFixture("root-exit");
+    const coordinator = new DocWenProcessCoordinator();
+    let closeGui!: () => void;
+    const gui = coordinator.run(() => new Promise<void>((resolve) => { closeGui = resolve; }), [], 5000);
+    await Promise.resolve();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US", undefined, undefined, coordinator);
+    const queries: Promise<unknown>[] = [];
+    const query = (): Promise<unknown> => {
+      const result = client.query("health/check", {}, undefined, 5000);
+      queries.push(result);
+      return result;
+    };
+    const capabilities = new DocWenCapabilityService({
+      inspect: async () => { await query(); throw new Error("fixture inspection complete"); },
+      runtimeCapabilities: async () => { await query(); return { capabilities: [] }; },
+    } as never);
+    try {
+      const preload = capabilities.preload("example.md");
+      expect(queries).toHaveLength(2);
+      await expect(lstat(fixture.trace)).rejects.toMatchObject({ code: "ENOENT" });
+      closeGui();
+      await gui;
+      await preload;
+      await Promise.all(queries);
+      expect(numberField(await waitForEvent(fixture.trace, "root_started"), "pid")).toBeGreaterThan(0);
+    } finally {
+      closeGui();
+      client.dispose();
+    }
+  }, 15000);
+
+  it("does not start queued background discovery after unload during GUI activation", async () => {
+    const fixture = await createNodeFixture("root-exit");
+    const coordinator = new DocWenProcessCoordinator();
+    let closeGui!: () => void;
+    const gui = coordinator.run(() => new Promise<void>((resolve) => { closeGui = resolve; }), [], 5000);
+    await Promise.resolve();
+    const client = new DocWenMachineClient(() => fixture.executable, () => "en_US", undefined, undefined, coordinator);
+    const pending = client.query("health/check", {}, undefined, 5000);
+    const rejected = expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
+    client.dispose();
+    await rejected;
+    closeGui();
+    await gui;
+    await expect(lstat(fixture.trace)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("never executes a supplied alias target in automatic Store mode", async () => {
     const fixture = await createNodeFixture("root-exit");
     for (const key of ["DOCWEN_CONFIG_DIR", "DOCWEN_LOG_DIR", "DOCWEN_RUNTIME_ROOT"]) {

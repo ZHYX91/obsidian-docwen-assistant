@@ -4,6 +4,7 @@ import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "no
 import { TextDecoder } from "node:util";
 
 import { LocalCliError } from "./errors";
+import type { DocWenProcessCoordinator } from "./process-coordinator";
 import {
   docWenChildEnvironment,
   normalizeDocWenLaunchTarget,
@@ -18,6 +19,7 @@ const TERMINATE_GRACE_MS = 500;
 export class DocWenGuiControlClient {
   constructor(
     private readonly resolveLaunchTarget: () => string | DocWenLaunchTarget,
+    private readonly processCoordinator?: DocWenProcessCoordinator,
   ) {}
 
   async open(filePath?: string, signal?: AbortSignal): Promise<void> {
@@ -30,6 +32,11 @@ export class DocWenGuiControlClient {
   }
 
   private async execute(command: "open" | "status", filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
+    const run = (): Promise<GuiResult> => this.executeUncoordinated(command, filePath, signal);
+    return this.processCoordinator ? this.processCoordinator.run(run, [signal], PROCESS_TIMEOUT_MS) : run();
+  }
+
+  private async executeUncoordinated(command: "open" | "status", filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
     if (signal?.aborted) {
       throw new LocalCliError("cli_cancelled", "DocWen GUI open was cancelled.");
     }

@@ -8,6 +8,7 @@ import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "no
 
 import packageJson from "../../package.json";
 import { LocalCliError, RemoteMachineError } from "./errors";
+import type { DocWenProcessCoordinator } from "./process-coordinator";
 import {
   docWenChildEnvironment,
   normalizeDocWenLaunchTarget,
@@ -642,12 +643,14 @@ class MachineSession {
 export class DocWenMachineClient {
   private readonly activeSessions = new Set<MachineSession>();
   private disposed = false;
+  private readonly shutdown = new AbortController();
 
   constructor(
     private readonly resolveBinaryPath: () => string | DocWenLaunchTarget,
     private readonly resolveLocale: () => string,
     private readonly expectedProductVersion?: string,
     private readonly windowsOwnerStore: WindowsMachineOwnerStore = new WindowsMachineOwnerStore(),
+    private readonly processCoordinator?: DocWenProcessCoordinator,
   ) {}
 
   locale(): string {
@@ -726,6 +729,7 @@ export class DocWenMachineClient {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.shutdown.abort();
     for (const session of this.activeSessions) {
       session.fail(new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload."));
       void session.terminate().catch(() => undefined);
@@ -735,6 +739,17 @@ export class DocWenMachineClient {
   }
 
   private async withSession<T>(
+    signal: AbortSignal | undefined,
+    timeoutMs: number,
+    body: (session: MachineSession, setTaskId: (taskId: string) => void, productVersion: string) => Promise<T>,
+  ): Promise<T> {
+    const run = (): Promise<T> => this.withUncoordinatedSession(signal, timeoutMs, body);
+    return this.processCoordinator
+      ? this.processCoordinator.run(run, [signal, this.shutdown.signal], timeoutMs)
+      : run();
+  }
+
+  private async withUncoordinatedSession<T>(
     signal: AbortSignal | undefined,
     timeoutMs: number,
     body: (

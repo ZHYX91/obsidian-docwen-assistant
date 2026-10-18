@@ -48,6 +48,7 @@ import { OperationStatus } from "./operation-status";
 import { RuntimeDisposer } from "./runtime/disposer";
 import { SettingsSaveCoordinator, type SettingsSaveState } from "./runtime/settings-save";
 import { DocWenConnectionMonitor } from "./docwen/connection-monitor";
+import { DocWenProcessCoordinator } from "./docwen/process-coordinator";
 
 /**
  * DocWen Assistant Plugin
@@ -160,15 +161,13 @@ export default class DocWenPlugin extends Plugin {
   }
 
   public async checkDocWenConnectionSilently(): Promise<void> {
-    const guiCheck = this.getGuiConnectionStatus().state === "unchecked"
-      ? this.checkGuiConnectionSilently() : Promise.resolve();
-    if (this.connectionMonitor.getStatus().state !== "unchecked") { await guiCheck; return; }
+    if (this.getGuiConnectionStatus().state === "unchecked") await this.checkGuiConnectionSilently();
+    if (this.connectionMonitor.getStatus().state !== "unchecked") return;
     try {
       await this.connectionMonitor.check();
     } catch {
       // The settings status row presents the typed failure without a popup.
     }
-    await guiCheck;
   }
 
   /**
@@ -186,14 +185,19 @@ export default class DocWenPlugin extends Plugin {
 
     // Content operations use one Machine v2 boundary. GUI opening is a
     // separate local control surface so protocol negotiation cannot hide the app.
+    const processCoordinator = process.platform === "win32" ? new DocWenProcessCoordinator() : undefined;
     this.docwen = new DocWenClient(
       new DocWenMachineClient(
         () => this.resolveCliExecutable(),
         () => this.getDocwenLangCode(),
+        undefined,
+        undefined,
+        processCoordinator,
       ),
     );
     this.guiControl = new DocWenGuiControlClient(
       () => this.resolveCliExecutable(),
+      processCoordinator,
     );
     this.guiConnectionMonitor = new DocWenConnectionMonitor(
       () => this.settings.docwenConnectionMode,

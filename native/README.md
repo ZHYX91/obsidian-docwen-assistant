@@ -33,6 +33,12 @@ reparse target, PATH search, or guessed installation directory is trusted. The p
 alias must still be enabled for automatic discovery. Manual paths and GUI-control activation retain
 their existing behavior. Both Machine modes use the same atomic Job membership and cleanup below.
 
+Within one Windows plugin instance, GUI-control subprocesses and Machine sessions share a bounded,
+cancellable queue. This also covers capability preload requests, so a GUI-control alias activation
+cannot overlap a Machine Job attachment. Initial connection discovery awaits GUI-control completion
+before checking Machine health. Waiting Machine requests are cancelled on unload. This coordination
+does not claim control over independently launched processes outside the plugin.
+
 Windows Machine sessions use a minimal x64 controller embedded in `main.js`. The controller creates
 a Job Object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` and passes that Job through
 `PROC_THREAD_ATTRIBUTE_JOB_LIST` while `CreateProcessW` creates DocWen suspended. Membership is

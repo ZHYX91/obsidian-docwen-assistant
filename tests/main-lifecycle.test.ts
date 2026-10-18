@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   workspaceEvents: new Map<string, (...args: unknown[]) => unknown>(),
   shutdown: async (): Promise<boolean> => true,
   hasPendingWork: false,
+  processCoordinators: [] as unknown[],
 }));
 
 class FakeElement {
@@ -94,11 +95,16 @@ vi.mock("../src/actions/proofread-actions", () => ({ ProofreadActions: class Pro
 vi.mock("../src/docwen", () => ({
   resolveDocWenLaunchTarget: (_mode: string, value: string) => value,
   DocWenMachineClient: class DocWenMachineClient {
+    constructor(_target: unknown, _locale: unknown, _version: unknown, _owner: unknown, coordinator: unknown) {
+      state.processCoordinators.push(coordinator);
+    }
     dispose(): void {
       state.cleanup.push("client");
     }
   },
-  DocWenGuiControlClient: class DocWenGuiControlClient {},
+  DocWenGuiControlClient: class DocWenGuiControlClient {
+    constructor(_target: unknown, coordinator: unknown) { state.processCoordinators.push(coordinator); }
+  },
   DocWenClient: class DocWenClient {
     constructor(private readonly client: { dispose: () => void }) {}
     dispose(): void {
@@ -155,6 +161,7 @@ vi.mock("../src/operation-status", () => ({
 describe("DocWenPlugin lifecycle", () => {
   beforeEach(() => {
     state.cleanup.length = 0;
+    state.processCoordinators.length = 0;
     state.commands.length = 0;
     state.guiPaths.length = 0;
     state.activeFile = null;
@@ -173,6 +180,28 @@ describe("DocWenPlugin lifecycle", () => {
     state.shutdown = async () => true;
     state.hasPendingWork = false;
     state.loadData = async () => createSettingsSnapshot(normalizeSettings(null));
+  });
+
+  it("shares the Windows process coordinator and awaits initial GUI discovery", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    expect(state.processCoordinators).toHaveLength(2);
+    expect(state.processCoordinators[0]).toBe(state.processCoordinators[1]);
+    if (process.platform === "win32") expect(state.processCoordinators[0]).toBeDefined();
+    let closeGui!: () => void;
+    const gui = new Promise<void>((resolve) => { closeGui = resolve; });
+    const background = vi.fn(async () => undefined);
+    const runtime = plugin as unknown as Record<string, unknown>;
+    runtime.guiConnectionMonitor = { getStatus: () => ({ state: "unchecked" }), check: () => gui, reset: () => undefined };
+    runtime.connectionMonitor = { getStatus: () => ({ state: "unchecked" }), check: background, reset: () => undefined };
+    const checking = plugin.checkDocWenConnectionSilently();
+    await Promise.resolve();
+    expect(background).not.toHaveBeenCalled();
+    closeGui();
+    await checking;
+    expect(background).toHaveBeenCalledOnce();
+    plugin.onunload();
   });
 
   it("launches the app without sending the active file unless the file command is used", async () => {
