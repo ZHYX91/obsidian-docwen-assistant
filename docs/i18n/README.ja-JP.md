@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows または Linux、Obsidian 1.12.7 以降、安定版 DocWen 0.17.0 以降 が必要です。
 
@@ -78,7 +78,7 @@ Structural Tables の結合セル、Number Suite のキャプションや相互�
 
 ## プライバシーとセキュリティ
 
-プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけを DocWen に渡します。Vault 外へアクセスするのは、登録済みの DocWen エイリアスまたは手動で選択したポータブルアプリの起動、一時入力と検証済み成果物の管理、明示的に選択した出力先への書き込みに限られます。バージョン付きの Microsoft Store パッケージパスは開いたり保存したりしません。文書のアップロードや Vault 全体の列挙も行いません。詳細：[CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+プラグインは現在のエディターまたは Vault ファイルの隔離スナップショットだけを DocWen に渡します。Vault 外へアクセスするのは、登録済みの DocWen エイリアスまたは手動で選択したポータブルアプリの起動、一時入力と検証済み成果物の管理、明示的に選択した出力先への書き込みに限られます。バージョン付きの Microsoft Store パッケージパスは開いたり保存したりしません。文書のアップロードや Vault 全体の列挙も行いません。詳細：[CLI integration contract](../cli-integration.md)
 
 ## 開発
 

@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.17.0 이상 버전이 필요합니다.
 
@@ -78,7 +78,7 @@ Structural Tables의 병합 셀, Number Suite의 캡션·상호 참조, H7–H9 
 
 ## 개인정보 보호 및 보안
 
-플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 DocWen에 전달합니다. Vault 외부 접근은 등록된 DocWen 별칭이나 수동으로 선택한 휴대용 앱 실행, 임시 입력과 검증된 산출물 관리, 사용자가 선택한 출력 경로 쓰기에만 사용됩니다. 버전이 포함된 Microsoft Store 패키지 경로는 열거나 저장하지 않습니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 DocWen에 전달합니다. Vault 외부 접근은 등록된 DocWen 별칭이나 수동으로 선택한 휴대용 앱 실행, 임시 입력과 검증된 산출물 관리, 사용자가 선택한 출력 경로 쓰기에만 사용됩니다. 버전이 포함된 Microsoft Store 패키지 경로는 열거나 저장하지 않습니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](../cli-integration.md)
 
 ## 개발
 

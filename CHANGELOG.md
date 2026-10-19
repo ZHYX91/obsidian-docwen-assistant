@@ -4,6 +4,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Update open proofreading reports immediately after an interface-language change, including Arabic direction and accessible labels.
+- Preserve proofreading focus and scroll during necessary refreshes, and leave the report intact when unrelated background operations change.
+- Replace proofreading and view-state test doubles with DOM-backed interaction fixtures while retaining source ownership and cancellation regressions.
+- Complete OCR, image-link and Word numbering translations; add localized guide/problem-report links and align language navigation and host cursor preferences.
+
 ## [3.4.0] - 2026-10-18
 
 - Add Arabic translations and scoped right-to-left layout, with shared language navigation in all README guides.

@@ -33,6 +33,9 @@ export interface Translations {
   contextMenuFolderTarget: string;
 
   // Settings
+  settingsHelpTitle: string;
+  settingsUserGuide: string;
+  settingsReportIssue: string;
   settingsTitle: string;
   settingsGeneralTitle: string;
   settingsGeneralGuideTitle: string;

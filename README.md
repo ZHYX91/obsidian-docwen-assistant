@@ -1,12 +1,12 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [Português (Brasil)](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
 
 Use DocWen without leaving Obsidian. Export notes to Word, convert documents and spreadsheets, check text for problems, and number headings. The work is done by [DocWen](https://github.com/ZHYX91/docwen) installed on your computer; this plugin is the connection between the two.
 
 > **DocWen is required.** Install a compatible DocWen 0.17.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
-The interface language changes Assistant’s own text and layout. Conversion language, templates and OCR are controlled by the task options and DocWen settings.
+The interface language changes Assistant’s own text and layout, including proofreading reports that are already open. Conversion language, templates and OCR are controlled by the task options and DocWen settings.
 
 ## Screenshots
 
@@ -125,6 +125,8 @@ Stable documents: [Product requirements](https://github.com/ZHYX91/obsidian-docw
 Repository governance: [Changelog](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CHANGELOG.md) · [Contributing](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CONTRIBUTING.md) · [Security](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/SECURITY.md)
 
 ## Support
+
+For help from inside Obsidian, open **General → Help** and choose **User guide** or **Report a problem**.
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Usage and configuration questions.
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Early feature and workflow ideas.

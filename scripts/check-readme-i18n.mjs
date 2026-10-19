@@ -40,6 +40,18 @@ const config = {
       subsections: ["校對側邊欄", "設定與 DocWen 連線", "匯出檔案", "安裝 DocWen 與外掛", "更新時保留設定"],
     },
     {
+      label: "日本語",
+      path: "docs/i18n/README.ja-JP.md",
+      sections: ["スクリーンショット", "機能", "要件と互換性", "インストール", "使用方法", "設定", "制限", "プライバシーとセキュリティ", "開発", "サポート", "ライセンス"],
+      subsections: ["校正サイドバー", "上部タブ設定と CLI 機能", "機能に応じたエクスポート", "DocWen とプラグインをインストール", "インストール時の安全性"],
+    },
+    {
+      label: "한국어",
+      path: "docs/i18n/README.ko-KR.md",
+      sections: ["스크린샷", "기능", "요구 사항 및 호환성", "설치", "사용", "설정", "제한 사항", "개인정보 보호 및 보안", "개발", "지원", "라이선스"],
+      subsections: ["교정 사이드바", "상단 탭 설정과 CLI 기능", "기능에 따른 내보내기", "DocWen과 플러그인 설치", "설치 안전성"],
+    },
+    {
       label: "Deutsch",
       path: "docs/i18n/README.de-DE.md",
       sections: ["Screenshots", "Funktionen", "Voraussetzungen und Kompatibilität", "Installation", "Verwendung", "Einstellungen", "Einschränkungen", "Datenschutz und Sicherheit", "Entwicklung", "Support", "Lizenz"],
@@ -52,34 +64,22 @@ const config = {
       subsections: ["Barre latérale de relecture", "Paramètres à onglets supérieurs et capacités CLI", "Export selon les capacités", "Installer DocWen et le plugin", "Sécurité de l’installation"],
     },
     {
-      label: "Русский",
-      path: "docs/i18n/README.ru-RU.md",
-      sections: ["Снимки экрана", "Возможности", "Требования и совместимость", "Установка", "Использование", "Настройки", "Ограничения", "Конфиденциальность и безопасность", "Разработка", "Поддержка", "Лицензия"],
-      subsections: ["Боковая панель проверки", "Настройки с верхними вкладками и возможности CLI", "Экспорт с учётом возможностей", "Установка DocWen и плагина", "Безопасность установки"],
-    },
-    {
-      label: "Português",
-      path: "docs/i18n/README.pt-BR.md",
-      sections: ["Capturas de tela", "Recursos", "Requisitos e compatibilidade", "Instalação", "Uso", "Configurações", "Limitações", "Privacidade e segurança", "Desenvolvimento", "Suporte", "Licença"],
-      subsections: ["Barra lateral de revisão", "Configurações em abas superiores e recursos da CLI", "Exportação orientada por recursos", "Instalar o DocWen e o plugin", "Segurança da instalação"],
-    },
-    {
-      label: "日本語",
-      path: "docs/i18n/README.ja-JP.md",
-      sections: ["スクリーンショット", "機能", "要件と互換性", "インストール", "使用方法", "設定", "制限", "プライバシーとセキュリティ", "開発", "サポート", "ライセンス"],
-      subsections: ["校正サイドバー", "上部タブ設定と CLI 機能", "機能に応じたエクスポート", "DocWen とプラグインをインストール", "インストール時の安全性"],
-    },
-    {
       label: "Español",
       path: "docs/i18n/README.es-ES.md",
       sections: ["Capturas de pantalla", "Funciones", "Requisitos y compatibilidad", "Instalación", "Uso", "Configuración", "Limitaciones", "Privacidad y seguridad", "Desarrollo", "Soporte", "Licencia"],
       subsections: ["Barra lateral de revisión", "Configuración con pestañas superiores y capacidades de CLI", "Exportación según capacidades", "Instalar DocWen y el complemento", "Seguridad de la instalación"],
     },
     {
-      label: "한국어",
-      path: "docs/i18n/README.ko-KR.md",
-      sections: ["스크린샷", "기능", "요구 사항 및 호환성", "설치", "사용", "설정", "제한 사항", "개인정보 보호 및 보안", "개발", "지원", "라이선스"],
-      subsections: ["교정 사이드바", "상단 탭 설정과 CLI 기능", "기능에 따른 내보내기", "DocWen과 플러그인 설치", "설치 안전성"],
+      label: "Português (Brasil)",
+      path: "docs/i18n/README.pt-BR.md",
+      sections: ["Capturas de tela", "Recursos", "Requisitos e compatibilidade", "Instalação", "Uso", "Configurações", "Limitações", "Privacidade e segurança", "Desenvolvimento", "Suporte", "Licença"],
+      subsections: ["Barra lateral de revisão", "Configurações em abas superiores e recursos da CLI", "Exportação orientada por recursos", "Instalar o DocWen e o plugin", "Segurança da instalação"],
+    },
+    {
+      label: "Русский",
+      path: "docs/i18n/README.ru-RU.md",
+      sections: ["Снимки экрана", "Возможности", "Требования и совместимость", "Установка", "Использование", "Настройки", "Ограничения", "Конфиденциальность и безопасность", "Разработка", "Поддержка", "Лицензия"],
+      subsections: ["Боковая панель проверки", "Настройки с верхними вкладками и возможности CLI", "Экспорт с учётом возможностей", "Установка DocWen и плагина", "Безопасность установки"],
     },
     {
       label: "Tiếng Việt",
@@ -160,6 +160,9 @@ function validateLocalLinks(filePath, source) {
     if (/^(?:[a-z][a-z0-9+.-]*:|#)/iu.test(rawTarget)) {
       const repositoryPrefix = `https://github.com/${config.repository}/blob/main/`;
       if (rawTarget.startsWith(repositoryPrefix)) {
+        if (filePath !== "README.md") {
+          errors.push(`${filePath} must use relative repository links for offline reading: ${rawTarget}`);
+        }
         const repositoryPath = rawTarget.slice(repositoryPrefix.length).split("#", 1)[0];
         repositoryTargets.add(repositoryPath);
         if (!existsSync(resolveProjectPath(repositoryPath))) {
@@ -178,6 +181,9 @@ function validateLocalLinks(filePath, source) {
     }
     if (!target) {
       continue;
+    }
+    if (filePath === "README.md") {
+      errors.push(`${filePath} must use absolute repository links: ${rawTarget}`);
     }
 
     const resolvedTarget = path.resolve(path.dirname(resolveProjectPath(filePath)), target);
@@ -303,12 +309,14 @@ function findLocalizedReadmes(directory, result = []) {
 }
 
 const manifest = readProjectJson("manifest.json");
-const expectedNavigation = config.languages
-  .map(
-    ({ label, path: readmePath }) =>
-      `[${label}](https://github.com/${config.repository}/blob/main/${readmePath})`,
-  )
-  .join(" · ");
+function expectedNavigation(filePath) {
+  return config.languages.map(({ label, path: readmePath }) => {
+    const target = filePath === "README.md"
+      ? `https://github.com/${config.repository}/blob/main/${readmePath}`
+      : normalizePath(path.relative(path.dirname(filePath), readmePath));
+    return `[${label}](${target})`;
+  }).join(" · ");
+}
 const publicReadmes = config.languages.map(({ path: readmePath }) => readmePath);
 const translatedReadmes = publicReadmes.slice(1);
 
@@ -327,7 +335,7 @@ compareFileSets(
   translatedReadmes.map((filePath) => path.basename(filePath)),
 );
 for (const language of config.languages) {
-  validateReadme(language, manifest.name, expectedNavigation);
+  validateReadme(language, manifest.name, expectedNavigation(language.path));
 }
 
 const allowedLocalizedReadmes = new Set(translatedReadmes);
@@ -349,7 +357,7 @@ if (config.packagedReadmeDir) {
         subsections: config.languages[0].subsections,
       },
       manifest.name,
-      expectedNavigation,
+      expectedNavigation(packagedPath),
     );
   }
   packagedReadmeCount = packagedReadmes.length;

@@ -1,35 +1,51 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { preserveSettingsView } from "../src/settings-view-state";
+import { useObsidianDom } from "./helpers/obsidian-dom";
+
+useObsidianDom();
 
 function createView({ externalFocus = false, disabled = false, removed = false } = {}) {
-  const parent = { parentElement: null, scrollTop: 420, scrollLeft: 12 };
-  const originalControl = {};
-  const focus = vi.fn();
-  const replacement = { focus, matches: () => disabled };
-  const row = {
-    getAttribute: () => "markdown:4",
-    querySelectorAll: () => [originalControl],
+  const parent = document.body.appendChild(document.createElement("div"));
+  const container = parent.appendChild(document.createElement("div"));
+  const external = document.body.appendChild(document.createElement("input"));
+  const render = () => {
+    container.replaceChildren();
+    if (removed) return;
+    const row = container.appendChild(document.createElement("div"));
+    row.setAttribute("data-docwen-setting-key", "markdown:4");
+    const control = row.appendChild(document.createElement("button"));
+    control.disabled = disabled;
   };
-  const active = Object.assign(originalControl, { closest: () => row });
-  const container = {
-    parentElement: parent,
-    scrollTop: 24,
-    scrollLeft: 0,
-    ownerDocument: { activeElement: active },
-    contains: () => !externalFocus,
-    querySelectorAll: () => removed ? [] : [{
-      getAttribute: () => "markdown:4",
-      querySelectorAll: () => [replacement],
-    }],
-  };
-  return { parent, container, focus };
+  const row = container.appendChild(document.createElement("div"));
+  row.setAttribute("data-docwen-setting-key", "markdown:4");
+  const original = row.appendChild(document.createElement("button"));
+  (externalFocus ? external : original).focus();
+  parent.scrollTop = 420;
+  parent.scrollLeft = 12;
+  container.scrollTop = 24;
+  return { parent, container, external, render };
 }
 
 describe("settings refresh view state", () => {
-  it("restores nested scroll positions and the same control after a destructive page refresh", () => {
-    const { parent, container, focus } = createView();
-    preserveSettingsView(container as unknown as HTMLElement, () => {
-      // Emptying a long panel clamps its scrolling ancestors before rows return.
+  it("restores keyboard focus to a help link after the settings surface is rebuilt", () => {
+    const { container } = createView();
+    const row = container.querySelector<HTMLElement>("[data-docwen-setting-key]")!;
+    row.replaceChildren();
+    const link = row.appendChild(document.createElement("a"));
+    link.href = "https://github.com/ZHYX91/obsidian-docwen-assistant";
+    link.textContent = "User guide";
+    link.focus();
+    preserveSettingsView(container, () => container.replaceChildren(row.cloneNode(true)));
+    const replacement = container.querySelector("a");
+    expect(replacement).not.toBe(link);
+    expect(document.activeElement).toBe(replacement);
+  });
+
+  it("restores nested scroll positions and the same control after rebuilding the page", () => {
+    const { parent, container, render } = createView();
+    preserveSettingsView(container, () => {
+      render();
+      // Model the scroll clamping caused by removing a long panel in the host.
       parent.scrollTop = 0;
       parent.scrollLeft = 0;
       container.scrollTop = 0;
@@ -37,25 +53,27 @@ describe("settings refresh view state", () => {
     expect(parent.scrollTop).toBe(420);
     expect(parent.scrollLeft).toBe(12);
     expect(container.scrollTop).toBe(24);
-    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(document.activeElement).toBe(container.querySelector("button"));
   });
 
   it.each([{ externalFocus: true }, { disabled: true }, { removed: true }])(
     "does not steal focus or focus unavailable controls: %j",
     (options) => {
-      const { parent, container, focus } = createView(options);
-      preserveSettingsView(container as unknown as HTMLElement, () => { parent.scrollTop = 0; });
+      const { parent, container, external, render } = createView(options);
+      preserveSettingsView(container, () => { render(); parent.scrollTop = 0; });
       expect(parent.scrollTop).toBe(420);
-      expect(focus).not.toHaveBeenCalled();
+      expect(container.contains(document.activeElement)).toBe(false);
+      if (options.externalFocus) expect(document.activeElement).toBe(external);
     },
   );
 
   it("restores the viewport when rendering throws without hiding the error", () => {
     const { parent, container } = createView();
-    expect(() => preserveSettingsView(container as unknown as HTMLElement, () => {
+    expect(() => preserveSettingsView(container, () => {
       parent.scrollTop = 0;
       throw new Error("render failed");
     })).toThrow("render failed");
     expect(parent.scrollTop).toBe(420);
+    expect(document.activeElement).toBe(container.querySelector("button"));
   });
 });

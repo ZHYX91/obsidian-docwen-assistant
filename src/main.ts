@@ -410,6 +410,9 @@ export default class DocWenPlugin extends Plugin {
     this.ribbonIconEl?.setAttribute("title", ribbonTitle);
     for (const item of this.localizedCommands) item.command.name = `DocWen: ${t(item.key)}`;
     this.operationStatus?.refresh();
+    for (const leaf of this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE)) {
+      if (leaf.view instanceof ProofreadView) leaf.view.refreshLocale();
+    }
   }
 
   getSettingsSaveState(): SettingsSaveState {

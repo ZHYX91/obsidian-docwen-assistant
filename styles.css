@@ -33,7 +33,7 @@
   box-sizing: border-box;
   box-shadow: none !important;
   color: var(--text-muted) !important;
-  cursor: pointer;
+  cursor: var(--cursor, default);
   flex: 0 0 auto;
   block-size: auto;
   font-family: inherit !important;
@@ -152,7 +152,7 @@
 
 .docwen-error-details summary {
   color: var(--text-muted);
-  cursor: pointer;
+  cursor: var(--cursor, default);
 }
 
 .docwen-error-details pre {
@@ -284,7 +284,7 @@
 .docwen-proofread-btn {
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: var(--cursor, default);
   padding: 4px;
   border-radius: 4px;
   color: var(--text-muted);
@@ -311,7 +311,7 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--button-radius);
   color: var(--text-normal);
-  cursor: pointer;
+  cursor: var(--cursor, default);
   flex: 0 0 auto;
   min-height: 28px;
   padding: 2px 8px;
@@ -404,7 +404,7 @@ button.docwen-proofread-item {
   background: transparent;
   border: 0;
   padding: 6px 10px;
-  cursor: pointer;
+  cursor: var(--cursor, default);
   border-bottom: 1px solid var(--background-modifier-border);
   overflow-wrap: anywhere;
   white-space: normal;
@@ -463,4 +463,13 @@ button.docwen-proofread-item {
 
 .docwen-cli-path-status {
   white-space: pre-line;
+}
+
+.docwen-settings-support .setting-item-control {
+  flex-wrap: wrap;
+  gap: var(--size-4-3);
+}
+
+.docwen-settings-support a {
+  cursor: var(--cursor, default);
 }

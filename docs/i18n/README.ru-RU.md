@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 DocWen Assistant связывает Obsidian с локальной установкой [DocWen](https://github.com/ZHYX91/docwen). Требуются Windows или Linux, Obsidian 1.12.7 или новее и стабильная версия DocWen 0.17.0 или новее.
 
@@ -78,7 +78,7 @@ DocWen Assistant связывает Obsidian с локальной устано�
 
 ## Конфиденциальность и безопасность
 
-Плагин передаёт DocWen только изолированный снимок текущего редактора или файла Vault. Доступ вне Vault используется лишь для запуска зарегистрированного псевдонима DocWen или вручную выбранной переносимой программы, управления временными входами и проверенными артефактами и записи в явно выбранное место. Версионированный путь пакета Microsoft Store не открывается и не сохраняется. Плагин не загружает документы и не перечисляет весь Vault. Подробнее: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Плагин передаёт DocWen только изолированный снимок текущего редактора или файла Vault. Доступ вне Vault используется лишь для запуска зарегистрированного псевдонима DocWen или вручную выбранной переносимой программы, управления временными входами и проверенными артефактами и записи в явно выбранное место. Версионированный путь пакета Microsoft Store не открывается и не сохраняется. Плагин не загружает документы и не перечисляет весь Vault. Подробнее: [CLI integration contract](../cli-integration.md)
 
 ## Разработка
 

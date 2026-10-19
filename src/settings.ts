@@ -18,7 +18,7 @@ import {
   type DocWenPathStatus,
 } from "./settings-docwen-location";
 import { configureNumberingSchemeSetting } from "./settings-numbering-scheme";
-import { renderSettingsGuide } from "./settings-guide";
+import { renderSettingsGuide, renderSettingsSupport } from "./settings-guide";
 import { configureNumberSetting } from "./settings-number-control";
 import {
   assertSettingsWritable,
@@ -81,6 +81,7 @@ export class SettingTab extends PluginSettingTab {
       isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
       renderGuide: renderSettingsGuide,
+      renderSupport: renderSettingsSupport,
       runDoctor: () => void this.runDoctorFromSettings(),
     });
   }

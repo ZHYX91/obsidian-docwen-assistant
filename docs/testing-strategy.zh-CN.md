@@ -15,6 +15,8 @@ translation_status: source
 
 Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。 Machine 生命周期回归还必须使用真实受控 POSIX 子进程，在 query、task/execute 与已接收任务的 task/cancel 写入前关闭读取端，证明不会产生未处理的 EPIPE、等待者会在有界时间内结束、不会生成额外 staging 输出，并清理拥有的进程组及后代。 Windows 专用 CI 另外使用真实受控进程与原生关闭 stdin 夹具，覆盖直接 root 正常退出但独立 stdio 后代继续存活的旧反例，以及 timeout、已接收任务取消、插件卸载、真实 EPIPE、抵抗正常结束的后代、无关 sentinel 保活和 owner 创建/内嵌 PE 身份失败时在目标启动前失败关闭；这些进程级证据仍不替代 Obsidian 宿主验收。结果目录发布测试在最后一次碰撞检查与实际发布原语之间设置确定性屏障，让外部写者分别创建空目录和含用户字节的非空目录；两种情况都必须拒绝、保留目标目录身份与用户字节，并只清理自己的暂存目录。Linux x64 Node-API helper 的公开来源、C 源 SHA-256、内嵌二进制 SHA-256 与 Node-API 下限也由源码测试固定。
 
+校对生命周期和视图状态测试使用每例独立的 happy-dom 文档，只通过小型适配器模拟 Obsidian 的 DOM 扩展方法。测试触发 DOM 点击并验证真实属性、节点连接、当前焦点和滚动状态，不再依赖创建元素时记录的参数。集成用例一起运行真实插件的 saveSettings、ProofreadView 和 OperationCoordinator，覆盖初始空状态、同一任务取消、语言切换、外部焦点与视图关闭后重开。原有来源摘要和视图归属用例继续保留。DOM 夹具不代表浏览器布局或真实宿主验收。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。
