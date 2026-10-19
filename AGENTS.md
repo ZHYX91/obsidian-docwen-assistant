@@ -24,7 +24,16 @@ the three loose release assets. Release checks must preserve and verify all four
 
 ## Release acceptance scope
 
-This plugin is desktop-only. Desktop acceptance is an optional quality check on an exact candidate; explicitly authorized publication requires source/build checks, version identity, asset integrity and build provenance. Record skipped, failed and incomplete checks honestly.
+This plugin is desktop-only. Desktop interaction, settings, file handoff, process control and
+lifecycle changes require representative real Obsidian scenarios on the exact candidate and,
+where relevant, the exact DocWen producer. Cover the original reported case and a relevant boundary.
+Documentation-only or host-independent logic changes may omit host execution with a recorded
+reason. Run selected checks when the environment is available; claim acceptance only for observed
+passing scope. Confirmed serious product defects block the affected release. Missing host/tool
+evidence is assessed by risk and recorded as unverified, without an automatic publication block
+or separate approval step. Record failures and follow-up honestly. Full host closure is
+not required for a scoped release, and CI does not automatically enforce host coverage.
+Source/build checks, version identity, asset integrity and build provenance remain required.
 Android emulators, Android physical devices, and iOS are out of scope. Keep source,
 packaged-candidate, real-host, publication, and production-Vault claims separate.
 
