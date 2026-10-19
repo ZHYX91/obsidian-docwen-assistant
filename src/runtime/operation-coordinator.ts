@@ -1,3 +1,5 @@
+import { clearTimeout, setTimeout } from "node:timers";
+
 import { LocalCliError } from "../docwen";
 
 export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control" | "choose-action";
