@@ -52,8 +52,7 @@ those environments. Retain untested matrix entries as unverified.
 | `desktop-output-conflicts` | Occupied/changed output destinations, staged artifact drift, related-output collisions and owned-staging cleanup |
 | `desktop-cancellation-unload` | Cancelled choices/accepted tasks, view-close generation ownership, timeout, disable/re-enable and process-tree settlement |
 
-The numbering scenario is a small normal-operation smoke scope. The full contract retains every
-scenario, and publication-scoped selection includes all of them. Direct proofreading already runs
+The numbering scenario is a small normal-operation smoke scope. The full contract retains every scenario as a coverage inventory; routine publication selects representative affected cases and records omissions by risk. Direct proofreading already runs
 Markdown validation; there is no additional standalone validation command. Export selects an output
 parent and creates a new result directory. The former save-file overwrite wording does not describe
 the current implementation.
