@@ -34,6 +34,7 @@ vi.mock("obsidian", () => ({
     app = {
       workspace: {
         getActiveFile: () => state.activeFile,
+        getLeavesOfType: () => [],
         on: (name: string, callback: (...args: unknown[]) => unknown) => {
           state.workspaceEvents.set(name, callback);
           return { unload: () => undefined };

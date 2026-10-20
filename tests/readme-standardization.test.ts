@@ -37,6 +37,16 @@ describe("README standardization contract", () => {
     expect(runReadmeCheck()).toMatchObject({ status: 0 });
   });
 
+  it("keeps root links portable and translated guides usable offline", async () => {
+    await replaceInReadme("README.md",
+      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)",
+      "](docs/testing-strategy.en.md)");
+    expect(runReadmeCheck().stderr).toContain("README.md must use absolute repository links");
+    await replaceInReadme("docs/i18n/README.zh-CN.md", "](../../README.md)",
+      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md)");
+    expect(runReadmeCheck().stderr).toContain("must use relative repository links for offline reading");
+  });
+
   it("rejects npm install or an unpinned Development toolchain", async () => {
     await replaceInReadme("docs/i18n/README.de-DE.md", "npm ci", "npm install");
     expect(runReadmeCheck().stderr).toContain("must use npm ci instead of npm install");

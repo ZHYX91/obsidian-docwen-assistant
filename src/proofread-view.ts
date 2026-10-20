@@ -9,7 +9,8 @@
 
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
 import { createHash } from "node:crypto";
-import { t } from "./i18n";
+import { getCurrentLocale, t } from "./i18n";
+import { preserveViewState } from "./settings-view-state";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
 import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
@@ -46,6 +47,7 @@ export class ProofreadView extends ItemView {
   private proofreadViewOpen = false;
   private lifecycle = 0;
   private ownedGeneration: number | null = null;
+  private renderedLocale: string | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -71,6 +73,7 @@ export class ProofreadView extends ItemView {
     this.proofreadViewOpen = true;
     this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
+    this.render();
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = this.operations.subscribe((snapshot) => {
       this.updateOperation(snapshot);
@@ -107,6 +110,11 @@ export class ProofreadView extends ItemView {
     return () => this.proofreadViewOpen && this.lifecycle === lifecycle;
   }
 
+  /** Refresh existing reports when the plugin's effective interface language changes. */
+  refreshLocale(): void {
+    if (this.proofreadViewOpen && this.renderedLocale !== getCurrentLocale()) this.render();
+  }
+
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
     this.resultsRevision += 1;
     this.cancelled = false;
@@ -120,9 +128,13 @@ export class ProofreadView extends ItemView {
 
   private updateOperation(snapshot: OperationSnapshot): void {
     const previousOperation = this.activeOperation;
-    this.activeOperation = [...snapshot.operations]
+    const nextOperation = [...snapshot.operations]
       .reverse()
       .find(({ generation }) => generation === this.ownedGeneration) ?? null;
+    if (nextOperation?.generation === previousOperation?.generation
+      && nextOperation?.kind === previousOperation?.kind
+      && nextOperation?.state === previousOperation?.state) return;
+    this.activeOperation = nextOperation;
     if (this.activeOperation && this.activeOperation.generation !== previousOperation?.generation) {
       this.resultsRevision += 1;
     }
@@ -143,13 +155,23 @@ export class ProofreadView extends ItemView {
 
   private render(): void {
     const container = this.containerEl.children[1] as HTMLElement;
+    preserveViewState(container, () => this.renderContent(container), "data-docwen-view-key", "data-docwen-scroll-key");
+  }
+
+  private renderContent(container: HTMLElement): void {
+    this.renderedLocale = getCurrentLocale();
     container.addClass("docwen-proofread-root");
+    container.setAttribute("lang", this.renderedLocale);
+    container.setAttribute("dir", this.renderedLocale === "ar" ? "rtl" : "ltr");
     container.empty();
 
     // Toolbar
     const toolbar = container.createDiv({ cls: "docwen-proofread-toolbar" });
 
-    const refreshBtn = toolbar.createEl("button", { cls: "docwen-proofread-btn", attr: { "aria-label": t("proofreadRefresh") } });
+    const refreshBtn = toolbar.createEl("button", {
+      cls: "docwen-proofread-btn",
+      attr: { type: "button", "aria-label": t("proofreadRefresh"), "data-docwen-view-key": "refresh" },
+    });
     setIcon(refreshBtn, "refresh-cw");
     if (this.activeOperation) refreshBtn.setAttribute("disabled", "");
     else refreshBtn.addEventListener("click", () => {
@@ -158,7 +180,11 @@ export class ProofreadView extends ItemView {
 
     const sortBtn = toolbar.createEl("button", {
       cls: "docwen-proofread-btn",
-      attr: { "aria-label": this.sortMode === "line" ? t("proofreadSortByRule") : t("proofreadSortByLine") },
+      attr: {
+        type: "button",
+        "aria-label": this.sortMode === "line" ? t("proofreadSortByRule") : t("proofreadSortByLine"),
+        "data-docwen-view-key": "sort",
+      },
     });
     setIcon(sortBtn, this.sortMode === "line" ? "arrow-down-narrow-wide" : "list-ordered");
     sortBtn.addEventListener("click", () => {
@@ -182,6 +208,7 @@ export class ProofreadView extends ItemView {
         text: cancelling ? t("operationCancelling") : t("operationCancel"),
         attr: {
           type: "button",
+          "data-docwen-view-key": "cancel",
           "aria-label": cancelling ? t("operationCancelling") : t("operationCancel"),
           ...(cancelling ? { disabled: "" } : {}),
         },
@@ -242,9 +269,10 @@ export class ProofreadView extends ItemView {
     }
 
     // Issue list
-    const list = container.createDiv({ cls: "docwen-proofread-list" });
+    const list = container.createDiv({ cls: "docwen-proofread-list", attr: { "data-docwen-scroll-key": "issues" } });
     const sorted = this.getSortedIssues();
     const revision = this.resultsRevision;
+    const issueIndices = new Map(this.issues.map((issue, index) => [issue, index]));
 
     for (const issue of sorted) {
       const displayLine = issue.range.start.line + 1;
@@ -257,6 +285,7 @@ export class ProofreadView extends ItemView {
         cls: "docwen-proofread-item",
         attr: {
           type: "button",
+          "data-docwen-view-key": `issue:${revision}:${issueIndices.get(issue)}`,
           "aria-label": `L${displayLine} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });

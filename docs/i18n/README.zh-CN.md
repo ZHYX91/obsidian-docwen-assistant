@@ -1,12 +1,12 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 在 Obsidian 里就能用 DocWen 转换文件、校对 Markdown、给标题编号，不用每次切到另一个程序。实际处理由你电脑上安装的 [DocWen](https://github.com/ZHYX91/docwen) 完成；插件负责把 Obsidian 和它连接起来。
 
 > **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
-界面语言只改变 Assistant 自身的文案和布局。转换语言、模板与 OCR 由任务选项和 DocWen 设置控制。
+界面语言改变 Assistant 自身的文案和布局，已打开的校对报告也会立即更新。转换语言、模板与 OCR 由任务选项和 DocWen 设置控制。
 
 ## 截图
 
@@ -95,7 +95,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 
 ## 隐私与安全
 
-**文件留在你的电脑上。** 插件把当前笔记（包括尚未保存的编辑内容）或已保存的文件交给本机 DocWen 处理，不会上传到在线转换服务，也不会遍历整个 Vault 寻找无关文件。只有笔记明确引用的图片等资源才会按需要一并处理。校对不会修改笔记；编号修改前会检查笔记是否仍是开始处理时的版本。输出仅写入你选择的目录。更详细的实现边界见[集成技术文档](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)。
+**文件留在你的电脑上。** 插件把当前笔记（包括尚未保存的编辑内容）或已保存的文件交给本机 DocWen 处理，不会上传到在线转换服务，也不会遍历整个 Vault 寻找无关文件。只有笔记明确引用的图片等资源才会按需要一并处理。校对不会修改笔记；编号修改前会检查笔记是否仍是开始处理时的版本。输出仅写入你选择的目录。更详细的实现边界见[集成技术文档](../cli-integration.md)。
 
 转换和打开程序使用不同的本机接口。插件会检查输入、结果和错误状态；如果无法确认写入是否成功，不会自动重复写入，避免生成重复文件或误覆盖。
 
@@ -116,6 +116,8 @@ npm run release
 仓库治理：[变更日志](../../CHANGELOG.md) · [贡献指南](../../CONTRIBUTING.md) · [安全策略](../../SECURITY.md)
 
 ## 支持
+
+在 Obsidian 内需要帮助时，打开 **常规 → 帮助**，选择 **使用指南** 或 **报告问题**。
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用和配置问题。
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：尚待讨论的功能与工作流想法。

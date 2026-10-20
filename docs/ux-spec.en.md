@@ -24,6 +24,8 @@ Template, optimization and numbering choices remain part of the active operation
 
 Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation observed by that view. Issue navigation is bound to the source digest captured for the report; content and editor identity are checked around file opening, and changes or ambiguity require a refresh instead of applying old positions. A new report, view closure, or new proofreading operation invalidates pending navigation from the old report.
 
+The sidebar reacts only to its own operation’s generation, kind and state. Unrelated background work leaves its DOM and keyboard focus intact. Sorting or changing the interface language retains the focused control and issue-list scroll when the same item remains available; a new report does not reuse a stale issue target.
+
 ## States and recovery
 
 Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result. A Machine mismatch names the protocol actually sent by Assistant and the protocol supported by DocWen; an old product shows both the minimum and actual version. Background integration failure must not incorrectly disable the independent Launch/Open DocWen entry point.
@@ -36,9 +38,11 @@ Error-detail previews and copies use the same redacted data: stable codes, user 
 
 The four top tabs are General, Export to Markdown, Export to Word, and Proofreading; there is no standalone Usage tab. Short help cards live on the relevant tabs and follow the same information icon, accent border, and theme-variable treatment as sibling plugins. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. Assistant settings override individual tasks started by Assistant and never rewrite DocWen's own saved settings. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered. When persisted settings declare an invalid or newer schema, a prominent incompatibility notice identifies the stored and supported versions, every settings control is disabled, and no retry or save path may rewrite the data.
 
+General includes User guide and Report a problem links. The guide opens the selected language’s README. Ordinary controls follow the host cursor preference.
+
 ## Localization
 
-The UI, notices, and resource queries use one resolved locale. The default follows Obsidian and users can select a supported language explicitly. Locale changes never alter capability, path, or write semantics.
+The UI, notices, and resource queries use one resolved locale. The default follows Obsidian and users can select a supported language explicitly. Open proofreading reports update their text, accessible labels, language and direction immediately when settings select a different effective locale. Saving other settings leaves the report intact. Locale changes never alter capability, path, or write semantics.
 
 ## Accessibility and layout
 

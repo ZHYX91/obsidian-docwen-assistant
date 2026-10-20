@@ -4,6 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.4.1]
+
+- Update open proofreading reports immediately after an interface-language change, including Arabic direction and accessible labels.
+- Preserve proofreading focus and scroll during necessary refreshes, and leave the report intact when unrelated background operations change.
+- Replace proofreading and view-state test doubles with DOM-backed interaction fixtures while retaining source ownership and cancellation regressions.
+- Complete OCR, image-link and Word numbering translations; add localized guide/problem-report links and align language navigation and host cursor preferences.
 - Use process-owned Node timers for shutdown deadlines so operation cleanup does not depend on renderer-window timers.
 
 ## [3.4.0] - 2026-10-18

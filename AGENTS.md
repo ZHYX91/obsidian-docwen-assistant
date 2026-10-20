@@ -39,6 +39,12 @@ packaged-candidate, real-host, publication, and production-Vault claims separate
 
 ## Public documentation
 
+Use the shared native-language order in README navigation and the language selector:
+English, 简体中文, 繁體中文, 日本語, 한국어, Deutsch, Français, Español,
+Português (Brasil), Русский, Tiếng Việt, العربية. Root README repository links
+are canonical absolute GitHub links; translated guides use relative repository links
+so the checked-out documentation remains usable offline.
+
 `CHANGELOG.md` is the only public document that records release history. README and user help
 describe the product as it works now: compatibility, installation, usage, settings, limitations,
 privacy, and support. Do not add version banners, dated acceptance evidence, release-status

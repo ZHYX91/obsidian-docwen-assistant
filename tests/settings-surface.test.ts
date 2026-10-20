@@ -101,6 +101,7 @@ class FakeSetting {
   readonly descEl = new FakeElement();
   readonly infoEl = new FakeElement();
   readonly nameEl = new FakeElement();
+  readonly controlEl = new FakeElement();
   constructor(container: FakeElement) { this.settingEl = container.createDiv(); settings.push(this); }
   setName(value?: unknown): this { this.nameEl.textContent = String(value ?? ""); return this; }
   setDesc(value?: unknown): this { this.descEl.textContent = String(value ?? ""); return this; }

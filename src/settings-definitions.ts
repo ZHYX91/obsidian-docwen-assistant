@@ -23,6 +23,7 @@ export interface SettingsPageContext {
   readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
   readonly renderGuide: (setting: Setting, title: string, body: string) => void;
+  readonly renderSupport: (setting: Setting) => void;
   readonly runDoctor: () => void;
 }
 
@@ -57,6 +58,7 @@ export function getSettingsPages(
           visible: () => context.settings.docwenConnectionMode === "manual",
         },
         { name: t("commandDoctor"), desc: t("settingsDoctorDesc"), action: context.runDoctor },
+        { name: t("settingsHelpTitle"), render: context.renderSupport },
         {
           name: t("settingsPersistence"),
           render: context.renderPersistenceStatus,

@@ -2,6 +2,9 @@ import type { Translations } from "./types";
 
 /** Arabic user-facing strings. Identifiers and placeholders are kept intact. */
 export const AR_TRANSLATIONS: Translations = {
+  settingsHelpTitle: "المساعدة",
+  settingsUserGuide: "دليل الاستخدام",
+  settingsReportIssue: "الإبلاغ عن مشكلة",
   dialogDiagnosticsPrivacy: "تتضمن تفاصيل التشخيص رموز الأخطاء والحالات والإصدارات فقط، ولا تتضمن نص المستند أو المسارات المحلية أو كلمات المرور.",
   noticeCompletedWithWarnings: "النتيجة متاحة، لكن تنظيف الملفات المؤقتة أو إحدى الخطوات اللاحقة لم يكتمل. راجع التفاصيل قبل إعادة المحاولة.",
   noticeConversionDiagnostics: "تفاصيل التحويل: {warnings} تحذير، و{errors} خطأ. افتح التفاصيل.",

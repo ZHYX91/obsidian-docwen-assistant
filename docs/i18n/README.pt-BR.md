@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 O DocWen Assistant conecta o Obsidian a uma instalação local do [DocWen](https://github.com/ZHYX91/docwen). Requer Windows ou Linux, Obsidian 1.12.7 ou superior e uma versão estável do DocWen 0.17.0 ou posterior.
 
@@ -78,7 +78,7 @@ As configurações estão divididas em quatro abas: Geral, Exportar para Markdow
 
 ## Privacidade e segurança
 
-O plugin fornece ao DocWen apenas um instantâneo isolado do editor atual ou do arquivo do Vault. O acesso fora do Vault serve somente para iniciar o alias registrado do DocWen ou o aplicativo portátil escolhido manualmente, gerenciar entradas temporárias e artefatos validados e gravar no destino escolhido. Ele não abre nem salva o caminho versionado do pacote da Microsoft Store, não envia documentos e não enumera todo o Vault. Detalhes: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+O plugin fornece ao DocWen apenas um instantâneo isolado do editor atual ou do arquivo do Vault. O acesso fora do Vault serve somente para iniciar o alias registrado do DocWen ou o aplicativo portátil escolhido manualmente, gerenciar entradas temporárias e artefatos validados e gravar no destino escolhido. Ele não abre nem salva o caminho versionado do pacote da Microsoft Store, não envia documentos e não enumera todo o Vault. Detalhes: [CLI integration contract](../cli-integration.md)
 
 ## Desenvolvimento
 

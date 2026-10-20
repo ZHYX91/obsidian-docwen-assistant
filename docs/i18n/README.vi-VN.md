@@ -1,6 +1,6 @@
 # DocWen Assistant
 
-[English](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md) · [简体中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-CN.md) · [繁體中文](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.zh-TW.md) · [Deutsch](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.de-DE.md) · [Français](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.fr-FR.md) · [Русский](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ru-RU.md) · [Português](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.pt-BR.md) · [日本語](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ja-JP.md) · [Español](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.es-ES.md) · [한국어](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ko-KR.md) · [Tiếng Việt](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.vi-VN.md) · [العربية](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/i18n/README.ar.md)
+[English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
 DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows hoặc Linux, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.17.0 trở lên ổn định.
 
@@ -78,7 +78,7 @@ Cài đặt được chia thành bốn thẻ: Chung, Xuất sang Markdown, Xuấ
 
 ## Quyền riêng tư và bảo mật
 
-Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc ứng dụng di động được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md)
+Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc ứng dụng di động được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](../cli-integration.md)
 
 ## Phát triển
 

@@ -20,6 +20,7 @@ describe("settings page definitions", () => {
       isPersistencePending: () => false,
       renderNumberingScheme,
       renderGuide: vi.fn(),
+      renderSupport: vi.fn(),
       runDoctor,
     });
     expect(pages).toHaveLength(4);
@@ -65,6 +66,7 @@ describe("settings page definitions", () => {
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
+      renderSupport: vi.fn(),
       runDoctor: vi.fn(),
     });
     const controls = collectControls(pages.flatMap((page) => page.items));
@@ -86,6 +88,7 @@ describe("settings page definitions", () => {
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
+      renderSupport: vi.fn(),
       runDoctor: vi.fn(),
     });
 
@@ -111,6 +114,7 @@ describe("settings page definitions", () => {
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
+      renderSupport: vi.fn(),
       runDoctor: vi.fn(),
     }, "linux");
     const connection = definitions[0].items.find(
@@ -135,6 +139,7 @@ describe("settings page definitions", () => {
       isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
+      renderSupport: vi.fn(),
       runDoctor: vi.fn(),
     });
     const tableMerge = collectControls(definitions.flatMap((page) => page.items))
