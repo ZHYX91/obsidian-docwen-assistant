@@ -110,18 +110,37 @@ describe("OperationCoordinator", () => {
   });
 
   it("bounds host exit when an external operation cannot settle", async () => {
-    vi.useFakeTimers();
+    const owner = new OperationCoordinator();
+    const lease = owner.begin({ key: "external-dialog", kind: "export" });
+    await expect(owner.shutdown(1)).resolves.toBe(false);
+    expect(owner.hasPendingWork).toBe(true);
+    lease.finish();
+    await expect(owner.shutdown()).resolves.toBe(true);
+  });
+
+  it("keeps shutdown deadlines and cleanup independent of renderer timers", async () => {
+    const schedule = vi.spyOn(globalThis, "setTimeout").mockImplementation(() => {
+      throw new Error("Renderer scheduling is unavailable");
+    });
+    const cancel = vi.spyOn(globalThis, "clearTimeout").mockImplementation(() => {
+      throw new Error("Renderer cancellation is unavailable");
+    });
     try {
-      const owner = new OperationCoordinator();
-      const lease = owner.begin({ key: "external-dialog", kind: "export" });
-      const quitting = owner.shutdown();
-      await vi.advanceTimersByTimeAsync(10_000);
-      await expect(quitting).resolves.toBe(false);
-      lease.finish();
-      await expect(owner.shutdown()).resolves.toBe(true);
-      expect(vi.getTimerCount()).toBe(0);
+      const timedOut = new OperationCoordinator();
+      const pending = timedOut.begin({ key: "external-dialog", kind: "export" });
+      await expect(timedOut.shutdown(1)).resolves.toBe(false);
+      pending.finish();
+
+      const settled = new OperationCoordinator();
+      const finishing = settled.begin({ key: "cleanup", kind: "export" });
+      const quitting = settled.shutdown();
+      finishing.finish();
+      await expect(quitting).resolves.toBe(true);
+      expect(schedule).not.toHaveBeenCalled();
+      expect(cancel).not.toHaveBeenCalled();
     } finally {
-      vi.useRealTimers();
+      schedule.mockRestore();
+      cancel.mockRestore();
     }
   });
 });

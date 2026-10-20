@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Use process-owned Node timers for shutdown deadlines so operation cleanup does not depend on renderer-window timers.
+
 ## [3.4.0] - 2026-10-18
 
 - Add Arabic translations and scoped right-to-left layout, with shared language navigation in all README guides.
