@@ -85,7 +85,7 @@ describe("README standardization contract", () => {
     await replaceInReadme(
       "docs/i18n/README.de-DE.md",
       "## Verwendung",
-      "## Verwendung\\n\\nThe CLI syntax remains \`doctor --json\`.",
+      "## Verwendung\n\nThe CLI syntax remains `doctor --json`.",
     );
     expect(runReadmeCheck()).toMatchObject({ status: 0 });
   });
