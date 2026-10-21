@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -13,6 +13,7 @@ let fixtureRoot = "";
 beforeEach(async () => {
   fixtureRoot = await mkdtemp(path.join(tmpdir(), "assistant-readme-"));
   temporaryDirectories.push(fixtureRoot);
+  await mkdir(path.join(fixtureRoot, "src/i18n"), { recursive: true });
   await Promise.all([
     cp(path.join(projectRoot, "README.md"), path.join(fixtureRoot, "README.md")),
     cp(path.join(projectRoot, "manifest.json"), path.join(fixtureRoot, "manifest.json")),
@@ -21,6 +22,7 @@ beforeEach(async () => {
     cp(path.join(projectRoot, "SECURITY.md"), path.join(fixtureRoot, "SECURITY.md")),
     cp(path.join(projectRoot, "docs"), path.join(fixtureRoot, "docs"), { recursive: true }),
     cp(path.join(projectRoot, "scripts"), path.join(fixtureRoot, "scripts"), { recursive: true }),
+    cp(path.join(projectRoot, "src/i18n/catalogs.ts"), path.join(fixtureRoot, "src/i18n/catalogs.ts")),
   ]);
 });
 
@@ -65,6 +67,27 @@ describe("README standardization contract", () => {
 
     await rm(path.join(fixtureRoot, "SECURITY.md"));
     expect(runReadmeCheck().stderr).toContain("missing repository link");
+  });
+
+  it("requires localized connection commands from the actual catalog", async () => {
+    await replaceInReadme(
+      "docs/i18n/README.de-DE.md",
+      "**DocWen-Verbindung prüfen**",
+      "**doctor**",
+    );
+    expect(runReadmeCheck().stderr).toContain(
+      "must use its current translated DocWen connection command in Features and Usage",
+    );
+  });
+
+  it("accepts the Russian quoted label and legitimate CLI doctor command", async () => {
+    // The Russian guide uses bold text with guillemets around the live UI label.
+    await replaceInReadme(
+      "docs/i18n/README.de-DE.md",
+      "## Verwendung",
+      "## Verwendung\\n\\nThe CLI syntax remains \`doctor --json\`.",
+    );
+    expect(runReadmeCheck()).toMatchObject({ status: 0 });
   });
 
   it("requires all three current governed English interface screenshots", async () => {
