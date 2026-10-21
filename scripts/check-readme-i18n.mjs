@@ -230,7 +230,9 @@ function validateReadme(language, title, navigation) {
   const uiLocale = connectionGuideLocales.get(filePath);
   if (uiLocale !== undefined) {
     const commandLabel = commandLabels.get(uiLocale);
-    if (!commandLabel || source.split(`**${commandLabel}**`).length - 1 !== 2) {
+    const references = commandLabel == null ? 0 : [`**${commandLabel}**`, `**«${commandLabel}»**`]
+      .reduce((count, writtenLabel) => count + source.split(writtenLabel).length - 1, 0);
+    if (references !== 2) {
       errors.push(`${filePath} must use its current translated DocWen connection command in Features and Usage`);
     }
   }
