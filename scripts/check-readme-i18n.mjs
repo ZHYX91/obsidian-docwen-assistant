@@ -199,6 +199,23 @@ function validateLocalLinks(filePath, source) {
   return repositoryTargets;
 }
 
+const connectionGuideLocales = new Map([
+  ["docs/i18n/README.de-DE.md", "de"],
+  ["docs/i18n/README.fr-FR.md", "fr"],
+  ["docs/i18n/README.es-ES.md", "es"],
+  ["docs/i18n/README.pt-BR.md", "pt"],
+  ["docs/i18n/README.ru-RU.md", "ru"],
+  ["docs/i18n/README.ja-JP.md", "ja"],
+  ["docs/i18n/README.ko-KR.md", "ko"],
+  ["docs/i18n/README.vi-VN.md", "vi"],
+]);
+// Extract the current UI command label instead of duplicating translations in checks.
+const catalog = readFileSync(resolveProjectPath("src/i18n/catalogs.ts"), "utf8");
+const commandLabels = new Map(
+  [...catalog.matchAll(/^  "([a-z-]+)": \\{[\\s\\S]*?^    commandDoctor: "([^"]+)"/gmu)]
+    .map((match) => [match[1], match[2]]),
+);
+
 function validateReadme(language, title, navigation) {
   const { path: filePath, sections, subsections } = language;
   let source;
@@ -210,9 +227,12 @@ function validateReadme(language, title, navigation) {
   }
 
   const lines = source.split(/\r\n|\n|\r/u);
-  // User-facing command names are localized in the UI; `doctor` is an internal CLI verb.
-  if (/\bdoctor\b/iu.test(lines.slice(0, 85).join("\n"))) {
-    errors.push(`${filePath} uses the obsolete user-facing doctor command name`);
+  const uiLocale = connectionGuideLocales.get(filePath);
+  if (uiLocale !== undefined) {
+    const commandLabel = commandLabels.get(uiLocale);
+    if (!commandLabel || source.split(`**${commandLabel}**`).length - 1 !== 2) {
+      errors.push(`${filePath} must use its current translated DocWen connection command in Features and Usage`);
+    }
   }
   if (lines[0] !== `# ${title}`) {
     errors.push(`${filePath} must start with the canonical title: # ${title}`);
