@@ -212,7 +212,7 @@ const connectionGuideLocales = new Map([
 // Extract the current UI command label instead of duplicating translations in checks.
 const catalog = readFileSync(resolveProjectPath("src/i18n/catalogs.ts"), "utf8");
 const commandLabels = new Map(
-  [...catalog.matchAll(/^  "([a-z-]+)": \{[\s\S]*?^    commandDoctor: "([^"]+)"/gmu)]
+  [...catalog.matchAll(/^ {2}"([a-z-]+)": \{[\s\S]*?^ {4}commandDoctor: "([^"]+)"/gmu)]
     .map((match) => [match[1], match[2]]),
 );
 
@@ -230,9 +230,15 @@ function validateReadme(language, title, navigation) {
   const uiLocale = connectionGuideLocales.get(filePath);
   if (uiLocale !== undefined) {
     const commandLabel = commandLabels.get(uiLocale);
-    const references = commandLabel == null ? 0 : [`**${commandLabel}**`, `**«${commandLabel}»**`]
-      .reduce((count, writtenLabel) => count + source.split(writtenLabel).length - 1, 0);
-    if (references !== 2) {
+    const mentionsIn = (heading) => {
+      const start = lines.indexOf(`## ${heading}`);
+      if (start < 0 || commandLabel === undefined) return 0;
+      const next = lines.findIndex((line, index) => index > start && line.startsWith("## "));
+      const body = lines.slice(start + 1, next < 0 ? lines.length : next).join("\n");
+      return [`**${commandLabel}**`, `**«${commandLabel}»**`]
+        .reduce((count, writtenLabel) => count + body.split(writtenLabel).length - 1, 0);
+    };
+    if (commandLabel === undefined || mentionsIn(sections[1]) !== 1 || mentionsIn(sections[4]) !== 1) {
       errors.push(`${filePath} must use its current translated DocWen connection command in Features and Usage`);
     }
   }
