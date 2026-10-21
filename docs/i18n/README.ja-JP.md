@@ -32,7 +32,7 @@ DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHY
 
 ## 機能
 
-DocWen でのファイル表示、出力先を明示した Word／Excel／Markdown 変換、Markdown 見出し番号の追加・削除、校正、doctor 診断を利用できます。
+DocWen でのファイル表示、出力先を明示した Word／Excel／Markdown 変換、Markdown 見出し番号の追加・削除、校正、**DocWen 接続を確認**コマンドを利用できます。
 
 ## 要件と互換性
 
@@ -57,7 +57,7 @@ Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)
 
 ## 使用方法
 
-リボンアイコン、**DocWen** サブメニュー、コマンドパレットから、DocWen の起動、Word／Excel／Markdown の出力、見出し番号の変更、Markdown 校正、doctor を実行できます。
+リボンアイコン、**DocWen** サブメニュー、コマンドパレットから、DocWen の起動、Word／Excel／Markdown の出力、見出し番号の変更、Markdown 校正、**DocWen 接続を確認**コマンドを実行できます。
 
 出力フォルダーを選択します。変換ごとに元の名前、日時、入力形式を含む結果フォルダーを作成し、生成ファイル名と関連リソースを保持します。既存の結果フォルダーは上書きしません。
 

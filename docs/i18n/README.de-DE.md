@@ -32,7 +32,7 @@ Wählen Sie einen verfügbaren Konvertierungsweg und einen ausdrücklichen Ausga
 
 ## Funktionen
 
-Die Erweiterung öffnet Dateien in DocWen, exportiert Word/Excel/Markdown mit einem ausdrücklich gewählten Ziel, verwaltet Markdown-Überschriftennummern, prüft Markdown und führt doctor-Diagnosen aus.
+Die Erweiterung öffnet Dateien in DocWen, exportiert Word/Excel/Markdown mit einem ausdrücklich gewählten Ziel, verwaltet Markdown-Überschriftennummern, prüft Markdown und bietet die Funktion **DocWen-Verbindung prüfen** an.
 
 ## Voraussetzungen und Kompatibilität
 
@@ -57,7 +57,7 @@ Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es e
 
 ## Verwendung
 
-Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und doctor ausführen.
+Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und **DocWen-Verbindung prüfen** ausführen.
 
 Wählen Sie einen Ausgabeordner. Jede Konvertierung erstellt darin einen eigenen Ergebnisordner mit Quellname, Zeitstempel und Eingabeformat. Dateinamen und verknüpfte Ressourcen bleiben erhalten; bestehende Ergebnisordner werden nicht überschrieben.
 

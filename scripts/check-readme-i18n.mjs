@@ -210,6 +210,10 @@ function validateReadme(language, title, navigation) {
   }
 
   const lines = source.split(/\r\n|\n|\r/u);
+  // User-facing command names are localized in the UI; `doctor` is an internal CLI verb.
+  if (/\bdoctor\b/iu.test(lines.slice(0, 85).join("\n"))) {
+    errors.push(`${filePath} uses the obsolete user-facing doctor command name`);
+  }
   if (lines[0] !== `# ${title}`) {
     errors.push(`${filePath} must start with the canonical title: # ${title}`);
   }

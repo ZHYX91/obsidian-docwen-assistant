@@ -32,7 +32,7 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ## 기능
 
-DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown 변환, Markdown 제목 번호 추가·제거, 교정 및 doctor 진단을 제공합니다.
+DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown 변환, Markdown 제목 번호 추가·제거, 교정 및 **DocWen 연결 확인** 명령을 제공합니다.
 
 ## 요구 사항 및 호환성
 
@@ -57,7 +57,7 @@ Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH9
 
 ## 사용
 
-리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, doctor 실행을 할 수 있습니다.
+리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, **DocWen 연결 확인** 실행을 할 수 있습니다.
 
 출력 폴더를 선택하세요. 변환마다 원본 이름, 타임스탬프와 입력 형식을 포함한 결과 폴더를 만들고 파일 이름과 연결 리소스을 유지합니다. 기존 결과 폴더는 덮어쓰지 않습니다.
 
