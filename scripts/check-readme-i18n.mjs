@@ -212,7 +212,7 @@ const connectionGuideLocales = new Map([
 // Extract the current UI command label instead of duplicating translations in checks.
 const catalog = readFileSync(resolveProjectPath("src/i18n/catalogs.ts"), "utf8");
 const commandLabels = new Map(
-  [...catalog.matchAll(/^  "([a-z-]+)": \\{[\\s\\S]*?^    commandDoctor: "([^"]+)"/gmu)]
+  [...catalog.matchAll(/^  "([a-z-]+)": \{[\s\S]*?^    commandDoctor: "([^"]+)"/gmu)]
     .map((match) => [match[1], match[2]]),
 );
 
