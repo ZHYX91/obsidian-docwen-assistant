@@ -32,7 +32,7 @@ Elige una ruta de conversión disponible y una ubicación de salida explícita s
 
 ## Funciones
 
-El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida elegida, gestiona la numeración de encabezados Markdown, revisa Markdown y ejecuta el diagnóstico doctor.
+El complemento abre archivos en DocWen, exporta Word/Excel/Markdown a una salida elegida, gestiona la numeración de encabezados Markdown, revisa Markdown y ofrece **Comprobar conexión con DocWen**.
 
 ## Requisitos y compatibilidad
 
@@ -57,7 +57,7 @@ El paquete de la versión contiene únicamente `main.js`, `manifest.json` y `sty
 
 ## Uso
 
-El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y ejecutar doctor.
+El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y elegir **Comprobar conexión con DocWen**.
 
 Elige una carpeta de salida. Cada conversión crea su propia carpeta de resultados con el nombre de origen, la fecha y hora y el formato de entrada. Conserva los nombres y recursos vinculados; no sobrescribe carpetas existentes.
 

@@ -32,7 +32,7 @@ Escolha uma rota de conversão disponível e um local de saída explícito sem a
 
 ## Recursos
 
-O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino escolhido, gerencia numeração de títulos Markdown, revisa Markdown e executa o diagnóstico doctor.
+O plugin abre arquivos no DocWen, exporta Word/Excel/Markdown para um destino escolhido, gerencia numeração de títulos Markdown, revisa Markdown e oferece **Verificar conexão com o DocWen**.
 
 ## Requisitos e compatibilidade
 
@@ -57,7 +57,7 @@ O pacote de lançamento contém somente `main.js`, `manifest.json` e `styles.css
 
 ## Uso
 
-O ícone, o submenu **DocWen** e a paleta de comandos permitem iniciar o DocWen, exportar Word/Excel/Markdown, alterar a numeração de títulos, revisar Markdown e executar doctor.
+O ícone, o submenu **DocWen** e a paleta de comandos permitem iniciar o DocWen, exportar Word/Excel/Markdown, alterar a numeração de títulos, revisar Markdown e executar **Verificar conexão com o DocWen**.
 
 Escolha uma pasta de saída. Cada conversão cria sua própria pasta de resultados com o nome original, data e hora e formato de entrada. Os nomes e recursos vinculados são preservados; pastas existentes não são sobrescritas.
 

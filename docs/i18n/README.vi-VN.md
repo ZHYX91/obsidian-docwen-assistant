@@ -32,7 +32,7 @@ Chọn một lộ trình chuyển đổi khả dụng và vị trí đầu ra r�
 
 ## Tính năng
 
-Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích đã chọn, thêm hoặc xóa số thứ tự tiêu đề Markdown, soát lỗi Markdown và chạy chẩn đoán doctor.
+Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích đã chọn, thêm hoặc xóa số thứ tự tiêu đề Markdown, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
 ## Yêu cầu và khả năng tương thích
 
@@ -57,7 +57,7 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 ## Cách sử dụng
 
-Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy doctor.
+Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
 Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục kết quả riêng với tên nguồn, dấu thời gian và định dạng đầu vào. Tên tệp và tài nguyên liên kết được giữ nguyên; thư mục kết quả có sẵn không bị ghi đè.
 
