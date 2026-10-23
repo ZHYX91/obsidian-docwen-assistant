@@ -216,6 +216,22 @@ const commandLabels = new Map(
     .map((match) => [match[1], match[2]]),
 );
 
+// Track the write boundary in every localized guide, not just its heading.
+const numberingWriteWarning = new Map(Object.entries({
+  "README.md": "**Add/Remove numbering changes Markdown text**",
+  "docs/i18n/README.zh-CN.md": "**添加／删除标题编号会修改 Markdown 原文**",
+  "docs/i18n/README.zh-TW.md": "**新增／移除標題編號會修改 Markdown 原文**",
+  "docs/i18n/README.ja-JP.md": "**見出し番号の追加・削除は Markdown 自体を変更します。**",
+  "docs/i18n/README.ko-KR.md": "**제목 번호 추가·제거는 Markdown 원문을 수정합니다.**",
+  "docs/i18n/README.de-DE.md": "**Das Hinzufügen und Entfernen von Überschriftennummern ändert dagegen den Markdown-Text.**",
+  "docs/i18n/README.fr-FR.md": "**L’ajout ou le retrait de numéros de titres modifie le Markdown.**",
+  "docs/i18n/README.es-ES.md": "**Añadir o quitar números de encabezado sí modifica el Markdown.**",
+  "docs/i18n/README.pt-BR.md": "**Adicionar ou remover números de títulos altera o Markdown.**",
+  "docs/i18n/README.ru-RU.md": "**Добавление и удаление номеров заголовков изменяет Markdown.**",
+  "docs/i18n/README.vi-VN.md": "**Thêm hoặc xóa số thứ tự tiêu đề sẽ sửa Markdown.**",
+  "docs/i18n/README.ar.md": "**إضافة أرقام العناوين أو إزالتها تغيّر نص Markdown.**"
+}));
+
 function validateReadme(language, title, navigation) {
   const { path: filePath, sections, subsections } = language;
   let source;
@@ -227,6 +243,23 @@ function validateReadme(language, title, navigation) {
   }
 
   const lines = source.split(/\r\n|\n|\r/u);
+  const writeWarning = numberingWriteWarning.get(filePath);
+  if (!writeWarning || !source.includes(writeWarning)) {
+    errors.push(`${filePath} must distinguish numbering writeback from read-only proofreading`);
+  }
+  const invalidExportTargets = new Map([
+    ["docs/i18n/README.zh-TW.md", "匯出 Word、Excel、Markdown，並明確選擇輸出檔案"],
+    ["docs/i18n/README.ru-RU.md", "экспортирует Word/Excel/Markdown в явно выбранный файл"],
+    ["docs/i18n/README.vi-VN.md", "xuất Word/Excel/Markdown đến tệp đích đã chọn"],
+  ]);
+  if (source.includes(invalidExportTargets.get(filePath) ?? "\u0000")) {
+    errors.push(`${filePath} must describe selecting an output folder, not an output file`);
+  }
+  if (filePath === "docs/i18n/README.vi-VN.md"
+    && source.includes("ứng dụng di động được chọn thủ công")) {
+    errors.push(`${filePath} must not call the portable DocWen app a mobile application`);
+  }
+
   const uiLocale = connectionGuideLocales.get(filePath);
   if (uiLocale !== undefined) {
     const commandLabel = commandLabels.get(uiLocale);

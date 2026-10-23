@@ -32,7 +32,7 @@ Chọn một lộ trình chuyển đổi khả dụng và vị trí đầu ra r�
 
 ## Tính năng
 
-Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown đến tệp đích đã chọn, thêm hoặc xóa số thứ tự tiêu đề Markdown, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
+Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown vào thư mục đích đã chọn, thêm hoặc xóa số thứ tự tiêu đề Markdown, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
 ## Yêu cầu và khả năng tương thích
 
@@ -57,6 +57,8 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 ## Cách sử dụng
 
+**Lệnh khả dụng phụ thuộc vào tệp đang mở.** Chức năng chuyển đổi chỉ xuất hiện nếu DocWen được kết nối hỗ trợ thao tác đó cho nội dung tệp. Xuất tạo thư mục kết quả riêng; soát lỗi không sửa ghi chú. **Thêm hoặc xóa số thứ tự tiêu đề sẽ sửa Markdown.** Trước khi ghi, plugin kiểm tra nội dung trình soạn thảo (kể cả thay đổi chưa lưu) hoặc tệp đã lưu; nếu có nhiều trình soạn thảo cùng đường dẫn mà không xác định được nguồn, thao tác dừng lại.
+
 Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
 Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục kết quả riêng với tên nguồn, dấu thời gian và định dạng đầu vào. Tên tệp và tài nguyên liên kết được giữ nguyên; thư mục kết quả có sẵn không bị ghi đè.
@@ -78,7 +80,7 @@ Cài đặt được chia thành bốn thẻ: Chung, Xuất sang Markdown, Xuấ
 
 ## Quyền riêng tư và bảo mật
 
-Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc ứng dụng di động được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](../cli-integration.md)
+Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc bản DocWen portable được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](../cli-integration.md)
 
 ## Phát triển
 

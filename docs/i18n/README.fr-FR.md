@@ -57,6 +57,8 @@ Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styl
 
 ## Utilisation
 
+**Les commandes proposées dépendent du fichier ouvert.** Une conversion nécessite une capacité compatible du DocWen connecté. L’export crée un dossier de résultat séparé, tandis que la relecture ne modifie pas la note. **L’ajout ou le retrait de numéros de titres modifie le Markdown.** Le texte de l’éditeur, même non enregistré, ou le fichier enregistré est vérifié avant l’écriture. Si plusieurs éditeurs du même fichier ne peuvent être distingués, l’opération s’arrête.
+
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et de choisir **Vérifier la connexion à DocWen**.
 
 Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de résultats avec le nom source, l’horodatage et le format d’entrée. Les noms et ressources liées sont conservés ; aucun dossier existant n’est remplacé.

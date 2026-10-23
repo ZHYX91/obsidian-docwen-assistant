@@ -65,6 +65,8 @@ When updating manually, replace only `main.js`, `manifest.json`, and `styles.css
 
 ## Usage
 
+**Choose the action for the current file.** Export commands appear only when the file and the connected DocWen capabilities support the conversion. Export creates a separate result folder; proofreading reports issues without editing the note. **Add/Remove numbering changes Markdown text** after checking the current editor or saved-file snapshot for conflicts. Unsaved edits in the matching open editor are included; ambiguous multiple editors for one path are rejected.
+
 Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 
 - **Launch DocWen** opens or activates the app; **Launch DocWen with current file** also opens the active file.

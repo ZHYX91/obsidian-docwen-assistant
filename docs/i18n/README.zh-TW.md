@@ -33,7 +33,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 ## 功能
 
 - 在 DocWen 開啟目前檔案或啟動 DocWen 視窗；
-- 匯出 Word、Excel、Markdown，並明確選擇輸出檔案；
+- 匯出 Word、Excel、Markdown，並明確選擇輸出資料夾；
 - 新增或移除 Markdown 標題編號；
 - 在 Obsidian 側邊欄校對 Markdown；
 - 檢查 DocWen 連線及使用檔案右鍵選單命令。
@@ -62,6 +62,8 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 發行套件只包含 `main.js`、`manifest.json` 和 `styles.css`，不會包含、覆蓋或刪除 `data.json`。只有明確要清除全部偏好時才刪除 `data.json`；啟用外掛後再選擇 DocWen 位置。
 
 ## 使用
+
+**先確認目前檔案支援哪些操作。** 匯出命令由檔案內容和本機 DocWen 提供的功能決定是否顯示；匯出會在指定目錄建立獨立結果資料夾，校對不會改動筆記。**新增／移除標題編號會修改 Markdown 原文**，寫入前會核對目前編輯器或已儲存檔案的內容；同一路徑有多個無法唯一判定的編輯器時會停止。
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。
 
