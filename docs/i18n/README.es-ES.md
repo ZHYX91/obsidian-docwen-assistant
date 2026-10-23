@@ -57,6 +57,8 @@ El paquete de la versión contiene únicamente `main.js`, `manifest.json` y `sty
 
 ## Uso
 
+**Los comandos dependen del archivo abierto.** La conversión solo está disponible si el DocWen conectado admite esa operación para el contenido. Exportar crea una carpeta de resultados independiente y revisar el texto no modifica la nota. **Añadir o quitar números de encabezado sí modifica el Markdown.** Antes de escribir se comprueba el contenido del editor, incluidos los cambios sin guardar, o el archivo almacenado; si hay varios editores ambiguos para la misma ruta, se detiene.
+
 El icono, el submenú **DocWen** y la paleta de comandos permiten iniciar DocWen, exportar Word/Excel/Markdown, cambiar la numeración de encabezados, revisar Markdown y elegir **Comprobar conexión con DocWen**.
 
 Elige una carpeta de salida. Cada conversión crea su propia carpeta de resultados con el nombre de origen, la fecha y hora y el formato de entrada. Conserva los nombres y recursos vinculados; no sobrescribe carpetas existentes.
