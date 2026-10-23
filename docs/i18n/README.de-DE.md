@@ -57,6 +57,8 @@ Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es e
 
 ## Verwendung
 
+**Welche Befehle verfügbar sind, hängt von der Datei ab.** Die Konvertierung erfordert eine passende Funktion der verbundenen DocWen-Installation. Der Export legt einen eigenen Ergebnisordner an; Korrekturlesen verändert die Notiz nicht. **Das Hinzufügen und Entfernen von Überschriftennummern ändert dagegen den Markdown-Text.** Vor dem Speichern werden Editorinhalt oder gespeicherte Datei auf Änderungen geprüft. Bei mehreren nicht eindeutig zuordenbaren Editoren derselben Datei wird abgebrochen.
+
 Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und **DocWen-Verbindung prüfen** ausführen.
 
 Wählen Sie einen Ausgabeordner. Jede Konvertierung erstellt darin einen eigenen Ergebnisordner mit Quellname, Zeitstempel und Eingabeformat. Dateinamen und verknüpfte Ressourcen bleiben erhalten; bestehende Ergebnisordner werden nicht überschrieben.
