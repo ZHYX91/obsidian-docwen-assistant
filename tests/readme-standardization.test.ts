@@ -90,6 +90,39 @@ describe("README standardization contract", () => {
     expect(runReadmeCheck()).toMatchObject({ status: 0 });
   });
 
+  it("rejects a translated instruction to select an output file instead of a folder", async () => {
+    await replaceInReadme(
+      "docs/i18n/README.ru-RU.md",
+      "экспортирует Word/Excel/Markdown в явно выбранную папку",
+      "экспортирует Word/Excel/Markdown в явно выбранный файл",
+    );
+    expect(runReadmeCheck().stderr).toContain(
+      "docs/i18n/README.ru-RU.md must describe selecting an output folder, not an output file",
+    );
+  });
+
+  it("requires a clear distinction between numbering writeback and proofreading", async () => {
+    await replaceInReadme(
+      "README.md",
+      "**Add/Remove numbering changes Markdown text**",
+      "Numbering looks different",
+    );
+    expect(runReadmeCheck().stderr).toContain(
+      "README.md must distinguish numbering writeback from read-only proofreading",
+    );
+  });
+
+  it("does not describe a portable desktop package as a mobile application", async () => {
+    await replaceInReadme(
+      "docs/i18n/README.vi-VN.md",
+      "bản DocWen portable được chọn thủ công",
+      "ứng dụng di động được chọn thủ công",
+    );
+    expect(runReadmeCheck().stderr).toContain(
+      "docs/i18n/README.vi-VN.md must not call the portable DocWen app a mobile application",
+    );
+  });
+
   it("requires all three current governed English interface screenshots", async () => {
     await rm(path.join(fixtureRoot, "docs/assets/docwen-assistant-proofread-en.png"));
     expect(runReadmeCheck().stderr).toContain(
