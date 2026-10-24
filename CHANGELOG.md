@@ -4,8 +4,10 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-10-25
+
 - Pin the original Vault file and editor identity for numbering and export snapshots; stop on rename or replacement before publication and retain warnings after a confirmed write.
-- Review the source, destination and capability-filtered options before export, and open the completed result folder on request.
+- Review the source, destination and capability-filtered options before export, including the selected template's name and built-in or custom source; open the completed result folder on request.
 - Separate Linux process ownership and declared Markdown resources from their orchestration modules without changing compatibility routes.
 - Clarify installation, conversion ownership and limits across all twelve guides; correct registered Store package handling and replace empty proofreading material with a synthetic issue-navigation example.
 - Update test dependencies to address published Happy DOM and fast-uri advisories.
