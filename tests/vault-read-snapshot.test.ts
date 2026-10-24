@@ -6,6 +6,32 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it.each(["capture", "publication"])("rejects a same-path editor rebound at %s", async (stage) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const replacement = { ...file };
+    const editor = { getValue: vi.fn(() => "# Unchanged\n") };
+    const view = { file: stage === "capture" ? replacement : file, editor };
+    const leaf = { view };
+    const app = {
+      workspace: { getLeavesOfType: () => [leaf] },
+      vault: { getFileByPath: () => file },
+    };
+    const publish = vi.fn();
+    const work = vi.fn(async (snapshot: { publish: (commit: () => Promise<void>) => Promise<void> }) => {
+      view.file = replacement;
+      return snapshot.publish(publish);
+    });
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never, new AbortController().signal, work,
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(publish).not.toHaveBeenCalled();
+    if (stage === "capture") {
+      expect(editor.getValue).not.toHaveBeenCalled();
+      expect(work).not.toHaveBeenCalled();
+    }
+  });
+
   it("preserves Structural Tables authored bytes in the source-native port", async () => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "tables/structural.md", extension: "md" };

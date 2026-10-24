@@ -473,3 +473,12 @@ button.docwen-proofread-item {
 .docwen-settings-support a {
   cursor: var(--cursor, default);
 }
+/* Review only the captured export request; long local paths wrap on narrow windows. */
+.docwen-export-summary {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 2fr);
+  gap: 0.5rem 1rem;
+}
+
+.docwen-export-summary dt { font-weight: var(--font-semibold); }
+.docwen-export-summary dd { margin: 0; overflow-wrap: anywhere; unicode-bidi: plaintext; }

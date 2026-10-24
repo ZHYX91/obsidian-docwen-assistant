@@ -2,7 +2,7 @@ import { type App, Modal } from "obsidian";
 
 import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../docwen/links";
 import { copyTextToClipboard } from "../host/clipboard";
-import { showNotice, showNoticeWithAction } from "../host/notices";
+import { showNotice, showNoticeWithAction, type NoticeAction } from "../host/notices";
 import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
 import { t, type Translations } from "../i18n";
 import { diagnosticCode } from "./diagnostic-details";
@@ -91,10 +91,13 @@ export class ActionRunner {
     summary: string,
     warnings: readonly OperationWarning[],
     diagnostics: readonly unknown[] = [],
+    action?: NoticeAction,
   ): void {
     const safeDiagnostics = safeCompletionDiagnostics(diagnostics);
-    if (warnings.length === 0 && safeDiagnostics.length === 0) showNotice(summary);
-    else this.presentWarnings(warnings, summary, "completed_with_warnings", safeDiagnostics);
+    if (warnings.length === 0 && safeDiagnostics.length === 0) {
+      if (action) showNoticeWithAction(summary, action.label, action.run);
+      else showNotice(summary);
+    } else this.presentWarnings(warnings, summary, "completed_with_warnings", safeDiagnostics, action);
   }
 
   presentWarnings(
@@ -102,6 +105,7 @@ export class ActionRunner {
     summary = "",
     status: "prepared_with_warnings" | "completed_with_warnings" | "cancelled" = "prepared_with_warnings",
     diagnostics: readonly SafeCompletionDiagnostic[] = [],
+    action?: NoticeAction,
   ): void {
     if (warnings.length === 0 && diagnostics.length === 0) return;
     const message = [
@@ -116,7 +120,7 @@ export class ActionRunner {
     const details = JSON.stringify({ status, warnings, diagnostics }, null, 2);
     showNoticeWithAction(message, t("dialogDetails"), () => {
       new OperationDetailsModal(this.app, message, details).open();
-    });
+    }, action ? [action] : []);
   }
 }
 

@@ -10,7 +10,7 @@ Die Oberflächensprache ändert nur Texte und Layout von Assistant. Ausgabesprac
 
 ## Screenshots
 
-Diese Bilder zeigen das paketierte Plugin mit der DocWen CLI in Obsidian Desktop.
+Beispiele der Desktop-Oberfläche. Das Korrekturbeispiel verwendet eine Testnotiz.
 
 ### Korrekturlese-Seitenleiste
 
@@ -18,15 +18,15 @@ Prüfen Sie Probleme nach Zeile oder Regel und springen Sie zum passenden Quellb
 
 ![DocWen-Korrekturlese-Seitenleiste](../assets/docwen-assistant-proofread-en.png)
 
-### Einstellungen mit oberen Registerkarten und CLI-Funktionen
+### Einstellungen und DocWen-Verbindung
 
-Wählen Sie über vier obere Registerkarten mit kontextbezogenen Hinweisen die genaue DocWen-Laufzeit, konfigurieren Sie Konvertierung und Korrekturlesen und prüfen Sie die Machine-Funktionen.
+Prüfen Sie die DocWen-Verbindung und wählen Sie die Optionen für Export und Korrektur auf den vier Registerkarten.
 
 ![DocWen-Assistant-Einstellungen](../assets/docwen-assistant-settings-en.png)
 
-### Funktionsabhängiger Export
+### Dateien exportieren
 
-Wählen Sie einen verfügbaren Konvertierungsweg und einen ausdrücklichen Ausgabeort, ohne die Quellnotiz zu verändern.
+Wählen Sie das Ausgabeformat, prüfen Sie die Optionen und legen Sie den Speicherort fest.
 
 ![Funktionsabhängiger DocWen-Assistant-Export](../assets/docwen-assistant-export-en.png)
 
@@ -37,23 +37,26 @@ Die Erweiterung öffnet Dateien in DocWen, exportiert Word/Excel/Markdown mit ei
 ## Voraussetzungen und Kompatibilität
 
 - Windows oder Linux und Obsidian 1.12.7 oder neuer; das Plugin ist nur für den Desktop verfügbar.
-- Unter Windows wird eine kompatible Store- oder vollständig entpackte portable DocWen-Version ab 0.17.0 verwendet; unter Linux ein manuell ausgewähltes, vollständig entpacktes Paket. Linux-Ergebnisverzeichnisse benötigen x64 und atomare No-Replace-Unterstützung des Dateisystems; das Plugin lädt DocWen nicht automatisch herunter.
+- Unter Windows wird eine kompatible Store- oder vollständig entpackte portable DocWen-Version ab 0.17.0 verwendet; unter Linux ein manuell ausgewähltes, vollständig entpacktes Paket. Der Export unter Linux benötigt x64 und ein Dateisystem, das neue Ergebnisordner ohne Überschreiben vorhandener Daten speichern kann; das Plugin lädt DocWen nicht automatisch herunter.
 - Das Plugin benötigt `docwen.machine.v2` und `docwen.artifact_bundle.v3`; eine inkompatible DocWen-Version wird abgelehnt, statt ein anderes Protokoll zu verwenden.
-- Das Starten oder Öffnen der DocWen-Desktop-App verwendet die öffentliche lokale CLI-Steuerung `gui open`; ein Fehlschlag der Machine-Aushandlung verhindert daher nicht, dass DocWen selbst geöffnet wird.
+- Auch bei einer inkompatiblen Verbindung für Hintergrundkonvertierungen können Sie die DocWen-Desktop-App separat öffnen.
 
 Wenn die Store-Installation diese Anforderungen nicht erfüllt, verwenden Sie ein kompatibles portables Paket und wählen es unter „Manuelle Installation“ aus.
 
-Die automatische Erkennung ist nur unter Windows verfügbar, verwendet den registrierten Alias `docwen.exe` und bleibt bei Microsoft-Store-Updates stabil. Unter Linux ist die manuelle Installation erforderlich; sie akzeptiert den entpackten Ordner, `DocWen` oder `DocWenCLI`. Das Plugin durchsucht weder `WindowsApps` noch beliebige Ordner und lädt keine Software automatisch herunter.
+Die automatische Erkennung ist nur unter Windows verfügbar, verwendet den registrierten Alias `docwen.exe` und bleibt bei Microsoft-Store-Updates stabil. Unter Linux ist die manuelle Installation erforderlich; sie akzeptiert den entpackten Ordner, `DocWen` oder `DocWenCLI`. Das Plugin durchsucht keine beliebigen Ordner nach Programmen und lädt keine Software automatisch herunter.
 
 ## Installation
 
 ### DocWen und das Plugin installieren
 
-Unter Windows installieren Sie DocWen aus dem [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) oder entpacken das portable Paket aus [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Unter Linux x64 entpacken Sie ein kompatibles Linux-Paket von derselben Releases-Seite und wählen es manuell aus. Installieren Sie DocWen Assistant über Community Plugins oder kopieren Sie bei manueller Installation `main.js`, `manifest.json` und `styles.css` nach `<Vault>/.obsidian/plugins/docwen-assistant/`.
+1. Installieren Sie unter Windows eine kompatible DocWen-Version ab 0.17.0 aus dem [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) oder entpacken Sie das Windows-Paket aus [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Unter Linux x64 entpacken Sie das Linux-Paket derselben Seite vollständig.
+2. Installieren Sie DocWen Assistant über Community Plugins. Manuell laden Sie `docwen-assistant-x.y.z.zip` von den [Plugin-Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) und kopieren `main.js`, `manifest.json` und `styles.css` nach `<Vault>/.obsidian/plugins/docwen-assistant/`.
+3. Laden Sie Community Plugins neu und aktivieren Sie DocWen Assistant.
+4. Die Windows-Store-Version kann automatisch erkannt werden. Für portable Windows-Versionen und Linux wählen Sie unter **Einstellungen → DocWen Assistant → Allgemein** die manuelle Verbindung und anschließend den entpackten Ordner oder die Programmdatei.
 
-### Installationssicherheit
+### Einstellungen beim Update behalten
 
-Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es enthält, ersetzt oder löscht niemals `data.json`. Löschen Sie `data.json` nur zum bewussten Zurücksetzen aller Einstellungen.
+Ersetzen Sie bei manuellen Updates nur `main.js`, `manifest.json` und `styles.css`. Behalten Sie `data.json`, damit Ihre Einstellungen erhalten bleiben; löschen Sie die Datei nur zum Zurücksetzen. Der Ordnername bleibt `docwen-assistant`.
 
 ## Verwendung
 
@@ -61,26 +64,49 @@ Das Release-Paket enthält nur `main.js`, `manifest.json` und `styles.css`; es e
 
 Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und **DocWen-Verbindung prüfen** ausführen.
 
-Wählen Sie einen Ausgabeordner. Jede Konvertierung erstellt darin einen eigenen Ergebnisordner mit Quellname, Zeitstempel und Eingabeformat. Dateinamen und verknüpfte Ressourcen bleiben erhalten; bestehende Ergebnisordner werden nicht überschrieben.
-
-Der Word-Export erzeugt eine eigenständige DOCX-Datei im Ergebnisordner. Bewahren Sie das ursprüngliche Markdown selbst auf. Die Rückkonvertierung liest DOCX-Inhalt und -Struktur ohne Quelldatei-Begleiter; identische Schreibweise und Leerzeichen werden nicht garantiert. Erweiterungen wählen Sie in den DocWen-Einstellungen.
-
+Wählen Sie eine Vorlage oder ein Konvertierungsprofil, falls angeboten, und danach den Ausgabeordner. Prüfen Sie Quelldatei, Format, Ziel und Optionen und klicken Sie auf **Exportieren**. Die Übersicht verwendet die für diesen Auftrag erfassten Einstellungen; beim Abbrechen startet keine Konvertierung. Ergebnisse und verknüpfte Bilder landen in einem neuen Ordner. Klicken Sie nach Abschluss in der Meldung auf **Ergebnisordner öffnen**. Vorhandene Ergebnisordner bleiben erhalten.
 
 ## Einstellungen
 
-Für verbundene Structural-Tables-Zellen, Number-Suite-Beschriftungen und Querverweise, H7–H9-Überschriften oder typisierte Endnoten aktivieren Sie vor dem Word-Export in **DocWen → Einstellungen → Markdown-Syntax** die entsprechenden **Eingabe-Erweiterungen** oder die Obsidian-Voreinstellung. Diese Erweiterungen sind bei Neuinstallationen ausgeschaltet. Für die Rückkonvertierung nach Markdown müssen die passenden **Ausgabe-Erweiterungen** aktiviert sein. Die Word-Nummerierung richtet sich nach den DocWen-Exportoptionen; prüfen Sie das Ergebnis.
+Aktivieren Sie vor dem Word-Export unter **DocWen → Einstellungen → Markdown-Syntax** die benötigten **Eingabe-Erweiterungen**. Bei einer Neuinstallation sind sie ausgeschaltet; die Obsidian-Eingabevoreinstellung aktiviert die zugehörige Gruppe.
+
+| Inhalt oder Aufgabe | DocWen-Einstellung |
+| --- | --- |
+| Verbundene Structural-Tables-Zellen | Structural-Tables-Eingabe-Erweiterung |
+| Number-Suite-Beschriftungen und Querverweise | Eingabe-Erweiterung für Beschriftungen und Verweise |
+| H7–H9-Überschriften / typisierte Endnoten | Entsprechende Überschriften- / Endnoten-Eingabe-Erweiterungen |
+| Word zurück in erweitertes Markdown | Entsprechende Ausgabe-Erweiterungen |
+
+Word-Export liest die Number-Suite-Syntax auch ohne installiertes Number Suite. Die Nummern im Export folgen den DocWen-Optionen, nicht den reinen Anzeigenummern von Number Suite. Die separaten Befehle zum Hinzufügen oder Entfernen von Überschriftennummern ändern die Quellnotiz; der Export tut das nicht.
+
+**Welche Inhalte die Projekte ändern**
+
+| Projekt und Anleitung | Anzeige, Quelldateien und Ausgabe |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.de-DE.md) | Erzeugt konvertierte Dateien. Eingabeerweiterungen interpretieren die Quellsyntax; Exporteinstellungen bestimmen die Ausgabe und ihre Nummerierung. |
+| [DocWen Assistant](../product-requirements.en.md) | Der Export erstellt einen eigenen Ergebnisordner; Korrekturlesen greift nur lesend zu. Ausdrückliche Aktionen für Überschriftennummern ändern den Markdown-Quelltext. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.de-DE.md) | Kalender- und Aufgabenansichten lesen den Index. Änderungen an Erledigungsstatus oder Datum schreiben in die Markdown-Quelle; Erstellungsaktionen legen Notizen an. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.de-DE.md) | Vorschlagseinstellungen ändern Menüs. Neuordnen oder Verschieben von Werten bearbeitet die betroffenen YAML-Listen und kann Nichttextwerte in Zeichenketten umwandeln. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.de.md) | Regeln filtern Analyseergebnisse oder bestimmen, welche Graphverbindungen zählen. Links in Notizen werden nicht umgeschrieben. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.de.md) | Ansichten zeigen die Knotenstruktur. Erstellen, Verschieben, Umbenennen, Zusammenführen und Löschen ändern Notizen, Ordner oder Struktureigenschaften. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.de.md) | Virtuelle Nummern ändern die Anzeige. Notizbezogene Einstellungen speichern Eigenschaften; Schreiben, Entfernen und Neunummerieren ändern den Überschriftentext. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.de.md) | Die Tabellenansicht und das Darstellungsbeispiel bearbeiten keine Notizen. Tabellenbearbeitung schreibt Markdown; die Umwandlung in eine Base erstellt Datensatzdateien. |
 
 Die Einstellungen sind auf vier Registerkarten verteilt: Allgemein, In Markdown exportieren, In Word exportieren und Korrekturlesen. Hinweise stehen direkt bei den jeweiligen Optionen. Die Sprache folgt standardmäßig Obsidian und lässt sich in den allgemeinen Einstellungen ändern. Mit den Pfeiltasten sowie Pos1/Ende können Sie zwischen den Registerkarten wechseln.
 
 ## Einschränkungen
 
-- Windows- oder Linux-Desktop mit einer kompatiblen lokalen DocWen-Installation; Ergebnisverzeichnis-Export unter Linux benötigt x64 und ein Dateisystem mit atomarem No-Replace.
+- Windows- oder Linux-Desktop mit einer kompatiblen lokalen DocWen-Installation; der Export unter Linux benötigt x64 und ein Dateisystem, das Ergebnisse ohne Überschreiben bestehender Daten speichern kann.
 - Keine rekursive Suche außerhalb des ausgewählten DocWen-Ordners oder Programms.
-- Ein Vorgang wird abgelehnt, wenn CLI-Antwort, Quell-Snapshot, Editorzustand oder Ziel nicht sicher geprüft werden können.
+- Wenn sich die Notiz während der Verarbeitung ändert oder das Ergebnis nicht sicher gespeichert werden kann, hält der Vorgang an und fordert Sie zur Prüfung auf.
+
+Eine Konvertierung zu Word und zurück ersetzt keine Sicherung des ursprünglichen Markdown. Unterstützte sichtbare Inhalte lassen sich zurückwandeln; nicht unterstützte Syntax, eingebettete Notizen und manche Layoutdetails können verloren gehen. Bewahren Sie die Quellnotiz auf und prüfen Sie das zurückgewandelte Dokument.
 
 ## Datenschutz und Sicherheit
 
-Das Plugin übergibt nur einen isolierten Snapshot des aktuellen Editors oder der Vault-Datei an DocWen. Es greift außerhalb des Vault nur zu, um den registrierten DocWen-Alias oder die manuell ausgewählte portable Anwendung zu starten, isolierte temporäre Eingaben und geprüfte Artefakte zu verwalten und an einen ausdrücklich gewählten Ausgabeort zu schreiben. Den versionierten Microsoft-Store-Paketpfad öffnet oder speichert es nicht. Es lädt keine Dokumente hoch und durchsucht nicht den gesamten Vault. Details: [CLI integration contract](../cli-integration.md)
+Ihre Dokumente bleiben auf Ihrem Computer. Das Plugin übergibt dem lokalen DocWen eine temporäre Kopie der ausgewählten Datei, einschließlich ungespeicherter Änderungen aus dem eindeutig zugehörigen Editor. Es nimmt nur ausdrücklich verknüpfte Bilder hinzu, durchsucht den Vault nicht nach fremden Dateien und lädt keine Dokumente hoch.
+
+Exporte werden im gewählten Ordner gespeichert; Korrekturlesen verändert keine Notiz. Überschriftennummern werden nur geschrieben, solange die ursprüngliche Notiz am selben Pfad liegt und ihr Text unverändert ist. Nach Umbenennen oder Ersetzen während der Verarbeitung führen Sie den Befehl erneut für die aktuelle Notiz aus. Der Store-Installationspfad wird nicht in den Plugin-Einstellungen gespeichert. Technische Details stehen in der [Integrationsbeschreibung](../cli-integration.md).
 
 ## Entwicklung
 
@@ -91,6 +117,8 @@ Stabile Dokumente: [Produktanforderungen](../product-requirements.en.md) · [UX-
 Repository-Governance: [Änderungsprotokoll](../../CHANGELOG.md) · [Mitwirken](../../CONTRIBUTING.md) · [Sicherheit](../../SECURITY.md)
 
 ## Support
+
+In Obsidian finden Sie unter **Allgemein → Hilfe** die **Benutzeranleitung** und **Problem melden**.
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Fragen zur Nutzung und Konfiguration.
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Erste Ideen für Funktionen und Arbeitsabläufe.

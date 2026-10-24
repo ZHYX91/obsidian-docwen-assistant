@@ -5,6 +5,18 @@ import { AR_TRANSLATIONS } from "./ar";
 export const translations: Record<string, Translations> = {
   // Simplified Chinese
   "zh-cn": {
+    exportReviewTitle: "确认导出配置",
+    exportReviewSource: "源文件",
+    exportReviewTarget: "输出格式",
+    exportReviewTemplate: "模板",
+    exportReviewOptimization: "转换预设",
+    exportReviewDestination: "结果保存位置",
+    exportReviewInherited: "未列出的选项沿用 DocWen 设置。导出会新建结果文件夹，不修改源文件。",
+    exportReviewEnabled: "开启",
+    exportReviewDisabled: "关闭",
+    exportReviewStart: "导出",
+    dialogOpenResultFolder: "打开结果文件夹",
+    noticeOpenResultFolderFailed: "导出已完成。请手动打开此文件夹：{path}",
     settingsHelpTitle: "帮助",
     settingsUserGuide: "使用指南",
     settingsReportIssue: "报告问题",
@@ -239,6 +251,18 @@ export const translations: Record<string, Translations> = {
 
   // Traditional Chinese
   "zh-tw": {
+    exportReviewTitle: "確認匯出設定",
+    exportReviewSource: "來源檔案",
+    exportReviewTarget: "輸出格式",
+    exportReviewTemplate: "範本",
+    exportReviewOptimization: "轉換預設",
+    exportReviewDestination: "結果儲存位置",
+    exportReviewInherited: "未列出的選項沿用 DocWen 設定。匯出會建立新的結果資料夾，不修改來源檔案。",
+    exportReviewEnabled: "開啟",
+    exportReviewDisabled: "關閉",
+    exportReviewStart: "匯出",
+    dialogOpenResultFolder: "開啟結果資料夾",
+    noticeOpenResultFolderFailed: "匯出已完成。請手動開啟此資料夾：{path}",
     settingsHelpTitle: "說明",
     settingsUserGuide: "使用指南",
     settingsReportIssue: "回報問題",
@@ -473,6 +497,18 @@ export const translations: Record<string, Translations> = {
 
   // English
   "en": {
+    exportReviewTitle: "Review export",
+    exportReviewSource: "Source",
+    exportReviewTarget: "Output format",
+    exportReviewTemplate: "Template",
+    exportReviewOptimization: "Conversion preset",
+    exportReviewDestination: "Save results in",
+    exportReviewInherited: "Options not listed here follow DocWen settings. Export creates a new folder and leaves the source unchanged.",
+    exportReviewEnabled: "On",
+    exportReviewDisabled: "Off",
+    exportReviewStart: "Export",
+    dialogOpenResultFolder: "Open result folder",
+    noticeOpenResultFolderFailed: "Export is complete. Open this folder manually: {path}",
     settingsHelpTitle: "Help",
     settingsUserGuide: "User guide",
     settingsReportIssue: "Report a problem",
@@ -710,6 +746,18 @@ export const translations: Record<string, Translations> = {
 
   // German
   "de": {
+    exportReviewTitle: "Export prüfen",
+    exportReviewSource: "Quelldatei",
+    exportReviewTarget: "Ausgabeformat",
+    exportReviewTemplate: "Vorlage",
+    exportReviewOptimization: "Konvertierungsvorlage",
+    exportReviewDestination: "Speicherort",
+    exportReviewInherited: "Nicht aufgeführte Optionen folgen den DocWen-Einstellungen. Der Export erstellt einen neuen Ordner und lässt die Quelldatei unverändert.",
+    exportReviewEnabled: "Ein",
+    exportReviewDisabled: "Aus",
+    exportReviewStart: "Exportieren",
+    dialogOpenResultFolder: "Ergebnisordner öffnen",
+    noticeOpenResultFolderFailed: "Der Export ist abgeschlossen. Öffnen Sie diesen Ordner manuell: {path}",
     settingsHelpTitle: "Hilfe",
     settingsUserGuide: "Benutzerhandbuch",
     settingsReportIssue: "Problem melden",
@@ -945,6 +993,18 @@ export const translations: Record<string, Translations> = {
 
   // French
   "fr": {
+    exportReviewTitle: "Vérifier l’exportation",
+    exportReviewSource: "Fichier source",
+    exportReviewTarget: "Format de sortie",
+    exportReviewTemplate: "Modèle",
+    exportReviewOptimization: "Préréglage de conversion",
+    exportReviewDestination: "Dossier de destination",
+    exportReviewInherited: "Les options non affichées suivent les réglages de DocWen. L’exportation crée un nouveau dossier sans modifier le fichier source.",
+    exportReviewEnabled: "Activé",
+    exportReviewDisabled: "Désactivé",
+    exportReviewStart: "Exporter",
+    dialogOpenResultFolder: "Ouvrir le dossier du résultat",
+    noticeOpenResultFolderFailed: "L’exportation est terminée. Ouvrez ce dossier manuellement : {path}",
     settingsHelpTitle: "Aide",
     settingsUserGuide: "Guide d’utilisation",
     settingsReportIssue: "Signaler un problème",
@@ -1179,6 +1239,18 @@ export const translations: Record<string, Translations> = {
 
   // Russian
   "ru": {
+    exportReviewTitle: "Проверка экспорта",
+    exportReviewSource: "Исходный файл",
+    exportReviewTarget: "Формат результата",
+    exportReviewTemplate: "Шаблон",
+    exportReviewOptimization: "Профиль преобразования",
+    exportReviewDestination: "Папка для результата",
+    exportReviewInherited: "Для остальных параметров используются настройки DocWen. Экспорт создаёт новую папку и не меняет исходный файл.",
+    exportReviewEnabled: "Включено",
+    exportReviewDisabled: "Выключено",
+    exportReviewStart: "Экспортировать",
+    dialogOpenResultFolder: "Открыть папку результата",
+    noticeOpenResultFolderFailed: "Экспорт завершён. Откройте эту папку вручную: {path}",
     settingsHelpTitle: "Помощь",
     settingsUserGuide: "Руководство пользователя",
     settingsReportIssue: "Сообщить о проблеме",
@@ -1413,6 +1485,18 @@ export const translations: Record<string, Translations> = {
 
   // Portuguese (Brazil)
   "pt": {
+    exportReviewTitle: "Revisar exportação",
+    exportReviewSource: "Arquivo de origem",
+    exportReviewTarget: "Formato de saída",
+    exportReviewTemplate: "Modelo",
+    exportReviewOptimization: "Predefinição de conversão",
+    exportReviewDestination: "Pasta de destino",
+    exportReviewInherited: "As opções não listadas seguem as configurações do DocWen. A exportação cria uma nova pasta sem alterar o arquivo original.",
+    exportReviewEnabled: "Ativado",
+    exportReviewDisabled: "Desativado",
+    exportReviewStart: "Exportar",
+    dialogOpenResultFolder: "Abrir pasta do resultado",
+    noticeOpenResultFolderFailed: "A exportação foi concluída. Abra esta pasta manualmente: {path}",
     settingsHelpTitle: "Ajuda",
     settingsUserGuide: "Guia de uso",
     settingsReportIssue: "Relatar um problema",
@@ -1647,6 +1731,18 @@ export const translations: Record<string, Translations> = {
 
   // Japanese
   "ja": {
+    exportReviewTitle: "エクスポート内容の確認",
+    exportReviewSource: "元ファイル",
+    exportReviewTarget: "出力形式",
+    exportReviewTemplate: "テンプレート",
+    exportReviewOptimization: "変換プリセット",
+    exportReviewDestination: "保存先",
+    exportReviewInherited: "ここに表示されない項目は DocWen の設定に従います。結果は新しいフォルダーに保存され、元ファイルは変更されません。",
+    exportReviewEnabled: "オン",
+    exportReviewDisabled: "オフ",
+    exportReviewStart: "エクスポート",
+    dialogOpenResultFolder: "結果フォルダーを開く",
+    noticeOpenResultFolderFailed: "エクスポートは完了しました。このフォルダーを手動で開いてください：{path}",
     settingsHelpTitle: "ヘルプ",
     settingsUserGuide: "使い方ガイド",
     settingsReportIssue: "問題を報告",
@@ -1880,6 +1976,18 @@ export const translations: Record<string, Translations> = {
   },
 
   "ko": {
+    exportReviewTitle: "내보내기 설정 확인",
+    exportReviewSource: "원본 파일",
+    exportReviewTarget: "출력 형식",
+    exportReviewTemplate: "템플릿",
+    exportReviewOptimization: "변환 사전 설정",
+    exportReviewDestination: "저장 위치",
+    exportReviewInherited: "표시되지 않은 옵션은 DocWen 설정을 따릅니다. 결과는 새 폴더에 저장되며 원본 파일은 바뀌지 않습니다.",
+    exportReviewEnabled: "켜짐",
+    exportReviewDisabled: "꺼짐",
+    exportReviewStart: "내보내기",
+    dialogOpenResultFolder: "결과 폴더 열기",
+    noticeOpenResultFolderFailed: "내보내기가 완료되었습니다. 이 폴더를 직접 여세요: {path}",
     settingsHelpTitle: "도움말",
     settingsUserGuide: "사용 안내",
     settingsReportIssue: "문제 신고",
@@ -2113,6 +2221,18 @@ export const translations: Record<string, Translations> = {
   },
 
   "es": {
+    exportReviewTitle: "Revisar exportación",
+    exportReviewSource: "Archivo de origen",
+    exportReviewTarget: "Formato de salida",
+    exportReviewTemplate: "Plantilla",
+    exportReviewOptimization: "Preajuste de conversión",
+    exportReviewDestination: "Carpeta de destino",
+    exportReviewInherited: "Las opciones que no aparecen siguen la configuración de DocWen. La exportación crea una carpeta nueva sin modificar el archivo original.",
+    exportReviewEnabled: "Activado",
+    exportReviewDisabled: "Desactivado",
+    exportReviewStart: "Exportar",
+    dialogOpenResultFolder: "Abrir carpeta del resultado",
+    noticeOpenResultFolderFailed: "La exportación ha terminado. Abra esta carpeta manualmente: {path}",
     settingsHelpTitle: "Ayuda",
     settingsUserGuide: "Guía de uso",
     settingsReportIssue: "Informar de un problema",
@@ -2346,6 +2466,18 @@ export const translations: Record<string, Translations> = {
   },
 
   "vi": {
+    exportReviewTitle: "Kiểm tra thiết lập xuất",
+    exportReviewSource: "Tệp nguồn",
+    exportReviewTarget: "Định dạng đầu ra",
+    exportReviewTemplate: "Mẫu",
+    exportReviewOptimization: "Thiết lập chuyển đổi",
+    exportReviewDestination: "Thư mục lưu kết quả",
+    exportReviewInherited: "Các tùy chọn không hiển thị dùng thiết lập của DocWen. Kết quả được lưu vào thư mục mới, không thay đổi tệp nguồn.",
+    exportReviewEnabled: "Bật",
+    exportReviewDisabled: "Tắt",
+    exportReviewStart: "Xuất",
+    dialogOpenResultFolder: "Mở thư mục kết quả",
+    noticeOpenResultFolderFailed: "Đã xuất xong. Hãy mở thư mục này theo cách thủ công: {path}",
     settingsHelpTitle: "Trợ giúp",
     settingsUserGuide: "Hướng dẫn sử dụng",
     settingsReportIssue: "Báo cáo sự cố",

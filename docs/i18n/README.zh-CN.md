@@ -10,7 +10,7 @@
 
 ## 截图
 
-以下是日常最常用的三个界面。
+桌面界面示例。校对示例使用合成笔记。
 
 ### 校对侧边栏
 
@@ -20,13 +20,13 @@
 
 ### 设置与 DocWen 连接
 
-在四个设置页签里检查 DocWen 连接、选择导出方式和校对规则。
+在四个设置页签中检查 DocWen 连接，选择转换和校对选项。
 
 ![DocWen Assistant 顶部页签设置](../assets/docwen-assistant-settings-en.png)
 
 ### 导出文件
 
-选择文件要导出的格式和保存位置。原始笔记不会被转换结果覆盖。
+选择输出格式，核对本次配置，再将结果保存到指定位置。
 
 ![DocWen Assistant 导出文件](../assets/docwen-assistant-export-en.png)
 
@@ -53,14 +53,14 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 
 ### 安装 DocWen 与插件
 
-1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包；Linux x64 请从同一 Releases 页面下载并完整解压兼容的 Linux 包；
-2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从 [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) 下载 `docwen-assistant-x.y.z.zip`，将其中的 `main.js`、`manifest.json` 和 `styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
-3. 重新加载第三方插件并启用 DocWen Assistant；
-4. Windows 自动检测无需选择文件；Windows 便携版和所有 Linux 用户都应打开 **设置 → DocWen Assistant → 常规**，将“连接方式”设为“手动选择安装位置”，再选择解压后的 DocWen 文件夹或可执行文件。
+1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包。Linux x64 请从同一页面下载并解压 Linux 包。
+2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从[插件发布页](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)下载 `docwen-assistant-x.y.z.zip`，将 `main.js`、`manifest.json`、`styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`。
+3. 重新加载第三方插件并启用 DocWen Assistant。
+4. Windows 商店版可自动检测。Windows 便携版和 Linux 用户请打开 **设置 → DocWen Assistant → 常规**，将连接方式设为**手动选择安装位置**，再选择解压后的文件夹或可执行文件。
 
 ### 升级时保留设置
 
-升级时只替换 `main.js`、`manifest.json` 和 `styles.css`。**不要删除 `data.json`**，它保存了插件设置。只有确实想重置所有偏好时才删除它。插件文件夹的名称应保持为 `docwen-assistant`。
+手动升级时只替换 `main.js`、`manifest.json` 和 `styles.css`。保留 `data.json` 才能保留设置；只有想重置设置时才删除它。插件文件夹名称保持为 `docwen-assistant`。
 
 ## 使用
 
@@ -74,14 +74,33 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 - 在 Obsidian 侧边栏校对当前 Markdown；
 - 检查 DocWen 连接。
 
-导出时先选择保存目录。每次转换都会生成独立的结果文件夹，图片等关联文件也保存在其中，不会直接覆盖已有结果。
-
-导出 Word 会另存为 DOCX，不会改写原笔记。Word 转回 Markdown 时不要求保留原始 Markdown，但格式、空格或标记的写法可能有变化；建议检查转换结果。
-
+若出现模板或转换预设选择，先完成选择，再指定输出目录。核对源文件、格式、保存位置和本次选项后，点击**导出**。确认框使用本次任务已取得的设置，取消不会开始转换。每次转换都会新建结果文件夹，图片等关联资源也保存在其中。完成后，可在通知中点击**打开结果文件夹**。已有结果文件夹不会被覆盖。
 
 ## 设置
 
-如果笔记用了 Structural Tables 的合并表格、Number Suite 的题注或交叉引用、七至九级标题或带类型的尾注，导出 Word 前请到 **DocWen → 设置 → Markdown 语法** 开启对应的**输入扩展**，或使用输入方向的**使用 Obsidian 扩展**预设。新安装 DocWen 时这些可选扩展默认关闭；如果还要将 Word 转回扩展 Markdown，需要开启相应的**输出扩展**。Word 中的编号按 DocWen 导出选项生成，不直接复制 Number Suite 的纯显示编号；请检查输出的表格与引用。
+导出 Word 前，请在 **DocWen → 设置 → Markdown 语法**开启需要的**输入扩展**。新安装时这些扩展默认关闭，也可使用输入方向的**使用 Obsidian 扩展**预设。
+
+| 笔记内容或操作 | DocWen 中的对应设置 |
+| --- | --- |
+| Structural Tables 合并单元格 | Structural Tables 输入扩展 |
+| Number Suite 题注与交叉引用 | 题注与交叉引用输入扩展 |
+| H7–H9 标题／带类型的尾注 | 相应的标题／尾注输入扩展 |
+| Word 转回扩展 Markdown | 相应的输出扩展 |
+
+即使没有安装 Number Suite，Word 导出也能读取 Markdown 中的相应语法。导出文档的编号按 DocWen 选项生成，不直接复制 Number Suite 的纯显示编号。独立的“添加／删除标题编号”命令会修改源笔记，导出不会。
+
+**各项目会改动什么**
+
+| 项目与用法 | 显示、源文修改与输出 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.zh-CN.md) | 生成转换后的文件。输入扩展解释源文语法，导出设置控制输出及其编号。 |
+| [DocWen Assistant](../product-requirements.zh-CN.md) | 导出创建独立的结果目录，校对只读；明确执行标题编号操作时会修改源 Markdown。 |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.zh-CN.md) | 日历和任务视图读取索引。勾选任务或调整日期会更新源 Markdown，创建操作会新增笔记。 |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.zh-CN.md) | 候选设置改变菜单。重排或移动值会修改相关 YAML 列表，也可能把非文本值转成字符串。 |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.zh-CN.md) | 规则筛选分析结果，或改变参与分析的图连接；不会重写笔记中的链接。 |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.zh-CN.md) | 视图显示节点结构。创建、移动、重命名、合并和删除操作会改动笔记、文件夹或结构属性。 |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.zh-CN.md) | 虚拟编号改变显示。单篇笔记的设置会保存属性；写入、移除或重新编号会修改标题文本。 |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.zh-CN.md) | 查看表格和外观示例不修改笔记。编辑表格会写入 Markdown，转换为 Base 会创建记录文件。 |
 
 - 设置分为四页：常规、转为 Markdown、转为 Word、校对。页签可横向滚动，相关说明就在每页中；
 - 界面语言默认“跟随 Obsidian”，也可以在“常规”页手动选择；
@@ -95,11 +114,13 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 - 后台导出必须明确选择输出目录，校对不会直接重写源笔记；
 - 如果文件在处理过程中发生变化，或者插件无法确认结果是否安全，操作会停止并提示你检查。
 
+Word 往返转换有保真范围：能转换回受支持的可见内容，但不能把它当作 Markdown 原文的精确备份。未支持的语法、嵌入笔记展开和部分版式可能无法保留；请保留源笔记，并检查转回的文档。
+
 ## 隐私与安全
 
-**文件留在你的电脑上。** 插件把当前笔记（包括尚未保存的编辑内容）或已保存的文件交给本机 DocWen 处理，不会上传到在线转换服务，也不会遍历整个 Vault 寻找无关文件。只有笔记明确引用的图片等资源才会按需要一并处理。校对不会修改笔记；编号修改前会检查笔记是否仍是开始处理时的版本。输出仅写入你选择的目录。更详细的实现边界见[集成技术文档](../cli-integration.md)。
+文件留在你的电脑上。插件将所选文件的临时副本交给本机 DocWen；如果该笔记有唯一对应的编辑器，也会包含未保存的正文。只按需处理笔记明确引用的图片，不会遍历 Vault 搜索无关文件，也不会上传文档。
 
-转换和打开程序使用不同的本机接口。插件会检查输入、结果和错误状态；如果无法确认写入是否成功，不会自动重复写入，避免生成重复文件或误覆盖。
+导出写入你选择的目录，校对不修改笔记。标题编号只有在原笔记仍位于原路径且正文未变时才写回；处理中若重命名或替换了笔记，请在当前笔记上重新执行。插件设置不保存商店包的安装路径。开发者可参阅[集成说明](../cli-integration.md)。
 
 ## 开发
 

@@ -524,6 +524,7 @@ describe("DocWenClient Machine semantics", () => {
       headingMergeMode: "always",
     })).resolves.toEqual({
       output,
+      resultDirectory: path.dirname(output),
       outputs: [output],
       bundleId: "bundle.1",
       warnings: [],

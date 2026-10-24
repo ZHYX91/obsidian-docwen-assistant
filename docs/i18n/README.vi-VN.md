@@ -4,13 +4,13 @@
 
 DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows hoặc Linux, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.17.0 trở lên ổn định.
 
-> **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP di động trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+> **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP portable trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 Ngôn ngữ giao diện chỉ thay đổi văn bản và bố cục của Assistant. Ngôn ngữ chuyển đổi, mẫu và OCR được điều khiển bằng tùy chọn tác vụ và cài đặt DocWen.
 
 ## Ảnh chụp màn hình
 
-Các ảnh sau cho thấy plugin đã đóng gói cùng DocWen CLI chạy trong Obsidian trên máy tính.
+Ví dụ giao diện trên máy tính. Ví dụ soát lỗi dùng ghi chú thử nghiệm.
 
 ### Thanh bên soát lỗi
 
@@ -18,15 +18,15 @@ Xem vấn đề theo dòng hoặc quy tắc và quay lại đúng vùng nguồn 
 
 ![Thanh bên soát lỗi DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Cài đặt bằng thẻ trên cùng và khả năng CLI
+### Cài đặt và kết nối DocWen
 
-Dùng bốn thẻ trên cùng và hướng dẫn theo ngữ cảnh để chọn đúng môi trường DocWen, điều chỉnh chuyển đổi và soát lỗi, rồi xác minh khả năng Machine.
+Kiểm tra kết nối DocWen và chọn tùy chọn chuyển đổi, soát lỗi trong bốn thẻ cài đặt.
 
 ![Cài đặt DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
-### Xuất theo khả năng
+### Xuất tệp
 
-Chọn một lộ trình chuyển đổi khả dụng và vị trí đầu ra rõ ràng trong khi giữ nguyên ghi chú nguồn.
+Chọn định dạng đầu ra, kiểm tra tùy chọn và chọn nơi lưu kết quả.
 
 ![Xuất theo khả năng của DocWen Assistant](../assets/docwen-assistant-export-en.png)
 
@@ -37,23 +37,26 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown vào thư mục đíc
 ## Yêu cầu và khả năng tương thích
 
 - Windows hoặc Linux và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
-- Trên Windows, dùng DocWen 0.17.0 trở lên tương thích từ Store hoặc gói di động đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất thư mục kết quả trên Linux yêu cầu x64 và hệ thống tệp hỗ trợ no-replace nguyên tử; plugin không tự động tải DocWen.
+- Trên Windows, dùng DocWen 0.17.0 trở lên tương thích từ Store hoặc gói portable đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mới mà không ghi đè dữ liệu hiện có; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
-- Việc khởi chạy hoặc mở ứng dụng DocWen dùng lệnh CLI cục bộ công khai `gui open`; vì vậy lỗi thương lượng Machine không ngăn việc mở chính DocWen.
+- Ngay cả khi kết nối chuyển đổi nền không tương thích, bạn vẫn có thể thử mở riêng ứng dụng DocWen.
 
-Nếu bản cài đặt từ Store không đáp ứng các yêu cầu này, hãy dùng gói di động tương thích và chọn gói đó trong chế độ cài đặt thủ công.
+Nếu bản cài đặt từ Store không đáp ứng các yêu cầu này, hãy dùng gói portable tương thích và chọn gói đó trong chế độ cài đặt thủ công.
 
-Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe` đã đăng ký. Trên Linux bắt buộc dùng cài đặt thủ công; có thể chọn thư mục đã giải nén, `DocWen` hoặc `DocWenCLI`. Plugin không quét `WindowsApps` hay thư mục tùy ý và không tự động tải phần mềm.
+Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe` đã đăng ký. Trên Linux bắt buộc dùng cài đặt thủ công; có thể chọn thư mục đã giải nén, `DocWen` hoặc `DocWenCLI`. Plugin không tìm chương trình trong các thư mục tùy ý và không tự động tải phần mềm.
 
 ## Cài đặt
 
 ### Cài DocWen và plugin
 
-Trên Windows, cài DocWen từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) hoặc giải nén gói di động từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux tương thích từ cùng trang Releases và chọn thủ công. Cài DocWen Assistant từ Community Plugins; nếu cài thủ công, sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
+1. Trên Windows, cài DocWen 0.17.0 trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
+2. Cài DocWen Assistant từ Community Plugins. Nếu cài thủ công, tải `docwen-assistant-x.y.z.zip` từ [trang phát hành plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) rồi sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
+3. Tải lại Community Plugins rồi bật DocWen Assistant.
+4. Bản Windows từ Store có thể được nhận diện tự động. Với Windows portable hoặc Linux, mở **Cài đặt → DocWen Assistant → Chung**, chọn kết nối thủ công rồi chọn thư mục đã giải nén hoặc tệp thực thi.
 
-### An toàn khi cài đặt
+### Giữ thiết lập khi cập nhật
 
-Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói này không bao giờ chứa, thay thế hoặc xóa `data.json`. Chỉ xóa `data.json` khi chủ động đặt lại toàn bộ tùy chọn.
+Khi cập nhật thủ công, chỉ thay `main.js`, `manifest.json` và `styles.css`. Giữ `data.json` để giữ thiết lập; chỉ xóa khi muốn đặt lại. Giữ tên thư mục là `docwen-assistant`.
 
 ## Cách sử dụng
 
@@ -61,26 +64,49 @@ Gói phát hành chỉ chứa `main.js`, `manifest.json` và `styles.css`; gói 
 
 Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
-Chọn thư mục đầu ra. Mỗi lần chuyển đổi tạo một thư mục kết quả riêng với tên nguồn, dấu thời gian và định dạng đầu vào. Tên tệp và tài nguyên liên kết được giữ nguyên; thư mục kết quả có sẵn không bị ghi đè.
-
-Xuất Word tạo một tệp DOCX độc lập trong thư mục kết quả. Hãy tự giữ Markdown gốc. Chuyển đổi ngược đọc nội dung và cấu trúc DOCX mà không cần tệp kèm chứa bản gốc; không đảm bảo cách viết và khoảng trắng giống hệt. Chọn phần mở rộng trong cài đặt DocWen.
-
+Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, rồi chọn thư mục đầu ra. Kiểm tra tệp nguồn, định dạng, nơi lưu và các tùy chọn trước khi bấm **Xuất**. Cửa sổ dùng thiết lập đã lấy cho tác vụ này; hủy sẽ không bắt đầu chuyển đổi. Mỗi lần chuyển đổi tạo thư mục mới chứa kết quả và ảnh liên kết. Sau khi hoàn tất, chọn **Mở thư mục kết quả** trong thông báo. Thư mục kết quả có sẵn không bị ghi đè.
 
 ## Cài đặt plugin
 
-Để giữ ô gộp của Structural Tables, chú thích và tham chiếu của Number Suite, tiêu đề H7–H9 hoặc chú thích cuối có kiểu khi xuất Word, hãy bật **phần mở rộng đầu vào** phù hợp tại **DocWen → Cài đặt → Cú pháp Markdown** hoặc chọn cấu hình Obsidian. Các phần mở rộng mặc định tắt khi cài mới. Muốn chuyển Word về Markdown mở rộng, hãy bật cả **phần mở rộng đầu ra**. Cách đánh số trong Word theo tùy chọn xuất của DocWen; hãy kiểm tra kết quả.
+Trước khi xuất Word, bật **phần mở rộng đầu vào** cần thiết tại **DocWen → Cài đặt → Cú pháp Markdown**. Chúng mặc định tắt khi cài mới; cấu hình đầu vào Obsidian bật nhóm phần mở rộng liên quan.
+
+| Nội dung hoặc tác vụ | Thiết lập DocWen |
+| --- | --- |
+| Ô gộp Structural Tables | Phần mở rộng đầu vào Structural Tables |
+| Chú thích và tham chiếu Number Suite | Phần mở rộng đầu vào chú thích và tham chiếu |
+| Tiêu đề H7–H9 / chú thích cuối có kiểu | Phần mở rộng đầu vào tương ứng |
+| Word về Markdown mở rộng | Phần mở rộng đầu ra tương ứng |
+
+Xuất Word đọc cú pháp Number Suite ngay cả khi không cài plugin này. Số trong kết quả theo tùy chọn DocWen, không theo số chỉ hiển thị của Number Suite. Lệnh thêm hoặc xóa số thứ tự tiêu đề riêng sẽ sửa ghi chú nguồn; xuất tệp thì không.
+
+**Mỗi dự án thay đổi những gì**
+
+| Dự án và hướng dẫn | Hiển thị, sửa nguồn và đầu ra |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.vi-VN.md) | Tạo các tệp đã chuyển đổi. Phần mở rộng đầu vào diễn giải cú pháp nguồn; cài đặt xuất quyết định đầu ra và cách đánh số. |
+| [DocWen Assistant](../product-requirements.en.md) | Xuất tạo một thư mục kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.vi-VN.md) | Lịch và danh sách tác vụ đọc chỉ mục. Đổi trạng thái hoàn thành hoặc ngày của tác vụ sẽ cập nhật Markdown nguồn; thao tác tạo sẽ thêm ghi chú. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.vi-VN.md) | Cài đặt gợi ý thay đổi menu. Sắp xếp hoặc di chuyển giá trị sửa các danh sách YAML liên quan và có thể chuyển giá trị không phải văn bản thành chuỗi. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.vi.md) | Quy tắc lọc kết quả phân tích hoặc quyết định những kết nối đồ thị được tính. Chúng không viết lại liên kết trong ghi chú. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.vi.md) | Các chế độ xem hiển thị cấu trúc nút. Tạo, di chuyển, đổi tên, gộp và xóa sẽ thay đổi ghi chú, thư mục hoặc thuộc tính cấu trúc. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.vi.md) | Số ảo thay đổi cách hiển thị. Cài đặt riêng cho ghi chú lưu các thuộc tính; ghi, xóa hoặc đánh số lại sẽ sửa văn bản tiêu đề. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.vi.md) | Xem bảng và mẫu giao diện không sửa ghi chú. Chỉnh sửa bảng ghi vào Markdown; chuyển sang Base tạo các tệp bản ghi. |
 
 Cài đặt được chia thành bốn thẻ: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Mỗi thẻ có hướng dẫn cho các tùy chọn liên quan. Ngôn ngữ mặc định theo Obsidian và có thể đổi trong phần Chung. Bạn có thể dùng phím mũi tên hoặc Home/End để chuyển thẻ.
 
 ## Giới hạn
 
-- Hỗ trợ máy tính để bàn Windows hoặc Linux có bản DocWen cục bộ tương thích; xuất thư mục kết quả trên Linux yêu cầu x64 và hệ thống tệp hỗ trợ no-replace nguyên tử.
+- Hỗ trợ máy tính để bàn Windows hoặc Linux có bản DocWen cục bộ tương thích; xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mà không ghi đè dữ liệu hiện có.
 - Không tìm kiếm đệ quy bên ngoài thư mục hoặc chương trình DocWen đã chọn.
-- Thao tác bị từ chối nếu không thể xác minh an toàn phản hồi CLI, ảnh chụp nguồn, trạng thái trình soạn thảo hoặc đích.
+- Nếu ghi chú thay đổi trong khi xử lý hoặc không thể lưu kết quả an toàn, thao tác sẽ dừng và yêu cầu bạn kiểm tra.
+
+Chuyển sang Word rồi chuyển lại không thay thế bản sao lưu Markdown gốc. Nội dung hiển thị được hỗ trợ có thể chuyển lại, nhưng cú pháp chưa hỗ trợ, ghi chú nhúng và một số chi tiết bố cục có thể không được giữ. Hãy giữ ghi chú gốc và kiểm tra tài liệu sau khi chuyển lại.
 
 ## Quyền riêng tư và bảo mật
 
-Plugin chỉ chuyển ảnh chụp cô lập của trình soạn thảo hiện tại hoặc tệp Vault cho DocWen. Quyền truy cập ngoài Vault chỉ dùng để chạy bí danh DocWen đã đăng ký hoặc bản DocWen portable được chọn thủ công, quản lý đầu vào tạm thời và tạo phẩm đã xác thực, rồi ghi vào đích đã chọn. Plugin không mở hay lưu đường dẫn gói Microsoft Store có phiên bản, không tải tài liệu lên và không liệt kê toàn bộ Vault. Chi tiết: [CLI integration contract](../cli-integration.md)
+Tài liệu ở lại trên máy tính của bạn. Plugin gửi bản sao tạm của tệp đã chọn cho DocWen cục bộ, gồm cả nội dung chưa lưu nếu chỉ có một trình soạn thảo tương ứng. Chỉ ảnh được ghi chú tham chiếu rõ ràng mới được đưa vào; plugin không tìm tệp không liên quan trong toàn bộ Vault hay tải tài liệu lên mạng.
+
+Xuất ghi kết quả vào thư mục bạn chọn; soát lỗi không sửa ghi chú. Số thứ tự tiêu đề chỉ được ghi khi ghi chú gốc vẫn ở cùng đường dẫn và nội dung chưa thay đổi. Nếu đổi tên hoặc thay tệp trong lúc xử lý, hãy chạy lại trên ghi chú hiện tại. Đường dẫn cài đặt Store không được lưu trong thiết lập plugin. Xem [đặc tả tích hợp](../cli-integration.md) để biết chi tiết kỹ thuật.
 
 ## Phát triển
 
@@ -91,6 +117,8 @@ Tài liệu ổn định: [Yêu cầu sản phẩm](../product-requirements.en.m
 Quản trị kho mã: [Nhật ký thay đổi](../../CHANGELOG.md) · [Hướng dẫn đóng góp](../../CONTRIBUTING.md) · [Bảo mật](../../SECURITY.md)
 
 ## Hỗ trợ
+
+Trong Obsidian, mở **Chung → Trợ giúp**, rồi chọn **Hướng dẫn sử dụng** hoặc **Báo cáo sự cố**.
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Câu hỏi về cách sử dụng và cấu hình.
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Ý tưởng ban đầu về tính năng và quy trình làm việc.

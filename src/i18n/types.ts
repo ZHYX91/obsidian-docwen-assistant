@@ -1,5 +1,17 @@
 /** Translation keys shared by every supported locale. */
 export interface Translations {
+  exportReviewTitle: string;
+  exportReviewSource: string;
+  exportReviewTarget: string;
+  exportReviewTemplate: string;
+  exportReviewOptimization: string;
+  exportReviewDestination: string;
+  exportReviewInherited: string;
+  exportReviewEnabled: string;
+  exportReviewDisabled: string;
+  exportReviewStart: string;
+  dialogOpenResultFolder: string;
+  noticeOpenResultFolderFailed: string;
   noticeCompletedWithWarnings: string;
   noticeConversionDiagnostics: string;
   noticeCleanupWarning: string;

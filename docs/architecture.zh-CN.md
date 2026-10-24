@@ -9,13 +9,13 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-process-owner.ts` 将 procfs 身份与所属进程组清理从 Machine framing 和请求中分离；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
 
 ## DocWen 进程边界
 
 子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
 
-Windows 自动模式从安全的临时工作目录直接启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名；它不会通过 `PATH` 解析裸命令，也不发现或保存带版本的 Microsoft Store 包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.17.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
+Windows 自动模式验证固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名。GUI 控制从安全的临时工作目录启动该别名；Machine 内容操作则由 Windows Job 控制器通过 `GetPackagesByPackageFamily` 和 `GetPackagePathByFullName` 查询当前用户唯一注册的 DocWen 包，并在所属 Job 内启动包中的 `DocWenCLI.exe`。注册缺失或存在歧义时失败关闭。插件不搜索任意 `WindowsApps` 目录，不通过 `PATH` 解析裸命令，也不在设置中持久化带版本的包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.17.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
 
 ## 请求数据流
 
@@ -27,6 +27,8 @@ Assistant 界面语言只控制自身文案与方向。资源查询可以请求�
 完整预转换链则由 Core 在接受任务时再次核验。
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
+
+格式不匹配要求确认时，“继续”只在该请求中绑定检测出的媒体类型与所选能力的 source kind。检测必须匹配隔离源路径、SHA-256 和唯一 source slot；捕获输入、逻辑路径、字节与发布身份保持原样。“取消”不启动转换，输入形状校验仍然执行。
 
 Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。普通本地 WikiLink 同样使用 Obsidian cache 的精确 UTF-16 源范围和解析结果；当前正文中的活动 WikiLink 若没有对应 cache 记录会失败关闭。已解析导航不会复制目标笔记，也不会暴露 Vault 绝对路径，而是绑定为 `obsidian://open` URI。短 Wiki 名称、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索目标。capability 声明的 `markdown_resource_bindings` 选项将完整源 SHA-256、原始图片标记及可选普通 WikiLink 导航标记分别绑定到已声明资源逻辑路径或导航 URI；未声明此选项的旧 capability 无法接收这些映射。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。Markdown 笔记嵌入展开仍不属于普通导航合同。
 
@@ -46,7 +48,7 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 导出在转换前记录所选父目录身份，并在该文件系统的自有空目录上探测原子发布及拒绝覆盖的能力。预检失败会在 Machine 转换前停止，提示选择其他输出目录或检查权限。探测结果不缓存，也不替代提交检查。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的结果目录或该目录内打开的编辑器，并在原子 no-replace 重命名前检查取消状态。最终碰撞检查只用于尽早给出清晰错误；安全性不依赖检查与重命名之间没有外部写者。父目录中的其他文件或编辑器不阻止导出。
 
-校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
+校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态，同时核对原 TFile 对象、未变的路径、当前 Vault 注册与 view.file 身份；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
 
 编辑器缓冲区或 Vault API 确认预期内容后，保存调度失败或后续身份变化返回警告。宿主已接收内容但未确认写入时，结果明确为未确认，不自动重试；编辑器缓冲区确认不代表内容已经持久化到磁盘。
 

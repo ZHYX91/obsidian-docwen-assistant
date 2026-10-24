@@ -17,6 +17,8 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 校对生命周期和视图状态测试使用每例独立的 happy-dom 文档，只通过小型适配器模拟 Obsidian 的 DOM 扩展方法。测试触发 DOM 点击并验证真实属性、节点连接、当前焦点和滚动状态，不再依赖创建元素时记录的参数。集成用例一起运行真实插件的 saveSettings、ProofreadView 和 OperationCoordinator，覆盖初始空状态、同一任务取消、语言切换、外部焦点与视图关闭后重开。原有来源摘要和视图归属用例继续保留。DOM 夹具不代表浏览器布局或真实宿主验收。
 
+格式检测动作回归使用完整的最小 DOCX 夹具、真实 Vault 快照与 capability 输入形状检查，覆盖错扩展名的取消和继续、双向 source kind 变化、检测路径/摘要/决定/媒体类型陈旧、取消，以及发布前的来源身份和内容冲突。Machine 检测和转换边界仍为模拟；这些用例不代表固定包或宿主验收。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。

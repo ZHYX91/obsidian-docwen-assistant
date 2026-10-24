@@ -10,7 +10,7 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ## 스크린샷
 
-다음 화면은 패키징된 플러그인과 DocWen CLI가 데스크톱 Obsidian에서 실행되는 모습입니다.
+데스크톱 화면 예시입니다. 교정 예시는 테스트용 노트를 사용합니다.
 
 ### 교정 사이드바
 
@@ -18,15 +18,15 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ![DocWen 교정 사이드바](../assets/docwen-assistant-proofread-en.png)
 
-### 상단 탭 설정과 CLI 기능
+### 설정과 DocWen 연결
 
-4개의 상단 탭과 각 탭의 설명 카드에서 정확한 DocWen 런타임을 선택하고 변환과 교정을 조정하며 Machine 기능을 확인합니다.
+네 설정 탭에서 DocWen 연결을 확인하고 변환 및 교정 옵션을 고릅니다.
 
 ![DocWen Assistant 상단 탭 설정](../assets/docwen-assistant-settings-en.png)
 
-### 기능에 따른 내보내기
+### 파일 내보내기
 
-사용 가능한 변환 경로와 명시적인 출력 위치를 선택하면서 원본 노트는 변경하지 않습니다.
+출력 형식과 설정을 확인하고 결과를 저장할 폴더를 선택합니다.
 
 ![DocWen Assistant 기능별 내보내기](../assets/docwen-assistant-export-en.png)
 
@@ -37,23 +37,26 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 ## 요구 사항 및 호환성
 
 - Windows 또는 Linux와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
-- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.17.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 결과 디렉터리 내보내기에는 x64와 원자적 no-replace를 지원하는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
+- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.17.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
-- DocWen 데스크톱 앱 시작/열기는 공개 로컬 CLI `gui open`을 사용하므로 Machine 협상에 실패해도 DocWen 자체를 열 수 있습니다.
+- 백그라운드 변환 연결이 호환되지 않아도 DocWen 데스크톱 앱은 별도로 열 수 있습니다.
 
 Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 휴대용 패키지를 사용하고 수동 설치에서 선택하세요.
 
-자동 감지는 Windows 전용이며 등록된 `docwen.exe` 별칭을 사용합니다. Linux에서는 수동 설치가 필수이며 압축을 푼 폴더, `DocWen` 또는 `DocWenCLI`를 선택합니다. `WindowsApps`나 임의 폴더를 검색하지 않으며 소프트웨어를 자동 다운로드하지 않습니다.
+자동 감지는 Windows 전용이며 등록된 `docwen.exe` 별칭을 사용합니다. Linux에서는 수동 설치가 필수이며 압축을 푼 폴더, `DocWen` 또는 `DocWenCLI`를 선택합니다. 디스크에서 다른 프로그램을 검색하지 않으며 소프트웨어를 자동 다운로드하지 않습니다.
 
 ## 설치
 
 ### DocWen과 플러그인 설치
 
-Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 DocWen을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 패키지를 압축 해제하세요. Linux x64에서는 같은 Releases 페이지의 호환 Linux 패키지를 완전히 압축 해제하고 수동으로 선택합니다. DocWen Assistant는 Community Plugins에서 설치할 수 있으며, 수동 설치 시 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사하세요.
+1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.17.0 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
+2. Community Plugins에서 DocWen Assistant를 설치합니다. 수동 설치는 [플러그인 릴리스](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)에서 `docwen-assistant-x.y.z.zip`을 받은 뒤 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사합니다.
+3. Community Plugins를 다시 불러오고 DocWen Assistant를 활성화합니다.
+4. Windows Store 버전은 자동 감지를 사용할 수 있습니다. Windows 휴대용 버전과 Linux에서는 **설정 → DocWen Assistant → 일반**에서 수동 연결을 선택하고 압축을 푼 폴더나 실행 파일을 지정하세요.
 
-### 설치 안전성
+### 업데이트할 때 설정 유지
 
-릴리스 패키지에는 `main.js`, `manifest.json`, `styles.css`만 포함되며 `data.json`을 포함하거나 덮어쓰거나 삭제하지 않습니다. 모든 설정을 의도적으로 초기화할 때만 `data.json`을 삭제하세요.
+수동 업데이트에서는 `main.js`, `manifest.json`, `styles.css`만 교체하세요. 설정을 유지하려면 `data.json`을 보관하고, 초기화할 때만 삭제합니다. 폴더 이름은 `docwen-assistant`로 유지하세요.
 
 ## 사용
 
@@ -61,26 +64,49 @@ Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH9
 
 리본 아이콘, **DocWen** 하위 메뉴 또는 명령 팔레트에서 DocWen 실행, Word/Excel/Markdown 내보내기, 제목 번호 변경, Markdown 교정, **DocWen 연결 확인** 실행을 할 수 있습니다.
 
-출력 폴더를 선택하세요. 변환마다 원본 이름, 타임스탬프와 입력 형식을 포함한 결과 폴더를 만들고 파일 이름과 연결 리소스를 유지합니다. 기존 결과 폴더는 덮어쓰지 않습니다.
-
-Word 내보내기는 결과 폴더에 독립된 DOCX를 생성합니다. 원본 Markdown은 직접 보관하세요. 역변환은 원문을 저장한 동반 파일 없이 DOCX의 내용과 구조를 읽으며 동일한 표기와 공백을 보장하지 않습니다. 확장은 DocWen 설정에서 선택할 수 있습니다.
-
+템플릿이나 변환 사전 설정이 표시되면 선택한 뒤 출력 폴더를 지정합니다. 원본, 형식, 저장 위치와 이번 작업의 옵션을 확인하고 **내보내기**를 누르세요. 확인 창은 해당 작업에서 가져온 설정을 사용하며, 취소하면 변환을 시작하지 않습니다. 결과와 연결된 이미지는 새 폴더에 저장됩니다. 완료 알림의 **결과 폴더 열기**로 확인할 수 있습니다. 기존 결과 폴더는 덮어쓰지 않습니다.
 
 ## 설정
 
-Structural Tables의 병합 셀, Number Suite의 캡션·상호 참조, H7–H9 제목 또는 유형별 미주를 Word로 내보내려면 **DocWen → 설정 → Markdown 문법**에서 해당 **입력 확장**을 켜거나 Obsidian 사전 설정을 사용하세요. 새 설치에서는 확장이 기본적으로 꺼져 있습니다. Word에서 확장 Markdown으로 되돌리려면 **출력 확장**도 켜야 합니다. Word 번호는 DocWen 내보내기 설정을 따르므로 결과를 확인하세요.
+Word로 내보내기 전에 **DocWen → 설정 → Markdown 문법**에서 필요한 **입력 확장**을 켜세요. 새 설치에서는 꺼져 있으며, Obsidian 입력 사전 설정으로 관련 확장을 함께 켤 수 있습니다.
+
+| 노트 내용 또는 작업 | DocWen 설정 |
+| --- | --- |
+| Structural Tables 병합 셀 | Structural Tables 입력 확장 |
+| Number Suite 캡션과 상호 참조 | 캡션 및 참조 입력 확장 |
+| H7–H9 제목 / 유형별 미주 | 해당 제목 / 미주 입력 확장 |
+| Word를 확장 Markdown으로 변환 | 해당 출력 확장 |
+
+Number Suite가 설치되지 않아도 Word 내보내기는 Markdown의 해당 문법을 읽습니다. 출력 번호는 DocWen 설정을 따르며 Number Suite의 표시 전용 번호를 복사하지 않습니다. 별도의 제목 번호 추가·제거 명령은 원본 노트를 수정하지만 내보내기는 수정하지 않습니다.
+
+**각 프로젝트가 변경하는 내용**
+
+| 프로젝트와 사용 안내 | 표시, 원본 편집, 출력 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ko-KR.md) | 변환된 파일을 만듭니다. 입력 확장은 원본 구문을 해석하고, 내보내기 설정은 출력과 번호를 결정합니다. |
+| [DocWen Assistant](../product-requirements.en.md) | 내보내기는 별도의 결과 폴더를 만들고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ko-KR.md) | 달력과 작업 화면은 색인을 읽습니다. 완료 상태나 날짜를 바꾸면 원본 Markdown을 수정하고, 만들기 작업은 새 노트를 생성합니다. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ko-KR.md) | 후보 설정은 메뉴를 바꿉니다. 값을 정렬하거나 옮기면 해당 YAML 목록을 편집하며, 텍스트가 아닌 값이 문자열로 바뀔 수 있습니다. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ko.md) | 규칙은 분석 결과를 필터링하거나 분석에 포함할 그래프 연결을 바꿉니다. 노트의 링크는 다시 쓰지 않습니다. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ko.md) | 화면은 노드 구조를 보여 줍니다. 만들기, 이동, 이름 변경, 병합, 삭제는 노트, 폴더 또는 구조 속성을 변경합니다. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ko.md) | 가상 번호는 표시에 반영됩니다. 노트별 설정은 속성에 저장되며, 번호 쓰기·제거·다시 매기기는 제목 텍스트를 변경합니다. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ko.md) | 표 보기와 모양 예시는 노트를 편집하지 않습니다. 표 편집은 Markdown을 수정하고, Base 변환은 레코드 파일을 만듭니다. |
 
 설정은 일반, Markdown으로, Word로, 교정의 네 탭으로 나뉩니다. 각 탭에서 관련 설명을 확인할 수 있습니다. 언어는 기본적으로 Obsidian을 따르며 일반 설정에서 바꿀 수 있습니다. 화살표 키나 Home/End 키로 탭을 전환할 수 있습니다.
 
 ## 제한 사항
 
-- 호환되는 로컬 DocWen이 설치된 Windows 또는 Linux 데스크톱을 지원합니다. Linux 결과 디렉터리 내보내기에는 x64와 원자적 no-replace를 지원하는 파일 시스템이 필요합니다.
+- 호환되는 로컬 DocWen이 설치된 Windows 또는 Linux 데스크톱을 지원합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다.
 - 선택한 DocWen 폴더 또는 실행 파일 밖을 재귀적으로 검색하지 않습니다.
-- CLI 응답, 원본 스냅샷, 편집기 상태 또는 대상을 안전하게 검증할 수 없으면 작업을 거부합니다.
+- 처리 중 노트가 바뀌거나 결과를 안전하게 저장할 수 없으면 작업을 멈추고 확인을 요청합니다.
+
+Word로 내보낸 뒤 다시 변환해도 원본 Markdown이 그대로 복원되지는 않습니다. 지원되는 표시 내용은 변환되지만 미지원 문법, 포함된 노트의 펼침, 일부 서식은 유지되지 않을 수 있습니다. 원본 노트를 보관하고 다시 변환한 문서를 확인하세요.
 
 ## 개인정보 보호 및 보안
 
-플러그인은 현재 편집기 또는 Vault 파일의 격리된 스냅샷만 DocWen에 전달합니다. Vault 외부 접근은 등록된 DocWen 별칭이나 수동으로 선택한 휴대용 앱 실행, 임시 입력과 검증된 산출물 관리, 사용자가 선택한 출력 경로 쓰기에만 사용됩니다. 버전이 포함된 Microsoft Store 패키지 경로는 열거나 저장하지 않습니다. 문서를 업로드하거나 Vault 전체를 열거하지 않습니다. 자세히: [CLI integration contract](../cli-integration.md)
+문서는 컴퓨터 안에서 처리됩니다. 플러그인은 선택한 파일의 임시 복사본을 로컬 DocWen에 전달합니다. 해당 파일에 대응하는 편집기가 하나라면 저장하지 않은 내용도 포함합니다. 노트가 명시적으로 참조하는 이미지만 함께 처리하며, Vault 전체에서 무관한 파일을 찾거나 문서를 업로드하지 않습니다.
+
+내보내기는 선택한 폴더에 저장하고, 교정은 노트를 수정하지 않습니다. 제목 번호는 원본 노트의 위치와 본문이 바뀌지 않았을 때만 반영합니다. 처리 중 이름을 바꾸거나 파일을 교체했다면 현재 노트에서 다시 실행하세요. Store 설치 경로는 플러그인 설정에 저장하지 않습니다. 개발자용 세부 사항은 [연동 명세](../cli-integration.md)를 참고하세요.
 
 ## 개발
 
@@ -91,6 +117,8 @@ Node.js 24.19.0과 npm 11.17.0을 사용합니다. `npm ci`, `npm run check`, `n
 저장소 거버넌스: [변경 기록](../../CHANGELOG.md) · [기여 안내](../../CONTRIBUTING.md) · [보안](../../SECURITY.md)
 
 ## 지원
+
+Obsidian에서는 **일반 → 도움말**에서 **사용자 가이드** 또는 **문제 신고**를 열 수 있습니다.
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): 사용 및 설정 질문.
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): 초기 기능 및 워크플로 아이디어.

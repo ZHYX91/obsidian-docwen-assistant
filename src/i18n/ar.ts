@@ -2,6 +2,18 @@ import type { Translations } from "./types";
 
 /** Arabic user-facing strings. Identifiers and placeholders are kept intact. */
 export const AR_TRANSLATIONS: Translations = {
+  exportReviewTitle: "مراجعة التصدير",
+  exportReviewSource: "الملف المصدر",
+  exportReviewTarget: "تنسيق الإخراج",
+  exportReviewTemplate: "القالب",
+  exportReviewOptimization: "إعداد التحويل",
+  exportReviewDestination: "مجلد حفظ النتائج",
+  exportReviewInherited: "تتبع الخيارات غير المعروضة إعدادات DocWen. ينشئ التصدير مجلدًا جديدًا ولا يغيّر الملف المصدر.",
+  exportReviewEnabled: "مفعّل",
+  exportReviewDisabled: "معطّل",
+  exportReviewStart: "تصدير",
+  dialogOpenResultFolder: "فتح مجلد النتيجة",
+  noticeOpenResultFolderFailed: "اكتمل التصدير. افتح هذا المجلد يدويًا: {path}",
   settingsHelpTitle: "المساعدة",
   settingsUserGuide: "دليل الاستخدام",
   settingsReportIssue: "الإبلاغ عن مشكلة",

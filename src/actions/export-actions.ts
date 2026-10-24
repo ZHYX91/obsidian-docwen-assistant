@@ -4,6 +4,7 @@ import { type App, type TFile } from "obsidian";
 
 import {
   type ConvertOptions,
+  type ConvertRequest,
   type ConvertTarget,
   type DocWenClient,
   type DocWenCapabilityService,
@@ -12,7 +13,10 @@ import {
   LocalCliError,
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
+import { bindAcceptedDetectedSource } from "../docwen/capability-service";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
+import { confirmExport } from "../host/export-review";
+import { openResultFolder } from "../host/result-folder";
 import { captureExportTarget } from "../host/export-target-snapshot";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
@@ -22,6 +26,7 @@ import type { PluginSettings } from "../settings-model";
 import { pickItem, type PickerItem } from "../utils/suggest-modal";
 import { isCancellationError } from "./action-errors";
 import { ActionRunner } from "./action-runner";
+import { buildExportSummary } from "./export-summary";
 import {
   buildHeadingMergeOptions,
   buildMarkdownExportOptions,
@@ -78,6 +83,7 @@ export class ExportActions {
         this.runner.presentWarnings(prepared.warnings);
         const selection = prepared.value;
         const selected: Pick<ConvertOptions, "template" | "optimization"> = {};
+        let selectedTemplate: TemplateItem | undefined;
         if (selection.kind === "template") {
           if (selection.items.length === 0 && target !== "xlsx") {
             showNotice(t("noticeNoTemplatesAvailable"));
@@ -89,7 +95,10 @@ export class ExportActions {
             if (target === "xlsx") items.unshift(direct);
             const chosen = await pickItem(this.app, items, t("pickerTemplatePlaceholder"), signal);
             if (!chosen || !lease.isCurrent()) return;
-            if (chosen !== direct) selected.template = chosen.id;
+            if (chosen !== direct) {
+              selected.template = chosen.id;
+              selectedTemplate = selection.items.find((item) => item.id === chosen.id);
+            }
           }
         } else if (selection.items.length > 0) {
           const items: PickerItem[] = [
@@ -100,7 +109,7 @@ export class ExportActions {
           if (!chosen || !lease.isCurrent()) return;
           if (chosen.id !== "__none__") selected.optimization = chosen.id;
         }
-        if (lease.isCurrent()) await this.execute(file, target, selected, signal);
+        if (lease.isCurrent()) await this.execute(file, target, selected, signal, selectedTemplate);
       },
     );
   }
@@ -110,6 +119,7 @@ export class ExportActions {
     target: ConvertTarget,
     selected: Pick<ConvertOptions, "template" | "optimization">,
     signal: AbortSignal,
+    selectedTemplate?: TemplateItem,
   ): Promise<void> {
     const filePath = resolveAbsoluteFilePath(this.app.vault, file);
     if (!filePath) {
@@ -120,16 +130,18 @@ export class ExportActions {
 
     const destination = await captureExportTarget(this.app, outputDirectory, signal);
     const completed = await this.snapshots.run(file, signal, async (snapshot) => {
-      const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
+      const capturedSource = snapshot.sourceInput ?? snapshot.inputs[0];
+      let sourceInput = capturedSource;
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
       if (useDetectedFormat) {
         const accepted = await confirmDetectedFormat(this.app, signal);
         if (!accepted || signal.aborted) return;
+        sourceInput = bindAcceptedDetectedSource(sourceInput, snapshot.contentSha256, capability.inspection, route);
       }
 
-      const settings = this.getSettings();
+      const settings = { ...this.getSettings() };
       const options: ConvertOptions = {
         target,
         ...selected,
@@ -160,19 +172,17 @@ export class ExportActions {
         );
       }
       if (capability.source.category === "markdown") {
-        if (settings.proofreadOnConvert) {
-          await this.runAdvisoryProofread(sourceInput, settings, signal);
-        }
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
       // Preserve authored dialect syntax and let the same effective DocWen
       // configuration govern direct conversion and Assistant export.
       const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
-      const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
+      const taskInputs = (declaredMarkdown?.inputs ?? snapshot.inputs).map((input) =>
+        useDetectedFormat && input === capturedSource ? sourceInput : input);
       this.capabilities.requireTaskInputs(route, taskInputs);
 
-      return this.docwen.convert({
+      const request: ConvertRequest = {
         ...options,
         markdownResourceBindings: declaredMarkdown?.resourceBindings,
         inputs: taskInputs,
@@ -181,13 +191,33 @@ export class ExportActions {
         capabilityId: route.capabilityId,
         selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
-      }, signal);
+      };
+      const checks = capability.source.category === "markdown"
+        ? settings.proofreadOnConvert ? buildProofreadChecks(settings) : ["none"] as const
+        : null;
+      const accepted = await confirmExport(this.app, buildExportSummary(
+        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", checks, selectedTemplate,
+      ), signal);
+      if (!accepted || signal.aborted) return;
+      if (capability.source.category === "markdown" && settings.proofreadOnConvert) {
+        await this.runAdvisoryProofread(sourceInput, settings, signal);
+      }
+      return this.docwen.convert(request, signal);
     });
     if (completed.value) {
       this.runner.presentCompletion(
         t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
         [...completed.value.warnings, ...completed.warnings],
         completed.value.diagnostics,
+        {
+          label: t("dialogOpenResultFolder"),
+          run: () => {
+            const folder = completed.value!.resultDirectory ?? path.dirname(completed.value!.output);
+            void openResultFolder(folder).then((opened) => {
+              if (!opened) showNotice(t("noticeOpenResultFolderFailed", { path: folder }));
+            });
+          },
+        },
       );
     } else {
       this.runner.presentWarnings(completed.warnings);

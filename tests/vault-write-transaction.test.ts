@@ -5,6 +5,95 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {} }));
 
 describe("VaultWriteTransaction", () => {
+  it("preserves a confirmed editor commit but does not save a rebound view", async () => {
+    const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
+    const file = { path: "note.md" };
+    let value = "# Heading\n";
+    const view = { file, requestSave: vi.fn() };
+    const editor = {
+      getValue: () => value,
+      offsetToPos: () => ({ line: 1, ch: 0 }),
+      transaction: vi.fn((transaction: { changes: Array<{ text: string }> }) => {
+        value = transaction.changes[0].text;
+        view.file = { path: "note.md" };
+      }),
+    };
+    Object.assign(view, { editor });
+    const leaf = { view };
+    const app = {
+      workspace: { getLeavesOfType: () => [leaf] },
+      vault: { getFileByPath: () => file },
+    };
+    const warnings = await new VaultWriteTransaction(app as never).run(
+      file as never,
+      async (_input, output) => writeFile(output, "# 1. Heading\n", "utf8"),
+      new AbortController().signal,
+    );
+    expect(value).toBe("# 1. Heading\n");
+    expect(editor.transaction).toHaveBeenCalledOnce();
+    expect(view.requestSave).not.toHaveBeenCalled();
+    expect(warnings).toMatchObject([{ code: "post_publish_failed" }]);
+  });
+
+  it.each(["replacement", "missing", "rename", "view-rebound"] as const)(
+    "rejects an open editor whose original file identity changes: %s",
+    async (change) => {
+      const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
+      const file = { path: "note.md", name: "note.md" };
+      const replacement = { path: "note.md", name: "note.md" };
+      let registeredFile: typeof file | null = file;
+      let value = "# Heading\n";
+      const editor = {
+        getValue: vi.fn(() => value),
+        offsetToPos: vi.fn(() => ({ line: 1, ch: 0 })),
+        transaction: vi.fn((transaction: { changes: Array<{ text: string }> }) => {
+          value = transaction.changes[0].text;
+        }),
+      };
+      const view = { file, editor, requestSave: vi.fn() };
+      const leaf = { view };
+      const app = {
+        workspace: { getLeavesOfType: vi.fn(() => [leaf]) },
+        vault: { getFileByPath: vi.fn(() => registeredFile) },
+      };
+
+      await expect(new VaultWriteTransaction(app as never).run(
+        file as never,
+        async (_inputPath, outputPath) => {
+          await writeFile(outputPath, "# 1. Heading\n", "utf8");
+          if (change === "replacement") {
+            registeredFile = replacement;
+            view.file = replacement;
+          } else if (change === "missing") registeredFile = null;
+          else if (change === "rename") file.path = "renamed.md";
+          else view.file = replacement;
+        },
+        new AbortController().signal,
+      )).rejects.toMatchObject({ code: "vault_target_changed" });
+
+      expect(value).toBe("# Heading\n");
+      expect(editor.transaction).not.toHaveBeenCalled();
+      expect(view.requestSave).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects a stale open-file object before reading or transforming the editor", async () => {
+    const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
+    const file = { path: "note.md", name: "note.md" };
+    const replacement = { ...file };
+    const editor = { getValue: vi.fn(() => "# Heading\n") };
+    const app = {
+      workspace: { getLeavesOfType: vi.fn(() => [{ view: { file: replacement, editor } }]) },
+      vault: { getFileByPath: vi.fn(() => replacement) },
+    };
+    const transform = vi.fn();
+    await expect(new VaultWriteTransaction(app as never).run(
+      file as never, transform, new AbortController().signal,
+    )).rejects.toMatchObject({ code: "vault_target_changed" });
+    expect(editor.getValue).not.toHaveBeenCalled();
+    expect(transform).not.toHaveBeenCalled();
+  });
+
   it("runs DocWen on isolated files and commits one editor transaction", async () => {
     const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
     let value = "# Heading\n";

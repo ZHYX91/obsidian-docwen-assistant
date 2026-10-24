@@ -16,9 +16,9 @@ When inspection and discovery succeed but no available Machine capability matche
 
 ## Export flow
 
-Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
+Export first inspects the source and available capabilities, then offers the target format, template, or supported optimization. Choose an output folder, then review the captured source, format, destination and applicable options before choosing Export. The template row shows the selected resource name and its built-in or custom origin; conversion still sends the stable resource ID. Direct spreadsheet export has no template row. The summary uses the same capability-filtered conversion request, with advisory proofreading rules listed separately; omitted options follow DocWen configuration. Cancel starts no conversion or advisory proofreading. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten. Completion offers Open result folder, including when cleanup warnings also offer Details. A failed native folder-open action leaves the export successful and shows the folder for manual opening.
 
-Template, optimization and numbering choices remain part of the active operation and can be cancelled. Cancelling or replacing that operation closes its plugin picker; an old choice cannot start a conversion. Detected-format confirmation uses localized Cancel and Continue controls and closes when its operation is cancelled.
+Template, optimization and numbering choices remain part of the active operation and can be cancelled. Cancelling or replacing that operation closes its plugin picker; an old choice cannot start a conversion. Detected-format confirmation uses localized Cancel and Continue controls and closes when its operation is cancelled. The export-review dialog has the same cancellation ownership.
 
 ## Numbering and proofreading
 

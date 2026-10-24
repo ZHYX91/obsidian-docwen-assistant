@@ -115,7 +115,7 @@ describe("README standardization contract", () => {
   it("does not describe a portable desktop package as a mobile application", async () => {
     await replaceInReadme(
       "docs/i18n/README.vi-VN.md",
-      "bản DocWen portable được chọn thủ công",
+      "bản ZIP portable",
       "ứng dụng di động được chọn thủ công",
     );
     expect(runReadmeCheck().stderr).toContain(
