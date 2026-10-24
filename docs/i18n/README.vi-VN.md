@@ -79,6 +79,19 @@ Trước khi xuất Word, bật **phần mở rộng đầu vào** cần thiết
 
 Xuất Word đọc cú pháp Number Suite ngay cả khi không cài plugin này. Số trong kết quả theo tùy chọn DocWen, không theo số chỉ hiển thị của Number Suite. Lệnh thêm hoặc xóa số thứ tự tiêu đề riêng sẽ sửa ghi chú nguồn; xuất tệp thì không.
 
+**Mỗi dự án thay đổi những gì**
+
+| Dự án và hướng dẫn | Hiển thị, sửa nguồn và đầu ra |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.vi-VN.md) | Tạo các tệp đã chuyển đổi. Phần mở rộng đầu vào diễn giải cú pháp nguồn; cài đặt xuất quyết định đầu ra và cách đánh số. |
+| [DocWen Assistant](../product-requirements.en.md) | Xuất tạo một thư mục kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.vi-VN.md) | Lịch và danh sách tác vụ đọc chỉ mục. Đổi trạng thái hoàn thành hoặc ngày của tác vụ sẽ cập nhật Markdown nguồn; thao tác tạo sẽ thêm ghi chú. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.vi-VN.md) | Cài đặt gợi ý thay đổi menu. Sắp xếp hoặc di chuyển giá trị sửa các danh sách YAML liên quan và có thể chuyển giá trị không phải văn bản thành chuỗi. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.vi.md) | Quy tắc lọc kết quả phân tích hoặc quyết định những kết nối đồ thị được tính. Chúng không viết lại liên kết trong ghi chú. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.vi.md) | Các chế độ xem hiển thị cấu trúc nút. Tạo, di chuyển, đổi tên, gộp và xóa sẽ thay đổi ghi chú, thư mục hoặc thuộc tính cấu trúc. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.vi.md) | Số ảo thay đổi cách hiển thị. Cài đặt riêng cho ghi chú lưu các thuộc tính; ghi, xóa hoặc đánh số lại sẽ sửa văn bản tiêu đề. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.vi.md) | Xem bảng và mẫu giao diện không sửa ghi chú. Chỉnh sửa bảng ghi vào Markdown; chuyển sang Base tạo các tệp bản ghi. |
+
 Cài đặt được chia thành bốn thẻ: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Mỗi thẻ có hướng dẫn cho các tùy chọn liên quan. Ngôn ngữ mặc định theo Obsidian và có thể đổi trong phần Chung. Bạn có thể dùng phím mũi tên hoặc Home/End để chuyển thẻ.
 
 ## Giới hạn

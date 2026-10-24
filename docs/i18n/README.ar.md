@@ -83,6 +83,19 @@
 
 يقرأ تصدير Word صيغة Number Suite من Markdown حتى دون تثبيت الإضافة. تتبع الأرقام المصدّرة خيارات DocWen، ولا تنسخ الأرقام التي يعرضها Number Suite فقط. أوامر إضافة أرقام العناوين وإزالتها تغيّر الملاحظة الأصلية، أما التصدير فلا يغيّرها.
 
+**ما الذي يغيّره كل مشروع**
+
+| المشروع والدليل | العرض وتعديل المصدر والمخرجات |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ar.md) | ينشئ الملفات المحوّلة. تفسّر امتدادات الإدخال صياغة المصدر، وتحدّد إعدادات التصدير المخرجات وترقيمها. |
+| [DocWen Assistant](../product-requirements.en.md) | ينشئ التصدير مجلد نتائج منفصلًا، والتدقيق للقراءة فقط. أما إجراءات ترقيم العناوين الصريحة فتعدّل Markdown المصدر. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ar.md) | تقرأ عروض التقويم والمهام الفهرس. يحدّث تغيير حالة المهمة أو تاريخها Markdown المصدر، وتضيف إجراءات الإنشاء ملاحظات جديدة. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ar.md) | تغيّر إعدادات الاقتراحات القوائم المعروضة. تعيد عمليات ترتيب القيم أو نقلها كتابة قوائم YAML المعنية، وقد تحوّل القيم غير النصية إلى سلاسل نصية. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ar.md) | تصفّي القواعد نتائج التحليل أو تحدّد اتصالات الرسم البياني التي تُحتسب. ولا تعيد كتابة الروابط داخل الملاحظات. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ar.md) | تعرض الواجهات بنية العقد. يغيّر الإنشاء والنقل وإعادة التسمية والدمج والحذف الملاحظات أو المجلدات أو الخصائص البنيوية. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ar.md) | تؤثر الأرقام الافتراضية في العرض. تحفظ إعدادات الملاحظة خصائصها، بينما تغيّر كتابة الأرقام أو إزالتها أو إعادة ترقيمها نص العناوين. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ar.md) | لا يغيّر عرض الجداول أو مثال المظهر الملاحظات. يكتب تحرير الجدول Markdown، وينشئ التحويل إلى Base ملفات سجلات. |
+
 - **عام:** لغة الواجهة، وطريقة الاتصال، وموقع DocWen. تتبع لغة الواجهة Obsidian افتراضيًا، ويمكنك اختيارها يدويًا.
 - **تصدير إلى Markdown:** الصور والتعرف على النص وخيارات النتائج.
 - **تصدير إلى Word:** القوالب، ودمج العناوين، والترقيم.

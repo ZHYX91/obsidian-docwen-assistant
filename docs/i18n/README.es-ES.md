@@ -79,6 +79,19 @@ Antes de exportar a Word, activa las **extensiones de entrada** necesarias en **
 
 La exportación a Word lee la sintaxis de Number Suite aunque ese complemento no esté instalado. Los números exportados siguen los ajustes de DocWen, no los números que Number Suite solo muestra en pantalla. Los comandos de añadir o quitar números de encabezado sí modifican la nota original; exportar no la modifica.
 
+**Qué modifica cada proyecto**
+
+| Proyecto y guía | Visualización, origen y salida |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.es-ES.md) | Crea los archivos convertidos. Las extensiones de entrada interpretan la sintaxis original; los ajustes de exportación determinan el resultado y su numeración. |
+| [DocWen Assistant](../product-requirements.en.md) | La exportación crea una carpeta de resultados independiente; la revisión solo lee. Las acciones explícitas de numeración de encabezados modifican el Markdown original. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.es-ES.md) | Las vistas del calendario y las tareas leen el índice. Cambiar el estado o la fecha de una tarea modifica su Markdown original; las acciones de creación añaden notas. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.es-ES.md) | Los ajustes de sugerencias cambian los menús. Reordenar o mover valores edita las listas YAML afectadas y puede convertir valores no textuales en cadenas. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.es.md) | Las reglas filtran los resultados del análisis o determinan qué conexiones del grafo se cuentan. No reescriben los enlaces de las notas. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.es.md) | Las vistas muestran la estructura de nodos. Crear, mover, renombrar, fusionar y eliminar modifica notas, carpetas o propiedades estructurales. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.es.md) | Los números virtuales cambian la visualización. Los ajustes por nota guardan propiedades; escribir, eliminar o renumerar cambia el texto de los encabezados. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.es.md) | Ver tablas y la muestra de apariencia no modifica las notas. Editar tablas escribe Markdown; convertir a Base crea archivos de registros. |
+
 La configuración se divide en cuatro pestañas: General, Exportar a Markdown, Exportar a Word y Corrección. Las explicaciones aparecen junto a las opciones correspondientes. El idioma sigue a Obsidian de forma predeterminada y puede elegirse en la configuración general. Usa las flechas o las teclas Inicio/Fin para cambiar de pestaña.
 
 ## Limitaciones

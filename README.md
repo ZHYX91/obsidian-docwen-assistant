@@ -93,6 +93,19 @@ Before Word export, enable the needed **input extensions** in **DocWen → Setti
 
 Word export reads Number Suite syntax from Markdown even when Number Suite is not installed. Exported numbers follow DocWen export options, not Number Suite’s display-only numbers. The separate Add/Remove numbering commands change the source note; exporting does not.
 
+**Where changes happen**
+
+| Project and guide | Display, source edits and output |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/README.md) | Creates converted files. Input extensions interpret source syntax; export settings control the output and its numbering. |
+| [DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) | Export creates a separate result folder; proofreading is read-only. Explicit heading-number actions edit the source Markdown. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/README.md) | Calendar and task views read the index. Completion and date edits update source Markdown; creation actions create notes. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/README.md) | Suggestions change menus. Reordering or moving values edits the affected YAML lists and can turn nontext values into strings. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/README.md) | Rules filter analysis results or change which graph connections count. They do not rewrite links in notes. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/README.md) | Views show node structure. Create, move, rename, merge and delete actions change notes, folders or structural Properties. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/README.md) | Virtual numbers affect display. Per-note choices save Properties; write, remove and renumber actions change heading text. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/README.md) | Viewing and the Appearance sample do not edit notes. Table edits write Markdown; Base conversion creates record files. |
+
 - Settings are grouped into four tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Each tab includes help for its options, and the tab bar scrolls horizontally when needed.
 - The interface language defaults to **Follow Obsidian**. You can also choose it manually in **General**.
 - **Connection method** can detect Windows Microsoft Store installations automatically. For Linux or portable Windows installations, choose the installation manually. The connection status tells you whether DocWen is ready or needs updating.

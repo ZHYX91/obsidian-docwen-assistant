@@ -79,6 +79,19 @@ Word로 내보내기 전에 **DocWen → 설정 → Markdown 문법**에서 필�
 
 Number Suite가 설치되지 않아도 Word 내보내기는 Markdown의 해당 문법을 읽습니다. 출력 번호는 DocWen 설정을 따르며 Number Suite의 표시 전용 번호를 복사하지 않습니다. 별도의 제목 번호 추가·제거 명령은 원본 노트를 수정하지만 내보내기는 수정하지 않습니다.
 
+**각 프로젝트가 변경하는 내용**
+
+| 프로젝트와 사용 안내 | 표시, 원본 편집, 출력 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ko-KR.md) | 변환된 파일을 만듭니다. 입력 확장은 원본 구문을 해석하고, 내보내기 설정은 출력과 번호를 결정합니다. |
+| [DocWen Assistant](../product-requirements.en.md) | 내보내기는 별도의 결과 폴더를 만들고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ko-KR.md) | 달력과 작업 화면은 색인을 읽습니다. 완료 상태나 날짜를 바꾸면 원본 Markdown을 수정하고, 만들기 작업은 새 노트를 생성합니다. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ko-KR.md) | 후보 설정은 메뉴를 바꿉니다. 값을 정렬하거나 옮기면 해당 YAML 목록을 편집하며, 텍스트가 아닌 값이 문자열로 바뀔 수 있습니다. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ko.md) | 규칙은 분석 결과를 필터링하거나 분석에 포함할 그래프 연결을 바꿉니다. 노트의 링크는 다시 쓰지 않습니다. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ko.md) | 화면은 노드 구조를 보여 줍니다. 만들기, 이동, 이름 변경, 병합, 삭제는 노트, 폴더 또는 구조 속성을 변경합니다. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ko.md) | 가상 번호는 표시에 반영됩니다. 노트별 설정은 속성에 저장되며, 번호 쓰기·제거·다시 매기기는 제목 텍스트를 변경합니다. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ko.md) | 표 보기와 모양 예시는 노트를 편집하지 않습니다. 표 편집은 Markdown을 수정하고, Base 변환은 레코드 파일을 만듭니다. |
+
 설정은 일반, Markdown으로, Word로, 교정의 네 탭으로 나뉩니다. 각 탭에서 관련 설명을 확인할 수 있습니다. 언어는 기본적으로 Obsidian을 따르며 일반 설정에서 바꿀 수 있습니다. 화살표 키나 Home/End 키로 탭을 전환할 수 있습니다.
 
 ## 제한 사항

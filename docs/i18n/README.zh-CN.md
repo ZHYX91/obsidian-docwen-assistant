@@ -89,6 +89,19 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 
 即使没有安装 Number Suite，Word 导出也能读取 Markdown 中的相应语法。导出文档的编号按 DocWen 选项生成，不直接复制 Number Suite 的纯显示编号。独立的“添加／删除标题编号”命令会修改源笔记，导出不会。
 
+**各项目会改动什么**
+
+| 项目与用法 | 显示、源文修改与输出 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.zh-CN.md) | 生成转换后的文件。输入扩展解释源文语法，导出设置控制输出及其编号。 |
+| [DocWen Assistant](../product-requirements.zh-CN.md) | 导出创建独立的结果目录，校对只读；明确执行标题编号操作时会修改源 Markdown。 |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.zh-CN.md) | 日历和任务视图读取索引。勾选任务或调整日期会更新源 Markdown，创建操作会新增笔记。 |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.zh-CN.md) | 候选设置改变菜单。重排或移动值会修改相关 YAML 列表，也可能把非文本值转成字符串。 |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.zh-CN.md) | 规则筛选分析结果，或改变参与分析的图连接；不会重写笔记中的链接。 |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.zh-CN.md) | 视图显示节点结构。创建、移动、重命名、合并和删除操作会改动笔记、文件夹或结构属性。 |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.zh-CN.md) | 虚拟编号改变显示。单篇笔记的设置会保存属性；写入、移除或重新编号会修改标题文本。 |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.zh-CN.md) | 查看表格和外观示例不修改笔记。编辑表格会写入 Markdown，转换为 Base 会创建记录文件。 |
+
 - 设置分为四页：常规、转为 Markdown、转为 Word、校对。页签可横向滚动，相关说明就在每页中；
 - 界面语言默认“跟随 Obsidian”，也可以在“常规”页手动选择；
 - Windows 的 Microsoft Store 版可以自动检测；Linux 和 Windows 便携版需要手动选择安装位置。连接状态会告诉你 DocWen 是否可用以及是否需要更新；

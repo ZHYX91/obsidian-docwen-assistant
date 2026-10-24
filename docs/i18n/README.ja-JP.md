@@ -79,6 +79,19 @@ Word に出力する前に、**DocWen → 設定 → Markdown 構文**で必要�
 
 Number Suite が未インストールでも、Word 出力は Markdown 内の対応構文を読み取れます。出力の番号は DocWen の設定に従い、Number Suite の表示だけの番号はコピーしません。見出し番号の追加・削除コマンドは元のノートを変更しますが、エクスポートは変更しません。
 
+**各プロジェクトが変更するもの**
+
+| プロジェクトと使い方 | 表示・元のノートの編集・出力 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ja-JP.md) | 変換後のファイルを生成します。入力拡張が元の構文を解釈し、エクスポート設定が出力内容と番号を決めます。 |
+| [DocWen Assistant](../product-requirements.en.md) | エクスポートは別の結果フォルダーを作成し、校正は読み取りのみです。見出し番号の操作を実行すると、元の Markdown を編集します。 |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ja-JP.md) | カレンダーとタスクの表示はインデックスを参照します。完了状態や日付の変更は元の Markdown に書き込み、作成操作はノートを追加します。 |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ja-JP.md) | 候補の設定はメニューを変えます。値の並べ替えや移動は対象の YAML リストを編集し、文字列以外の値を文字列に変える場合があります。 |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ja.md) | ルールは分析結果を絞り込み、分析に含めるグラフの接続を変えます。ノート内のリンクは書き換えません。 |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ja.md) | ビューはノード構造を表示します。作成・移動・名前変更・結合・削除は、ノート、フォルダー、構造を表すプロパティを変更します。 |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ja.md) | 仮想番号は表示に反映されます。ノートごとの設定はプロパティを保存し、番号の書き込み・削除・振り直しは見出しのテキストを変更します。 |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ja.md) | 表の閲覧と外観のサンプルはノートを編集しません。表の編集は Markdown に書き込み、Base への変換はレコードファイルを作成します。 |
+
 設定は「一般」「Markdown へ」「Word へ」「校正」の 4 つのタブに分かれています。各タブに関連する説明が表示されます。表示言語は既定で Obsidian に従い、「一般」から変更できます。矢印キーや Home/End キーでもタブを切り替えられます。
 
 ## 制限
