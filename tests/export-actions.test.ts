@@ -599,10 +599,13 @@ describe("Excel template choice", () => {
 
   it.each(["direct", "template", "empty"])("exports with the %s choice", async (choice) => {
     const { ExportActions } = await import("../src/actions/export-actions");
+    const { confirmExport } = await import("../src/host/export-review");
+    vi.mocked(confirmExport).mockClear();
+    const templateId = `template.xlsx.${"a".repeat(64)}`;
     const capabilities = advisoryCapabilities(markdownCapability());
     capabilities.requireConversionRoute.mockReturnValue({ options: ["template_name"] });
     const docwen = {
-      templates: vi.fn().mockResolvedValue(choice === "empty" ? [] : [{ id: "sheet-template", name: "Sheet template" }]),
+      templates: vi.fn().mockResolvedValue(choice === "empty" ? [] : [{ id: templateId, name: "Sheet template", origin: "builtin" }]),
       convert: vi.fn().mockResolvedValue({ output: "note.xlsx", outputs: [], bundleId: "bundle.1", warnings: [] }),
     };
     const actions = new ExportActions(
@@ -613,14 +616,21 @@ describe("Excel template choice", () => {
     if (choice !== "empty") {
       await vi.waitFor(() => expect(state.choose).toBeDefined());
       expect(docwen.convert).not.toHaveBeenCalled();
-      expect(state.pickerItems.map((item) => item.id)).toEqual(["", "sheet-template"]);
+      expect(state.pickerItems.map((item) => item.id)).toEqual(["", templateId]);
       state.choose!(state.pickerItems[choice === "direct" ? 0 : 1]);
     }
     await pending;
     expect(docwen.convert).toHaveBeenCalledOnce();
     const options = docwen.convert.mock.calls[0][0];
-    if (choice === "template") expect(options.template).toBe("sheet-template");
-    else expect(options.template).toBeUndefined();
+    const rows = vi.mocked(confirmExport).mock.calls[0][1];
+    if (choice === "template") {
+      expect(options.template).toBe(templateId);
+      expect(rows).toContainEqual({ label: "exportReviewTemplate", value: "Sheet template · pickerTemplateBuiltin" });
+      expect(options).not.toHaveProperty("selectedTemplate");
+    } else {
+      expect(options.template).toBeUndefined();
+      expect(rows.some((row) => row.label === "exportReviewTemplate")).toBe(false);
+    }
     expect(state.notices).not.toContain("noticeNoTemplatesAvailable");
   });
 });

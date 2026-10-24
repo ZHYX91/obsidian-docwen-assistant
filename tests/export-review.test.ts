@@ -35,14 +35,25 @@ function request(overrides: Partial<ConvertRequest> = {}): ConvertRequest {
 describe("export summary", () => {
   it("shows only settings accepted by the actual conversion route", () => {
     const rows = buildExportSummary(request({
-      template: "Letter", cleanNumbering: "remove", addNumbering: "scheme.not.supported",
+      template: `template.docx.${"a".repeat(64)}`, cleanNumbering: "remove", addNumbering: "scheme.not.supported",
       supportedOptions: ["template_name", "remove_numbering"],
       markdownResourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "private token", logical_path: "private-image.png" }] },
-    }), "text/markdown", ["none"]);
-    expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: "Letter" });
+    }), "text/markdown", ["none"], { id: `template.docx.${"a".repeat(64)}`, name: "Letter", origin: "builtin" });
+    expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t("pickerTemplateBuiltin")}` });
     expect(rows).toContainEqual({ label: t("settingsCleanNumbering"), value: t("settingsNumberingRemove") });
     expect(rows.some((row) => row.label === t("settingsAddNumbering"))).toBe(false);
     expect(JSON.stringify(rows)).not.toMatch(/private|temporary|scheme.not.supported/u);
+  });
+
+  it("distinguishes identically named templates by origin without changing request ids", () => {
+    for (const origin of ["builtin", "custom"] as const) {
+      const selected = { id: `template.docx.${(origin === "builtin" ? "a" : "b").repeat(64)}`, name: "Letter", origin };
+      const input = request({ template: selected.id, supportedOptions: ["template_name"] });
+      const rows = buildExportSummary(input, "text/markdown", null, selected);
+      expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t(origin === "builtin" ? "pickerTemplateBuiltin" : "pickerTemplateCustom")}` });
+      expect(input.template).toBe(selected.id);
+      expect(rows.some((row) => row.value === selected.id)).toBe(false);
+    }
   });
 
   it("uses the same option aliases and normalization as spreadsheet conversion", () => {

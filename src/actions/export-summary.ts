@@ -1,4 +1,4 @@
-import { buildConversionMachineOptions, type ConvertRequest, type ProofreadCheck } from "../docwen/client";
+import { buildConversionMachineOptions, type ConvertRequest, type ProofreadCheck, type TemplateItem } from "../docwen/client";
 import { t, type Translations } from "../i18n";
 
 export interface ExportSummaryRow {
@@ -11,6 +11,7 @@ export function buildExportSummary(
   request: ConvertRequest,
   mediaType: string,
   checks: readonly ProofreadCheck[] | null,
+  template?: Pick<TemplateItem, "id" | "name" | "origin">,
 ): ExportSummaryRow[] {
   // Resource bindings are validated by the client, not displayed as settings.
   const options = buildConversionMachineOptions({ ...request, markdownResourceBindings: undefined }, mediaType);
@@ -22,7 +23,10 @@ export function buildExportSummary(
   const add = (key: string, label: keyof Translations, value?: string) => {
     if (options[key] !== undefined) rows.push({ label: t(label), value: value ?? optionText(options[key]) });
   };
-  add("template_name", "exportReviewTemplate");
+  const templateLabel = template && template.id === request.template
+    ? `${template.name} · ${t(template.origin === "builtin" ? "pickerTemplateBuiltin" : "pickerTemplateCustom")}`
+    : undefined;
+  add("template_name", "exportReviewTemplate", templateLabel);
   if (request.optimization) rows.push({ label: t("exportReviewOptimization"), value: request.optimization });
   add("remove_numbering", "settingsCleanNumbering", t(options.remove_numbering ? "settingsNumberingRemove" : "settingsNumberingKeep"));
   add("add_numbering", "settingsAddNumbering", options.add_numbering ? optionText(options.numbering_scheme ?? t("settingsNumberingDefault")) : t("settingsNumberingNone"));

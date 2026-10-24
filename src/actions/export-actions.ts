@@ -82,6 +82,7 @@ export class ExportActions {
         this.runner.presentWarnings(prepared.warnings);
         const selection = prepared.value;
         const selected: Pick<ConvertOptions, "template" | "optimization"> = {};
+        let selectedTemplate: TemplateItem | undefined;
         if (selection.kind === "template") {
           if (selection.items.length === 0 && target !== "xlsx") {
             showNotice(t("noticeNoTemplatesAvailable"));
@@ -93,7 +94,10 @@ export class ExportActions {
             if (target === "xlsx") items.unshift(direct);
             const chosen = await pickItem(this.app, items, t("pickerTemplatePlaceholder"), signal);
             if (!chosen || !lease.isCurrent()) return;
-            if (chosen !== direct) selected.template = chosen.id;
+            if (chosen !== direct) {
+              selected.template = chosen.id;
+              selectedTemplate = selection.items.find((item) => item.id === chosen.id);
+            }
           }
         } else if (selection.items.length > 0) {
           const items: PickerItem[] = [
@@ -104,7 +108,7 @@ export class ExportActions {
           if (!chosen || !lease.isCurrent()) return;
           if (chosen.id !== "__none__") selected.optimization = chosen.id;
         }
-        if (lease.isCurrent()) await this.execute(file, target, selected, signal);
+        if (lease.isCurrent()) await this.execute(file, target, selected, signal, selectedTemplate);
       },
     );
   }
@@ -114,6 +118,7 @@ export class ExportActions {
     target: ConvertTarget,
     selected: Pick<ConvertOptions, "template" | "optimization">,
     signal: AbortSignal,
+    selectedTemplate?: TemplateItem,
   ): Promise<void> {
     const filePath = resolveAbsoluteFilePath(this.app.vault, file);
     if (!filePath) {
@@ -187,7 +192,7 @@ export class ExportActions {
         ? settings.proofreadOnConvert ? buildProofreadChecks(settings) : ["none"] as const
         : null;
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", checks,
+        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", checks, selectedTemplate,
       ), signal);
       if (!accepted || signal.aborted) return;
       if (capability.source.category === "markdown" && settings.proofreadOnConvert) {
