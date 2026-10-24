@@ -13,7 +13,6 @@ import {
   LocalCliError,
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
-import { bindAcceptedDetectedSource } from "../docwen/capability-service";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
 import { openResultFolder } from "../host/result-folder";
@@ -138,7 +137,9 @@ export class ExportActions {
       if (useDetectedFormat) {
         const accepted = await confirmDetectedFormat(this.app, signal);
         if (!accepted || signal.aborted) return;
-        sourceInput = bindAcceptedDetectedSource(sourceInput, snapshot.contentSha256, capability.inspection, route);
+        sourceInput = await snapshot.getAcceptedDetectedSource(
+          capability.inspection, route, (input) => this.docwen.inspect(input, signal),
+        );
       }
 
       const settings = { ...this.getSettings() };

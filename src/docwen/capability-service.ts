@@ -33,6 +33,8 @@ export function bindAcceptedDetectedSource(
     slot.role === source.role && slot.role === "source" && slot.media_types.includes(inspection.mediaType));
   if (
     inspection.decision !== "require_explicit_acceptance"
+    || route.capabilityId !== route.capability.capability_id
+    || route.inputShape !== route.capability.input_shape
     || inspection.filePath !== source.path
     || inspection.contentSha256 !== contentSha256
     || slots.length !== 1

@@ -254,7 +254,7 @@ async function run() {
     childEnvironment[ACCEPTANCE_TOKEN_ENV] = binding.token;
     const result = spawnSync(
       process.execPath,
-      [vitestEntrypoint, "run", "tests/docwen-machine-integration.test.ts"],
+      [vitestEntrypoint, "run", "tests/docwen-machine-integration.test.ts", "tests/export-detected-package-integration.test.ts"],
       {
         cwd: repositoryRoot,
         env: childEnvironment,
