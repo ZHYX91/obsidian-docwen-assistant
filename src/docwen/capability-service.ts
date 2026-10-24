@@ -22,6 +22,26 @@ export interface FileCapability {
   readonly machineCapabilities: readonly MachineCapability[];
 }
 
+/** Bind an explicitly accepted inspection to this snapshot and selected source slot. */
+export function bindAcceptedDetectedSource(
+  source: TaskInput,
+  contentSha256: string,
+  inspection: FileInspection,
+  route: RuntimeRoute,
+): TaskInput {
+  const slots = route.inputShape.slots.filter((slot) =>
+    slot.role === source.role && slot.role === "source" && slot.media_types.includes(inspection.mediaType));
+  if (
+    inspection.decision !== "require_explicit_acceptance"
+    || inspection.filePath !== source.path
+    || inspection.contentSha256 !== contentSha256
+    || slots.length !== 1
+  ) {
+    throw new LocalCliError("cli_input_invalid", "The accepted inspection does not match the current source and capability.");
+  }
+  return { ...source, kind: slots[0].kind, mediaType: inspection.mediaType };
+}
+
 type ProjectionRequest = {
   readonly generation: number;
   readonly promise: Promise<RuntimeCapabilityProjection>;

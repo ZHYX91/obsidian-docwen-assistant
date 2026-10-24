@@ -18,6 +18,8 @@ Vitest covers the fixed LOCALAPPDATA execution alias, rejection of PATH-relative
 
 Proofreading lifecycle and view-state tests use a fresh happy-dom document with a small Obsidian DOM adapter. They dispatch DOM clicks and assert actual attributes, connected nodes, active elements and scroll state instead of inspecting recorded create-element calls. Integration cases exercise the real plugin saveSettings, ProofreadView and OperationCoordinator together, including initial empty state, same-generation cancellation, language changes, external focus and view closure/reopening. Existing source-digest and view-ownership cases remain in the suite. DOM fixtures do not establish browser layout or real-host acceptance.
 
+Detected-format action regressions use a complete minimal DOCX fixture and the real Vault snapshot and capability-shape checks. They cover Cancel and Continue for a wrong extension, source kind changes in both directions, stale inspection path/digest/decision/media, cancellation, and source identity/content conflicts before publication. The Machine inspection and conversion boundaries are mocked; these cases do not establish fixed-package or host acceptance.
+
 ## Repository quality gate
 
 Under the pinned toolchain, `npm run check` runs runtime verification, lint, formatting, README and stable-document contracts, coverage, type checking, build, artifact checks, and the high-severity dependency audit. Formatting and bilingual scripts read real repository content and are not placeholder no-ops. Artifact checking also verifies the Linux helper's pinned provenance and source/binary digests and requires the built `dist/main.js` to retain the exact embedded payload; this proves bundle inclusion, not Electron/Obsidian loading.

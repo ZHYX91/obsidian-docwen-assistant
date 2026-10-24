@@ -13,6 +13,7 @@ import {
   LocalCliError,
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
+import { bindAcceptedDetectedSource } from "../docwen/capability-service";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
 import { openResultFolder } from "../host/result-folder";
@@ -129,13 +130,15 @@ export class ExportActions {
 
     const destination = await captureExportTarget(this.app, outputDirectory, signal);
     const completed = await this.snapshots.run(file, signal, async (snapshot) => {
-      const sourceInput = snapshot.sourceInput ?? snapshot.inputs[0];
+      const capturedSource = snapshot.sourceInput ?? snapshot.inputs[0];
+      let sourceInput = capturedSource;
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
       if (useDetectedFormat) {
         const accepted = await confirmDetectedFormat(this.app, signal);
         if (!accepted || signal.aborted) return;
+        sourceInput = bindAcceptedDetectedSource(sourceInput, snapshot.contentSha256, capability.inspection, route);
       }
 
       const settings = { ...this.getSettings() };
@@ -175,7 +178,8 @@ export class ExportActions {
       // Preserve authored dialect syntax and let the same effective DocWen
       // configuration govern direct conversion and Assistant export.
       const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
-      const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
+      const taskInputs = (declaredMarkdown?.inputs ?? snapshot.inputs).map((input) =>
+        useDetectedFormat && input === capturedSource ? sourceInput : input);
       this.capabilities.requireTaskInputs(route, taskInputs);
 
       const request: ConvertRequest = {
