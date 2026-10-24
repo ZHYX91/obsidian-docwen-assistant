@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, extname } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportActions } from "../src/actions/export-actions";
 import { DocWenCapabilityService } from "../src/docwen/capability-service";
@@ -8,6 +9,10 @@ import type { MachineCapability } from "../src/docwen/machine-client";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 
 const ui = vi.hoisted(() => ({ confirm: vi.fn(), review: vi.fn(), commit: vi.fn() }));
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+});
 vi.mock("obsidian", () => ({ TFile: class TFile {}, MarkdownView: class MarkdownView {}, Modal: class Modal {}, SuggestModal: class SuggestModal {} }));
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: ui.confirm }));
@@ -61,7 +66,8 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
     captured.push(source);
     const inspection: FileInspection = {
       filePath: source.path, contentSha256: digest(isolated), sizeBytes: isolated.length,
-      decision: "require_explicit_acceptance", supportedActions: ["convert"], declaredFormat: extension,
+      decision: extname(source.path) === (detectedMedia === DOCX ? ".docx" : ".pdf") ? "allow" : "require_explicit_acceptance",
+      supportedActions: ["convert"], declaredFormat: extension,
       detectedFormat: detectedMedia === DOCX ? "docx" : "pdf", workflowCategory: "document",
       warningCode: "", reasonCode: "extension_mismatch", mediaType: detectedMedia,
     };
@@ -78,9 +84,10 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
     });
     return { output: "/output/result/result.md", warnings: [] };
   });
+  const routeCapability = machineCapability(detectedMedia, kind);
   const client = {
     inspect, convert,
-    runtimeCapabilities: async () => ({ contractId: "docwen.machine.v2", capabilities: [machineCapability(detectedMedia, kind)] }),
+    runtimeCapabilities: async () => ({ contractId: "docwen.machine.v2", capabilities: [routeCapability] }),
   };
   const capabilities = new DocWenCapabilityService(client as never);
   const controller = new AbortController();
@@ -91,7 +98,7 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
   };
   const actions = new ExportActions(app as never, client as never, capabilities, () => DEFAULT_SETTINGS, runner as never);
   return {
-    run: () => actions.toMarkdown(file as never), convert, inspect, captured, inspections, controller,
+    run: () => actions.toMarkdown(file as never), convert, inspect, captured, inspections, controller, routeCapability,
     replaceIdentity: () => { currentFile = { ...file }; },
     changeBytes: () => { currentBytes = Buffer.from("changed source"); },
   };
@@ -112,6 +119,7 @@ describe("accepted detected-format exports", () => {
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
+    expect(vi.mocked(writeFile).mock.calls.filter(([target]) => String(target).includes("accepted-source."))).toHaveLength(0);
   });
 
   it.each([
@@ -126,10 +134,12 @@ describe("accepted detected-format exports", () => {
     expect(ui.commit).toHaveBeenCalledOnce();
     const request = test.convert.mock.calls[0][0];
     const captured = test.captured[1];
-    expect(request.sourceInput).toEqual({ ...captured, kind, mediaType });
+    expect(request.sourceInput).toEqual({ ...captured, path: expect.stringContaining("accepted-source."), kind, mediaType });
+    expect(dirname(request.sourceInput!.path)).toBe(dirname(captured.path));
     expect(request.sourceInput).not.toBe(captured);
     expect(request.useDetectedFormat).toBe(true);
     expect(request.sourceInput?.logicalPath).toBe(`Detected-format.${extension}`);
+    expect(test.inspections[2]).toMatchObject({ decision: "allow", contentSha256: test.inspections[1].contentSha256 });
     if (extension === "txt") expect(captured.mediaType).toBe("text/plain");
     if (extension === "xlsx") expect(captured.kind).toBe("resource");
     if (extension === "docx") expect(captured.kind).toBe("document");
@@ -159,6 +169,38 @@ describe("accepted detected-format exports", () => {
       return true;
     });
     await expect(test.run()).rejects.toMatchObject({ code: changed === "identity" ? "vault_target_changed" : "vault_content_conflict" });
+    expect(ui.commit).not.toHaveBeenCalled();
+  });
+
+  it.each(["kind", "route"])("rejects a changed selected %s before canonical inspection", async (changed) => {
+    const test = await fixture();
+    ui.confirm.mockImplementation(async () => {
+      if (changed === "kind") test.routeCapability.input_shape.slots[0].kind = "resource";
+      else test.routeCapability.capability_id = "another-route";
+      return true;
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: changed === "kind" ? "vault_input_invalid" : "cli_input_invalid" });
+    expect(test.inspect).toHaveBeenCalledTimes(2);
+    expect(test.convert).not.toHaveBeenCalled();
+  });
+
+  it.each(["decision", "path", "digest", "format", "media", "size"])("rejects canonical reinspection with a changed %s", async (changed) => {
+    const test = await fixture();
+    const actualInspect = test.inspect.getMockImplementation()!;
+    test.inspect.mockImplementation(async (input) => {
+      const inspected = await actualInspect(input);
+      if (!input.path.includes("accepted-source.")) return inspected;
+      if (changed === "decision") inspected.decision = "require_explicit_acceptance";
+      if (changed === "path") inspected.filePath = "another-copy.docx";
+      if (changed === "digest") inspected.contentSha256 = "0".repeat(64);
+      if (changed === "format") inspected.detectedFormat = "pdf";
+      if (changed === "media") inspected.mediaType = PDF;
+      if (changed === "size") inspected.sizeBytes += 1;
+      return inspected;
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
+    expect(ui.review).not.toHaveBeenCalled();
+    expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
   });
 

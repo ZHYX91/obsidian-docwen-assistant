@@ -10,7 +10,7 @@ import {
 export type { DeclaredMarkdownSnapshot } from "./declared-markdown-snapshot";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
@@ -18,6 +18,8 @@ import { setTimeout as yieldToHost } from "node:timers/promises";
 import { TFile, type App } from "obsidian";
 
 import { mediaTypeForPath, sourceKindForPath, type TaskInput } from "../docwen";
+import { bindAcceptedDetectedSource } from "../docwen/capability-service";
+import type { FileInspection, RuntimeRoute } from "../docwen/client";
 import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
 import {
   isSameOpenMarkdownTarget,
@@ -40,6 +42,12 @@ export interface IsolatedSnapshot {
   readonly contentSha256: string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
+  /** Materialize an explicitly accepted format only inside this snapshot's ownership. */
+  readonly getAcceptedDetectedSource: (
+    inspection: FileInspection,
+    route: RuntimeRoute,
+    inspect: (input: TaskInput) => Promise<FileInspection>,
+  ) => Promise<TaskInput>;
   readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
   /** Compatibility projection for contract fixtures; ordinary exports use declared inputs. */
   readonly getResolvedMarkdownInputs: () => Promise<readonly [TaskInput, TaskInput] | undefined>;
@@ -138,6 +146,38 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(originalPath),
         mediaType: mediaTypeForPath(originalPath),
       };
+      const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
+        const bound = bindAcceptedDetectedSource(sourceInput, contentSha256, inspection, route);
+        const format = inspection.detectedFormat;
+        if (
+          !/^[a-z0-9]{1,16}$/u.test(format)
+          || inspection.mediaType === "application/octet-stream"
+          || mediaTypeForPath(`source.${format}`) !== inspection.mediaType
+          || sourceKindForPath(`source.${format}`) !== bound.kind
+        ) {
+          throw new VaultWriteError("vault_input_invalid", "The accepted format has no matching canonical snapshot extension.");
+        }
+        await assertCurrent();
+        const acceptedPath = path.join(workspace, `accepted-source.${format}`);
+        await writeFile(acceptedPath, typeof original === "string" ? original : Buffer.from(original), { flag: "wx" });
+        if (sha256(await readFile(acceptedPath)) !== contentSha256) {
+          throw new VaultWriteError("vault_input_invalid", "The accepted snapshot bytes changed.");
+        }
+        const accepted = { ...bound, path: acceptedPath };
+        const verified = await inspect(accepted);
+        if (
+          verified.decision !== "allow"
+          || verified.filePath !== accepted.path
+          || verified.contentSha256 !== contentSha256
+          || verified.sizeBytes !== inspection.sizeBytes
+          || verified.detectedFormat !== format
+          || verified.mediaType !== bound.mediaType
+        ) {
+          throw new VaultWriteError("vault_input_invalid", "The canonical snapshot does not match the accepted inspection.");
+        }
+        await assertCurrent();
+        return accepted;
+      };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {
         if (authoredMarkdown === null) return undefined;
@@ -162,6 +202,7 @@ export class VaultReadSnapshot {
         publish,
         sourceInput,
         inputs: [sourceInput],
+        getAcceptedDetectedSource,
         getDeclaredMarkdownInputs,
         getResolvedMarkdownInputs,
       });
