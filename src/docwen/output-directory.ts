@@ -115,7 +115,7 @@ export async function atomicCommitDirectory(
   parent: OutputDirectorySnapshot,
   signal?: AbortSignal,
   publish?: DirectoryPublication,
-): Promise<{ output: string; outputs: string[]; warnings: OperationWarning[] }> {
+): Promise<{ output: string; outputs: string[]; resultDirectory: string; warnings: OperationWarning[] }> {
   throwIfAborted(signal);
   if (bundle.layout_schema !== "docwen.document_node.v1") {
     throw new LocalCliError("cli_integrity_error", "Conversion output requires the document-node layout.");
@@ -208,7 +208,7 @@ export async function atomicCommitDirectory(
       return { output, outputs };
     };
     const published = await publishOnce(commit, publish ? (guarded) => publish(finalRoot, guarded) : undefined);
-    return { ...published.value, warnings: [...warnings, ...published.warnings] };
+    return { ...published.value, resultDirectory: finalRoot, warnings: [...warnings, ...published.warnings] };
   } catch (error) {
     primaryFailure = error;
     for (const warning of warnings) recordFailureWarning(error, warning);

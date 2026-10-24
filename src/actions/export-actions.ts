@@ -4,6 +4,7 @@ import { type App, type TFile } from "obsidian";
 
 import {
   type ConvertOptions,
+  type ConvertRequest,
   type ConvertTarget,
   type DocWenClient,
   type DocWenCapabilityService,
@@ -13,6 +14,8 @@ import {
 } from "../docwen";
 import { confirmDetectedFormat } from "../host/confirm";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
+import { confirmExport } from "../host/export-review";
+import { openResultFolder } from "../host/result-folder";
 import { captureExportTarget } from "../host/export-target-snapshot";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
@@ -22,6 +25,7 @@ import type { PluginSettings } from "../settings-model";
 import { pickItem, type PickerItem } from "../utils/suggest-modal";
 import { isCancellationError } from "./action-errors";
 import { ActionRunner } from "./action-runner";
+import { buildExportSummary } from "./export-summary";
 import {
   buildHeadingMergeOptions,
   buildMarkdownExportOptions,
@@ -129,7 +133,7 @@ export class ExportActions {
         if (!accepted || signal.aborted) return;
       }
 
-      const settings = this.getSettings();
+      const settings = { ...this.getSettings() };
       const options: ConvertOptions = {
         target,
         ...selected,
@@ -160,9 +164,6 @@ export class ExportActions {
         );
       }
       if (capability.source.category === "markdown") {
-        if (settings.proofreadOnConvert) {
-          await this.runAdvisoryProofread(sourceInput, settings, signal);
-        }
         Object.assign(options, buildHeadingMergeOptions(settings));
       }
 
@@ -172,7 +173,7 @@ export class ExportActions {
       const taskInputs = declaredMarkdown?.inputs ?? snapshot.inputs;
       this.capabilities.requireTaskInputs(route, taskInputs);
 
-      return this.docwen.convert({
+      const request: ConvertRequest = {
         ...options,
         markdownResourceBindings: declaredMarkdown?.resourceBindings,
         inputs: taskInputs,
@@ -181,13 +182,33 @@ export class ExportActions {
         capabilityId: route.capabilityId,
         selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
-      }, signal);
+      };
+      const checks = capability.source.category === "markdown"
+        ? settings.proofreadOnConvert ? buildProofreadChecks(settings) : ["none"] as const
+        : null;
+      const accepted = await confirmExport(this.app, buildExportSummary(
+        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", checks,
+      ), signal);
+      if (!accepted || signal.aborted) return;
+      if (capability.source.category === "markdown" && settings.proofreadOnConvert) {
+        await this.runAdvisoryProofread(sourceInput, settings, signal);
+      }
+      return this.docwen.convert(request, signal);
     });
     if (completed.value) {
       this.runner.presentCompletion(
         t("noticeExportSuccess", { filename: portableBasename(completed.value.output) }),
         [...completed.value.warnings, ...completed.warnings],
         completed.value.diagnostics,
+        {
+          label: t("dialogOpenResultFolder"),
+          run: () => {
+            const folder = completed.value!.resultDirectory ?? path.dirname(completed.value!.output);
+            void openResultFolder(folder).then((opened) => {
+              if (!opened) showNotice(t("noticeOpenResultFolderFailed", { path: folder }));
+            });
+          },
+        },
       );
     } else {
       this.runner.presentWarnings(completed.warnings);

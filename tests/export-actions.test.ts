@@ -28,6 +28,7 @@ vi.mock("../src/host/export-target-snapshot", () => ({
 }));
 vi.mock("../src/host/vault-files", () => ({ resolveAbsoluteFilePath: () => "D:\\Vault\\note.bin" }));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: vi.fn().mockResolvedValue(true) }));
+vi.mock("../src/host/export-review", () => ({ confirmExport: vi.fn().mockResolvedValue(true) }));
 vi.mock("../src/host/electron-dialogs", () => ({
   getElectronOpenDialog: () => ({
     showOpenDialog: state.openDialog,
@@ -506,6 +507,50 @@ function resetState(): void {
   state.getDeclaredMarkdownInputs.mockReset();
   state.getResolvedMarkdownInputs.mockReset();
 }
+
+describe("export review before content operations", () => {
+  beforeEach(resetState);
+
+  it("starts neither advisory proofreading nor conversion after cancelling review", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const { confirmExport } = await import("../src/host/export-review");
+    vi.mocked(confirmExport).mockResolvedValueOnce(false);
+    const docwen = { optimizations: vi.fn(), validate: vi.fn(), convert: vi.fn() };
+    const actions = new ExportActions(
+      {} as never, docwen as never, advisoryCapabilities(markdownCapability()) as never,
+      () => markdownSettings(true) as never, advisoryRunner(new AbortController().signal) as never,
+    );
+    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
+    expect(docwen.validate).not.toHaveBeenCalled();
+    expect(docwen.convert).not.toHaveBeenCalled();
+    expect(state.notices).toEqual([]);
+  });
+
+  it("uses the settings shown for review even if live settings change while it is open", async () => {
+    const { ExportActions } = await import("../src/actions/export-actions");
+    const { confirmExport } = await import("../src/host/export-review");
+    const settings = { ...DEFAULT_SETTINGS, proofreadOnConvert: true, mdToDocCleanNumbering: "remove" as const };
+    vi.mocked(confirmExport).mockImplementationOnce(async () => {
+      settings.proofreadOnConvert = false;
+      settings.proofreadTypo = false;
+      settings.headingMergeMode = "never";
+      return true;
+    });
+    const docwen = {
+      optimizations: vi.fn(),
+      validate: vi.fn().mockResolvedValue({ issues: [], warnings: [] }),
+      convert: vi.fn().mockResolvedValue({ output: "/results/note.docx", warnings: [] }),
+    };
+    const actions = new ExportActions(
+      {} as never, docwen as never, advisoryCapabilities(markdownCapability()) as never,
+      () => settings, advisoryRunner(new AbortController().signal) as never,
+    );
+    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
+    expect(docwen.validate).toHaveBeenCalledWith(expect.anything(), ["all"], expect.anything());
+    expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ cleanNumbering: "remove" }), expect.anything());
+    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("headingMergeMode");
+  });
+});
 
 function advisoryRunner(signal: AbortSignal) {
   return {

@@ -108,6 +108,8 @@ type InputReference = TaskInput | string;
 
 export interface ConversionOutcome {
   output: string;
+  /** Exact committed root for directory exports; numbering writes one file. */
+  resultDirectory?: string;
   outputs: string[];
   bundleId: string;
   warnings: OperationWarning[];

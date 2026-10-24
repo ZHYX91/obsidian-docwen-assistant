@@ -10,7 +10,7 @@ La langue de l’interface change uniquement les textes et la disposition d’As
 
 ## Captures d’écran
 
-Ces captures montrent le plugin empaqueté avec DocWen CLI dans Obsidian pour ordinateur.
+Exemples de l’interface sur ordinateur. L’exemple de relecture utilise une note fictive.
 
 ### Barre latérale de relecture
 
@@ -18,15 +18,15 @@ Examinez les problèmes par ligne ou par règle et revenez à la plage source co
 
 ![Barre latérale de relecture DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Paramètres à onglets supérieurs et capacités CLI
+### Paramètres et connexion à DocWen
 
-Utilisez les quatre onglets supérieurs et leurs aides contextuelles pour choisir précisément l’environnement DocWen, régler les conversions et la relecture, puis vérifier les capacités Machine.
+Vérifiez la connexion à DocWen et choisissez les options de conversion et de relecture dans les quatre onglets.
 
 ![Paramètres de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
 
-### Export selon les capacités
+### Exporter des fichiers
 
-Choisissez une voie de conversion disponible et une destination explicite tout en laissant la note source inchangée.
+Choisissez le format de sortie, vérifiez les options et indiquez où enregistrer le résultat.
 
 ![Export DocWen Assistant selon les capacités](../assets/docwen-assistant-export-en.png)
 
@@ -37,23 +37,26 @@ Le plugin ouvre les fichiers dans DocWen, exporte vers Word/Excel/Markdown avec 
 ## Configuration requise et compatibilité
 
 - Windows ou Linux et Obsidian 1.12.7 ou ultérieur ; le plugin fonctionne uniquement sur ordinateur.
-- Sous Windows, utilisez une version DocWen 0.17.0 ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export de répertoires de résultat sous Linux exige x64 et un système de fichiers avec no-replace atomique ; le plugin ne télécharge pas DocWen automatiquement.
+- Sous Windows, utilisez une version DocWen 0.17.0 ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export sous Linux nécessite x64 et un système de fichiers capable de créer un dossier de résultat sans écraser les données existantes ; le plugin ne télécharge pas DocWen automatiquement.
 - Le plugin exige `docwen.machine.v2` et `docwen.artifact_bundle.v3` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
-- Le lancement ou l’ouverture de l’application de bureau DocWen utilise la commande CLI locale publique `gui open` ; un échec de la négociation Machine n’empêche donc pas d’ouvrir DocWen.
+- Même si la connexion pour la conversion en arrière-plan est incompatible, vous pouvez essayer d’ouvrir l’application DocWen séparément.
 
 Si la version du Store ne répond pas à ces exigences, utilisez un paquet portable compatible et sélectionnez-le avec l’installation manuelle.
 
-La détection automatique est réservée à Windows, utilise l’alias enregistré `docwen.exe` et reste valide après les mises à jour Microsoft Store. Sous Linux, l’installation manuelle est obligatoire et accepte le dossier extrait, `DocWen` ou `DocWenCLI`. Le plugin ne parcourt ni `WindowsApps` ni des dossiers arbitraires et ne télécharge aucun logiciel automatiquement.
+La détection automatique est réservée à Windows, utilise l’alias enregistré `docwen.exe` et reste valide après les mises à jour Microsoft Store. Sous Linux, l’installation manuelle est obligatoire et accepte le dossier extrait, `DocWen` ou `DocWenCLI`. Le plugin ne recherche pas de programmes dans des dossiers arbitraires et ne télécharge aucun logiciel automatiquement.
 
 ## Installation
 
 ### Installer DocWen et le plugin
 
-Sous Windows, installez DocWen depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) ou extrayez le paquet portable depuis [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez un paquet Linux compatible depuis la même page Releases et sélectionnez-le manuellement. Installez DocWen Assistant depuis Community Plugins ou copiez `main.js`, `manifest.json` et `styles.css` dans `<Vault>/.obsidian/plugins/docwen-assistant/`.
+1. Sous Windows, installez une version compatible de DocWen 0.17.0 ou ultérieure depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez le paquet Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez entièrement le paquet Linux de la même page.
+2. Installez DocWen Assistant depuis Community Plugins. Pour l’installation manuelle, téléchargez `docwen-assistant-x.y.z.zip` depuis les [versions du plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) et copiez `main.js`, `manifest.json` et `styles.css` dans `<Vault>/.obsidian/plugins/docwen-assistant/`.
+3. Rechargez Community Plugins et activez DocWen Assistant.
+4. La version Windows du Store peut être détectée automatiquement. Pour Windows portable ou Linux, ouvrez **Paramètres → DocWen Assistant → Général**, choisissez la connexion manuelle, puis le dossier extrait ou l’exécutable.
 
-### Sécurité de l’installation
+### Conserver les réglages lors des mises à jour
 
-Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styles.css` ; il ne contient, ne remplace et ne supprime jamais `data.json`. Ne supprimez `data.json` que pour réinitialiser volontairement toutes les préférences.
+Lors d’une mise à jour manuelle, remplacez seulement `main.js`, `manifest.json` et `styles.css`. Conservez `data.json` pour garder vos réglages ; supprimez-le uniquement pour les réinitialiser. Gardez le nom de dossier `docwen-assistant`.
 
 ## Utilisation
 
@@ -61,26 +64,36 @@ Le paquet de publication contient uniquement `main.js`, `manifest.json` et `styl
 
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et de choisir **Vérifier la connexion à DocWen**.
 
-Choisissez un dossier de sortie. Chaque conversion crée son propre dossier de résultats avec le nom source, l’horodatage et le format d’entrée. Les noms et ressources liées sont conservés ; aucun dossier existant n’est remplacé.
-
-L’export Word produit un DOCX autonome dans le dossier de résultats. Conservez le Markdown original. La conversion inverse lit le contenu et la structure du DOCX sans fichier compagnon de la source ; une écriture ou des espaces identiques ne sont pas garantis. Choisissez les extensions dans les paramètres DocWen.
-
+Choisissez un modèle ou un préréglage de conversion si proposé, puis un dossier de sortie. Vérifiez la source, le format, la destination et les options, puis cliquez sur **Exporter**. La fenêtre reprend les réglages capturés pour cette tâche ; l’annulation ne lance aucune conversion. Chaque conversion crée un nouveau dossier contenant le résultat et les images liées. Après l’export, cliquez sur **Ouvrir le dossier du résultat** dans la notification. Les dossiers existants ne sont pas remplacés.
 
 ## Paramètres
 
-Pour conserver les cellules fusionnées de Structural Tables, les légendes et renvois de Number Suite, les titres H7–H9 ou les notes de fin typées, activez avant l’export Word les **extensions d’entrée** correspondantes dans **DocWen → Paramètres → Syntaxe Markdown**, ou le préréglage Obsidian. Elles sont désactivées par défaut. Pour retrouver les extensions dans le Markdown issu de Word, activez aussi les **extensions de sortie**. La numérotation Word dépend des options DocWen : vérifiez le résultat.
+Avant l’export Word, activez les **extensions d’entrée** nécessaires dans **DocWen → Paramètres → Syntaxe Markdown**. Elles sont désactivées à l’installation ; le préréglage d’entrée Obsidian active le groupe correspondant.
+
+| Contenu ou tâche | Réglage dans DocWen |
+| --- | --- |
+| Cellules fusionnées de Structural Tables | Extension d’entrée Structural Tables |
+| Légendes et renvois Number Suite | Extension d’entrée des légendes et renvois |
+| Titres H7–H9 / notes de fin typées | Extensions d’entrée correspondantes |
+| Word vers Markdown étendu | Extensions de sortie correspondantes |
+
+L’export Word lit la syntaxe Number Suite même si ce plugin n’est pas installé. Les numéros exportés suivent les options DocWen, pas les numéros affichés uniquement par Number Suite. Les commandes séparées d’ajout ou de retrait des numéros de titres modifient la note source ; l’export ne la modifie pas.
 
 Les paramètres sont répartis entre quatre onglets : Général, Exporter en Markdown, Exporter vers Word et Relecture. Chaque onglet contient les explications utiles. La langue suit Obsidian par défaut et peut être choisie dans les paramètres généraux. Utilisez les flèches ou les touches Début/Fin pour changer d’onglet.
 
 ## Limitations
 
-- Sur ordinateur Windows ou Linux avec une installation locale compatible de DocWen ; l’export de répertoires de résultat sous Linux exige x64 et un système de fichiers avec no-replace atomique.
+- Sur ordinateur Windows ou Linux avec une installation locale compatible de DocWen ; l’export sous Linux nécessite x64 et un système de fichiers permettant de sauvegarder les résultats sans écraser les données existantes.
 - Aucune recherche récursive en dehors du dossier ou du programme DocWen sélectionné.
-- Une opération est refusée si la réponse CLI, l'instantané source, l'état de l'éditeur ou la cible ne peuvent pas être vérifiés en toute sécurité.
+- Si la note change pendant le traitement ou si le résultat ne peut pas être enregistré en toute sécurité, l’opération s’arrête et vous demande de vérifier.
+
+Un aller-retour par Word ne remplace pas une sauvegarde du Markdown original. Le contenu visible pris en charge peut être reconverti, mais certaines syntaxes, les notes intégrées et des détails de mise en page peuvent être perdus. Conservez la note source et vérifiez le document reconverti.
 
 ## Confidentialité et sécurité
 
-Le plugin transmet uniquement un instantané isolé de l’éditeur courant ou du fichier du Vault à DocWen. Il n’accède aux fichiers hors du Vault que pour lancer l’alias DocWen enregistré ou l’application portable choisie manuellement, gérer les entrées temporaires et artefacts validés, puis écrire vers une destination explicitement choisie. Il n’ouvre ni n’enregistre le chemin versionné du paquet Microsoft Store, ne téléverse aucun document et ne parcourt pas tout le Vault. Détails : [CLI integration contract](../cli-integration.md)
+Vos documents restent sur votre ordinateur. Le plugin transmet au DocWen local une copie temporaire du fichier choisi, avec les modifications non enregistrées si un seul éditeur correspond à cette note. Il inclut les images explicitement référencées, sans chercher de fichiers sans rapport dans le Vault ni envoyer vos documents en ligne.
+
+L’export écrit dans le dossier choisi. La relecture ne modifie pas la note. La numérotation n’est appliquée que si la note d’origine reste au même emplacement et son texte est inchangé. Si la note est renommée ou remplacée pendant le traitement, relancez l’action sur la note actuelle. Le chemin d’installation du Store n’est pas enregistré dans les réglages du plugin. Voir la [spécification d’intégration](../cli-integration.md) pour les détails techniques.
 
 ## Développement
 
@@ -91,6 +104,8 @@ Documents stables : [Exigences produit](../product-requirements.en.md) · [Spéc
 Gouvernance du dépôt : [Journal des modifications](../../CHANGELOG.md) · [Contribuer](../../CONTRIBUTING.md) · [Sécurité](../../SECURITY.md)
 
 ## Assistance
+
+Dans Obsidian, ouvrez **Général → Aide**, puis **Guide utilisateur** ou **Signaler un problème**.
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a): Questions d’utilisation et de configuration.
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas): Premières idées de fonctionnalités et de flux de travail.

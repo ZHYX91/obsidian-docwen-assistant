@@ -10,7 +10,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ## 螢幕截圖
 
-以下截圖展示打包後的外掛與本機 DocWen 在桌面版 Obsidian 中執行的介面。
+桌面介面範例。校對範例使用合成筆記。
 
 ### 校對側邊欄
 
@@ -20,13 +20,13 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ### 設定與 DocWen 連線
 
-使用四個頂部分頁及其中的說明卡片自動連線 Microsoft Store 安裝版、按需設定可攜版，並調整轉換與校對。
+在四個設定分頁中檢查 DocWen 連線，選擇轉換與校對選項。
 
 ![DocWen Assistant 頂部分頁設定](../assets/docwen-assistant-settings-en.png)
 
 ### 匯出檔案
 
-選擇目前可用的轉換路徑和明確的輸出位置，同時保持來源筆記不變。
+選擇輸出格式、確認本次設定，再指定結果的儲存位置。
 
 ![DocWen Assistant 匯出檔案](../assets/docwen-assistant-export-en.png)
 
@@ -41,25 +41,26 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 ## 使用要求與相容性
 
 - 需要 Windows 或 Linux 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.17.0 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 結果目錄匯出需要 x64 且檔案系統支援原子 no-replace；外掛不會自動下載 DocWen；
+- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.17.0 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 匯出需要 x64，以及能安全儲存新結果資料夾而不覆蓋既有資料的檔案系統；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
-- 啟動或開啟 DocWen 桌面應用使用公開的本機 `gui open` CLI 控制命令，因此 Machine 協商失敗不會阻止開啟 DocWen 本身。
+- 即使背景轉換介面不相容，仍可嘗試單獨開啟 DocWen 桌面應用。
 
 Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並透過「手動選擇安裝位置」選取；Linux 一律使用「手動選擇安裝位置」。
 
-自動偵測僅適用於 Windows，並使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。手動安裝在 Windows 接受解壓縮後的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`。外掛不會掃描 `WindowsApps`、遞迴搜尋程式、自動下載軟體或退回舊協定。
+自動偵測僅適用於 Windows，並使用已註冊的 `docwen.exe` 別名，Microsoft Store 更新後仍可使用。手動安裝在 Windows 接受解壓縮後的 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`。外掛不會在硬碟上搜尋其他程式，也不會自動下載軟體。
 
 ## 安裝
 
 ### 安裝 DocWen 與外掛
 
-1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝 DocWen，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版；Linux x64 請從同一 Releases 頁面下載並完整解壓縮相容的 Linux 套件；
-2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，將 `main.js`、`manifest.json` 和 `styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`；
-3. 重新載入並啟用外掛；Windows 自動偵測無須選擇檔案。Windows 可攜版與所有 Linux 使用者都應在設定中選擇「手動選擇安裝位置」和 DocWen 資料夾或執行檔。
+1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容的 DocWen 0.17.0 或更新版本，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版。Linux x64 請從同一頁面下載並解壓縮 Linux 套件。
+2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，從[外掛發行頁](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)下載 `docwen-assistant-x.y.z.zip`，將 `main.js`、`manifest.json`、`styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`。
+3. 重新載入 Community Plugins 並啟用 DocWen Assistant。
+4. Windows 商店版可自動偵測。Windows 可攜版與 Linux 使用者請開啟 **設定 → DocWen Assistant → 一般**，選擇**手動選擇安裝位置**，再選取解壓縮後的資料夾或執行檔。
 
 ### 更新時保留設定
 
-發行套件只包含 `main.js`、`manifest.json` 和 `styles.css`，不會包含、覆蓋或刪除 `data.json`。只有明確要清除全部偏好時才刪除 `data.json`；啟用外掛後再選擇 DocWen 位置。
+手動更新時只替換 `main.js`、`manifest.json` 和 `styles.css`。保留 `data.json` 才能保留設定；只有想重設設定時才刪除。外掛資料夾名稱保持為 `docwen-assistant`。
 
 ## 使用
 
@@ -67,26 +68,36 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。
 
-選擇輸出目錄後，每次轉換會建立獨立結果資料夾，保留產生的檔名和關聯資源。檔名包含原始檔名、時間戳記和本次傳入格式；不會覆寫既有結果資料夾。
-
-Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的實際內容和結構，不依賴原文伴隨檔案，也不保證完全相同的寫法和空白。可在 DocWen 設定中選擇 Markdown 擴充語法。
-
+若出現範本或轉換預設選項，先完成選擇，再指定輸出目錄。確認來源檔案、格式、儲存位置和本次選項後，按下**匯出**。確認視窗使用本次工作已取得的設定，取消不會開始轉換。每次轉換都會建立新的結果資料夾，並保留圖片等關聯資源。完成後可在通知中選擇**開啟結果資料夾**，既有結果不會被覆寫。
 
 ## 設定
 
-若筆記使用 Structural Tables 合併表格、Number Suite 題註與交互參照、七至九級標題或類型化尾註，匯出 Word 前請到 **DocWen → 設定 → Markdown 語法** 啟用對應的**輸入擴充**，或使用輸入方向的 **Obsidian 擴充**預設。新安裝時擴充預設關閉；若要從 Word 轉回擴充 Markdown，還需啟用對應的**輸出擴充**。Word 編號由 DocWen 匯出選項決定，請檢查輸出表格及參照。
+匯出 Word 前，請在 **DocWen → 設定 → Markdown 語法**啟用需要的**輸入擴充**。新安裝時預設關閉，也可選擇輸入方向的 **Obsidian 擴充**預設。
+
+| 筆記內容或操作 | DocWen 對應設定 |
+| --- | --- |
+| Structural Tables 合併儲存格 | Structural Tables 輸入擴充 |
+| Number Suite 題註與交互參照 | 題註與交互參照輸入擴充 |
+| H7–H9 標題／類型化尾註 | 相應的標題／尾註輸入擴充 |
+| Word 轉回擴充 Markdown | 相應的輸出擴充 |
+
+即使未安裝 Number Suite，Word 匯出也能讀取 Markdown 中的相關語法。輸出編號由 DocWen 選項決定，不直接複製 Number Suite 的純顯示編號。獨立的「新增／移除標題編號」命令會修改來源筆記，匯出不會。
 
 設定分為四頁：一般、轉為 Markdown、轉為 Word、校對。每頁都有相關說明，分頁也可水平捲動。介面語言預設「跟隨 Obsidian」，也可以在「一般」頁手動選擇。Windows 的 Microsoft Store 版可自動偵測；Linux 與 Windows 可攜版需要手動選擇安裝位置。可用方向鍵及 Home/End 切換分頁。
 
 ## 限制
 
-- 支援 Windows 與 Linux 桌面端，且本機必須安裝相容的 DocWen；Linux 結果目錄匯出需要 x64，不支援原子 no-replace 的檔案系統會直接失敗，不會退回先檢查再 rename；
-- Windows 自動模式只使用固定的 `docwen.exe` 已註冊別名；手動模式在 Windows 接受 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`；兩種模式都不會搜尋任意目錄；
-- 無法安全核驗 CLI 回應、來源快照、編輯器狀態或輸出目標時，操作會被拒絕。
+- 支援 Windows 與 Linux 桌面端，且本機必須安裝相容的 DocWen；Linux 匯出需要 x64；如果檔案系統無法安全儲存結果，外掛會停止並提示你選擇其他目錄；
+- Windows 自動模式使用系統註冊的 Microsoft Store 安裝版；手動模式在 Windows 接受 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`；兩種模式都不會搜尋任意目錄；
+- 筆記在處理中發生變化，或結果無法安全儲存時，操作會停止並提示你檢查。
+
+Word 往返轉換有保真範圍：可轉回受支援的可見內容，但不能視為 Markdown 原文的精確備份。未支援的語法、嵌入筆記展開與部分版式可能無法保留；請保留來源筆記並檢查轉回的文件。
 
 ## 隱私與安全性
 
-外掛會為目前編輯器內容（包括未儲存文字）或 Vault 檔案建立隔離快照，再交給本機 DocWen。它只會為了啟動已註冊的 DocWen 別名或手動選取的可攜版程式、管理暫存輸入與已驗證成品，以及寫入使用者明確選取的輸出路徑而存取 Vault 外部檔案；不會開啟或儲存帶版本的 Microsoft Store 套件路徑。它不會上傳文件或替 DocWen 列舉整個 Vault。完整協定請參閱 [CLI integration contract](../cli-integration.md)。
+文件留在你的電腦上。外掛將所選檔案的暫存副本交給本機 DocWen；若筆記有唯一對應的編輯器，也會包含尚未儲存的文字。只處理筆記明確引用的圖片，不會掃描 Vault 尋找無關檔案，也不會上傳文件。
+
+匯出寫入你選擇的目錄，校對不修改筆記。標題編號只有在原筆記仍位於原路徑且正文未變時才寫回；處理期間若重新命名或替換了筆記，請對目前筆記重新執行。外掛設定不儲存商店套件安裝路徑。開發者可參閱[整合說明](../cli-integration.md)。
 
 ## 開發
 
@@ -97,6 +108,8 @@ Word 匯出在結果資料夾中產生獨立 DOCX。 反向轉換讀取 DOCX 的
 儲存庫治理：[變更記錄](../../CHANGELOG.md) · [貢獻指南](../../CONTRIBUTING.md) · [安全性](../../SECURITY.md)
 
 ## 支援
+
+在 Obsidian 內需要協助時，開啟**一般 → 說明**，選擇**使用指南**或**回報問題**。
 
 - [Q&A](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/q-a)：使用和設定問題。
 - [Ideas](https://github.com/ZHYX91/obsidian-docwen-assistant/discussions/categories/ideas)：尚待討論的功能與工作流程想法。

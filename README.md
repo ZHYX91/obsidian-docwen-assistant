@@ -10,7 +10,7 @@ The interface language changes Assistant’s own text and layout, including proo
 
 ## Screenshots
 
-These are the main places you will use the plugin in desktop Obsidian.
+Desktop interface examples. The proofreading example uses a synthetic note.
 
 ### Proofreading sidebar
 
@@ -20,13 +20,13 @@ Read the issues found during proofreading and jump to the relevant line in your 
 
 ### Settings and DocWen connection
 
-Check the connection to DocWen and set up export or proofreading in the four settings tabs.
+Check the connection to DocWen and choose export and proofreading options in the four settings tabs.
 
 ![DocWen Assistant settings](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-settings-en.png)
 
 ### Export files
 
-Choose the output format and where to save it. Your original note stays untouched.
+Choose the output format, review the options and select where to save the result.
 
 ![DocWen Assistant file export](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-export-en.png)
 
@@ -54,14 +54,14 @@ On Windows, the plugin can detect the Microsoft Store installation using the reg
 
 ### Install DocWen and the plugin
 
-1. On Windows, install a compatible DocWen 0.17.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) or fully extract the portable Windows package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases). On Linux x64, fully extract a compatible Linux package from the same Releases page.
-2. Install DocWen Assistant from Obsidian Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [DocWen Assistant Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases), then copy `main.js`, `manifest.json`, and `styles.css` into `<Vault>/.obsidian/plugins/docwen-assistant/`.
+1. On Windows, install compatible DocWen 0.17.0 or later from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or extract the Windows package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases). On Linux x64, extract the Linux package from the same Releases page.
+2. Install DocWen Assistant from Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [plugin Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) and copy `main.js`, `manifest.json` and `styles.css` to `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Reload Community plugins and enable DocWen Assistant.
-4. On Windows, automatic detection needs no file selection. Portable Windows users and all Linux users should open **Settings → DocWen Assistant → General**, set **Connection method** to **Choose installation manually**, then select the extracted DocWen folder or executable.
+4. Windows Store installations can use automatic detection. For portable Windows or Linux, open **Settings → DocWen Assistant → General**, choose **Choose installation manually**, then select the extracted folder or executable.
 
 ### Keep your settings when updating
 
-When updating manually, replace only `main.js`, `manifest.json`, and `styles.css`. **Keep `data.json`**: it stores your plugin settings. Delete it only to reset your preferences. Keep the plugin folder name as `docwen-assistant`.
+When updating manually, replace only `main.js`, `manifest.json` and `styles.css`. Keep `data.json` to preserve your settings; delete it only if you want to reset them. Keep the folder name `docwen-assistant`.
 
 ## Usage
 
@@ -78,15 +78,20 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 - **Proofread current Markdown file**
 - **Check DocWen connection**
 
-Choose an output folder. Each conversion creates its own result folder, preserving the generated filenames and linked resources. Names include the source name, timestamp and input format. Existing result folders are never overwritten.
-
-Word export saves a separate DOCX inside the result folder; it does not replace your Markdown note. You can convert a DOCX back to Markdown without keeping its original source. Some formatting or whitespace can change during conversion, especially when optional Markdown syntax is involved.
-
-Word export can read Number Suite captions and cross-references written in Markdown, even if Number Suite is not installed. The numbers in the exported document follow your DocWen export settings.
+Choose a template or conversion preset when offered, then an output folder. Review the source, format, destination and applicable options, then choose **Export**. The review uses the captured task settings; cancelling closes it without starting conversion. Each conversion creates a new result folder containing the output and linked resources. After completion, choose **Open result folder** in the notice. Existing result folders are never replaced.
 
 ## Settings
 
-To keep merged Structural Tables, Number Suite captions and cross-references, H7–H9 headings, or typed endnotes when exporting Word, open **DocWen → Settings → Markdown syntax** and enable the matching **input** extensions (or the **Use Obsidian extensions** input preset). Optional extensions are off in a new DocWen installation. Converting Word back into extended Markdown also requires the relevant **output** extensions. DocWen's Word-export numbering options—not Number Suite's display-only numbers—control the exported document; review the resulting table and reference formatting.
+Before Word export, enable the needed **input extensions** in **DocWen → Settings → Markdown syntax**. They are off in a new installation; the **Use Obsidian extensions** input preset enables the related group.
+
+| Note content or task | Setting in DocWen |
+| --- | --- |
+| Merged Structural Tables cells | Structural Tables input extension |
+| Number Suite captions and cross-references | Captions and references input extension |
+| H7–H9 headings / typed endnotes | Matching heading / endnote input extensions |
+| Word back to extended Markdown | Matching output extensions |
+
+Word export reads Number Suite syntax from Markdown even when Number Suite is not installed. Exported numbers follow DocWen export options, not Number Suite’s display-only numbers. The separate Add/Remove numbering commands change the source note; exporting does not.
 
 - Settings are grouped into four tabs: **General**, **Export to Markdown**, **Export to Word**, and **Proofreading**. Each tab includes help for its options, and the tab bar scrolls horizontally when needed.
 - The interface language defaults to **Follow Obsidian**. You can also choose it manually in **General**.
@@ -96,19 +101,17 @@ To keep merged Structural Tables, Number Suite captions and cross-references, H7
 ## Limitations
 
 - DocWen Assistant supports Windows and Linux desktop hosts and requires a compatible local DocWen installation. Exporting on Linux requires x64; the plugin stops if the filesystem cannot save the result safely.
-- Windows automatic mode uses only the fixed registered `docwen.exe` alias. Manual mode accepts the selected DocWen folder/`DocWen.exe`/`DocWenCLI.exe` on Windows and folder/`DocWen`/`DocWenCLI` on Linux; neither mode searches arbitrary folders.
+- Windows automatic mode uses the registered Microsoft Store installation. Manual mode accepts the selected DocWen folder/`DocWen.exe`/`DocWenCLI.exe` on Windows and folder/`DocWen`/`DocWenCLI` on Linux; neither mode searches arbitrary folders.
 - Background export requires an explicit output folder, and proofreading does not rewrite the source note.
 - If the file changes during processing or the result cannot be saved safely, the plugin stops and asks you to check it.
 
+Word round trips have limits. Visible supported content is converted back, but it is not an exact backup of the original Markdown. Unsupported syntax, embedded-note expansion and some layout details may not survive; keep the source note and review the returned document.
+
 ## Privacy and security
 
-**Your documents stay on your computer.** The plugin does not upload them to a conversion service. Proofreading reads the note without changing it. Export saves files only to a folder you choose.
+Your documents stay on your computer. The plugin gives local DocWen a temporary copy of the selected file, including unsaved text from its matching editor. It includes images explicitly referenced by that note; it does not scan the Vault for unrelated files or upload documents.
 
-For an operation, the plugin uses the current Obsidian text (including unsaved changes), or the saved Vault file, in an isolated temporary workspace. It can read images explicitly linked from the note, even when their paths contain spaces or point to another Vault folder. It does **not** search the entire Vault for matching files or send unrelated notes to DocWen.
-
-When you add or remove heading numbers, the plugin writes changes back only if the note has not changed since the operation began. It checks conversion results before saving them and never overwrites new destination data silently. Outside the Vault, it accesses only the chosen DocWen executable, temporary files, and the destination folder you approve. The Microsoft Store package's private installation path is not stored.
-
-For details about the local connection, file checks, and error recovery, see the [integration specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md).
+Export writes to the folder you choose. Proofreading does not edit the note. Heading-number changes are applied only while the original note remains at the same path with unchanged text; if a note is renamed or replaced during processing, run the action again on the current note. The Store installation path is not saved in plugin settings. See the [integration specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/cli-integration.md) for developer details.
 
 ## Development
 

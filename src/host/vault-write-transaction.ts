@@ -69,6 +69,9 @@ export class VaultWriteTransaction {
     transform: IsolatedMarkdownTransform,
     signal: AbortSignal,
   ): Promise<OperationWarning[]> {
+    const originalFile = file;
+    const originalPath = file.path;
+    this.assertEditorTarget(originalFile, originalPath, target);
     const editor = target.editor;
     const original = editor.getValue();
     const originalSha256 = sha256(original);
@@ -76,9 +79,7 @@ export class VaultWriteTransaction {
     const output = prepared.value;
     try {
       throwIfAborted(signal);
-      if (!isSameOpenMarkdownTarget(this.app.workspace, file.path, target)) {
-        throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during numbering.");
-      }
+      this.assertEditorTarget(originalFile, originalPath, target);
       if (sha256(editor.getValue()) !== originalSha256) {
         throw new VaultWriteError("vault_content_conflict", "The Markdown editor changed during numbering.");
       }
@@ -115,6 +116,7 @@ export class VaultWriteTransaction {
     }
     if (transactionFailure) prepared.warnings.push(operationWarning("post_publish_failed", transactionFailure.error));
     try {
+      this.assertEditorTarget(originalFile, originalPath, target);
       target.view.requestSave();
     } catch (error) {
       prepared.warnings.push(operationWarning("post_publish_failed", error));
@@ -179,6 +181,16 @@ export class VaultWriteTransaction {
       prepared.warnings.push(operationWarning("post_publish_failed", error));
     }
     return prepared.warnings;
+  }
+
+  private assertEditorTarget(file: TFile, originalPath: string, target: OpenMarkdownTarget): void {
+    this.assertVaultFileIdentity(file, originalPath);
+    if (
+      target.view.file !== file
+      || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)
+    ) {
+      throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during numbering.");
+    }
   }
 
   private assertVaultFileIdentity(originalFile: TFile, originalPath: string): void {
