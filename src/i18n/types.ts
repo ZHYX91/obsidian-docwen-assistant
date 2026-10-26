@@ -227,6 +227,8 @@ export interface Translations {
   proofreadViewTitle: string;
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
+  proofreadIssueCount: string;
+  proofreadLoadMore: string;
   proofreadCancelled: string;
   proofreadOpenMdFile: string;
   proofreadSortByLine: string;

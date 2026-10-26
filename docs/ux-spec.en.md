@@ -26,6 +26,8 @@ Heading numbering runs against an isolated copy and rechecks the uniquely path-m
 
 The sidebar reacts only to its own operation’s generation, kind and state. Unrelated background work leaves its DOM and keyboard focus intact. Sorting or changing the interface language retains the focused control and issue-list scroll when the same item remains available; a new report does not reuse a stale issue target.
 
+Reports initially render up to 200 issues and show the displayed and total counts. Show more adds up to 200 issues without dropping results; keyboard activation focuses the first newly displayed issue. Sorting and language changes retain the loaded count, focus and scroll. A new report resets the displayed count, and controls from an older report or closed view cannot expand it.
+
 ## States and recovery
 
 Long-running actions expose running and cancellation states. A settings-save failure preserves the user's changed model and offers retry. Machine, automatic-alias, manual-path, conflict, and protocol failures show a stable user-facing summary with sanitizable technical details instead of appearing as a successful empty result. A Machine mismatch names the protocol actually sent by Assistant and the protocol supported by DocWen; an old product shows both the minimum and actual version. Background integration failure must not incorrectly disable the independent Launch/Open DocWen entry point.

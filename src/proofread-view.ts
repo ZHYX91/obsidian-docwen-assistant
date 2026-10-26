@@ -24,6 +24,7 @@ import {
 export const PROOFREAD_VIEW_TYPE = "docwen-proofread-view";
 
 type SortMode = "line" | "rule";
+const ISSUE_BATCH_SIZE = 200;
 
 const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
   typo: "settingsProofreadTypo",
@@ -39,6 +40,7 @@ export class ProofreadView extends ItemView {
   private vaultPath = "";
   private sourceSha256 = "";
   private resultsRevision = 0;
+  private visibleIssueCount = ISSUE_BATCH_SIZE;
   private stale = false;
   private activeOperation: OperationItem | null = null;
   private cancelled = false;
@@ -117,6 +119,7 @@ export class ProofreadView extends ItemView {
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
     this.resultsRevision += 1;
+    this.visibleIssueCount = ISSUE_BATCH_SIZE;
     this.cancelled = false;
     this.stale = false;
     this.issues = issues;
@@ -269,12 +272,18 @@ export class ProofreadView extends ItemView {
     }
 
     // Issue list
+    const shown = Math.min(this.visibleIssueCount, this.issues.length);
+    container.createDiv({
+      cls: "docwen-proofread-count",
+      text: t("proofreadIssueCount", { shown: String(shown), total: String(this.issues.length) }),
+      attr: { role: "status", "aria-live": "polite" },
+    });
     const list = container.createDiv({ cls: "docwen-proofread-list", attr: { "data-docwen-scroll-key": "issues" } });
     const sorted = this.getSortedIssues();
     const revision = this.resultsRevision;
     const issueIndices = new Map(this.issues.map((issue, index) => [issue, index]));
 
-    for (const issue of sorted) {
+    for (const issue of sorted.slice(0, shown)) {
       const displayLine = issue.range.start.line + 1;
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
@@ -303,6 +312,23 @@ export class ProofreadView extends ItemView {
         body.createSpan({ cls: "docwen-proofread-arrow", text: " → " });
         body.createSpan({ cls: "docwen-proofread-suggestion", text: suggestion });
       }
+    }
+    if (shown < sorted.length) {
+      const loadMore = list.createEl("button", {
+        cls: "docwen-proofread-more",
+        text: t("proofreadLoadMore", { count: String(Math.min(ISSUE_BATCH_SIZE, sorted.length - shown)) }),
+        attr: { type: "button", "data-docwen-view-key": "load-more" },
+      });
+      const isOpen = this.captureLifetime();
+      loadMore.addEventListener("click", () => {
+        if (!isOpen() || revision !== this.resultsRevision || !loadMore.isConnected || this.activeOperation || this.stale) return;
+        const moveFocus = document.activeElement === loadMore;
+        this.visibleIssueCount = shown + ISSUE_BATCH_SIZE;
+        this.render();
+        if (moveFocus) {
+          container.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item")[shown]?.focus({ preventScroll: true });
+        }
+      });
     }
   }
 

@@ -214,6 +214,8 @@ export const AR_TRANSLATIONS: Translations = {
   proofreadViewTitle: "التدقيق اللغوي في DocWen",
   proofreadUnmatchedSymbol: "رمز بلا زوج مطابق",
   proofreadNoIssues: "لم تُكتشف مشكلات",
+  proofreadIssueCount: "عرض {shown} من {total} مشكلة",
+  proofreadLoadMore: "عرض {count} إضافية",
   proofreadCancelled: "أُلغي التدقيق. أعد تشغيله لتحديث النتائج.",
   proofreadOpenMdFile: "افتح ملف Markdown وشغّل التدقيق لعرض المشكلات",
   proofreadSortByLine: "الترتيب بحسب السطر",

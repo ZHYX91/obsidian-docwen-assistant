@@ -93,12 +93,14 @@
       "steps": [
         "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, enable typo/symbol/punctuation checks, open Proofread.md, and record its source digest",
         "Run Proofread Markdown from the command palette and from the file menu; inspect the source filename, actual issue/empty result, completion notice, and line/rule sorting",
+        "Create a disposable Markdown note with more than 400 unmatched opening parentheses, run punctuation-pair proofreading, and record the actual validator total; when it exceeds 200, inspect the initial 200 rows and total, keyboard-load both later batches, change sort and interface language, and refresh to verify the displayed count resets",
         "Activate an issue by keyboard and verify the selected source range; edit the source, try an old issue, and Refresh the report before navigating again",
         "Prepare an identity-recorded delayed validation endpoint in this run's temporary settings, start validation for Proofread.md, then start it for Conversion.md before the first reply; release the replies, inspect the final sidebar source/results, and restore the recorded real package and idle state"
       ],
       "expected": [
         "Proofreading uses direct Markdown validation and reports the captured Vault filename; validation is this operation's engine, not a separate unsupported command",
         "Results and issue navigation are read-only; sorting does not change the note, and changed-source positions require Refresh",
+        "Large reports retain every result while rendering in batches of at most 200; loading preserves scroll and focuses the first new issue, sorting and locale changes retain the loaded count, and a new report resets it",
         "Only the latest live proofreading generation publishes results; unavailable delayed-response setup remains unverified",
         "Issue count and ranges are checked against the actual packaged validator result, without assuming this English fixture yields every rule type"
       ]
