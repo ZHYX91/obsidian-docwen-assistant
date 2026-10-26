@@ -89,12 +89,16 @@ describe("proofreading view DOM integration", () => {
   it("makes every issue reachable, keeps scroll, and moves keyboard focus into each new batch", async () => {
     const { view, root } = await createFixture();
     view.updateResults(Array.from({ length: 401 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
+    const first = root.querySelector(".docwen-proofread-item");
+    const sort = root.querySelectorAll(".docwen-proofread-btn")[1];
     for (const [count, firstNew] of [[400, 200], [401, 400]]) {
       root.querySelector<HTMLElement>(".docwen-proofread-list")!.scrollTop = 480;
       const more = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
       more.focus();
       more.click();
       expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(count);
+      expect(root.querySelector(".docwen-proofread-item")).toBe(first);
+      expect(root.querySelectorAll(".docwen-proofread-btn")[1]).toBe(sort);
       expect(document.activeElement?.textContent).toContain(`issue-${firstNew}`);
       expect(root.querySelector<HTMLElement>(".docwen-proofread-list")?.scrollTop).toBe(480);
     }

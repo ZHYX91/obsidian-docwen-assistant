@@ -35,6 +35,8 @@ const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
 
 export class ProofreadView extends ItemView {
   private issues: ProofreadIssue[] = [];
+  private issueIndices = new Map<ProofreadIssue, number>();
+  private sortedIssuesCache: { revision: number; mode: SortMode; issues: ProofreadIssue[] } | null = null;
   private sortMode: SortMode = "line";
   private fileName = "";
   private vaultPath = "";
@@ -123,6 +125,8 @@ export class ProofreadView extends ItemView {
     this.cancelled = false;
     this.stale = false;
     this.issues = issues;
+    this.issueIndices = new Map(issues.map((issue, index) => [issue, index]));
+    this.sortedIssuesCache = null;
     this.fileName = fileName;
     this.vaultPath = vaultPath;
     this.sourceSha256 = sourceSha256;
@@ -147,12 +151,16 @@ export class ProofreadView extends ItemView {
   }
 
   private getSortedIssues(): ProofreadIssue[] {
+    if (this.sortedIssuesCache?.revision === this.resultsRevision && this.sortedIssuesCache.mode === this.sortMode) {
+      return this.sortedIssuesCache.issues;
+    }
     const sorted = [...this.issues];
     if (this.sortMode === "rule") {
       sorted.sort((a, b) => a.rule_key.localeCompare(b.rule_key) || a.range.start.offset - b.range.start.offset);
     } else {
       sorted.sort((a, b) => a.range.start.offset - b.range.start.offset);
     }
+    this.sortedIssuesCache = { revision: this.resultsRevision, mode: this.sortMode, issues: sorted };
     return sorted;
   }
 
@@ -273,7 +281,7 @@ export class ProofreadView extends ItemView {
 
     // Issue list
     const shown = Math.min(this.visibleIssueCount, this.issues.length);
-    container.createDiv({
+    const count = container.createDiv({
       cls: "docwen-proofread-count",
       text: t("proofreadIssueCount", { shown: String(shown), total: String(this.issues.length) }),
       attr: { role: "status", "aria-live": "polite" },
@@ -281,9 +289,13 @@ export class ProofreadView extends ItemView {
     const list = container.createDiv({ cls: "docwen-proofread-list", attr: { "data-docwen-scroll-key": "issues" } });
     const sorted = this.getSortedIssues();
     const revision = this.resultsRevision;
-    const issueIndices = new Map(this.issues.map((issue, index) => [issue, index]));
+    this.appendIssues(list, sorted, revision, 0, shown);
+    this.appendLoadMore(list, count, sorted, revision, shown);
+  }
 
-    for (const issue of sorted.slice(0, shown)) {
+  private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {
+    let first: HTMLButtonElement | undefined;
+    for (const issue of sorted.slice(from, to)) {
       const displayLine = issue.range.start.line + 1;
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
@@ -294,10 +306,11 @@ export class ProofreadView extends ItemView {
         cls: "docwen-proofread-item",
         attr: {
           type: "button",
-          "data-docwen-view-key": `issue:${revision}:${issueIndices.get(issue)}`,
+          "data-docwen-view-key": `issue:${revision}:${this.issueIndices.get(issue)}`,
           "aria-label": `L${displayLine} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
+      first ??= item;
       item.addEventListener("click", () => {
         void this.navigateToIssue(issue, revision);
       });
@@ -313,6 +326,10 @@ export class ProofreadView extends ItemView {
         body.createSpan({ cls: "docwen-proofread-suggestion", text: suggestion });
       }
     }
+    return first;
+  }
+
+  private appendLoadMore(list: HTMLElement, count: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, shown: number): void {
     if (shown < sorted.length) {
       const loadMore = list.createEl("button", {
         cls: "docwen-proofread-more",
@@ -322,12 +339,18 @@ export class ProofreadView extends ItemView {
       const isOpen = this.captureLifetime();
       loadMore.addEventListener("click", () => {
         if (!isOpen() || revision !== this.resultsRevision || !loadMore.isConnected || this.activeOperation || this.stale) return;
-        const moveFocus = container.ownerDocument.activeElement === loadMore;
-        this.visibleIssueCount = shown + ISSUE_BATCH_SIZE;
-        this.render();
-        if (moveFocus) {
-          container.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item")[shown]?.focus({ preventScroll: true });
-        }
+        const moveFocus = list.ownerDocument.activeElement === loadMore;
+        const top = list.scrollTop;
+        const left = list.scrollLeft;
+        const nextShown = Math.min(shown + ISSUE_BATCH_SIZE, sorted.length);
+        loadMore.remove();
+        const first = this.appendIssues(list, sorted, revision, shown, nextShown);
+        this.visibleIssueCount = nextShown;
+        count.setText(t("proofreadIssueCount", { shown: String(nextShown), total: String(sorted.length) }));
+        this.appendLoadMore(list, count, sorted, revision, nextShown);
+        if (moveFocus) first?.focus({ preventScroll: true });
+        list.scrollTop = top;
+        list.scrollLeft = left;
       });
     }
   }
