@@ -322,7 +322,7 @@ export class ProofreadView extends ItemView {
       const isOpen = this.captureLifetime();
       loadMore.addEventListener("click", () => {
         if (!isOpen() || revision !== this.resultsRevision || !loadMore.isConnected || this.activeOperation || this.stale) return;
-        const moveFocus = document.activeElement === loadMore;
+        const moveFocus = container.ownerDocument.activeElement === loadMore;
         this.visibleIssueCount = shown + ISSUE_BATCH_SIZE;
         this.render();
         if (moveFocus) {

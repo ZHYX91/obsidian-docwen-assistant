@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Window } from "happy-dom";
 import { useObsidianDom } from "./helpers/obsidian-dom";
 import DocWenPlugin from "../src/main";
 import { ProofreadView } from "../src/proofread-view";
@@ -59,6 +60,24 @@ function issue(text: string, offset: number, rule = "typo"): ProofreadIssue {
 }
 
 describe("proofreading view DOM integration", () => {
+  it("uses the report's document for keyboard focus in a popout", async () => {
+    const { view, root } = await createFixture();
+    const reportDocument = root.ownerDocument;
+    const otherWindow = new Window();
+    try {
+      vi.stubGlobal("document", otherWindow.document);
+      view.updateResults(Array.from({ length: 201 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
+      const more = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+      more.focus();
+      more.click();
+      expect(reportDocument.activeElement?.textContent).toContain("issue-200");
+      expect(otherWindow.document.activeElement).toBe(otherWindow.document.body);
+    } finally {
+      vi.stubGlobal("document", reportDocument);
+      await otherWindow.happyDOM.close();
+    }
+  });
+
   it("bounds the initial DOM for ten thousand issues and reports the full total", async () => {
     const { view, root } = await createFixture();
     view.updateResults(Array.from({ length: 10_000 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
