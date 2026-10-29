@@ -20,12 +20,17 @@ jobs:
     env:
       CONSUMER_COMMIT: ${{ inputs.consumer_commit }}
       CORE_SOURCE_COMMIT: ${{ inputs.core_source_commit }}
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/core-source-venv
-      UV_CACHE_DIR: ${{ runner.temp }}/core-source-cache
-      DOCWEN_DATA_DIR: ${{ runner.temp }}/core-source-profile/data
-      DOCWEN_CONFIG_DIR: ${{ runner.temp }}/core-source-profile/config
-      DOCWEN_LOG_DIR: ${{ runner.temp }}/core-source-profile/log
     steps:
+      - name: Initialize runner-owned source paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$RUNNER_TEMP"
+          printf 'UV_PROJECT_ENVIRONMENT=%s\n' "$RUNNER_TEMP/core-source-venv" >> "$GITHUB_ENV"
+          printf 'UV_CACHE_DIR=%s\n' "$RUNNER_TEMP/core-source-cache" >> "$GITHUB_ENV"
+          printf 'DOCWEN_DATA_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/data" >> "$GITHUB_ENV"
+          printf 'DOCWEN_CONFIG_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/config" >> "$GITHUB_ENV"
+          printf 'DOCWEN_LOG_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/log" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
