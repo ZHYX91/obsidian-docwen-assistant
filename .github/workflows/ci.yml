@@ -48,7 +48,7 @@ jobs:
           cmp "native/${{ matrix.record }}" "$RUNNER_TEMP/owner-a/LINUX-OWNER-BUILD.json"
           cmp src/docwen/linux-native-owner-${{ matrix.arch }}.ts "$RUNNER_TEMP/owner-a/linux-native-owner-${{ matrix.arch }}.ts"
           readelf -l -d --version-info "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" > "$RUNNER_TEMP/owner-a/readelf.log"
-          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" 2>&1 | tee "$RUNNER_TEMP/owner-a/topology.log"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" "$RUNNER_TEMP/owner-a/topology-diagnostics" 2>&1 | tee "$RUNNER_TEMP/owner-a/topology.log"
           TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" 2>&1 | tee "$RUNNER_TEMP/owner-a/startup.log"
       - name: Install the exact Node test toolchain
         shell: bash
@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir "$RUNNER_TEMP/native-adapter"
-          TMPDIR="$RUNNER_TEMP/native-adapter" npm test -- tests/docwen-machine-linux-native.test.ts tests/native-fixture-lifecycle.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/owner-a/adapter-results.json"
+          TMPDIR="$RUNNER_TEMP/native-adapter" npm test -- tests/docwen-machine-linux-native.test.ts tests/native-fixture-lifecycle.test.ts tests/native-topology-fixture.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/owner-a/adapter-results.json"
       - name: Retain native architecture qualification
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

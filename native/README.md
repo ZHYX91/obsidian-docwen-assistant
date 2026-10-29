@@ -123,3 +123,13 @@ records and embedded modules, runs real topology/ptrace cases and exercises the
 actual MachineClient adapter on each native host. The reusable bootstrap workflow
 collects new payloads before embedding; its observations do not establish later
 production adapter, Core-pair or Obsidian acceptance.
+
+`node scripts/check-linux-owner-topology.mjs /absolute/owned/owner /absolute/owned/diagnostics`
+retains per-case JSON snapshots and the exact generated peer source. Snapshots include
+the current stage, bounded stdout/stderr/control bytes, exit events, observed PID
+lifetimes and process states, metadata publication and heartbeat bytes, plus original
+and cleanup errors. CI uploads these sidecars even when the topology gate fails.
+Metadata and owner-close waits each retain their six-second deadline. Normal exit
+and root-crash peers wait for an explicit release after the live baseline has been
+recorded; owned heartbeats and unrelated sentinels have no self-expiry. Double-fork
+metadata is closed before an atomic same-directory rename makes it visible.

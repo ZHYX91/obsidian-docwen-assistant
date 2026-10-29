@@ -53,7 +53,7 @@ jobs:
           cp "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" "$RUNNER_TEMP/arm64-owner-a/linux-native-owner-arm64.ts" "$RUNNER_TEMP/arm64-owner-a/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/arm64-owner-a/linux-owner.c" native/MUSL-LICENSE.txt "$RUNNER_TEMP/arm64-owner-evidence/"
           cp "$RUNNER_TEMP/arm64-owner-b/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/arm64-owner-evidence/SECOND-BUILD.json"
           readelf -l -d --version-info "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" > "$RUNNER_TEMP/arm64-owner-evidence/readelf.log"
-          TMPDIR="$RUNNER_TEMP/arm64-owner-run" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" 2>&1 | tee "$RUNNER_TEMP/arm64-owner-evidence/topology.log"
+          TMPDIR="$RUNNER_TEMP/arm64-owner-run" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" "$RUNNER_TEMP/arm64-owner-evidence/topology-diagnostics" 2>&1 | tee "$RUNNER_TEMP/arm64-owner-evidence/topology.log"
           TMPDIR="$RUNNER_TEMP/arm64-owner-run" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" 2>&1 | tee "$RUNNER_TEMP/arm64-owner-evidence/startup.log"
       - name: Record the source and artifact identities
         shell: bash
@@ -65,10 +65,17 @@ jobs:
           import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
           import { join } from 'node:path';
           const root = join(process.env.RUNNER_TEMP, 'arm64-owner-evidence');
-          const files = readdirSync(root).sort().map(name => {
-            const bytes = readFileSync(join(root, name));
-            return {name, bytes:bytes.length, sha256:createHash('sha256').update(bytes).digest('hex')};
-          });
+          function inventory(directory, prefix = '') {
+            return readdirSync(directory, {withFileTypes:true}).sort((a,b) => a.name.localeCompare(b.name, 'en')).flatMap(entry => {
+              const name = prefix + entry.name;
+              const path = join(directory, entry.name);
+              if (entry.isDirectory()) return inventory(path, name + '/');
+              if (!entry.isFile()) throw new Error('Evidence must contain ordinary files: ' + name);
+              const bytes = readFileSync(path);
+              return [{name, bytes:bytes.length, sha256:createHash('sha256').update(bytes).digest('hex')}];
+            });
+          }
+          const files = inventory(root);
           const git = (...args) => execFileSync('git', args, {encoding:'utf8'}).trim();
           writeFileSync(join(root, 'bootstrap-receipt.json'), JSON.stringify({
             schemaVersion:1, kind:'native-arm64-owner-bootstrap', status:'passed-native-bootstrap',

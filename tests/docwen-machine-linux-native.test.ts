@@ -1,13 +1,16 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { lstat, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { DocWenMachineClient } from "../src/docwen/machine-client";
+import { DocWenMachineClient, type MachineTaskRequest } from "../src/docwen/machine-client";
+import { isJsonObject, MachineFrameDecoder } from "../src/docwen/machine-framing";
+import * as nativeOwner from "../src/docwen/linux-native-owner";
 
 type Identity = {
   pid: number;
@@ -17,7 +20,7 @@ type Identity = {
   state: string;
   startTime: string;
 };
-type Mode = "normal" | "abort" | "dispose" | "epipe" | "owner-failure";
+type Mode = "normal" | "abort" | "dispose" | "epipe" | "task-epipe" | "cancel-epipe" | "owner-failure";
 type Outcome = { value: unknown; error?: never } | { error: unknown; value?: never };
 
 async function identity(pid: number): Promise<Identity | null> {
@@ -93,6 +96,16 @@ async function runNativeCase(mode: Mode): Promise<void> {
   const peerStarts = join(root, "peer-starts");
   const release = join(root, "release");
   const inputClosed = join(root, "input-closed");
+  const staging = join(root, "staging");
+  const input = join(root, "input.md");
+  const controller = new AbortController();
+  const pipeErrors: string[] = [];
+  const streamErrors: string[] = [];
+  const observerErrors: unknown[] = [];
+  const uncaught: unknown[] = [];
+  const monitor = (error: unknown): void => { uncaught.push(error); };
+  const writes: Buffer[] = [];
+  let accepted = false;
   const known = new Map<number, Identity>();
   let client: DocWenMachineClient | undefined;
   let operation: Promise<Outcome> | undefined;
@@ -102,19 +115,58 @@ async function runNativeCase(mode: Mode): Promise<void> {
   let failed = false;
   let cleanupErrors: unknown[] = [];
   try {
+    process.on("uncaughtExceptionMonitor", monitor);
+    // Observe the real factory/streams without replacing the native owner or
+    // transport. The accepted-frame callback runs after the client's queue
+    // microtasks, so cancellation must attempt task/cancel for an accepted task.
+    const realSpawn = nativeOwner.spawnLinuxOwnedMachine;
+    vi.spyOn(nativeOwner, "spawnLinuxOwnedMachine").mockImplementation((...args) => {
+      const result = realSpawn(...args);
+      result.child.stdin.on("error", (error: NodeJS.ErrnoException) => { streamErrors.push(error.code ?? "UNKNOWN"); });
+      const realWrite = result.child.stdin.write;
+      vi.spyOn(result.child.stdin, "write").mockImplementation(function (...args: unknown[]): boolean {
+        writes.push(Buffer.isBuffer(args[0]) ? args[0] : Buffer.from(String(args[0])));
+        const callback = args.at(-1);
+        if (typeof callback === "function") args[args.length - 1] = (error?: NodeJS.ErrnoException | null) => {
+          if (error) pipeErrors.push(error.code ?? "UNKNOWN");
+          Reflect.apply(callback, undefined, [error]);
+        };
+        return Reflect.apply(realWrite, result.child.stdin, args) as boolean;
+      });
+      const decoder = new MachineFrameDecoder();
+      result.child.stdout.on("data", (bytes: Buffer) => {
+        try {
+          for (const message of decoder.feed(bytes)) {
+            if (isJsonObject(message.result) && message.result.state === "accepted" && mode === "cancel-epipe") {
+              accepted = true;
+              setImmediate(() => controller.abort());
+            }
+          }
+        } catch (error) { observerErrors.push(error); }
+      });
+      return result;
+    });
+    await mkdir(staging);
+    const inputBytes = Buffer.from("# input\n");
+    await writeFile(input, inputBytes);
+    const task: MachineTaskRequest = {
+      capability_id: "transform.markdown.heading_numbering",
+      inputs: [{ input_id: "input.1", locator: { kind: "local_path", path: input }, kind: "document",
+        role: "source", logical_path: "input.md", media_type: "text/markdown", size_bytes: inputBytes.length,
+        sha256: createHash("sha256").update(inputBytes).digest("hex") }],
+      output: { staging_root: { kind: "local_path", path: staging }, staging_policy: "require_empty" }, options: {},
+    };
     await writeFile(heartbeat, [
       "import os,signal,sys,time",
       "signal.signal(signal.SIGTERM,signal.SIG_IGN)",
       "fd=os.open(sys.argv[1],os.O_WRONLY|os.O_CREAT|os.O_APPEND,0o600)",
-      "deadline=time.monotonic()+15",
-      "while time.monotonic()<deadline:",
+      "while True:",
       " os.write(fd,b'tick\\n');time.sleep(.01)",
       "os.close(fd)", "",
     ].join("\n"), { flag: "wx", mode: 0o600 });
     await writeFile(peer, [
       "#!/usr/bin/python3",
       "import json,os,signal,subprocess,sys,time",
-      "signal.alarm(15)",
       "with open(" + JSON.stringify(peerStarts) + ",'a') as f:f.write(str(os.getpid())+'\\n')",
       "mode=" + JSON.stringify(mode),
       "release=" + JSON.stringify(release),
@@ -134,7 +186,7 @@ async function runNativeCase(mode: Mode): Promise<void> {
       "initialized={'protocol':{'name':'docwen.machine','major':2,'minor':0},'server':{'name':'DocWen','version':'0.17.0'},'artifact_bundle_schema':'docwen.artifact_bundle.v3','methods':[],'features':{'progress':True,'cancellation':True},'max_concurrent_tasks':1}",
       "if mode!='epipe':",
       " send(initialize,initialized)",
-      " request=read_message();assert request['method']=='health/check'",
+      " request=read_message();assert request['method']==('task/plan' if mode in ('task-epipe','cancel-epipe') else 'health/check')",
       "descendant=subprocess.Popen(['/usr/bin/python3'," + JSON.stringify(heartbeat) + "," + JSON.stringify(beat) + "],start_new_session=True,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)",
       "while not os.path.exists(" + JSON.stringify(beat) + "):time.sleep(.005)",
       "with open(" + JSON.stringify(metadata + ".pending") + ",'w') as f:json.dump({'root':os.getpid(),'guardian':os.getppid(),'child':descendant.pid},f)",
@@ -146,11 +198,21 @@ async function runNativeCase(mode: Mode): Promise<void> {
       " os.close(0)",
       " with open(" + JSON.stringify(inputClosed) + ",'w') as f:f.write('closed\\n')",
       " send(initialize,initialized)",
-      "time.sleep(12)", "",
+      "if mode=='task-epipe':",
+      " os.close(0)",
+      " with open(" + JSON.stringify(inputClosed) + ",'w') as f:f.write('closed\\n')",
+      " send(request,{'plan_id':'plan.1'})",
+      "if mode=='cancel-epipe':",
+      " send(request,{'plan_id':'plan.1'})",
+      " execute=read_message();assert execute['method']=='task/execute'",
+      " os.close(0)",
+      " with open(" + JSON.stringify(inputClosed) + ",'w') as f:f.write('closed\\n')",
+      " send(execute,{'task_id':'task.1','state':'accepted'})",
+      "while True:time.sleep(1)", "",
     ].join("\n"), { flag: "wx", mode: 0o700 });
 
     sentinel = spawn(process.execPath, ["-e",
-      "setInterval(()=>{},100);setTimeout(()=>process.exit(0),20000)"],
+      "setInterval(()=>{},100)"],
     { detached: true, stdio: "ignore" });
     sentinelClosed = new Promise((done) => sentinel!.once("close", done));
     sentinel.on("error", () => undefined);
@@ -159,8 +221,9 @@ async function runNativeCase(mode: Mode): Promise<void> {
 
     let binaryResolutions = 0;
     client = new DocWenMachineClient(() => { binaryResolutions += 1; return peer; }, () => "en_US");
-    const controller = new AbortController();
-    operation = client.query("health/check", {}, controller.signal, 8000).then(
+    operation = (mode === "task-epipe" || mode === "cancel-epipe"
+      ? client.runTask(task, controller.signal, 8000)
+      : client.query("health/check", {}, controller.signal, 8000)).then(
       (value) => ({ value }), (error: unknown) => ({ error }),
     );
     const ids = await waitFor(async () => {
@@ -198,9 +261,22 @@ async function runNativeCase(mode: Mode): Promise<void> {
     } else await writeFile(release, "release\n", { flag: "wx" });
     const outcome = await bounded(operation, 4000, "Native Machine operation");
     if (mode === "normal") expect(outcome).toMatchObject({ value: { all_ok: true } });
-    else if (mode === "epipe") {
+    else if (mode === "epipe" || mode === "task-epipe" || mode === "cancel-epipe") {
       expect(await readFile(inputClosed, "utf8")).toBe("closed\n");
-      expect(outcome.error).toMatchObject({ code: "cli_protocol_error", details: { systemCode: "EPIPE" } });
+      expect(pipeErrors).toEqual(["EPIPE"]);
+      expect(streamErrors.every((code) => code === "EPIPE")).toBe(true);
+      expect(observerErrors).toEqual([]);
+      expect(uncaught).toEqual([]);
+      expect(await readdir(staging)).toEqual([]);
+      if (mode === "cancel-epipe") {
+        expect(accepted).toBe(true);
+        expect(outcome.error).toMatchObject({ code: "cli_cancelled" });
+      } else expect(outcome.error).toMatchObject({ code: "cli_protocol_error", details: { systemCode: "EPIPE" } });
+      const sent = new MachineFrameDecoder().feed(Buffer.concat(writes));
+      expect(sent.map((message) => message.method)).toEqual(mode === "epipe"
+        ? ["initialize", "health/check"]
+        : mode === "task-epipe" ? ["initialize", "task/plan", "task/execute"]
+          : ["initialize", "task/plan", "task/execute", "task/cancel"]);
     } else if (mode === "owner-failure") {
       expect(outcome.error).toMatchObject({ code: "cli_cleanup_failed", details: { cleanupState: "unconfirmed" } });
       expect(binaryResolutions).toBe(1);
@@ -228,6 +304,7 @@ async function runNativeCase(mode: Mode): Promise<void> {
     primary = error;
     failed = true;
   } finally {
+    process.removeListener("uncaughtExceptionMonitor", monitor);
     client?.dispose();
     const errors: unknown[] = [];
     for (const value of known.values()) {
@@ -259,6 +336,7 @@ async function runNativeCase(mode: Mode): Promise<void> {
       } catch (error) { errors.push(error); }
     }
     cleanupErrors = errors;
+    vi.restoreAllMocks();
   }
   if (cleanupErrors.length) throw new AggregateError(failed ? [primary, ...cleanupErrors] : cleanupErrors,
     "Native lifecycle fixture retained at " + root);
@@ -266,7 +344,7 @@ async function runNativeCase(mode: Mode): Promise<void> {
 }
 
 describe.skipIf(process.platform !== "linux" || !["x64", "arm64"].includes(process.arch))("real Linux native Machine ownership", () => {
-  it.each(["normal", "abort", "dispose", "epipe", "owner-failure"] as const)(
+  it.each(["normal", "abort", "dispose", "epipe", "task-epipe", "cancel-epipe", "owner-failure"] as const)(
     "reaps a pre-existing setsid heartbeat and preserves a sentinel during %s",
     runNativeCase,
     15000,
