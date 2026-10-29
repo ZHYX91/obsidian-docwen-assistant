@@ -9,7 +9,7 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-process-owner.ts` 将 procfs 身份与所属进程组清理从 Machine framing 和请求中分离；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
 
 ## DocWen 进程边界
 
@@ -62,13 +62,13 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。Machine stdin Writable 的异步错误（包括对端关闭读取端后延迟出现的 `EPIPE`）进入同一会话失败队列，拒绝等待者并触发幂等、有界的进程树清理；`stdin.end()` 已发生后到达的取消不会再次写入已结束流。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
-Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。非 x64 Linux 继续使用既有 procfs 身份与进程组证据链，其跨 session containment 仍未证明。
+Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux x64 与 arm64 均使用原生 lifetime owner，其他架构在业务启动前失败关闭。
 
 导出和编号任务持续拥有选择窗口直至写入结束，选中条目不会启动脱离当前生命周期的任务。取消、新任务替换和卸载会关闭插件选择窗口及格式确认框，已排队的旧选择也失效。系统目录对话框可能保持打开直至用户关闭，但取消后返回的路径不会继续执行。文件菜单能力发现也由同一协调器管理，卸载后的菜单回调不能再调用操作。
 
 宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
 
-Linux x64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。非 x64 Linux 的既有进程处理保持不变，不因此获得该 containment 保证。
+Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。未知 Linux 架构在 owner image 写入或业务 spawn 前失败，不存在 legacy 回退。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
 
 ## 信任边界
 

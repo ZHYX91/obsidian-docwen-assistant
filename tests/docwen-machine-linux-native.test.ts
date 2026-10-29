@@ -265,7 +265,7 @@ async function runNativeCase(mode: Mode): Promise<void> {
   if (failed) throw primary;
 }
 
-describe.skipIf(process.platform !== "linux" || process.arch !== "x64")("real Linux native Machine ownership", () => {
+describe.skipIf(process.platform !== "linux" || !["x64", "arm64"].includes(process.arch))("real Linux native Machine ownership", () => {
   it.each(["normal", "abort", "dispose", "epipe", "owner-failure"] as const)(
     "reaps a pre-existing setsid heartbeat and preserves a sentinel during %s",
     runNativeCase,

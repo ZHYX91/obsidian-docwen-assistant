@@ -4,7 +4,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { recordedMsvcComponents, recordedMsvcVersion, selectRecordedToolset } from "./msvc-toolset.mjs";
+import { recordedMsvcComponents, selectRecordedToolset } from "./msvc-toolset.mjs";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = process.argv[2];
@@ -116,27 +116,30 @@ function resolveMsvcTools() {
     throw new Error("MSVC x64 build tools were not found.");
   }
 
-  const { installation, version } = selectRecordedToolset(paths.map((path) => ({
-    path,
-    versions: readdirSync(join(path, "VC", "Tools", "MSVC"), { withFileTypes: true })
-      .filter((entry) => entry.isDirectory()).map((entry) => entry.name),
-  })), recordedMsvcVersion(recorded));
+  const specifications = [
+    ["compiler", "cl.exe", /C\/C\+\+.*\d+\.\d+/iu],
+    ["librarian", "lib.exe", /Library Manager/iu],
+    ["linker", "link.exe", /Linker Version/iu],
+  ];
+  const candidates = paths.flatMap((installation) => {
+    const parent = join(installation, "VC", "Tools", "MSVC");
+    if (!existsSync(parent)) return [];
+    return readdirSync(parent, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => {
+      const bin = join(parent, entry.name, "bin", "Hostx64", "x64");
+      const identities = {};
+      for (const [key, name, pattern] of specifications) {
+        try { identities[key] = toolIdentity(join(bin, name), pattern); }
+        catch (error) { identities[key] = "unavailable: " + error.message; }
+      }
+      return { installation, version: entry.name, identities };
+    });
+  });
+  console.log(JSON.stringify({ event: "msvc-toolset-candidates", candidates }, null, 2));
+  const { installation, version } = selectRecordedToolset(candidates, recorded);
   const bin = join(installation, "VC", "Tools", "MSVC", version, "bin", "Hostx64", "x64");
   const compiler = join(bin, "cl.exe");
   const librarian = join(bin, "lib.exe");
   const linker = join(bin, "link.exe");
-  for (const executable of [compiler, librarian, linker]) {
-    if (!existsSync(executable)) throw new Error("Required MSVC tool is missing: " + executable);
-  }
-  for (const [key, executable, pattern] of [
-    ["compiler", compiler, /C\/C\+\+.*\d+\.\d+/iu],
-    ["librarian", librarian, /Library Manager/iu],
-    ["linker", linker, /Linker Version/iu],
-  ]) {
-    if (toolIdentity(executable, pattern) !== recorded[key]) {
-      throw new Error("Installed MSVC " + key + " does not match the recorded identity.");
-    }
-  }
   return { compiler, librarian, linker };
 }
 

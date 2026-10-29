@@ -15,13 +15,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  arm64-owner-bootstrap:
-    if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/linux-arm64-owner-bootstrap.yml
-    with:
-      expected_source_commit: ${{ github.sha }}
   linux-owned-lifecycle:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-24.04
+            record: LINUX-OWNER-BUILD.json
+          - arch: arm64
+            os: ubuntu-24.04-arm
+            record: LINUX-OWNER-BUILD.arm64.json
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -37,10 +42,40 @@ jobs:
           mkdir "$RUNNER_TEMP/owner-a" "$RUNNER_TEMP/owner-b"
           node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-a"
           node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-b"
-          cmp "$RUNNER_TEMP/owner-a/linux-owner-x64" "$RUNNER_TEMP/owner-b/linux-owner-x64"
-          cmp src/docwen/linux-native-owner-x64.ts "$RUNNER_TEMP/owner-a/linux-native-owner-x64.ts"
-          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-x64"
-          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/owner-a/linux-owner-x64"
+          test "$(node -p process.arch)" = "${{ matrix.arch }}"
+          cmp "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" "$RUNNER_TEMP/owner-b/linux-owner-${{ matrix.arch }}"
+          cmp "$RUNNER_TEMP/owner-a/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/owner-b/LINUX-OWNER-BUILD.json"
+          cmp "native/${{ matrix.record }}" "$RUNNER_TEMP/owner-a/LINUX-OWNER-BUILD.json"
+          cmp src/docwen/linux-native-owner-${{ matrix.arch }}.ts "$RUNNER_TEMP/owner-a/linux-native-owner-${{ matrix.arch }}.ts"
+          readelf -l -d --version-info "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" > "$RUNNER_TEMP/owner-a/readelf.log"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" 2>&1 | tee "$RUNNER_TEMP/owner-a/topology.log"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" 2>&1 | tee "$RUNNER_TEMP/owner-a/startup.log"
+      - name: Install the exact Node test toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "$(node -p 'require("./package.json").packageManager')"
+          npm ci --no-audit --no-fund
+      - name: Exercise the actual MachineClient native adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/native-adapter"
+          TMPDIR="$RUNNER_TEMP/native-adapter" npm test -- tests/docwen-machine-linux-native.test.ts tests/native-fixture-lifecycle.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/owner-a/adapter-results.json"
+      - name: Retain native architecture qualification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-owner-${{ matrix.arch }}-${{ github.sha }}
+          path: ${{ runner.temp }}/owner-a
+          if-no-files-found: warn
+          retention-days: 3
+  arm64-core-source-diagnostic:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/arm64-core-source-diagnostic.yml
+    with:
+      consumer_commit: ${{ github.sha }}
+      core_source_commit: 3261a5c2acdf1afd39f6d1fd71abce236eace29c
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

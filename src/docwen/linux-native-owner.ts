@@ -12,9 +12,26 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Duplex } from "node:stream";
 
-import { LINUX_MACHINE_OWNER_BASE64, LINUX_MACHINE_OWNER_SHA256 } from "./linux-native-owner-x64";
-export function supportsLinuxNativeOwner(): boolean {
-  return process.platform === "linux" && process.arch === "x64";
+import { LINUX_MACHINE_OWNER_BASE64 as X64_BASE64, LINUX_MACHINE_OWNER_SHA256 as X64_SHA256 } from "./linux-native-owner-x64";
+import { LINUX_MACHINE_OWNER_BASE64 as ARM64_BASE64, LINUX_MACHINE_OWNER_SHA256 as ARM64_SHA256 } from "./linux-native-owner-arm64";
+import { LocalCliError } from "./errors";
+
+const assets = {
+  x64: { base64: X64_BASE64, sha256: X64_SHA256, bytes: 81352, maximum: 128 * 1024, machine: 62 },
+  arm64: { base64: ARM64_BASE64, sha256: ARM64_SHA256, bytes: 158416, maximum: 256 * 1024, machine: 183 },
+};
+
+export function linuxOwnerPayload(arch: string = process.arch): Buffer {
+  const asset = Object.prototype.hasOwnProperty.call(assets, arch) ? assets[arch as keyof typeof assets] : undefined;
+  if (!asset) throw new LocalCliError("cli_platform_unsupported", "Linux Machine ownership requires x64 or arm64.", { platform: "linux", arch });
+  const payload = Buffer.from(asset.base64, "base64");
+  if (payload.length !== asset.bytes || payload.length > asset.maximum
+    || payload.subarray(0, 6).toString("hex") !== "7f454c460201"
+    || payload.readUInt16LE(18) !== asset.machine
+    || createHash("sha256").update(payload).digest("hex") !== asset.sha256) {
+    throw new Error("Linux process owner integrity mismatch for " + arch);
+  }
+  return payload;
 }
 
 export type LinuxOwner = Readonly<{
@@ -37,13 +54,9 @@ export function spawnLinuxOwnedMachine(
   binaryPath: string,
   options: { cwd: string; env: NodeJS.ProcessEnv; shell: false; windowsHide: true },
 ): { child: ChildProcessWithoutNullStreams; ownership: LinuxOwner } {
-  if (process.arch !== "x64") throw new Error("The Linux Machine process owner requires x64.");
-  const payload = Buffer.from(LINUX_MACHINE_OWNER_BASE64, "base64");
-  if (
-    payload.length > 128 * 1024 ||
-    createHash("sha256").update(payload).digest("hex") !== LINUX_MACHINE_OWNER_SHA256
-  )
-    throw new Error("Linux process owner integrity mismatch.");
+  if (process.platform !== "linux") throw new LocalCliError("cli_platform_unsupported", "Linux Machine ownership requires Linux.", { platform: process.platform, arch: process.arch });
+  // Architecture admission precedes all image writes and every business spawn.
+  const payload = linuxOwnerPayload();
   const root = mkdtempSync(join(tmpdir(), "docwen-owner-"));
   const executable = join(root, "owner");
   let imagePresent = false;

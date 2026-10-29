@@ -61,7 +61,9 @@ describe("architecture boundaries", () => {
     expect(machine).toContain('method: "task/cancel"');
     expect(machine).not.toContain("taskkill.exe");
     expect(machine).toContain("spawnWindowsOwnedMachineProcess");
-    expect(machine).toContain('process.kill(-pid, force ? "SIGKILL" : "SIGTERM")');
+    expect(machine).toContain("spawnLinuxOwnedMachine");
+    expect(machine).not.toContain("process.kill(-pid");
+    expect(machine).not.toContain('from "./linux-process-owner"');
     expect(machine).toContain("windowsOwnerCleanupUnconfirmed");
     expect(machine).toContain("ARTIFACT_BUNDLE_LIMITS");
     expect(machine).toContain('"docwen.artifact_bundle.v3"');

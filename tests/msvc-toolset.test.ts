@@ -1,64 +1,50 @@
 import { describe, expect, it } from "vitest";
-
 import { recordedMsvcComponents, recordedMsvcVersion, selectRecordedToolset } from "../scripts/msvc-toolset.mjs";
 
-const recordedVersion = "14.51.36260";
 const recorded = {
   compiler: "Microsoft (R) C/C++ Optimizing Compiler Version 19.51.36260 for x64",
   librarian: "Microsoft (R) Library Manager Version 14.51.36260.0",
   linker: "Microsoft (R) Incremental Linker Version 14.51.36260.0",
 };
+const candidate = (version: string, identities = recorded, installation = "build-tools") => ({ version, identities, installation });
 
-describe("recorded MSVC toolset selection", () => {
-  it("discovers the exact recorded release family without changing directory selection", () => {
+describe("recorded MSVC binary identity selection", () => {
+  it("derives the release-family component from the servicing identity", () => {
+    expect(recordedMsvcVersion(recorded)).toBe("14.51.36260");
     expect(recordedMsvcComponents(recorded)).toEqual([
       "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
       "Microsoft.VisualStudio.Component.VC.14.51.x86.x64",
     ]);
-    expect(() => recordedMsvcComponents({ librarian: "missing identity" })).toThrow("exact toolset version");
   });
-
-  it("derives the exact installed toolset directory version from the recorded librarian", () => {
-    expect(recordedMsvcVersion(recorded)).toBe(recordedVersion);
+  it("accepts exact binaries in a directory whose base patch differs from servicing", () => {
+    expect(selectRecordedToolset([candidate("14.51.36231")], recorded)).toEqual({ installation: "build-tools", version: "14.51.36231" });
   });
-
-  it("selects the recorded version when newer and older directories coexist", () => {
+  it("finds an exact candidate across installations without selecting the newest", () => {
     expect(selectRecordedToolset([
-      { path: "build-tools", versions: ["14.52.37000", "14.49.35000", recordedVersion, "14.99.99999"] },
-    ], recordedVersion)).toEqual({ installation: "build-tools", version: recordedVersion });
+      candidate("14.99.99999", { ...recorded, compiler: "new compiler" }, "latest"),
+      candidate("14.51.36231", recorded, "exact-family"),
+    ], recorded)).toEqual({ installation: "exact-family", version: "14.51.36231" });
   });
-
-  it("searches all installations instead of choosing the latest installation", () => {
-    expect(selectRecordedToolset([
-      { path: "latest-enterprise", versions: ["14.52.37000"] },
-      { path: "recorded-build-tools", versions: [recordedVersion, "14.49.35000"] },
-      { path: "older-community", versions: ["14.48.34000"] },
-    ], recordedVersion)).toEqual({ installation: "recorded-build-tools", version: recordedVersion });
+  it.each(["compiler", "librarian", "linker"] as const)("rejects the expected folder when its %s identity differs", (key) => {
+    expect(() => selectRecordedToolset([candidate("14.51.36260", { ...recorded, [key]: "wrong actual binary" })], recorded))
+      .toThrow("No installed MSVC candidate matches all three recorded tool identities");
   });
-
-  it.each([
-    { name: "no installations", installations: [] },
-    { name: "an empty toolset directory", installations: [{ path: "build-tools", versions: [] }] },
-    {
-      name: "adjacent patches and a preview directory",
-      installations: [{ path: "build-tools", versions: ["14.51.36259", "14.51.36261", "14.51.36260-preview"] }],
-    },
-  ])("rejects an unavailable exact version with $name", ({ installations }) => {
-    expect(() => selectRecordedToolset(installations, recordedVersion)).toThrow(
-      /recorded MSVC toolset 14\.51\.36260 is not installed/u,
-    );
+  it("never mixes matching tools from different candidates", () => {
+    expect(() => selectRecordedToolset([
+      candidate("14.51.36231", { ...recorded, compiler: "wrong compiler" }, "one"),
+      candidate("14.51.36260", { ...recorded, librarian: "wrong librarian" }, "two"),
+    ], recorded)).toThrow("No installed MSVC candidate");
   });
-
-  it.each([
-    undefined,
-    null,
-    {},
-    { librarian: null },
-    { librarian: 14.51 },
+  it("retains actual candidate identities when none match", () => {
+    expect(() => selectRecordedToolset([candidate("14.51.36231", { ...recorded, compiler: "unavailable: missing cl.exe" })], recorded))
+      .toThrow("unavailable: missing cl.exe");
+    expect(() => selectRecordedToolset([], recorded)).toThrow("Discovered: []");
+  });
+  it.each([undefined, null, {}, { librarian: null }, { librarian: 14.51 },
     { librarian: "Microsoft (R) Library Manager" },
     { librarian: "Microsoft (R) Library Manager Version 14.51.36260" },
     { librarian: "Microsoft (R) Library Manager Version 14.51.36260.0 preview" },
-  ])("rejects an absent or inexact recorded identity with a useful diagnostic: %j", (record) => {
-    expect(() => recordedMsvcVersion(record)).toThrow(/recorded MSVC librarian identity/u);
+  ])("rejects a malformed recorded identity: %j", (record) => {
+    expect(() => recordedMsvcVersion(record)).toThrow("recorded MSVC librarian identity");
   });
 });

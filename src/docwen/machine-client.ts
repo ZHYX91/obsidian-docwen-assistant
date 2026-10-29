@@ -1,12 +1,5 @@
-import {
-  bootstrapLinuxProcessIdentity,
-  captureLinuxProcessOwnership,
-  signalLinuxProcessGroup,
-  waitForLinuxProcessGroupExit,
-  type LinuxProcessGroupEvidence,
-} from "./linux-process-owner";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { linuxOwnerErrorDetails, spawnLinuxOwnedMachine, supportsLinuxNativeOwner, type LinuxOwner } from "./linux-native-owner";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { linuxOwnerErrorDetails, spawnLinuxOwnedMachine, type LinuxOwner } from "./linux-native-owner";
 import { createHash } from "node:crypto";
 import { validateBundleFields, validateBundlePages } from "./bundle-metadata";
 import { createReadStream } from "node:fs";
@@ -44,7 +37,6 @@ const MAX_QUEUED_MESSAGES = 64;
 const MAX_DEFERRED_MESSAGES = 64;
 const CANCELLATION_GRACE_MS = 2_000;
 const CLEAN_CLOSE_GRACE_MS = 5_000;
-const TERMINATION_GRACE_MS = 1_000;
 const FORCE_KILL_WAIT_MS = 2_000;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const EXIT_WAIT_EXPIRED = Symbol("exit_wait_expired");
@@ -237,8 +229,6 @@ class MachineSession {
   private preferredStdinFailure: Error | null = null;
   private termination: Promise<void> | null = null;
   private childProcessExited = false;
-  private readonly ownedLinuxProcessGroupId: number | null;
-  private readonly knownLinuxProcesses = new Map<number, string>();
   private readonly closed: Promise<number | null>;
   private readonly processClosed: Promise<number | null>;
   readonly child: ChildProcessWithoutNullStreams;
@@ -254,33 +244,20 @@ class MachineSession {
       const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore, assertStartAllowed);
       return new MachineSession(target, child, true);
     }
-    if (supportsLinuxNativeOwner()) {
+    if (process.platform === "linux") {
       try {
         const { child, ownership } = spawnLinuxOwnedMachine(target.executable, {
           cwd: target.cwd, env: docWenChildEnvironment(), shell: false, windowsHide: true,
         });
         return new MachineSession(target, child, false, ownership);
       } catch (error) {
+        if (error instanceof LocalCliError && error.code === "cli_platform_unsupported") throw error;
         throw new LocalCliError("cli_spawn_failed", "Unable to start the Linux Machine lifetime owner.", {
           ownershipState: "linux_supervisor", ...linuxOwnerErrorDetails(error),
         });
       }
     }
-    try {
-      const child = spawn(target.executable, ["serve", "--stdio"], {
-        cwd: target.cwd,
-        env: docWenChildEnvironment(),
-        detached: true,
-        shell: false,
-        windowsHide: true,
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-      return new MachineSession(target, child, false);
-    } catch (error) {
-      throw new LocalCliError("cli_spawn_failed", "Unable to start DocWen Machine Protocol.", {
-        cause: errorMessage(error),
-      });
-    }
+    throw new LocalCliError("cli_platform_unsupported", "Machine ownership requires Windows or Linux x64/arm64.", { platform: process.platform, arch: process.arch });
   }
 
   private constructor(
@@ -290,15 +267,6 @@ class MachineSession {
     private readonly linuxOwnership?: LinuxOwner,
   ) {
     this.child = child;
-    this.ownedLinuxProcessGroupId = process.platform === "linux"
-      && !this.linuxOwnership
-      && typeof this.child.pid === "number"
-      && this.child.pid > 0
-      ? this.child.pid
-      : null;
-    if (this.ownedLinuxProcessGroupId !== null) {
-      bootstrapLinuxProcessIdentity(this.ownedLinuxProcessGroupId, this.knownLinuxProcesses);
-    }
     this.child.once("exit", () => {
       this.childProcessExited = true;
     });
@@ -417,7 +385,6 @@ class MachineSession {
         actualProductVersion: productVersion,
       });
     }
-    await this.captureLinuxOwnership();
     return productVersion;
   }
 
@@ -488,7 +455,6 @@ class MachineSession {
 
   async close(): Promise<void> {
     this.normalClose = true;
-    await this.captureLinuxOwnership();
     this.child.stdin.end();
     const closeResult = await waitForExit(this.closed, CLEAN_CLOSE_GRACE_MS);
     if (closeResult === EXIT_WAIT_EXPIRED) {
@@ -518,26 +484,11 @@ class MachineSession {
         stderr: stderrText,
       });
     }
-    if (this.ownedLinuxProcessGroupId !== null) await this.terminate();
   }
 
   terminate(): Promise<void> {
     this.termination ??= this.terminateOnce();
     return this.termination;
-  }
-
-  private async captureLinuxOwnership(): Promise<void> {
-    if (this.ownedLinuxProcessGroupId === null) return;
-    try {
-      await captureLinuxProcessOwnership(
-        this.ownedLinuxProcessGroupId,
-        this.knownLinuxProcesses,
-        () => this.childProcessExited,
-      );
-    } catch {
-      // Cleanup performs the authoritative inspection and reports any
-      // ownership-evidence failure. Opportunistic capture must not fail work.
-    }
   }
 
   private async terminateOnce(): Promise<void> {
@@ -577,82 +528,7 @@ class MachineSession {
       }
       return;
     }
-    if (this.ownedLinuxProcessGroupId !== null) {
-      const groupId = this.ownedLinuxProcessGroupId;
-      const evidence: LinuxProcessGroupEvidence = { hardIssues: [] };
-      await this.captureLinuxOwnership();
-      await signalLinuxProcessGroup(
-        groupId,
-        this.knownLinuxProcesses,
-        evidence,
-        () => this.childProcessExited,
-        false,
-      );
-      this.child.stdin.destroy();
-      if (await waitForLinuxProcessGroupExit(
-        groupId,
-        this.knownLinuxProcesses,
-        evidence,
-        () => this.childProcessExited,
-        TERMINATION_GRACE_MS,
-      )) return;
-      await signalLinuxProcessGroup(
-        groupId,
-        this.knownLinuxProcesses,
-        evidence,
-        () => this.childProcessExited,
-        true,
-      );
-      if (await waitForLinuxProcessGroupExit(
-        groupId,
-        this.knownLinuxProcesses,
-        evidence,
-        () => this.childProcessExited,
-        FORCE_KILL_WAIT_MS,
-      )) return;
-      throw new LocalCliError(
-        "cli_cleanup_failed",
-        "Unable to terminate every live member of the DocWen process group.",
-      );
-    }
-
-    await this.signalProcessTree(false);
-    this.child.stdin.destroy();
-    let closeResult = await waitForExit(this.closed, TERMINATION_GRACE_MS);
-    if (closeResult !== EXIT_WAIT_EXPIRED) return;
-    await this.signalProcessTree(true);
-    closeResult = await waitForExit(this.closed, FORCE_KILL_WAIT_MS);
-    if (closeResult === EXIT_WAIT_EXPIRED) {
-      throw new LocalCliError("cli_cleanup_failed", "Unable to terminate the DocWen process tree.", {
-        pid: this.child.pid,
-      });
-    }
-  }
-
-  private async signalProcessTree(force: boolean): Promise<void> {
-    const pid = this.child.pid;
-    if (process.platform === "linux" && this.ownedLinuxProcessGroupId !== null) {
-      await signalLinuxProcessGroup(
-        this.ownedLinuxProcessGroupId,
-        this.knownLinuxProcesses,
-        { hardIssues: [] },
-        () => this.childProcessExited,
-        force,
-      );
-      return;
-    }
-    if (process.platform !== "win32" && typeof pid === "number" && pid > 0) {
-      try {
-        process.kill(-pid, force ? "SIGKILL" : "SIGTERM");
-        return;
-      } catch (error) {
-        if (isErrno(error, "ESRCH")) {
-          this.signalDirectly(force);
-          return;
-        }
-      }
-    }
-    this.signalDirectly(force);
+    throw new LocalCliError("cli_cleanup_failed", "Machine lifetime ownership is missing.", { cleanupState: "unconfirmed" });
   }
 
   private async confirmLinuxOwnership(): Promise<void> {
@@ -670,14 +546,6 @@ class MachineSession {
       });
     } finally {
       if (timer) cancelTimeout(timer);
-    }
-  }
-
-  private signalDirectly(force: boolean): void {
-    try {
-      this.child.kill(force ? "SIGKILL" : "SIGTERM");
-    } catch {
-      // The bounded exit wait converts an unsuccessful signal into a cleanup failure.
     }
   }
 

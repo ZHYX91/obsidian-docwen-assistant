@@ -7,7 +7,7 @@ if ($env:GITHUB_ACTIONS -ne "true" -or $env:RUNNER_OS -ne "Windows") {
 $repository = Split-Path $PSScriptRoot -Parent
 $configuration = Get-Content -LiteralPath (Join-Path $repository "native/WINDOWS-CI-TOOLCHAIN.json") -Raw | ConvertFrom-Json
 $record = Get-Content -LiteralPath (Join-Path $repository "native/WINDOWS-BUILD.json") -Raw | ConvertFrom-Json
-if ($record.librarian -ne "Microsoft (R) Library Manager Version $($configuration.toolsetVersion).0") {
+if ($record.librarian -ne "Microsoft (R) Library Manager Version $($configuration.servicingVersion).0") {
   throw "The CI provisioning policy does not match the recorded MSVC toolset."
 }
 $diagnostics = Join-Path $OutputParent "recorded-msvc-provisioning"

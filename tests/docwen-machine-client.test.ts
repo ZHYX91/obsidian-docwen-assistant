@@ -39,7 +39,6 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
 }));
 
 vi.mock("../src/docwen/linux-native-owner", () => ({
-  supportsLinuxNativeOwner: () => process.platform === "linux" && process.arch === "x64",
   linuxOwnerErrorDetails: () => undefined,
   spawnLinuxOwnedMachine: (binary: string, options: Record<string, unknown>) => {
     const child = spawnMock(binary, ["serve", "--stdio"], { ...options, detached: true, stdio: ["pipe", "pipe", "pipe"] });
