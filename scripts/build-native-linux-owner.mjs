@@ -7,10 +7,17 @@ import process from "node:process";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = process.argv[2];
-if (process.platform !== "linux" || process.arch !== "x64") throw new Error("Linux x64 build host required.");
+const targets = {
+  x64: { machine: 62, archive: "/usr/lib/x86_64-linux-musl/libc.a" },
+  arm64: { machine: 183, archive: "/usr/lib/aarch64-linux-musl/libc.a" },
+};
+const target = targets[process.arch];
+if (process.platform !== "linux" || !target) throw new Error("A native Linux x64 or arm64 build host is required.");
+const binaryName = `linux-owner-${process.arch}`;
+const moduleName = `linux-native-owner-${process.arch}.ts`;
 if (!output || !isAbsolute(output) || !existsSync(output))
   throw new Error("An existing owned output directory is required.");
-const binary = join(output, "linux-owner-x64");
+const binary = join(output, binaryName);
 if (existsSync(binary)) throw new Error("Native output already exists.");
 const source = join(repository, "native", "linux-owner.c");
 const compiler = "musl-gcc";
@@ -32,6 +39,10 @@ if (built.error) throw built.error;
 if (built.status !== 0) throw new Error("Linux process owner build failed.");
 const sha256 = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
 const payload = readFileSync(binary);
+if (payload.subarray(0, 6).toString("hex") !== "7f454c460201"
+  || payload.readUInt16LE(18) !== target.machine) {
+  throw new Error("Native ELF identity does not match the build host architecture.");
+}
 const programOffset = Number(payload.readBigUInt64LE(32));
 const programSize = payload.readUInt16LE(54);
 for (let index = 0; index < payload.readUInt16LE(56); index++) {
@@ -41,18 +52,18 @@ for (let index = 0; index < payload.readUInt16LE(56); index++) {
 const libc = spawnSync("dpkg-query", ["-W", "-f=${Version}", "musl-dev"], { encoding: "utf8", shell: false });
 if (libc.status !== 0) throw new Error("The recorded Ubuntu musl-dev build package is required.");
 const linkage = { kind: "static-musl", packageVersion: libc.stdout.trim(),
-  archiveSha256: sha256("/usr/lib/x86_64-linux-musl/libc.a"),
+  archiveSha256: sha256(target.archive),
   licenseSha256: sha256(join(repository, "native", "MUSL-LICENSE.txt")) };
 writeFileSync(
   join(output, "LINUX-OWNER-BUILD.json"),
-  `${JSON.stringify({ sourceSha256: sha256(source), binarySha256: sha256(binary), binaryBytes: payload.length, platform: "linux", arch: "x64", linkage, provenance: JSON.parse(readFileSync(join(repository, "native", "LINUX-OWNER-BUILD.json"), "utf8")).provenance, compiler: spawnSync(compiler, ["--version"], { encoding: "utf8", shell: false }).stdout.trim(), args: args.map((value) => value === source ? "native/linux-owner.c" : value === binary ? "<output>/linux-owner-x64" : value) }, null, 2)}\n`,
+  `${JSON.stringify({ sourceSha256: sha256(source), binarySha256: sha256(binary), binaryBytes: payload.length, platform: "linux", arch: process.arch, linkage, provenance: JSON.parse(readFileSync(join(repository, "native", "LINUX-OWNER-BUILD.json"), "utf8")).provenance, compiler: spawnSync(compiler, ["--version"], { encoding: "utf8", shell: false }).stdout.trim(), args: args.map((value) => value === source ? "native/linux-owner.c" : value === binary ? `<output>/${binaryName}` : value) }, null, 2)}\n`,
   { flag: "wx" },
 );
 copyFileSync(source, join(output, "linux-owner.c"), constants.COPYFILE_EXCL);
 
 const chunks = payload.toString("base64").match(/.{1,120}/gu);
 const license = readFileSync(join(repository, "native", "MUSL-LICENSE.txt"), "utf8").replaceAll("*/", "* /");
-writeFileSync(join(output, "linux-native-owner-x64.ts"),
+writeFileSync(join(output, moduleName),
   "// Generated from native/linux-owner.c; rebuild with the recorded toolchain.\n"
   + "/*! musl libc third-party notices\n" + license + "*/\n"
   + `export const LINUX_MACHINE_OWNER_SHA256 = "${sha256(binary)}";\n`

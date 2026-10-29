@@ -78,6 +78,16 @@ because the executable was not found. After a target starts and its Job is succe
 target exits 125 and 126 are mapped to ordinary target failure 127, so target errors cannot be
 misreported as unconfirmed cleanup or a missing execution alias.
 
+Windows CI provisions only the recorded release-family component from a fixed
+Microsoft Build Tools bootstrapper. The bootstrapper size, SHA-256 and Microsoft
+Authenticode signature must match before the official setup engine runs with its
+default content validation. Installer failures and reboot-required results fail
+the job. Discovery accepts either the existing Latest component or the recorded
+family component; directory selection and compiler/librarian/linker identities
+remain exact. Both independent rebuilds, build records and embedded bytes must
+still match. Provisioning diagnostics retain the earliest error separately from
+rebuild outputs.
+
 ## Linux Machine lifetime ownership
 
 Linux x64 content sessions use `linux-owner.c`, an MIT implementation shared with
@@ -101,3 +111,11 @@ The Linux owner is statically linked with Ubuntu 24.04 `musl-tools`, without an
 ELF interpreter, dynamic libc dependency or GLIBC version floor. The build receipt
 records the musl package version and archive hash. [Upstream notices](MUSL-LICENSE.txt)
 are preserved in the embedded module and the shipped `main.js` legal comment.
+
+For a new native owner architecture, the existing `CI` workflow
+manual trigger calls the reusable `Bootstrap native ARM64 owner` job with the
+exact workflow commit, builds twice on `ubuntu-24.04-arm`, and
+retains the ELF, generated module, normalized records, source/license hashes,
+page alignment and real topology/ptrace observations. This bootstrap artifact
+must be reviewed before embedding it. It does not enable that architecture in
+production or establish MachineClient, Core-pair or Obsidian acceptance.

@@ -4,7 +4,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { recordedMsvcVersion, selectRecordedToolset } from "./msvc-toolset.mjs";
+import { recordedMsvcComponents, recordedMsvcVersion, selectRecordedToolset } from "./msvc-toolset.mjs";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = process.argv[2];
@@ -99,8 +99,9 @@ function resolveMsvcTools() {
   const found = spawnSync(vswhere, [
     "-products",
     "*",
+    "-requiresAny",
     "-requires",
-    "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+    ...recordedMsvcComponents(recorded),
     "-property",
     "installationPath",
   ], {

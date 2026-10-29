@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { recordedMsvcVersion, selectRecordedToolset } from "../scripts/msvc-toolset.mjs";
+import { recordedMsvcComponents, recordedMsvcVersion, selectRecordedToolset } from "../scripts/msvc-toolset.mjs";
 
 const recordedVersion = "14.51.36260";
 const recorded = {
@@ -10,6 +10,14 @@ const recorded = {
 };
 
 describe("recorded MSVC toolset selection", () => {
+  it("discovers the exact recorded release family without changing directory selection", () => {
+    expect(recordedMsvcComponents(recorded)).toEqual([
+      "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+      "Microsoft.VisualStudio.Component.VC.14.51.x86.x64",
+    ]);
+    expect(() => recordedMsvcComponents({ librarian: "missing identity" })).toThrow("exact toolset version");
+  });
+
   it("derives the exact installed toolset directory version from the recorded librarian", () => {
     expect(recordedMsvcVersion(recorded)).toBe(recordedVersion);
   });

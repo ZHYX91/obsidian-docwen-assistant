@@ -5,12 +5,12 @@ import { lstat, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs
 import { isAbsolute, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
-if (process.platform !== "linux" || process.arch !== "x64") throw new Error("Linux x64 required.");
+if (process.platform !== "linux" || !["x64", "arm64"].includes(process.arch)) throw new Error("Native Linux x64 or arm64 required.");
 if (process.argv[2] && !isAbsolute(process.argv[2])) throw new Error("Owner path must be absolute.");
 if (!process.env.TMPDIR || !isAbsolute(process.env.TMPDIR)) {
   throw new Error("TMPDIR must name an existing owned run directory.");
 }
-const binary = process.argv[2] ?? resolve("native/linux-owner-x64");
+const binary = process.argv[2] ?? resolve(`native/linux-owner-${process.arch}`);
 const temporaryParent = await realpath(process.env.TMPDIR);
 const root = await mkdtemp(join(temporaryParent, "owner-startup-"));
 const compensationSource = join(root, "compensate.c");

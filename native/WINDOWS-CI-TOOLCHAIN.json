@@ -1,0 +1,12 @@
+{
+  "visualStudioVersion": "18.11.2",
+  "toolsetVersion": "14.51.36260",
+  "component": "Microsoft.VisualStudio.Component.VC.14.51.x86.x64",
+  "bootstrapper": {
+    "url": "https://download.visualstudio.microsoft.com/download/pr/9a3f23c2-cc94-49a0-88c0-f9f19f2ac9df/c217be69e6547c77c62d870394cd649a7a85ab86fcaa526a6ff629d1ec043e77/vs_BuildTools.exe",
+    "bytes": 5687920,
+    "sha256": "c217be69e6547c77c62d870394cd649a7a85ab86fcaa526a6ff629d1ec043e77"
+  },
+  "channelUri": "https://download.visualstudio.microsoft.com/download/pr/9a3f23c2-cc94-49a0-88c0-f9f19f2ac9df/9169ccb033af2767e14d8733568de2216dbfe7f7965bd1682229ac1fe300fea5/VisualStudio.18.Release.chman",
+  "catalogUri": "https://download.visualstudio.microsoft.com/download/pr/9a3f23c2-cc94-49a0-88c0-f9f19f2ac9df/b7aefeb168ba0be6c55db436328ef42f1800013146390350aed9ecb6d39f9bd6/VisualStudio.vsman"
+}
