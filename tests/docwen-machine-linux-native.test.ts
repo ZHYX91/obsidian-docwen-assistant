@@ -117,8 +117,8 @@ async function runNativeCase(mode: Mode): Promise<void> {
   try {
     process.on("uncaughtExceptionMonitor", monitor);
     // Observe the real factory/streams without replacing the native owner or
-    // transport. The accepted-frame callback runs after the client's queue
-    // microtasks, so cancellation must attempt task/cancel for an accepted task.
+    // transport. Schedule abort in setImmediate so the client first processes
+    // acceptance and stores taskId; the real write must then attempt task/cancel.
     const realSpawn = nativeOwner.spawnLinuxOwnedMachine;
     vi.spyOn(nativeOwner, "spawnLinuxOwnedMachine").mockImplementation((...args) => {
       const result = realSpawn(...args);
