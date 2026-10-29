@@ -69,6 +69,13 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   };
 });
 
+// Explicit legacy ownership projection for the retained non-x64 Linux path.
+// Native x64 containment has separate real-process regressions.
+vi.mock("../src/docwen/linux-native-owner", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../src/docwen/linux-native-owner")>(),
+  supportsLinuxNativeOwner: () => false,
+}));
+
 import { DocWenMachineClient } from "../src/docwen/machine-client";
 
 const roots: string[] = [];

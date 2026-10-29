@@ -37,7 +37,13 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
   });
 
   it("reads health and versioned Machine capabilities", async () => {
-    await expect(client.doctor()).resolves.toMatchObject({ allOk: true });
+    const health = await client.doctor();
+    expect(health.allOk).toBe(true);
+    expect(health.checks.length).toBeGreaterThan(0);
+    for (const check of health.checks) {
+      expect(check.id).not.toBe("");
+      expect(check.status).toBe("ok");
+    }
     const projection = await client.runtimeCapabilities();
     expect(projection.contractId).toBe("docwen.machine.v2");
     expect(projection.capabilities.map((item) => item.capability_id)).toContain("convert.markdown_source.to_docx");

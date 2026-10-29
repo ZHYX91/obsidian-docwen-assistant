@@ -19,6 +19,10 @@ Windows 自动模式验证固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\doc
 
 ## 请求数据流
 
+健康检查投影正式的 `status` 与可为空的 `reason` 字段；仅 `all_ok` 决定总连接健康。受限传输队列只合并同一任务连续、有效且严格递增的进度通知，因此合法 stdout 分块不改变任务结果。控制与终态消息保留，畸形或非单调进度不会被合并掩盖。
+
+固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。宿主 cache 支持的活动引用式图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
+
 Assistant 界面语言只控制自身文案与方向。资源查询可以请求本地化显示名称，但转换请求使用稳定资源 ID，不把展示偏好复制成任务 `locale`；未指定的任务语言遵循 Core 输出设置。模板、显式 OCR 选择和校对规则各自拥有独立配置。同一固定任务不会因切换 Assistant 界面语言而改变选项。
 
 优化选择通过 `optimization_id`、输入形状、输出媒体类型与可用性，把资源 ID 绑定到可执行的
@@ -58,11 +62,13 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。Machine stdin Writable 的异步错误（包括对端关闭读取端后延迟出现的 `EPIPE`）进入同一会话失败队列，拒绝等待者并触发幂等、有界的进程树清理；`stdin.end()` 已发生后到达的取消不会再次写入已结束流。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
-Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux 继续使用既有 procfs 身份与进程组证据链。
+Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。非 x64 Linux 继续使用既有 procfs 身份与进程组证据链，其跨 session containment 仍未证明。
 
 导出和编号任务持续拥有选择窗口直至写入结束，选中条目不会启动脱离当前生命周期的任务。取消、新任务替换和卸载会关闭插件选择窗口及格式确认框，已排队的旧选择也失效。系统目录对话框可能保持打开直至用户关闭，但取消后返回的路径不会继续执行。文件菜单能力发现也由同一协调器管理，卸载后的菜单回调不能再调用操作。
 
 宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
+
+Linux x64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。非 x64 Linux 的既有进程处理保持不变，不因此获得该 containment 保证。
 
 ## 信任边界
 

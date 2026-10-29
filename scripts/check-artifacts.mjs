@@ -152,6 +152,44 @@ for (const chunk of windowsChunks) {
   if (index < 0) throw new Error("dist/main.js is missing embedded Windows Machine owner bytes");
   searchFrom = index + chunk.length;
 }
+const linuxOwnerBuild = JSON.parse(await readFile(resolve(root, "native/LINUX-OWNER-BUILD.json"), "utf8"));
+const linuxOwnerSource = await readFile(resolve(root, "native/linux-owner.c"));
+const linuxOwnerModule = await readFile(resolve(root, "src/docwen/linux-native-owner-x64.ts"), "utf8");
+const linuxOwnerChunks = [...linuxOwnerModule.matchAll(/^ {2}"([A-Za-z0-9+/=]+)",$/gmu)].map((match) => match[1]);
+const linuxOwnerBytes = Buffer.from(linuxOwnerChunks.join(""), "base64");
+const muslLicense = await readFile(resolve(root, "native/MUSL-LICENSE.txt"), "utf8");
+if (createHash("sha256").update(linuxOwnerSource).digest("hex") !== linuxOwnerBuild.sourceSha256
+  || createHash("sha256").update(linuxOwnerBytes).digest("hex") !== linuxOwnerBuild.binarySha256
+  || linuxOwnerBytes.length !== linuxOwnerBuild.binaryBytes || linuxOwnerBytes.length > 128 * 1024
+  || linuxOwnerBytes.subarray(0, 5).toString("hex") !== "7f454c4602"
+  || linuxOwnerBytes.readUInt16LE(18) !== 62
+  || linuxOwnerBuild.platform !== "linux" || linuxOwnerBuild.arch !== "x64"
+  || linuxOwnerBuild.linkage?.kind !== "static-musl"
+  || createHash("sha256").update(muslLicense).digest("hex") !== linuxOwnerBuild.linkage?.licenseSha256
+  || !mainBundle.includes(muslLicense.replaceAll("*/", "* /"))
+  || linuxOwnerBuild.provenance?.repository !== "ZHYX91/docwen-openclaw"
+  || linuxOwnerBuild.provenance?.sourcePath !== "native/linux-owner.c"
+  || linuxOwnerBuild.provenance?.sourceSha256 !== linuxOwnerBuild.sourceSha256
+  || linuxOwnerBuild.provenance?.license !== "MIT"
+  || !linuxOwnerModule.includes(linuxOwnerBuild.binarySha256)
+  || !mainBundle.includes(linuxOwnerBuild.binarySha256)) {
+  throw new Error("Linux Machine owner source, payload, ELF identity or provenance mismatch");
+}
+for (const packageName of ["markdown", "common", "highlight"]) {
+  const license = (await readFile(new URL(`../node_modules/@lezer/${packageName}/LICENSE`, import.meta.url), "utf8")).trim();
+  if (!mainBundle.includes(license)) throw new Error(`Bundled @lezer/${packageName} license is missing`);
+}
+const ownerProgramOffset = Number(linuxOwnerBytes.readBigUInt64LE(32));
+for (let index = 0; index < linuxOwnerBytes.readUInt16LE(56); index++) {
+  const type = linuxOwnerBytes.readUInt32LE(ownerProgramOffset + index * linuxOwnerBytes.readUInt16LE(54));
+  if (type === 2 || type === 3) throw new Error("Linux Machine owner must not add a dynamic libc or interpreter requirement");
+}
+searchFrom = 0;
+for (const chunk of linuxOwnerChunks) {
+  const index = mainBundle.indexOf(chunk, searchFrom);
+  if (index < 0) throw new Error("dist/main.js is missing embedded Linux Machine owner bytes");
+  searchFrom = index + chunk.length;
+}
 console.log(
   `Production assets verified: ${PRODUCTION_ASSETS.join(", ")}; embedded Linux helper and Windows Machine owner verified`,
 );

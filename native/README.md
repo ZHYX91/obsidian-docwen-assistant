@@ -55,7 +55,9 @@ The adapted source is `windows-job.c`, derived under MIT from
 source SHA-256, generated PE SHA-256, byte length, x64 PE identity, zero COFF timestamp, exact MSVC
 compiler/librarian/linker identity and flags are pinned in `WINDOWS-BUILD.json`.
 `scripts/build-native-windows-owner.mjs` reproduces the PE and generated TypeScript payload on a
-Windows x64 host with the recorded MSVC toolset. It resolves the installed x64 compiler tools directly
+Windows x64 host with the recorded MSVC toolset. It searches installed Visual Studio instances for
+that exact toolset and verifies all three recorded tool identities before compiling; a newer
+installed toolset is not selected automatically. It resolves the x64 compiler tools directly
 and does not download a toolchain. Two clean build directories must produce identical bytes before the
 embedded payload is updated.
 
@@ -75,3 +77,27 @@ Controller exit 125 denotes an internal owner failure; exit 126 means target cre
 because the executable was not found. After a target starts and its Job is successfully closed,
 target exits 125 and 126 are mapped to ordinary target failure 127, so target errors cannot be
 misreported as unconfirmed cleanup or a missing execution alias.
+
+## Linux Machine lifetime ownership
+
+Linux x64 content sessions use `linux-owner.c`, an MIT implementation shared with
+DocWen for OpenClaw. `LINUX-OWNER-BUILD.json` pins the vendored source hash, compiler,
+flags, ELF hash and size; `linux-native-owner-x64.ts` embeds those exact bytes inside
+`main.js`. No sibling repository, extra plugin asset or runtime compiler is needed.
+Rebuild with `node scripts/build-native-linux-owner.mjs /absolute/owned/output` on
+Linux x64, then compare two clean builds with the recorded payload before updating it.
+
+Two subreapers remain outside the business session. They adopt orphaned descendants
+even after `setsid()` or double-fork, validate current wait-parenthood and signal
+through pidfds. Only `ECHILD` confirms complete reaping; empty procfs listings,
+old PID/start-time snapshots and ordinary process-name scans never grant authority.
+Control loss and either supervisor's separate death trigger bounded cleanup. Loss of
+proof stays unconfirmed; simultaneous destruction of both owners is outside this
+guarantee. Mounted procfs and kernel pidfd support are required. The verified private
+image is unlinked before the owner permits Machine startup, preserving real EPIPE.
+Non-x64 Linux keeps its existing handling and has no new containment claim.
+
+The Linux owner is statically linked with Ubuntu 24.04 `musl-tools`, without an
+ELF interpreter, dynamic libc dependency or GLIBC version floor. The build receipt
+records the musl package version and archive hash. [Upstream notices](MUSL-LICENSE.txt)
+are preserved in the embedded module and the shipped `main.js` legal comment.

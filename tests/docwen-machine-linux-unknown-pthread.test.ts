@@ -67,6 +67,13 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   };
 });
 
+// Explicit legacy ownership projection for the retained non-x64 Linux path.
+// Native x64 containment has separate real-process regressions.
+vi.mock("../src/docwen/linux-native-owner", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../src/docwen/linux-native-owner")>(),
+  supportsLinuxNativeOwner: () => false,
+}));
+
 import { DocWenMachineClient } from "../src/docwen/machine-client";
 
 const HELPER_C_SOURCE = "#define _GNU_SOURCE\n#include <fcntl.h>\n#include <pthread.h>\n#include <signal.h>\n#include <stdatomic.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <sys/syscall.h>\n#include <unistd.h>\n\nstatic const char *heartbeat_file;\nstatic const char *release_file;\nstatic const char *signal_file;\nstatic const char *tid_file;\nstatic atomic_int worker_ready = 0;\n\nstatic void append_line(const char *path, const char *line) {\n  int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, 0600);\n  if (fd < 0) return;\n  size_t length = strlen(line);\n  (void)write(fd, line, length);\n  (void)close(fd);\n}\n\nstatic void write_number(const char *path, long value) {\n  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);\n  if (fd < 0) _exit(91);\n  char buffer[64];\n  int length = snprintf(buffer, sizeof(buffer), \"%ld\\n\", value);\n  if (length <= 0 || write(fd, buffer, (size_t)length) != length) _exit(92);\n  (void)close(fd);\n}\n\nstatic void on_term(int signo) {\n  (void)signo;\n  append_line(signal_file, \"term\\n\");\n}\n\nstatic void *heartbeat_main(void *unused) {\n  (void)unused;\n  write_number(tid_file, (long)syscall(SYS_gettid));\n  atomic_store(&worker_ready, 1);\n  while (access(release_file, F_OK) != 0) {\n    append_line(heartbeat_file, \"h\\n\");\n    usleep(50000);\n  }\n  return NULL;\n}\n\nint main(int argc, char **argv) {\n  if (argc != 7) return 90;\n  heartbeat_file = argv[1];\n  release_file = argv[2];\n  signal_file = argv[3];\n  tid_file = argv[4];\n  const char *pid_file = argv[5];\n  const char *ready_file = argv[6];\n\n  signal(SIGTERM, on_term);\n  pthread_t worker;\n  if (pthread_create(&worker, NULL, heartbeat_main, NULL) != 0) return 31;\n  while (!atomic_load(&worker_ready)) usleep(1000);\n  write_number(pid_file, (long)getpid());\n  append_line(ready_file, \"ready\\n\");\n  pthread_exit(NULL);\n}\n";

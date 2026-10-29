@@ -223,11 +223,17 @@ export class DocWenClient {
 
   async doctor(signal?: AbortSignal): Promise<HealthReport> {
     const { result, productVersion } = await this.machine.queryWithProductVersion("health/check", {}, signal);
-    const checks = objectArray(result.checks, "health/check.checks").map((item) => ({
-      id: stringValue(item.id) || "check",
-      status: item.ok === true ? "ok" : "error",
-      message: stringValue(item.message) || undefined,
-    }));
+    const checks = objectArray(result.checks, "health/check.checks").map((item) => {
+      if ((item.status !== "ok" && item.status !== "fail")
+        || (item.reason !== null && typeof item.reason !== "string")) {
+        throw invalidResponse("health/check.checks status or reason");
+      }
+      return {
+        id: stringValue(item.id) || "check",
+        status: item.status === "ok" ? "ok" : "error",
+        message: stringValue(item.reason) || undefined,
+      };
+    });
     return { allOk: result.all_ok === true, productVersion, checks };
   }
 

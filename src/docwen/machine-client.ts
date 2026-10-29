@@ -6,6 +6,7 @@ import {
   type LinuxProcessGroupEvidence,
 } from "./linux-process-owner";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { linuxOwnerErrorDetails, spawnLinuxOwnedMachine, supportsLinuxNativeOwner, type LinuxOwner } from "./linux-native-owner";
 import { createHash } from "node:crypto";
 import { validateBundleFields, validateBundlePages } from "./bundle-metadata";
 import { createReadStream } from "node:fs";
@@ -168,6 +169,11 @@ class MessageQueue {
     const reader = this.readers.shift();
     if (reader) reader.resolve(message);
     else {
+      const previous = this.messages[this.messages.length - 1];
+      if (previous && canReplaceProgress(previous, message)) {
+        this.messages[this.messages.length - 1] = message;
+        return;
+      }
       if (this.messages.length >= MAX_QUEUED_MESSAGES) {
         throw outputLimitError("DocWen Machine Protocol queued too many messages.");
       }
@@ -199,6 +205,27 @@ class MessageQueue {
   }
 }
 
+function canReplaceProgress(previous: JsonObject, current: JsonObject): boolean {
+  const progress = (message: JsonObject): JsonObject | null => {
+    if (message.jsonrpc !== "2.0" || message.method !== "task/progress"
+      || Object.keys(message).some((key) => !["jsonrpc", "method", "params"].includes(key))
+      || !isJsonObject(message.params)) return null;
+    const params = message.params;
+    if (Object.keys(params).some((key) => !["task_id", "sequence", "phase", "completed", "total", "unit", "message"].includes(key))
+      || typeof params.task_id !== "string" || !params.task_id
+      || !Number.isSafeInteger(params.sequence) || (params.sequence as number) < 1
+      || params.phase !== "conversion" || params.total !== 100 || params.unit !== "percent"
+      || !Number.isInteger(params.completed) || (params.completed as number) < 0 || (params.completed as number) > 100
+      || (params.message !== undefined && (typeof params.message !== "string" || params.message.length < 1 || params.message.length > 31))) return null;
+    return params;
+  };
+  const left = progress(previous);
+  const right = progress(current);
+  return left !== null && right !== null && left.task_id === right.task_id
+    && (right.sequence as number) > (left.sequence as number)
+    && (right.completed as number) >= (left.completed as number);
+}
+
 class MachineSession {
   private readonly queue = new MessageQueue();
   private readonly decoder = new MachineFrameDecoder();
@@ -227,6 +254,18 @@ class MachineSession {
       const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore, assertStartAllowed);
       return new MachineSession(target, child, true);
     }
+    if (supportsLinuxNativeOwner()) {
+      try {
+        const { child, ownership } = spawnLinuxOwnedMachine(target.executable, {
+          cwd: target.cwd, env: docWenChildEnvironment(), shell: false, windowsHide: true,
+        });
+        return new MachineSession(target, child, false, ownership);
+      } catch (error) {
+        throw new LocalCliError("cli_spawn_failed", "Unable to start the Linux Machine lifetime owner.", {
+          ownershipState: "linux_supervisor", ...linuxOwnerErrorDetails(error),
+        });
+      }
+    }
     try {
       const child = spawn(target.executable, ["serve", "--stdio"], {
         cwd: target.cwd,
@@ -248,9 +287,11 @@ class MachineSession {
     target: DocWenLaunchTarget,
     child: ChildProcessWithoutNullStreams,
     private readonly windowsOwned: boolean,
+    private readonly linuxOwnership?: LinuxOwner,
   ) {
     this.child = child;
     this.ownedLinuxProcessGroupId = process.platform === "linux"
+      && !this.linuxOwnership
       && typeof this.child.pid === "number"
       && this.child.pid > 0
       ? this.child.pid
@@ -279,6 +320,7 @@ class MachineSession {
           cause: error.message,
           mode: target.mode,
           ...(this.windowsOwned ? { ownershipState: "windows_job" } : {}),
+          ...(this.linuxOwnership ? { ownershipState: "linux_supervisor", ...this.linuxOwnership.diagnostics } : {}),
         });
         this.queue.fail(failure);
         resolve(null);
@@ -454,6 +496,7 @@ class MachineSession {
       throw new LocalCliError("cli_cleanup_failed", "DocWen did not exit after its stdin was closed.");
     }
     const code = closeResult;
+    if (this.linuxOwnership) await this.confirmLinuxOwnership();
     const terminalFailure = this.queue.failureError();
     if (terminalFailure) throw terminalFailure;
     if (this.queue.drain().length > 0 || this.deferred.length > 0) {
@@ -499,6 +542,17 @@ class MachineSession {
 
   private async terminateOnce(): Promise<void> {
     this.normalClose = true;
+    if (this.linuxOwnership) {
+      this.linuxOwnership.stop();
+      this.child.stdin.destroy();
+      await this.confirmLinuxOwnership();
+      if (await waitForExit(this.processClosed, FORCE_KILL_WAIT_MS) === EXIT_WAIT_EXPIRED) {
+        throw new LocalCliError("cli_cleanup_failed", "Linux Machine owner did not exit after cleanup.", {
+          cleanupState: "unconfirmed", ownershipState: "linux_supervisor",
+        });
+      }
+      return;
+    }
     if (this.windowsOwned) {
       this.child.stdin.destroy();
       const alreadyExited = this.childProcessExited
@@ -601,6 +655,24 @@ class MachineSession {
     this.signalDirectly(force);
   }
 
+  private async confirmLinuxOwnership(): Promise<void> {
+    let timer: ReturnType<typeof scheduleTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.linuxOwnership!.completion,
+        new Promise<never>((_resolve, reject) => {
+          timer = scheduleTimeout(() => reject(new Error("Linux owner cleanup deadline exceeded.")), 2_500);
+        }),
+      ]);
+    } catch {
+      throw new LocalCliError("cli_cleanup_failed", "Linux Machine lifetime ownership could not be confirmed.", {
+        cleanupState: "unconfirmed", ownershipState: "linux_supervisor", ...this.linuxOwnership?.diagnostics,
+      });
+    } finally {
+      if (timer) cancelTimeout(timer);
+    }
+  }
+
   private signalDirectly(force: boolean): void {
     try {
       this.child.kill(force ? "SIGKILL" : "SIGTERM");
@@ -649,6 +721,7 @@ class MachineSession {
 export class DocWenMachineClient {
   private readonly activeSessions = new Set<MachineSession>();
   private disposed = false;
+  private blockedCleanupError: LocalCliError | null = null;
   private readonly shutdown = new AbortController();
 
   constructor(
@@ -765,8 +838,10 @@ export class DocWenMachineClient {
     ) => Promise<T>,
   ): Promise<T> {
     if (this.disposed) throw new LocalCliError("cli_spawn_failed", "DocWen client has been disposed.");
+    if (this.blockedCleanupError) throw this.blockedCleanupError;
     if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
     const assertStartAllowed = (): void => {
+      if (this.blockedCleanupError) throw this.blockedCleanupError;
       if (this.disposed) {
         throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
       }
@@ -832,9 +907,12 @@ export class DocWenMachineClient {
       const primary = timedOut
         ? new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs })
         : error;
+      if (primary instanceof LocalCliError && primary.code === "cli_cleanup_failed") this.blockedCleanupError = primary;
       try {
         await session.terminate();
       } catch (cleanupError) {
+        this.blockedCleanupError = cleanupError instanceof LocalCliError && cleanupError.code === "cli_cleanup_failed"
+          ? cleanupError : new LocalCliError("cli_cleanup_failed", "Unable to confirm DocWen process cleanup.", { cleanupState: "unconfirmed" });
         if (cleanupError === primary) throw primary;
         if (
           cleanupError instanceof LocalCliError

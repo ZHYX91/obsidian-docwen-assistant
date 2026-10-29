@@ -34,6 +34,17 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     initializeErrorData: null as JsonObject | null,
     requests: [] as JsonObject[],
     notificationFault: "",
+    progressDelivery: "",
+  },
+}));
+
+vi.mock("../src/docwen/linux-native-owner", () => ({
+  supportsLinuxNativeOwner: () => process.platform === "linux" && process.arch === "x64",
+  linuxOwnerErrorDetails: () => undefined,
+  spawnLinuxOwnedMachine: (binary: string, options: Record<string, unknown>) => {
+    const child = spawnMock(binary, ["serve", "--stdio"], { ...options, detached: true, stdio: ["pipe", "pipe", "pipe"] });
+    return { child, ownership: { kind: "linux-supervisor", stop: () => child.kill(),
+      completion: new Promise<void>((resolve) => child.once("close", () => resolve())) } };
   },
 }));
 
@@ -184,7 +195,7 @@ class FakeChild extends EventEmitter {
         return;
       }
       if (serverState.holdHealth) return;
-      this.reply(id, { all_ok: true, checks: [{ id: "config", ok: true }] });
+      this.reply(id, { all_ok: true, checks: [{ id: "config", kind: "config", label: "Config", status: "ok", reason: null }] });
       return;
     }
     if (message.method === "task/plan") {
@@ -255,6 +266,28 @@ class FakeChild extends EventEmitter {
   private notify(method: string, params: JsonObject): void {
     const fault = serverState.notificationFault;
     const completed = method === "task/completed";
+    if (completed && serverState.progressDelivery) {
+      const frames = Array.from({ length: 65 }, (_, index) => encodeMachineFrame({
+        jsonrpc: "2.0", method: "task/progress", params: {
+          task_id: "task.1", sequence: index + 1, phase: "conversion",
+          completed: index === 64 ? 100 : index, total: 100, unit: "percent",
+        },
+      }));
+      frames.push(encodeMachineFrame({ jsonrpc: "2.0", method, params: { ...params, sequence: 66 } }));
+      const bytes = Buffer.concat(frames);
+      if (serverState.progressDelivery === "frames") {
+        for (const frame of frames) this.stdout.write(frame);
+      } else if (serverState.progressDelivery === "bytes") {
+        for (const byte of bytes) this.stdout.write(Buffer.from([byte]));
+      } else if (serverState.progressDelivery === "random") {
+        for (let offset = 0; offset < bytes.length;) {
+          const length = 1 + (offset * 17 % 509);
+          this.stdout.write(bytes.subarray(offset, offset + length));
+          offset += length;
+        }
+      } else this.stdout.write(bytes);
+      return;
+    }
     if (completed && (fault === "nonmonotonic" || fault === "wrong_progress_task")) {
       this.stdout.write(encodeMachineFrame({
         jsonrpc: "2.0", method: "task/progress",
@@ -285,6 +318,7 @@ describe("DocWenMachineClient", () => {
     serverState.cancellationDelayMs = 0;
     serverState.corruptHash = false;
     serverState.floodHealth = false;
+    serverState.progressDelivery = "";
     serverState.holdHealth = false;
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
@@ -308,7 +342,7 @@ describe("DocWenMachineClient", () => {
 
     await expect(client.query("health/check", {})).resolves.toEqual({
       all_ok: true,
-      checks: [{ id: "config", ok: true }],
+      checks: [{ id: "config", kind: "config", label: "Config", status: "ok", reason: null }],
     });
     expect(spawnMock).toHaveBeenCalledWith(
       process.platform === "win32" ? fakeWindowsOwner : "C:\\DocWen\\DocWenCLI.exe",
@@ -333,6 +367,18 @@ describe("DocWenMachineClient", () => {
     expect(serverState.requests.map((request) => request.method)).toEqual(["initialize", "health/check", "health/check", "task/plan", "task/execute"]);
     await client.query("health/check", {});
     expect(spawnMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["bytes", "frames", "random", "merged"])("accepts a legal 67-frame task with %s stdout delivery", async (delivery) => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "input.md");
+    const bytes = Buffer.from("# Input\n");
+    writeFileSync(input, bytes);
+    serverState.progressDelivery = delivery;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const result = await client.runTask(taskRequest(root, input, bytes));
+    expect(result.taskId).toBe("task.1");
+    expect(result.bundle.artifacts).toHaveLength(1);
   });
 
   it.each(["cancel", "unload", "reject"])("does not plan a task after %s during preparation", async (reason) => {

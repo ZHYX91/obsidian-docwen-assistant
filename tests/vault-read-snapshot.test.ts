@@ -6,6 +6,30 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it.each(["stat", "modify-event"])("rejects a closed-source %s change after the final read", async (change) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md", stat: { mtime: 1, ctime: 1, size: 7 } };
+    let onModify: (changed: unknown) => void = () => undefined;
+    const offref = vi.fn();
+    const app = { workspace: { getLeavesOfType: () => [] }, vault: {
+      getFileByPath: () => file,
+      readBinary: async () => new TextEncoder().encode("# Before\n").buffer,
+      on: (_event: string, listener: typeof onModify) => { onModify = listener; return {}; },
+      offref,
+    } };
+    let published = false;
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal,
+      snapshot => snapshot.publish(async guard => {
+        await Promise.resolve();
+        if (change === "stat") file.stat.mtime += 1;
+        else onModify(file); // Same byte count and stat resolution must still conflict.
+        guard();
+        published = true;
+      }))).rejects.toMatchObject({ code: "vault_content_conflict" });
+    expect(published).toBe(false);
+    expect(offref).toHaveBeenCalledOnce();
+  });
+
   it.each(["capture", "publication"])("rejects a same-path editor rebound at %s", async (stage) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };

@@ -19,6 +19,8 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 格式检测动作回归使用完整的最小 DOCX 夹具、真实 Vault 快照与 capability 输入形状检查，覆盖错扩展名的取消和继续、双向 source kind 变化、检测/路线信息陈旧、规范副本复检不匹配、取消，以及发布前的来源身份和内容冲突。这些单元用例模拟 Machine 检测和转换。固定包门另运行真实导出动作、快照、client 和精确 Core 进程，将完整 DOCX 复制为 `.txt`：继续后必须产出含预期段落和表格的 Markdown，取消不得创建规范副本或输出，确认或复核时来源内容改变、复核时文件身份替换均须阻止发布；原夹具及应保持不变的来源字节另行核验。固定包层仍模拟 UI 对话框，不能替代真实宿主验收。
 
+源码回归另覆盖最后一次读取后的关闭文件 stat/modify 事件、两个资源扫描器与声明输入 builder 的 raw HTML 字面内容所有权及真实外部资源身份（含容器边界、目的地址／标题中的反引号、行内注释、引用式图片与图片标签中的代码）、正式 health `status/reason`、精确记录 MSVC 选择，以及合法 67 帧进度流的逐字节、逐帧、随机和合并 stdout 分块。Linux x64 原生 CI 独立重建内嵌 owner 两次，并覆盖 setsid/double-fork 后代、root 退出/崩溃、两层 supervisor 各自崩溃，以及 outer owner 死亡时尚未 exec 的停止子进程。真实进程状态、心跳停止和无关 sentinel 存活共同证明清理；仅 PID 存在不足以证明。既有 procfs 与 SIGTERM 宽限期用例明确选择保留的 legacy 端口，不计为 native 或 ARM 宿主验收。受控原生测试不建立真实 Obsidian、Gateway 或 Mermaid 渲染验收结论。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。

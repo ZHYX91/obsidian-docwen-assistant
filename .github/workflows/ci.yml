@@ -15,6 +15,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  linux-owned-lifecycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+      - name: Reproduce and exercise embedded Linux owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends musl-tools
+          mkdir "$RUNNER_TEMP/owner-a" "$RUNNER_TEMP/owner-b"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-a"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-b"
+          cmp "$RUNNER_TEMP/owner-a/linux-owner-x64" "$RUNNER_TEMP/owner-b/linux-owner-x64"
+          cmp src/docwen/linux-native-owner-x64.ts "$RUNNER_TEMP/owner-a/linux-native-owner-x64.ts"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-x64"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/owner-a/linux-owner-x64"
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

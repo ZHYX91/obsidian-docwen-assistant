@@ -4,6 +4,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { recordedMsvcVersion, selectRecordedToolset } from "./msvc-toolset.mjs";
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = process.argv[2];
@@ -92,10 +93,10 @@ writeFileSync(
 writeEmbeddedModule(bytes, record.binarySha256, join(output, "windows-machine-owner-x64.ts"));
 
 function resolveMsvcTools() {
+  const recorded = JSON.parse(readFileSync(join(repository, "native", "WINDOWS-BUILD.json"), "utf8"));
   const programFilesX86 = process.env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)";
   const vswhere = join(programFilesX86, "Microsoft Visual Studio", "Installer", "vswhere.exe");
   const found = spawnSync(vswhere, [
-    "-latest",
     "-products",
     "*",
     "-requires",
@@ -109,24 +110,31 @@ function resolveMsvcTools() {
     timeout: 10_000,
   });
   if (found.error) throw found.error;
-  const installation = found.stdout.trim();
-  if (found.status !== 0 || !installation) {
+  const paths = found.stdout.trim().split(/\r?\n/u).filter(Boolean);
+  if (found.status !== 0 || paths.length === 0) {
     throw new Error("MSVC x64 build tools were not found.");
   }
 
-  const versionsRoot = join(installation, "VC", "Tools", "MSVC");
-  const versions = readdirSync(versionsRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort((left, right) => left.localeCompare(right, "en", { numeric: true }));
-  const version = versions.at(-1);
-  if (!version) throw new Error("MSVC toolset directory is empty.");
-  const bin = join(versionsRoot, version, "bin", "Hostx64", "x64");
+  const { installation, version } = selectRecordedToolset(paths.map((path) => ({
+    path,
+    versions: readdirSync(join(path, "VC", "Tools", "MSVC"), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory()).map((entry) => entry.name),
+  })), recordedMsvcVersion(recorded));
+  const bin = join(installation, "VC", "Tools", "MSVC", version, "bin", "Hostx64", "x64");
   const compiler = join(bin, "cl.exe");
   const librarian = join(bin, "lib.exe");
   const linker = join(bin, "link.exe");
   for (const executable of [compiler, librarian, linker]) {
     if (!existsSync(executable)) throw new Error("Required MSVC tool is missing: " + executable);
+  }
+  for (const [key, executable, pattern] of [
+    ["compiler", compiler, /C\/C\+\+.*\d+\.\d+/iu],
+    ["librarian", librarian, /Library Manager/iu],
+    ["linker", linker, /Linker Version/iu],
+  ]) {
+    if (toolIdentity(executable, pattern) !== recorded[key]) {
+      throw new Error("Installed MSVC " + key + " does not match the recorded identity.");
+    }
   }
   return { compiler, librarian, linker };
 }
