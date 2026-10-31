@@ -114,7 +114,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     expect(await readFile(output, "utf8")).toContain("Title");
   }, 120_000);
 
-  it("round-trips extended headings and note domains through a document-node Bundle", async () => {
+  it("publishes one DOCX directly and round-trips extended headings and note domains into a Markdown document node", async () => {
     const caseRoot = join(root, "extended-heading-note-roundtrip");
     const source = join(caseRoot, "authored.md");
     const markdownParent = join(caseRoot, "published");
@@ -154,7 +154,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     });
     const docx = generated.output;
     expect(generated.outputs).toEqual([docx]);
-    expect(basename(dirname(docx))).toBe(basename(docx, ".docx"));
+    expect(dirname(docx)).toBe(caseRoot);
+    expect(generated.resultDirectory).toBeUndefined();
     expect(await readFile(source, "utf8")).toBe(authored);
 
     const docxArchive = readStrictZip(await readFile(docx));
@@ -262,6 +263,8 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     const generated = completed.value;
     const output = generated.output;
     expect(generated.outputs).toEqual([output]);
+    expect(dirname(output)).toBe(root);
+    expect(generated.resultDirectory).toBeUndefined();
     const outputBytes = await readFile(output);
     const archive = readStrictZip(outputBytes);
     expect(archive.has("[Content_Types].xml")).toBe(true);

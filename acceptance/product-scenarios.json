@@ -107,7 +107,7 @@
     },
     {
       "id": "desktop-conversion-exports",
-      "title": "Capability-selected conversions and complete result directories",
+      "title": "Capability-selected single files and complete result directories",
       "surfaces": [
         "desktop"
       ],
@@ -117,13 +117,14 @@
       "steps": [
         "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, record Conversion.md and Formats/01-docx.docx digests, and create an empty owned output parent",
         "From Conversion.md run the advertised DOCX and XLSX exports, selecting the offered template or direct spreadsheet option; from Formats/01-docx.docx run the advertised Markdown export and choose only a route-applicable optimization or None",
-        "Choose the owned output parent in the native directory dialog for each conversion; run a second export into that same parent and inspect both complete result directories, business outputs and linked resources",
+        "Choose the owned output parent in the native directory dialog for each conversion; verify single DOCX/XLSX results directly in that parent and Markdown in its complete result directory; run a second export into the same parent and inspect each result's generated names, business outputs and linked resources",
+        "For a recorded input whose Core Markdown output includes attachments, verify the complete result directory, attachment links and each attachment's own resources after publication; if this input is unavailable, keep attachment-host coverage explicitly unverified",
         "Inspect DOCX paragraph/table content, XLSX cells and Markdown text for the source markers; repeat Markdown-to-DOCX with advisory proofreading enabled then disabled and inspect the notifications",
         "In this Vault create a byte-identical scratch copy of Formats/01-docx.docx named Detected-format.txt; invoke its capability-selected Markdown conversion, first Cancel then Continue the detected-format confirmation"
       ],
       "expected": [
         "Template/optimization choices match the exact advertised route; an unavailable required route is reported unverified or failed, never silently omitted from this scenario",
-        "Each export publishes a new complete result directory under the chosen parent, preserves generated names/resources, and never overwrites an earlier result",
+        "Single DOCX/XLSX results publish directly under the chosen parent; Markdown and grouped results preserve their complete directory, generated names, resources and independently owned attachments; neither form overwrites an earlier file or directory",
         "Output content preserves the tested table/text markers and source digests remain unchanged; file existence alone is insufficient",
         "Advisory validation obeys the setting; Cancel publishes nothing and Continue explicitly accepts detected content rather than trusting the scratch extension"
       ]
@@ -182,14 +183,14 @@
         "desktop": []
       },
       "steps": [
-        "In this run's disposable Vault, verify the exact packaged Assistant candidate, reset temporary settings and scratch inputs from acceptance/fixtures with no active operation, and configure an identity-recorded conversion endpoint that exposes the intended result root and pauses before publication; use a new owned output parent and a fresh Conversion.md copy for every case",
-        "Run DOCX export and choose that parent; before releasing completion create the intended result root as an empty directory, a directory containing sentinel bytes, a regular file, and a supported symlink in separate cases",
-        "In separate cases replace the selected parent at its same path, open a Markdown editor inside the intended result root, or mutate a declared staged artifact before publication",
+        "In this run's disposable Vault, verify the exact packaged Assistant candidate, reset temporary settings and scratch inputs from acceptance/fixtures with no active operation, and configure an identity-recorded conversion endpoint that exposes the intended single-file target or document-node root and pauses before publication; use a new owned output parent and a fresh source copy for every case",
+        "Run single-file DOCX/XLSX export and choose that parent; before releasing completion create the intended output filename as a regular file containing sentinel bytes, an empty directory, a directory containing sentinel bytes, and a supported symlink in separate cases; repeat the occupied-root cases for Markdown directory output",
+        "In separate cases replace the selected parent at its same path, open an editor at the single-file target or inside the Markdown result root, or mutate a declared staged artifact before publication; also change the original source identity/content after the host check but before the final publication guard, then compare source and destination bytes after rejection",
         "Prepare a conversion response with colliding related-output logical paths, run export, and inspect failure details; compare every competing target's identity and sentinel bytes after rejection"
       ],
       "expected": [
-        "Publication refuses an occupied result root, changed parent, open output editor, staged artifact drift or colliding output paths without replacing the competing content or following links",
-        "Only an identity-checked complete staged result can publish to an absent result root in the confirmed parent; there is no save-file overwrite path",
+        "Both single-file and directory publication refuse an occupied target, changed parent or source, open output editor, staged artifact drift or colliding output paths without replacing competing content or following links",
+        "Only an identity-checked single file or complete staged result directory can publish to its absent target in the confirmed parent; the synchronous source guard still runs immediately before publication and neither form offers an overwrite path",
         "Rejected publication removes only owned unchanged staging/lock entries; foreign or identity-changed entries are preserved and any cleanup warning stays visible",
         "Unsupported symlink creation or unavailable controlled-publication setup is explicitly unverified, never inferred from static regression tests"
       ]
