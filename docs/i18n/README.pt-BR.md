@@ -60,11 +60,11 @@ Na atualização manual, substitua apenas `main.js`, `manifest.json` e `styles.c
 
 ## Uso
 
-**Os comandos dependem do arquivo aberto.** A conversão só aparece quando o conteúdo e o DocWen conectado oferecem a capacidade correspondente. A exportação cria uma pasta de resultados separada; a revisão não altera a nota. **Adicionar ou remover números de títulos altera o Markdown.** Antes da gravação, o conteúdo atual do editor, incluindo alterações não salvas, ou o arquivo salvo é conferido. Se houver vários editores ambíguos para o mesmo arquivo, a operação é interrompida.
+**Os comandos dependem do arquivo aberto.** A conversão só aparece quando o conteúdo e o DocWen conectado oferecem a capacidade correspondente. A exportação salva uma saída separada; a revisão não altera a nota. **Adicionar ou remover números de títulos altera o Markdown.** Antes da gravação, o conteúdo atual do editor, incluindo alterações não salvas, ou o arquivo salvo é conferido. Se houver vários editores ambíguos para o mesmo arquivo, a operação é interrompida.
 
 O ícone, o submenu **DocWen** e a paleta de comandos permitem iniciar o DocWen, exportar Word/Excel/Markdown, alterar a numeração de títulos, revisar Markdown e executar **Verificar conexão com o DocWen**.
 
-Escolha um modelo ou uma predefinição de conversão, se houver, e depois a pasta de saída. Confira a origem, o formato, o destino e as opções e clique em **Exportar**. A janela usa as configurações capturadas para essa tarefa; cancelar não inicia a conversão. Cada conversão cria uma nova pasta com o resultado e as imagens vinculadas. Ao concluir, clique em **Abrir pasta do resultado** na notificação. Pastas de resultados existentes não são substituídas.
+Escolha um modelo ou uma predefinição de conversão, se houver, e depois a pasta de saída. Confira a origem, o formato, o destino e as opções e clique em **Exportar**. A janela usa as configurações capturadas para essa tarefa; cancelar não inicia a conversão. Um único DOCX ou XLSX é salvo diretamente na pasta escolhida quando o DocWen retorna um arquivo. Markdown e saídas agrupadas mantêm sua própria pasta com imagens e anexos. Ao concluir, clique em **Abrir pasta do resultado** na notificação. Essa ação abre a pasta que contém a saída. Arquivos e pastas existentes não são substituídos.
 
 ## Configurações
 
@@ -84,7 +84,7 @@ A exportação para Word lê a sintaxe do Number Suite mesmo sem o plugin instal
 | Projeto e guia | Exibição, origem e saída |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.pt-BR.md) | Cria os arquivos convertidos. As extensões de entrada interpretam a sintaxe original; as configurações de exportação definem a saída e sua numeração. |
-| [DocWen Assistant](../product-requirements.en.md) | A exportação cria uma pasta de resultados separada; a revisão apenas lê. As ações explícitas de numeração de títulos editam o Markdown original. |
+| [DocWen Assistant](../product-requirements.en.md) | A exportação salva uma saída separada; a revisão apenas lê. As ações explícitas de numeração de títulos editam o Markdown original. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.pt-BR.md) | As visualizações do calendário e das tarefas leem o índice. Alterar a conclusão ou a data de uma tarefa modifica seu Markdown original; as ações de criação adicionam notas. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.pt-BR.md) | As configurações de sugestões mudam os menus. Reordenar ou mover valores edita as listas YAML envolvidas e pode converter valores não textuais em strings. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.pt-BR.md) | As regras filtram os resultados da análise ou definem quais conexões do grafo contam. Elas não reescrevem os links nas notas. |

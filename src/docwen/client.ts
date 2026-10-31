@@ -22,7 +22,7 @@ import { LocalCliError } from "./errors";
 import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
-import { atomicCommitDirectory, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
+import { atomicCommitConversion, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
   type JsonObject,
@@ -108,7 +108,7 @@ type InputReference = TaskInput | string;
 
 export interface ConversionOutcome {
   output: string;
-  /** Exact committed root for directory exports; numbering writes one file. */
+  /** Exact committed root for directory exports; flat conversions and numbering write one file. */
   resultDirectory?: string;
   outputs: string[];
   bundleId: string;
@@ -223,11 +223,17 @@ export class DocWenClient {
 
   async doctor(signal?: AbortSignal): Promise<HealthReport> {
     const { result, productVersion } = await this.machine.queryWithProductVersion("health/check", {}, signal);
-    const checks = objectArray(result.checks, "health/check.checks").map((item) => ({
-      id: stringValue(item.id) || "check",
-      status: item.ok === true ? "ok" : "error",
-      message: stringValue(item.message) || undefined,
-    }));
+    const checks = objectArray(result.checks, "health/check.checks").map((item) => {
+      if ((item.status !== "ok" && item.status !== "fail")
+        || (item.reason !== null && typeof item.reason !== "string")) {
+        throw invalidResponse("health/check.checks status or reason");
+      }
+      return {
+        id: stringValue(item.id) || "check",
+        status: item.status === "ok" ? "ok" : "error",
+        message: stringValue(item.reason) || undefined,
+      };
+    });
     return { allOk: result.all_ok === true, productVersion, checks };
   }
 
@@ -321,7 +327,7 @@ export class DocWenClient {
         capabilityId === "convert.markdown.to_docx"
         || capabilityId === "convert.markdown_source.to_docx"
       ) requireSingleDocx(result.bundle);
-      const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
+      const outputs = await atomicCommitConversion(result.bundle, destination, request.target, signal, request.publish);
       return {
         ...outputs,
         bundleId: result.bundle.bundle_id,

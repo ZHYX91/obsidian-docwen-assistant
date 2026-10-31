@@ -46,7 +46,7 @@ those environments. Retain untested matrix entries as unverified.
 | `desktop-connection-discovery` | Native package/program selection, canonical CLI path, Doctor, capability/resource empty and failure states, Retry and obsolete-response suppression |
 | `desktop-file-handoff` | All 35 format examples, explicit GUI selection in single/batch modes, repeated and alternating requests, command/ribbon entry points and admission explanations |
 | `desktop-proofread-validation` | Direct Markdown validation, read-only sidebar results, sorting/keyboard navigation, source refresh and latest-request ownership |
-| `desktop-conversion-exports` | DOCX/XLSX/Markdown routes, template/optimization choices, actual output content, successive complete result directories, advisory proofreading and detected-format confirmation |
+| `desktop-conversion-exports` | DOCX/XLSX/Markdown routes, template/optimization choices, actual output content, successive single-file DOCX/XLSX and complete Markdown/grouped result directories, advisory proofreading and detected-format confirmation |
 | `desktop-heading-numbering` | Add/remove numbering on an unsaved unique editor buffer and a separately prepared inactive Vault file |
 | `desktop-vault-conflicts` | Concurrent source/editor/file-identity changes, stale report/export rejection and unconfirmed-write handling |
 | `desktop-output-conflicts` | Occupied/changed output destinations, staged artifact drift, related-output collisions and owned-staging cleanup |
@@ -54,8 +54,9 @@ those environments. Retain untested matrix entries as unverified.
 
 The numbering scenario is a small normal-operation smoke scope. The full contract retains every scenario as a coverage inventory; routine publication selects representative affected cases and records omissions by risk. Direct proofreading already runs
 Markdown validation; there is no additional standalone validation command. Export selects an output
-parent and creates a new result directory. The former save-file overwrite wording does not describe
-the current implementation.
+parent and saves a single DOCX/XLSX directly there when Core returns a single-file result; Markdown
+and grouped outputs retain complete result directories with their resources and attachments.
+Neither publication form overwrites an existing file or directory.
 
 Fault cases need a prepared, identity-recorded controlled endpoint or host fault arrangement:
 empty/failed/delayed discovery replies, held task completion, malformed/colliding output bundles,
@@ -80,7 +81,7 @@ The following broader checks retain their source/package/host evidence boundarie
 - File admission: menus, commands and optimization scope follow Core inspection/capability, including detected-format confirmation.
 - Vault safety: unsaved editor numbering, inactive-file numbering, simultaneous editor change, leaf/view replacement and reconciliation mismatch.
 - Operations: doctor, resources, gui, convert, validate and number success/failure; latest proofread wins; bounded input/output resources; timeout, cancellation, unload and zero residual child process tree.
-- Output commit: staged-source drift, a concurrently created result root, related-output collisions, directories and supported symlinks all fail closed; only a confirmed output parent and absent result root may receive the complete staged directory. Foreign entries are preserved and cleanup failures remain visible.
+- Output commit: staged-source drift, a concurrently created target, related-output collisions, directories and supported symlinks all fail closed; only a confirmed output parent and absent target may receive the identity-checked single DOCX/XLSX or complete Markdown/grouped result directory. Source identity and cancellation guards apply to both forms. Foreign entries are preserved and cleanup failures remain visible.
 - Accessibility and locale: keyboard issue buttons, `:focus-visible`, 11 languages, `zh-Hant-HK`, `zh-Hans-SG`, ribbon and command text refresh.
 - Installation: only `main.js`, `manifest.json`, `styles.css` change; the fixture `data.json` hash is preserved.
 - DocWen location: the full-package folder, `DocWen.exe`, and `DocWenCLI.exe` all resolve to the same exact CLI; unrelated executables, missing siblings, and recursive child-folder guesses fail visibly; a successful selection runs doctor.

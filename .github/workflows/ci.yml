@@ -15,6 +15,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  linux-owned-lifecycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-24.04
+            record: LINUX-OWNER-BUILD.json
+          - arch: arm64
+            os: ubuntu-24.04-arm
+            record: LINUX-OWNER-BUILD.arm64.json
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+      - name: Reproduce and exercise embedded Linux owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends musl-tools
+          mkdir "$RUNNER_TEMP/owner-a" "$RUNNER_TEMP/owner-b"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-a"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/owner-b"
+          test "$(node -p process.arch)" = "${{ matrix.arch }}"
+          cmp "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" "$RUNNER_TEMP/owner-b/linux-owner-${{ matrix.arch }}"
+          cmp "$RUNNER_TEMP/owner-a/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/owner-b/LINUX-OWNER-BUILD.json"
+          cmp "native/${{ matrix.record }}" "$RUNNER_TEMP/owner-a/LINUX-OWNER-BUILD.json"
+          cmp src/docwen/linux-native-owner-${{ matrix.arch }}.ts "$RUNNER_TEMP/owner-a/linux-native-owner-${{ matrix.arch }}.ts"
+          readelf -l -d --version-info "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" > "$RUNNER_TEMP/owner-a/readelf.log"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" "$RUNNER_TEMP/owner-a/topology-diagnostics" 2>&1 | tee "$RUNNER_TEMP/owner-a/topology.log"
+          TMPDIR="$RUNNER_TEMP" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/owner-a/linux-owner-${{ matrix.arch }}" 2>&1 | tee "$RUNNER_TEMP/owner-a/startup.log"
+      - name: Install the exact Node test toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "$(node -p 'require("./package.json").packageManager')"
+          npm ci --no-audit --no-fund
+      - name: Exercise the actual MachineClient native adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/native-adapter"
+          TMPDIR="$RUNNER_TEMP/native-adapter" npm test -- tests/docwen-machine-linux-native.test.ts tests/native-fixture-lifecycle.test.ts tests/native-topology-fixture.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/owner-a/adapter-results.json"
+      - name: Retain native architecture qualification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-owner-${{ matrix.arch }}-${{ github.sha }}
+          path: ${{ runner.temp }}/owner-a
+          if-no-files-found: warn
+          retention-days: 3
+  arm64-core-source-diagnostic:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/arm64-core-source-diagnostic.yml
+    with:
+      consumer_commit: ${{ github.sha }}
+      core_source_commit: 3261a5c2acdf1afd39f6d1fd71abce236eace29c
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -102,6 +163,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Provision the exact recorded MSVC family
+        shell: pwsh
+        run: ./scripts/provision-recorded-msvc.ps1 -OutputParent $env:RUNNER_TEMP
+
       - name: Rebuild and verify Windows owner
         shell: pwsh
         run: |
@@ -110,7 +175,9 @@ jobs:
           $second = Join-Path $env:RUNNER_TEMP "windows-owner-second"
           New-Item -ItemType Directory -Force -Path $first, $second | Out-Null
           node scripts/build-native-windows-owner.mjs $first
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node scripts/build-native-windows-owner.mjs $second
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
           function Assert-SameHash([string]$left, [string]$right, [string]$message) {
             $leftHash = (Get-FileHash $left -Algorithm SHA256).Hash
@@ -123,6 +190,15 @@ jobs:
           Assert-SameHash (Join-Path $first "windows-machine-owner-x64.ts") (Join-Path $second "windows-machine-owner-x64.ts") "Independent embedded owner modules differ."
           Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
           Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
+
+      - name: Retain MSVC provisioning diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: recorded-msvc-provisioning
+          path: ${{ runner.temp }}/recorded-msvc-provisioning
+          if-no-files-found: warn
+          retention-days: 3
 
       - name: Retain native rebuild identity for verification failures
         if: failure()

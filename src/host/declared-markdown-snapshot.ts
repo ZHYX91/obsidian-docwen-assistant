@@ -6,6 +6,7 @@ import { parseLinktext, TFile, type App } from "obsidian";
 import { normalizeLogicalPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
 import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
+import { isActiveCachedReference, maskProtectedSource } from "./markdown-source-ownership";
 import { VaultWriteError } from "./vault-write-transaction";
 
 export interface DeclaredMarkdownSnapshot {
@@ -41,7 +42,11 @@ app: App,
   const imageBindings = new Map<string, string>();
   const wikiLinkBindings = new Map<string, string>();
   let totalResourceBytes = 0;
-  const embeds = [...(fileCache?.embeds ?? [])]
+  const imageSource = maskProtectedSource(authoredMarkdown, { preserveImageDestinations: true });
+  const navigationSource = maskProtectedSource(authoredMarkdown);
+  const embeds = [...(fileCache?.embeds ?? [])].filter((item) => isActiveCachedReference(
+    authoredMarkdown, imageSource, item.original, item.position.start.offset, item.position.end.offset,
+  ))
     .sort((left, right) => left.position.start.offset - right.position.start.offset);
   const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
   if (missingImage !== undefined) {
@@ -51,7 +56,9 @@ app: App,
     );
   }
 
-  const links = [...(fileCache?.links ?? [])]
+  const links = [...(fileCache?.links ?? [])].filter((item) => isActiveCachedReference(
+    authoredMarkdown, navigationSource, item.original, item.position.start.offset, item.position.end.offset,
+  ))
     .sort((left, right) => left.position.start.offset - right.position.start.offset);
   const [missingNavigation] = findUncoveredWikiNavigations(authoredMarkdown, links);
   if (missingNavigation !== undefined) {
@@ -155,6 +162,7 @@ app: App,
     },
   };
 }
+
 
 
 function isLocalWikiNavigationLink(link: string): boolean {

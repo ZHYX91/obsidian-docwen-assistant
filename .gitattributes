@@ -17,6 +17,7 @@
 *.mht text eol=lf
 *.mhtml text eol=lf
 *.mjs text eol=lf
+*.ps1 text eol=lf
 *.rtf text eol=lf
 *.ts text eol=lf
 *.tsv text eol=lf

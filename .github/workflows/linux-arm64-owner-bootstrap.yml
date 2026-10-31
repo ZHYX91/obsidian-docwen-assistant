@@ -1,0 +1,97 @@
+name: Bootstrap native ARM64 owner
+
+on:
+  workflow_call:
+    inputs:
+      expected_source_commit:
+        description: Exact 40-character source commit to qualify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  native-arm64:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    env:
+      EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+      - name: Verify exact source and native ARM64 host
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          const expected = process.env.EXPECTED_SOURCE_COMMIT;
+          assert.match(expected ?? '', /^[a-f0-9]{40}$/u);
+          assert.equal(execFileSync('git', ['rev-parse', 'HEAD'], {encoding:'utf8'}).trim(), expected);
+          assert.equal(process.platform, 'linux');
+          assert.equal(process.arch, 'arm64');
+          assert.equal(execFileSync('uname', ['-m'], {encoding:'utf8'}).trim(), 'aarch64');
+          NODE
+      - name: Reproduce and observe the same source on native ARM64
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends musl-tools
+          mkdir "$RUNNER_TEMP/arm64-owner-a" "$RUNNER_TEMP/arm64-owner-b" "$RUNNER_TEMP/arm64-owner-run" "$RUNNER_TEMP/arm64-owner-evidence"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/arm64-owner-a"
+          node scripts/build-native-linux-owner.mjs "$RUNNER_TEMP/arm64-owner-b"
+          cmp "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" "$RUNNER_TEMP/arm64-owner-b/linux-owner-arm64"
+          cmp "$RUNNER_TEMP/arm64-owner-a/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/arm64-owner-b/LINUX-OWNER-BUILD.json"
+          cmp "$RUNNER_TEMP/arm64-owner-a/linux-native-owner-arm64.ts" "$RUNNER_TEMP/arm64-owner-b/linux-native-owner-arm64.ts"
+          cp "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" "$RUNNER_TEMP/arm64-owner-a/linux-native-owner-arm64.ts" "$RUNNER_TEMP/arm64-owner-a/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/arm64-owner-a/linux-owner.c" native/MUSL-LICENSE.txt "$RUNNER_TEMP/arm64-owner-evidence/"
+          cp "$RUNNER_TEMP/arm64-owner-b/LINUX-OWNER-BUILD.json" "$RUNNER_TEMP/arm64-owner-evidence/SECOND-BUILD.json"
+          readelf -l -d --version-info "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" > "$RUNNER_TEMP/arm64-owner-evidence/readelf.log"
+          TMPDIR="$RUNNER_TEMP/arm64-owner-run" node scripts/check-linux-owner-topology.mjs "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" "$RUNNER_TEMP/arm64-owner-evidence/topology-diagnostics" 2>&1 | tee "$RUNNER_TEMP/arm64-owner-evidence/topology.log"
+          TMPDIR="$RUNNER_TEMP/arm64-owner-run" node scripts/check-linux-owner-startup.mjs "$RUNNER_TEMP/arm64-owner-a/linux-owner-arm64" 2>&1 | tee "$RUNNER_TEMP/arm64-owner-evidence/startup.log"
+      - name: Record the source and artifact identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { createHash } from 'node:crypto';
+          import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const root = join(process.env.RUNNER_TEMP, 'arm64-owner-evidence');
+          function inventory(directory, prefix = '') {
+            return readdirSync(directory, {withFileTypes:true}).sort((a,b) => a.name.localeCompare(b.name, 'en')).flatMap(entry => {
+              const name = prefix + entry.name;
+              const path = join(directory, entry.name);
+              if (entry.isDirectory()) return inventory(path, name + '/');
+              if (!entry.isFile()) throw new Error('Evidence must contain ordinary files: ' + name);
+              const bytes = readFileSync(path);
+              return [{name, bytes:bytes.length, sha256:createHash('sha256').update(bytes).digest('hex')}];
+            });
+          }
+          const files = inventory(root);
+          const git = (...args) => execFileSync('git', args, {encoding:'utf8'}).trim();
+          writeFileSync(join(root, 'bootstrap-receipt.json'), JSON.stringify({
+            schemaVersion:1, kind:'native-arm64-owner-bootstrap', status:'passed-native-bootstrap',
+            commit:git('rev-parse','HEAD'), tree:git('rev-parse','HEAD^{tree}'),
+            platform:process.platform, arch:process.arch, node:process.versions.node,
+            kernel:execFileSync('uname',['-a'],{encoding:'utf8'}).trim(),
+            imageVersion:process.env.ImageVersion ?? null, runId:process.env.GITHUB_RUN_ID,
+            runAttempt:process.env.GITHUB_RUN_ATTEMPT, files,
+            scope:'Two native builds, exact ELF/module/record equality, topology and ptrace only. No embedded production ARM payload, actual MachineClient, Core pair, Obsidian or Mermaid acceptance yet.'
+          }, null, 2)+'\n');
+          NODE
+      - name: Retain exact ARM64 bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: linux-arm64-owner-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/arm64-owner-evidence
+          if-no-files-found: warn
+          retention-days: 3

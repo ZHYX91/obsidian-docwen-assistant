@@ -8,6 +8,8 @@ import { operationWarning, publishOnce, recordFailureWarning, type OperationWarn
 import type { ValidatedArtifactBundle } from "./machine-client";
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
+import { atomicCommitBundle } from "./output-files";
+import type { ConvertTarget } from "./client";
 
 export type DirectoryPublication = <T>(outputRoot: string, commit: PublicationCommit<T>) => Promise<T>;
 
@@ -99,15 +101,46 @@ async function requireAbsent(target: string): Promise<void> {
   throw new LocalCliError("cli_commit_failed", "The result directory already exists. Run again to create a new result.", { target });
 }
 
-function logicalParts(value: string): string[] {
+function logicalParts(value: string, minimumParts = 2): string[] {
   const parts = value.split("/");
-  if (parts.length < 2 || parts.some((part) =>
+  if (parts.length < minimumParts || parts.some((part) =>
     !part || part === "." || part === ".." || /[\\:*?"<>|]/u.test(part)
     || Array.from(part).some((character) => character.charCodeAt(0) < 32)
     || /[. ]$/u.test(part) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part))) {
     throw new LocalCliError("cli_integrity_error", "Artifact logical paths must use portable result-directory names.");
   }
   return parts;
+}
+
+/** Flat conversions admit exactly one business file; all grouped outputs retain their layout. */
+export async function atomicCommitConversion(
+  bundle: ValidatedArtifactBundle,
+  parent: OutputDirectorySnapshot,
+  target: ConvertTarget,
+  signal?: AbortSignal,
+  publish?: DirectoryPublication,
+): Promise<{ output: string; outputs: string[]; resultDirectory?: string; warnings: OperationWarning[] }> {
+  if (bundle.layout_schema === "docwen.document_node.v1") return atomicCommitDirectory(bundle, parent, signal, publish);
+  const artifact = preferredArtifact(bundle);
+  const entry = bundle.entries[0];
+  const mediaType = {
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    md: "text/markdown",
+  }[target];
+  const parts = logicalParts(artifact.logical_path, 1);
+  if (bundle.layout_schema !== "docwen.artifact_layout.v1" || target === "md"
+    || bundle.artifacts.length !== 1 || bundle.entries.length !== 1 || bundle.relations.length !== 0
+    || parts.length !== 1 || parts[0] !== artifact.suggested_name || !artifact.suggested_name.endsWith(`.${target}`)
+    || artifact.media_type !== mediaType || artifact.kind !== "document"
+    || entry?.artifact_id !== artifact.artifact_id || entry.preferred !== true || entry.ordinal !== 0 || entry.role !== "primary") {
+    throw new LocalCliError("cli_integrity_error", "A flat conversion requires one matching preferred output file.");
+  }
+  await parent.assertCurrent();
+  const output = path.join(parent.path, parts[0]);
+  const result = await atomicCommitBundle(bundle, output, false, signal,
+    publish ? (commit) => publish(output, commit) : undefined, () => parent.assertCurrent());
+  return { output, ...result };
 }
 
 export async function atomicCommitDirectory(

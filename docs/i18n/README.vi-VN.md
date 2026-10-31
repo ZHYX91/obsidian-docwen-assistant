@@ -60,11 +60,11 @@ Khi cập nhật thủ công, chỉ thay `main.js`, `manifest.json` và `styles.
 
 ## Cách sử dụng
 
-**Lệnh khả dụng phụ thuộc vào tệp đang mở.** Chức năng chuyển đổi chỉ xuất hiện nếu DocWen được kết nối hỗ trợ thao tác đó cho nội dung tệp. Xuất tạo thư mục kết quả riêng; soát lỗi không sửa ghi chú. **Thêm hoặc xóa số thứ tự tiêu đề sẽ sửa Markdown.** Trước khi ghi, plugin kiểm tra nội dung trình soạn thảo (kể cả thay đổi chưa lưu) hoặc tệp đã lưu; nếu có nhiều trình soạn thảo cùng đường dẫn mà không xác định được nguồn, thao tác dừng lại.
+**Lệnh khả dụng phụ thuộc vào tệp đang mở.** Chức năng chuyển đổi chỉ xuất hiện nếu DocWen được kết nối hỗ trợ thao tác đó cho nội dung tệp. Xuất lưu kết quả riêng; soát lỗi không sửa ghi chú. **Thêm hoặc xóa số thứ tự tiêu đề sẽ sửa Markdown.** Trước khi ghi, plugin kiểm tra nội dung trình soạn thảo (kể cả thay đổi chưa lưu) hoặc tệp đã lưu; nếu có nhiều trình soạn thảo cùng đường dẫn mà không xác định được nguồn, thao tác dừng lại.
 
 Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
 
-Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, rồi chọn thư mục đầu ra. Kiểm tra tệp nguồn, định dạng, nơi lưu và các tùy chọn trước khi bấm **Xuất**. Cửa sổ dùng thiết lập đã lấy cho tác vụ này; hủy sẽ không bắt đầu chuyển đổi. Mỗi lần chuyển đổi tạo thư mục mới chứa kết quả và ảnh liên kết. Sau khi hoàn tất, chọn **Mở thư mục kết quả** trong thông báo. Thư mục kết quả có sẵn không bị ghi đè.
+Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, rồi chọn thư mục đầu ra. Kiểm tra tệp nguồn, định dạng, nơi lưu và các tùy chọn trước khi bấm **Xuất**. Cửa sổ dùng thiết lập đã lấy cho tác vụ này; hủy sẽ không bắt đầu chuyển đổi. Một DOCX hoặc XLSX được lưu trực tiếp vào thư mục đã chọn khi DocWen trả về một tệp. Markdown và các đầu ra theo nhóm giữ thư mục riêng chứa ảnh và tệp đính kèm. Sau khi hoàn tất, chọn **Mở thư mục kết quả** trong thông báo. Thao tác này mở thư mục chứa đầu ra. Tệp và thư mục có sẵn không bị ghi đè.
 
 ## Cài đặt plugin
 
@@ -84,7 +84,7 @@ Xuất Word đọc cú pháp Number Suite ngay cả khi không cài plugin này.
 | Dự án và hướng dẫn | Hiển thị, sửa nguồn và đầu ra |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.vi-VN.md) | Tạo các tệp đã chuyển đổi. Phần mở rộng đầu vào diễn giải cú pháp nguồn; cài đặt xuất quyết định đầu ra và cách đánh số. |
-| [DocWen Assistant](../product-requirements.en.md) | Xuất tạo một thư mục kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
+| [DocWen Assistant](../product-requirements.en.md) | Xuất lưu kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.vi-VN.md) | Lịch và danh sách tác vụ đọc chỉ mục. Đổi trạng thái hoàn thành hoặc ngày của tác vụ sẽ cập nhật Markdown nguồn; thao tác tạo sẽ thêm ghi chú. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.vi-VN.md) | Cài đặt gợi ý thay đổi menu. Sắp xếp hoặc di chuyển giá trị sửa các danh sách YAML liên quan và có thể chuyển giá trị không phải văn bản thành chuỗi. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.vi.md) | Quy tắc lọc kết quả phân tích hoặc quyết định những kết nối đồ thị được tính. Chúng không viết lại liên kết trong ghi chú. |

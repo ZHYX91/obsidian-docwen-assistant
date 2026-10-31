@@ -1,0 +1,118 @@
+name: Native ARM64 Core source diagnostic
+
+on:
+  workflow_call:
+    inputs:
+      consumer_commit:
+        required: true
+        type: string
+      core_source_commit:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  composed-source:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    env:
+      CONSUMER_COMMIT: ${{ inputs.consumer_commit }}
+      CORE_SOURCE_COMMIT: ${{ inputs.core_source_commit }}
+    steps:
+      - name: Initialize runner-owned source paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$RUNNER_TEMP"
+          printf 'UV_PROJECT_ENVIRONMENT=%s\n' "$RUNNER_TEMP/core-source-venv" >> "$GITHUB_ENV"
+          printf 'UV_CACHE_DIR=%s\n' "$RUNNER_TEMP/core-source-cache" >> "$GITHUB_ENV"
+          printf 'DOCWEN_DATA_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/data" >> "$GITHUB_ENV"
+          printf 'DOCWEN_CONFIG_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/config" >> "$GITHUB_ENV"
+          printf 'DOCWEN_LOG_DIR=%s\n' "$RUNNER_TEMP/core-source-profile/log" >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ZHYX91/docwen
+          ref: ${{ inputs.core_source_commit }}
+          path: build/core-source
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .node-version
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          version: "0.12.0"
+          python-version: "3.12.13"
+          enable-cache: false
+      - name: Verify exact native source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p process.arch)" = arm64
+          test "$(uname -m)" = aarch64
+          test "$(git rev-parse HEAD)" = "$CONSUMER_COMMIT"
+          test "$(git -C build/core-source rev-parse HEAD)" = "$CORE_SOURCE_COMMIT"
+      - name: Install the fixed Core using its supported frozen source flow
+        working-directory: build/core-source
+        run: uv sync --frozen --all-extras
+      - name: Prepare an explicit compatible entry, not a precompiled package
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$UV_PROJECT_ENVIRONMENT/bin/python" - <<'PY'
+          import hashlib, json, os, platform, shlex, subprocess, sys
+          from pathlib import Path
+          import docwen_bundle.cli_entry as composed
+          root = Path(os.environ['RUNNER_TEMP']) / 'core-source-contract'
+          root.mkdir()
+          for key in ('DOCWEN_DATA_DIR', 'DOCWEN_CONFIG_DIR', 'DOCWEN_LOG_DIR'):
+            Path(os.environ[key]).mkdir(parents=True, exist_ok=True)
+          source = Path('build/core-source').resolve()
+          entry_module = Path(composed.__file__).resolve()
+          assert entry_module.is_relative_to(source)
+          entry = root / 'DocWenCLI'
+          script = '#!/bin/sh\nexport QT_QPA_PLATFORM=offscreen\ncd ' + shlex.quote(str(source)) + '\nexec ' + shlex.quote(sys.executable) + ' -m docwen_bundle.cli_entry "$@"\n'
+          entry.write_text(script)
+          entry.chmod(0o500)
+          git = lambda *args: subprocess.check_output(['git', '-C', str(source), *args], text=True).strip()
+          receipt = root / 'receipt.json'
+          receipt.write_text(json.dumps({
+            'schemaVersion': 1, 'kind': 'docwen-arm64-source-diagnostic',
+            'arch': platform.machine(), 'python': platform.python_version(),
+            'entry': str(entry), 'entrySha256': hashlib.sha256(entry.read_bytes()).hexdigest(),
+            'consumerCommit': os.environ['CONSUMER_COMMIT'],
+            'core': {'commit': git('rev-parse', 'HEAD'), 'tree': git('rev-parse', 'HEAD^{tree}'),
+              'lockSha256': hashlib.sha256((source/'uv.lock').read_bytes()).hexdigest(),
+              'composedEntry': 'docwen_bundle.cli_entry', 'module': str(entry_module),
+              'moduleSha256': hashlib.sha256(entry_module.read_bytes()).hexdigest()},
+            'scope': 'Fixed Core source diagnostic via an explicit manually selected compatible CLI entry; not a precompiled release or final producer-pair acceptance.'
+          }, indent=2)+'\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+            stream.write('DOCWEN_SOURCE_DIAGNOSTIC_RECEIPT='+str(receipt)+'\n')
+          PY
+      - name: Install the exact consumer test toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global "$(node -p 'require("./package.json").packageManager')"
+          npm ci --no-audit --no-fund
+      - name: Run actual ARM64 ownership and composed Core operations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/core-source-run"
+          TMPDIR="$RUNNER_TEMP/core-source-run" npm test -- tests/docwen-arm64-source-integration.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/core-source-contract/tests.json"
+      - name: Retain bounded source compatibility evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: arm64-core-source-${{ inputs.consumer_commit }}-${{ inputs.core_source_commit }}
+          path: |
+            ${{ runner.temp }}/core-source-contract
+            ${{ runner.temp }}/core-source-profile/log
+          if-no-files-found: warn
+          retention-days: 3

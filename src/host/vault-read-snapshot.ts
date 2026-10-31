@@ -70,6 +70,30 @@ export class VaultReadSnapshot {
     signal: AbortSignal,
     work: (snapshot: IsolatedSnapshot) => Promise<T>,
   ): Promise<Completed<T>> {
+    const initialStat = file.stat ? { ...file.stat } : undefined;
+    let modified = false;
+    const reference = this.app.vault.on?.("modify", (changed) => {
+      if (changed === file) modified = true;
+    });
+    const assertRevision = (): void => {
+      if (modified || (initialStat && (file.stat.mtime !== initialStat.mtime
+        || file.stat.ctime !== initialStat.ctime || file.stat.size !== initialStat.size))) {
+        throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
+      }
+    };
+    try {
+      return await this.runCaptured(file, signal, work, assertRevision);
+    } finally {
+      if (reference) this.app.vault.offref(reference);
+    }
+  }
+
+  private async runCaptured<T>(
+    file: TFile,
+    signal: AbortSignal,
+    work: (snapshot: IsolatedSnapshot) => Promise<T>,
+    assertRevision: () => void,
+  ): Promise<Completed<T>> {
     // Pin the path and Vault identity before any async source read. A rename,
     // delete, or replacement must never approve publication under a new owner.
     const originalPath = file.path;
@@ -113,6 +137,7 @@ export class VaultReadSnapshot {
         }
       } else {
         assertNoOpenMarkdownTarget(this.app, originalPath);
+        assertRevision();
       }
     };
     const assertCurrent = async (): Promise<void> => {

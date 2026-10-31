@@ -55,7 +55,9 @@ The adapted source is `windows-job.c`, derived under MIT from
 source SHA-256, generated PE SHA-256, byte length, x64 PE identity, zero COFF timestamp, exact MSVC
 compiler/librarian/linker identity and flags are pinned in `WINDOWS-BUILD.json`.
 `scripts/build-native-windows-owner.mjs` reproduces the PE and generated TypeScript payload on a
-Windows x64 host with the recorded MSVC toolset. It resolves the installed x64 compiler tools directly
+Windows x64 host with the recorded MSVC toolset. It searches installed Visual Studio instances for
+that exact toolset and verifies all three recorded tool identities before compiling; a newer
+installed toolset is not selected automatically. It resolves the x64 compiler tools directly
 and does not download a toolchain. Two clean build directories must produce identical bytes before the
 embedded payload is updated.
 
@@ -75,3 +77,59 @@ Controller exit 125 denotes an internal owner failure; exit 126 means target cre
 because the executable was not found. After a target starts and its Job is successfully closed,
 target exits 125 and 126 are mapped to ordinary target failure 127, so target errors cannot be
 misreported as unconfirmed cleanup or a missing execution alias.
+
+Windows CI provisions only the recorded release-family component from a fixed
+Microsoft Build Tools bootstrapper. The bootstrapper size, SHA-256 and Microsoft
+Authenticode signature must match before the official setup engine runs with its
+default content validation. Installer failures and reboot-required results fail
+the job. Discovery accepts either the existing Latest component or the recorded
+family component. Directory names only identify candidates: servicing binaries
+can live in a different base-patch directory. The compiler, librarian and linker
+from one candidate must all match their recorded full identities exactly. Both independent rebuilds, build records and embedded bytes must
+still match. Provisioning diagnostics retain the earliest error separately from
+rebuild outputs.
+
+## Linux Machine lifetime ownership
+
+Linux x64 and arm64 content sessions use `linux-owner.c`, an MIT implementation shared with
+DocWen for OpenClaw. The x64 `LINUX-OWNER-BUILD.json` and arm64 `LINUX-OWNER-BUILD.arm64.json` pin the
+vendored source, compiler, flags, ELF hash and size. Their matching
+`linux-native-owner-<arch>.ts` modules embed the exact bytes inside
+`main.js`. No sibling repository, extra plugin asset or runtime compiler is needed.
+Rebuild with `node scripts/build-native-linux-owner.mjs /absolute/owned/output` on
+the corresponding native Linux architecture, then compare two clean builds with the recorded payload before updating it.
+
+Two subreapers remain outside the business session. They adopt orphaned descendants
+even after `setsid()` or double-fork, validate current wait-parenthood and signal
+through pidfds. Only `ECHILD` confirms complete reaping; empty procfs listings,
+old PID/start-time snapshots and ordinary process-name scans never grant authority.
+Control loss and either supervisor's separate death trigger bounded cleanup. Loss of
+proof stays unconfirmed; simultaneous destruction of both owners is outside this
+guarantee. Mounted procfs and kernel pidfd support are required. The verified private
+image is unlinked before the owner permits Machine startup, preserving real EPIPE.
+Unknown Linux architectures fail before image writes or business spawn; there
+is no JavaScript process-group/procfs fallback. ARM64 keeps its native 64 KiB
+ELF alignment and an explicit 256 KiB image cap; x64 retains its 128 KiB cap.
+Result-directory export continues to require the independent x64 publication
+addon; health, proofreading and single-file numbering use either lifetime owner.
+
+The Linux owner is statically linked with Ubuntu 24.04 `musl-tools`, without an
+ELF interpreter, dynamic libc dependency or GLIBC version floor. The build receipt
+records the musl package version and archive hash. [Upstream notices](MUSL-LICENSE.txt)
+are preserved in the embedded module and the shipped `main.js` legal comment.
+
+The native CI matrix independently rebuilds x64 and arm64 twice, compares both
+records and embedded modules, runs real topology/ptrace cases and exercises the
+actual MachineClient adapter on each native host. The reusable bootstrap workflow
+collects new payloads before embedding; its observations do not establish later
+production adapter, Core-pair or Obsidian acceptance.
+
+`node scripts/check-linux-owner-topology.mjs /absolute/owned/owner /absolute/owned/diagnostics`
+retains per-case JSON snapshots and the exact generated peer source. Snapshots include
+the current stage, bounded stdout/stderr/control bytes, exit events, observed PID
+lifetimes and process states, metadata publication and heartbeat bytes, plus original
+and cleanup errors. CI uploads these sidecars even when the topology gate fails.
+Metadata and owner-close waits each retain their six-second deadline. Normal exit
+and root-crash peers wait for an explicit release after the live baseline has been
+recorded; owned heartbeats and unrelated sentinels have no self-expiry. Double-fork
+metadata is closed before an atomic same-directory rename makes it visible.
