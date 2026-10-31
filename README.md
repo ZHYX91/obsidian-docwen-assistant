@@ -65,7 +65,7 @@ When updating manually, replace only `main.js`, `manifest.json` and `styles.css`
 
 ## Usage
 
-**Choose the action for the current file.** Export commands appear only when the file and the connected DocWen capabilities support the conversion. Export creates a separate result folder; proofreading reports issues without editing the note. **Add/Remove numbering changes Markdown text** after checking the current editor or saved-file snapshot for conflicts. Unsaved edits in the matching open editor are included; ambiguous multiple editors for one path are rejected.
+**Choose the action for the current file.** Export commands appear only when the file and the connected DocWen capabilities support the conversion. Export saves separate output; proofreading reports issues without editing the note. **Add/Remove numbering changes Markdown text** after checking the current editor or saved-file snapshot for conflicts. Unsaved edits in the matching open editor are included; ambiguous multiple editors for one path are rejected.
 
 Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 
@@ -78,7 +78,7 @@ Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
 - **Proofread current Markdown file**
 - **Check DocWen connection**
 
-Choose a template or conversion preset when offered, then an output folder. Review the source, format, destination and applicable options, then choose **Export**. The review uses the captured task settings; cancelling closes it without starting conversion. Each conversion creates a new result folder containing the output and linked resources. After completion, choose **Open result folder** in the notice. Existing result folders are never replaced.
+Choose a template or conversion preset when offered, then an output folder. Review the source, format, destination and applicable options, then choose **Export**. The review uses the captured task settings; cancelling closes it without starting conversion. A single DOCX or XLSX is saved directly in that folder when DocWen returns one file. Markdown and grouped outputs retain their own result folder with linked resources and attachments. After completion, choose **Open result folder** in the notice to open the containing folder. Existing output files and result folders are never replaced.
 
 ## Settings
 
@@ -98,7 +98,7 @@ Word export reads Number Suite syntax from Markdown even when Number Suite is no
 | Project and guide | Display, source edits and output |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/README.md) | Creates converted files. Input extensions interpret source syntax; export settings control the output and its numbering. |
-| [DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) | Export creates a separate result folder; proofreading is read-only. Explicit heading-number actions edit the source Markdown. |
+| [DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) | Export saves separate output; proofreading is read-only. Explicit heading-number actions edit the source Markdown. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/README.md) | Calendar and task views read the index. Completion and date edits update source Markdown; creation actions create notes. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/README.md) | Suggestions change menus. Reordering or moving values edits the affected YAML lists and can turn nontext values into strings. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/README.md) | Rules filter analysis results or change which graph connections count. They do not rewrite links in notes. |

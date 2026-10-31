@@ -60,11 +60,11 @@ Ersetzen Sie bei manuellen Updates nur `main.js`, `manifest.json` und `styles.cs
 
 ## Verwendung
 
-**Welche Befehle verfügbar sind, hängt von der Datei ab.** Die Konvertierung erfordert eine passende Funktion der verbundenen DocWen-Installation. Der Export legt einen eigenen Ergebnisordner an; Korrekturlesen verändert die Notiz nicht. **Das Hinzufügen und Entfernen von Überschriftennummern ändert dagegen den Markdown-Text.** Vor dem Speichern werden Editorinhalt oder gespeicherte Datei auf Änderungen geprüft. Bei mehreren nicht eindeutig zuordenbaren Editoren derselben Datei wird abgebrochen.
+**Welche Befehle verfügbar sind, hängt von der Datei ab.** Die Konvertierung erfordert eine passende Funktion der verbundenen DocWen-Installation. Der Export speichert separate Ergebnisse; Korrekturlesen verändert die Notiz nicht. **Das Hinzufügen und Entfernen von Überschriftennummern ändert dagegen den Markdown-Text.** Vor dem Speichern werden Editorinhalt oder gespeicherte Datei auf Änderungen geprüft. Bei mehreren nicht eindeutig zuordenbaren Editoren derselben Datei wird abgebrochen.
 
 Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und **DocWen-Verbindung prüfen** ausführen.
 
-Wählen Sie eine Vorlage oder ein Konvertierungsprofil, falls angeboten, und danach den Ausgabeordner. Prüfen Sie Quelldatei, Format, Ziel und Optionen und klicken Sie auf **Exportieren**. Die Übersicht verwendet die für diesen Auftrag erfassten Einstellungen; beim Abbrechen startet keine Konvertierung. Ergebnisse und verknüpfte Bilder landen in einem neuen Ordner. Klicken Sie nach Abschluss in der Meldung auf **Ergebnisordner öffnen**. Vorhandene Ergebnisordner bleiben erhalten.
+Wählen Sie eine Vorlage oder ein Konvertierungsprofil, falls angeboten, und danach den Ausgabeordner. Prüfen Sie Quelldatei, Format, Ziel und Optionen und klicken Sie auf **Exportieren**. Die Übersicht verwendet die für diesen Auftrag erfassten Einstellungen; beim Abbrechen startet keine Konvertierung. Ein einzelnes DOCX oder XLSX wird direkt im gewählten Ordner gespeichert, wenn DocWen eine Datei liefert. Markdown und gruppierte Ergebnisse behalten ihren eigenen Ordner mit Bildern und Anhängen. Klicken Sie nach Abschluss in der Meldung auf **Ergebnisordner öffnen**. Dies öffnet den Ordner mit der Ausgabe. Vorhandene Dateien und Ordner bleiben erhalten.
 
 ## Einstellungen
 
@@ -84,7 +84,7 @@ Word-Export liest die Number-Suite-Syntax auch ohne installiertes Number Suite. 
 | Projekt und Anleitung | Anzeige, Quelldateien und Ausgabe |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.de-DE.md) | Erzeugt konvertierte Dateien. Eingabeerweiterungen interpretieren die Quellsyntax; Exporteinstellungen bestimmen die Ausgabe und ihre Nummerierung. |
-| [DocWen Assistant](../product-requirements.en.md) | Der Export erstellt einen eigenen Ergebnisordner; Korrekturlesen greift nur lesend zu. Ausdrückliche Aktionen für Überschriftennummern ändern den Markdown-Quelltext. |
+| [DocWen Assistant](../product-requirements.en.md) | Der Export speichert separate Ergebnisse; Korrekturlesen greift nur lesend zu. Ausdrückliche Aktionen für Überschriftennummern ändern den Markdown-Quelltext. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.de-DE.md) | Kalender- und Aufgabenansichten lesen den Index. Änderungen an Erledigungsstatus oder Datum schreiben in die Markdown-Quelle; Erstellungsaktionen legen Notizen an. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.de-DE.md) | Vorschlagseinstellungen ändern Menüs. Neuordnen oder Verschieben von Werten bearbeitet die betroffenen YAML-Listen und kann Nichttextwerte in Zeichenketten umwandeln. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.de.md) | Regeln filtern Analyseergebnisse oder bestimmen, welche Graphverbindungen zählen. Links in Notizen werden nicht umgeschrieben. |

@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Publish valid single DOCX and XLSX conversion results directly in the selected output folder, preserving no-overwrite, source-snapshot, parent-identity and cancellation checks; keep Markdown, attachments and grouped outputs in their complete result directories.
+
 ## [3.5.0] - 2026-10-25
 
 - Pin the original Vault file and editor identity for numbering and export snapshots; stop on rename or replacement before publication and retain warnings after a confirmed write.

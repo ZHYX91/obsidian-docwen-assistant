@@ -42,7 +42,7 @@ provider-neutral 的 `resolved_document` + `numbering_export_plan` capability �
 
 ## 产物与提交
 
-DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
+DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。`docwen.artifact_layout.v1` 转换只接纳与请求目标一致的单个 DOCX 或 XLSX：只有一个首选 primary document，ordinal 为零，没有其他产物或关系，`logical_path` 与 `suggested_name` 是相同的便携文件名。在所选父目录准备文件，以原子 no-replace 硬链接发布。Markdown 和组合输出要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。两种发布形态都在最终原语前复核父目录身份、准备好的文件、取消状态和同步源 guard；都不替换已有目标。
 
 source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
@@ -50,7 +50,7 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 ## Vault 写入
 
-导出在转换前记录所选父目录身份，并在该文件系统的自有空目录上探测原子发布及拒绝覆盖的能力。预检失败会在 Machine 转换前停止，提示选择其他输出目录或检查权限。探测结果不缓存，也不替代提交检查。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的结果目录或该目录内打开的编辑器，并在原子 no-replace 重命名前检查取消状态。最终碰撞检查只用于尽早给出清晰错误；安全性不依赖检查与重命名之间没有外部写者。父目录中的其他文件或编辑器不阻止导出。
+导出在转换前记录所选父目录身份，并在该文件系统的自有空目录上探测原子发布及拒绝覆盖的能力。预检失败会在 Machine 转换前停止，提示选择其他输出目录或检查权限。探测结果不缓存，也不替代提交检查。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的输出目标或该目标及其结果目录内打开的编辑器，并在原子 no-replace 发布前检查取消状态。最终碰撞检查只用于尽早给出清晰错误；安全性不依赖检查与重命名之间没有外部写者。父目录中的其他文件或编辑器不阻止导出。
 
 校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态，同时核对原 TFile 对象、未变的路径、当前 Vault 注册与 view.file 身份；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
 

@@ -21,6 +21,8 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 源码回归另覆盖最后一次读取后的关闭文件 stat/modify 事件、两个资源扫描器与声明输入 builder 的 raw HTML 字面内容所有权及真实外部资源身份（含容器边界、目的地址／标题中的反引号、行内注释、引用式图片与图片标签中的代码）、正式 health `status/reason`、精确记录 MSVC 选择，以及合法 67 帧进度流的逐字节、逐帧、随机和合并 stdout 分块。Linux x64/arm64 原生 CI 独立重建内嵌 owner 两次，并覆盖 setsid/double-fork 后代、root 退出/崩溃、两层 supervisor 各自崩溃，以及 outer owner 死亡时尚未 exec 的停止子进程。真实进程状态、心跳停止和无关 sentinel 存活共同证明清理；仅 PID 存在不足以证明。源码负控证明未知架构在 image 写入或 spawn 前拒绝；native adapter 覆盖正常完成、中止、释放、query／task execute／已接收任务 cancel 三阶段的真实 EPIPE 与 owner 未确认后禁止重试，已退役的 JavaScript procfs／进程组路径没有生产入口。拓扑夹具使用显式 release 保留正常退出／root 崩溃前的存活基线，心跳和 sentinel 不自行过期，double-fork 元数据在完整关闭后原子发布。逐例持久诊断保存 stage、流／control、退出、PID 身份与状态、元数据和心跳快照以及原始／清理错误；metadata 与 owner-close 等待各保持 6 秒。受控原生测试不建立真实 Obsidian、Gateway 或 Mermaid 渲染验收结论。
 
+公共转换 client 回归在发布前实际验证 Bundle，覆盖单 DOCX/XLSX、已有目标、最终不存在检查后出现的外部文件、源 guard、输出编辑器拒绝、取消、父目录变化、不一致平铺 Bundle，以及附件资源独立拥有的完整 Markdown 目录。这些源码测试不建立固定 Core 或 Obsidian 宿主验收证明。CSV 不是 Assistant 的转换目标。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。

@@ -22,7 +22,7 @@ import { LocalCliError } from "./errors";
 import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
-import { atomicCommitDirectory, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
+import { atomicCommitConversion, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
   type JsonObject,
@@ -108,7 +108,7 @@ type InputReference = TaskInput | string;
 
 export interface ConversionOutcome {
   output: string;
-  /** Exact committed root for directory exports; numbering writes one file. */
+  /** Exact committed root for directory exports; flat conversions and numbering write one file. */
   resultDirectory?: string;
   outputs: string[];
   bundleId: string;
@@ -327,7 +327,7 @@ export class DocWenClient {
         capabilityId === "convert.markdown.to_docx"
         || capabilityId === "convert.markdown_source.to_docx"
       ) requireSingleDocx(result.bundle);
-      const outputs = await atomicCommitDirectory(result.bundle, destination, signal, request.publish);
+      const outputs = await atomicCommitConversion(result.bundle, destination, request.target, signal, request.publish);
       return {
         ...outputs,
         bundleId: result.bundle.bundle_id,
