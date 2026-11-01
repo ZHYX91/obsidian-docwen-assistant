@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSettingsSnapshot, normalizeSettings } from "../src/settings-model";
 
 const state = vi.hoisted(() => ({
@@ -160,6 +160,7 @@ vi.mock("../src/operation-status", () => ({
 }));
 
 describe("DocWenPlugin lifecycle", () => {
+  afterEach(() => vi.restoreAllMocks());
   beforeEach(() => {
     state.cleanup.length = 0;
     state.processCoordinators.length = 0;
@@ -328,18 +329,84 @@ describe("DocWenPlugin lifecycle", () => {
 
   it("does not register runtime resources after unload wins an awaited load", async () => {
     let resolveLoad!: (value: unknown) => void;
+    let started!: () => void;
+    const reading = new Promise<void>((resolve) => { started = resolve; });
     state.loadData = () => new Promise((resolve) => {
       resolveLoad = resolve;
+      started();
     });
     const { default: DocWenPlugin } = await import("../src/main");
     const plugin = new DocWenPlugin({} as never, {} as never);
 
     const loading = plugin.onload();
+    await reading;
     plugin.onunload();
     resolveLoad({});
     await loading;
 
     expect(state.cleanup).toEqual([]);
+    expect(state.savedData).toEqual([]);
+    expect(plugin.settings).toBeUndefined();
+  });
+
+  it("adds a settings-only pending save to the host quit tasks", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    vi.spyOn(plugin, "saveData").mockImplementation(async () => pending);
+    plugin.settings.extractImages = false;
+    const saving = plugin.saveSettings();
+    const promises: Promise<void>[] = [];
+    state.workspaceEvents.get("quit")?.({ addPromise: (promise: Promise<void>) => promises.push(promise) });
+    expect(promises).toHaveLength(1);
+    const finished = vi.fn();
+    const waiting = promises[0].then(finished);
+    await Promise.resolve();
+    expect(finished).not.toHaveBeenCalled();
+    release();
+    await Promise.all([saving, waiting]);
+    expect(finished).toHaveBeenCalledOnce();
+    await expect(plugin.saveSettings()).rejects.toThrow("after plugin unload");
+    await expect(plugin.retrySettingsSave()).rejects.toThrow("after plugin unload");
+  });
+
+  it("keeps a fresh module's settings read behind an old in-flight save", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const old = new DocWenPlugin({} as never, {} as never);
+    let stored: unknown = createSettingsSnapshot(normalizeSettings(null));
+    state.loadData = async () => stored;
+    await old.onload();
+    let started!: () => void;
+    const writing = new Promise<void>((resolve) => { started = resolve; });
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => { release = resolve; });
+    vi.spyOn(old, "saveData").mockImplementation(async (value: unknown) => {
+      started();
+      await pending;
+      stored = value;
+    });
+    old.settings.extractImages = false;
+    const saving = old.saveSettings();
+    await writing;
+    old.onunload();
+    vi.resetModules();
+    const { default: FreshPlugin } = await import("../src/main");
+    const fresh = new FreshPlugin({} as never, {} as never);
+    Object.assign(fresh, { app: old.app });
+    const reading = vi.spyOn(fresh, "loadData").mockImplementation(async () => stored);
+    vi.spyOn(fresh, "saveData").mockImplementation(async (value: unknown) => { stored = value; });
+    const loading = fresh.onload();
+    await Promise.resolve();
+    expect(reading).not.toHaveBeenCalled();
+    release();
+    await Promise.all([saving, loading]);
+    expect(fresh.settings.extractImages).toBe(false);
+    fresh.settings.language = "en";
+    await fresh.saveSettings();
+    expect(stored).toMatchObject({ extractImages: false, language: "en" });
+    fresh.onunload();
   });
 
   it("resets operations, connection state, and capability state through one runtime entry", async () => {

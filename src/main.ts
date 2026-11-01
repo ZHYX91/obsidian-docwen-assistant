@@ -46,7 +46,7 @@ import {
 import { OperationCoordinator } from "./runtime/operation-coordinator";
 import { OperationStatus } from "./operation-status";
 import { RuntimeDisposer } from "./runtime/disposer";
-import { SettingsSaveCoordinator, type SettingsSaveState } from "./runtime/settings-save";
+import { SettingsSaveCoordinator, settingsStorageScheduler, type SettingsSaveState } from "./runtime/settings-save";
 import { DocWenConnectionMonitor } from "./docwen/connection-monitor";
 import { DocWenProcessCoordinator } from "./docwen/process-coordinator";
 
@@ -67,6 +67,7 @@ export default class DocWenPlugin extends Plugin {
   private actionRunner!: ActionRunner;
   private operationStatus: OperationStatus | null = null;
   private runtimeEpoch = 0;
+  private unloaded = false;
   private settingsSaves!: SettingsSaveCoordinator<PersistedPluginSettings>;
   private settingsCompatibility: SettingsCompatibility = {
     status: "compatible",
@@ -175,11 +176,12 @@ export default class DocWenPlugin extends Plugin {
    */
   async onload() {
     const epoch = ++this.runtimeEpoch;
+    this.unloaded = false;
     this.runtimeDisposer = new RuntimeDisposer();
     try {
-    this.settingsSaves = new SettingsSaveCoordinator((snapshot) => this.saveData(snapshot));
+    this.settingsSaves = new SettingsSaveCoordinator((snapshot) => this.saveData(snapshot), settingsStorageScheduler(this.app));
     // Load settings
-    await this.loadSettings();
+    await this.loadSettings(epoch);
     if (epoch !== this.runtimeEpoch) return;
     initializePluginI18n(this.settings.language);
 
@@ -218,9 +220,14 @@ export default class DocWenPlugin extends Plugin {
     this.registerEvent(this.app.workspace.on("quit", (tasks) => {
       const pending = this.operations.hasPendingWork;
       const settling = this.operations.shutdown();
+      const settingsPending = this.settingsSaves.hasPendingWork;
+      const settingsSettling = this.settingsSaves.settle();
       this.onunload();
       if (pending) tasks.addPromise(settling.then((settled) => {
         if (!settled) console.warn("[DocWen Assistant] Host quit cleanup deadline exceeded.");
+      }));
+      if (settingsPending) tasks.addPromise(settingsSettling.catch((error: unknown) => {
+        console.warn("[DocWen Assistant] Settings could not be saved before host quit.", error);
       }));
     }));
     this.actionRunner = new ActionRunner(
@@ -365,26 +372,31 @@ export default class DocWenPlugin extends Plugin {
    */
   onunload() {
     ++this.runtimeEpoch;
+    this.unloaded = true;
     this.runtimeDisposer.dispose();
   }
 
   /**
    * Load plugin settings from storage
    */
-  async loadSettings() {
-    const stored: unknown = await this.loadData();
-    const loaded = loadSettingsData(stored);
-    this.settings = loaded.settings;
-    this.settingsCompatibility = loaded.compatibility;
-    if (loaded.migration !== null) {
-      void this.settingsSaves.save(loaded.migration).catch(() => undefined);
-    }
+  async loadSettings(epoch = this.runtimeEpoch) {
+    await settingsStorageScheduler(this.app)(async () => {
+      const stored: unknown = await this.loadData();
+      if (this.unloaded || epoch !== this.runtimeEpoch) return;
+      const loaded = loadSettingsData(stored);
+      this.settings = loaded.settings;
+      this.settingsCompatibility = loaded.compatibility;
+      if (loaded.migration !== null) {
+        void this.settingsSaves.save(loaded.migration).catch(() => undefined);
+      }
+    });
   }
 
   /**
    * Save plugin settings to storage
    */
   async saveSettings() {
+    if (this.unloaded) throw new Error("DocWen Assistant settings cannot be saved after plugin unload.");
     if (this.settingsCompatibility.status === "incompatible") {
       throw new SettingsSchemaIncompatibleError(this.settingsCompatibility);
     }
@@ -425,6 +437,7 @@ export default class DocWenPlugin extends Plugin {
   }
 
   retrySettingsSave(): Promise<void> {
+    if (this.unloaded) return Promise.reject(new Error("DocWen Assistant settings cannot be saved after plugin unload."));
     return this.settingsSaves.retry();
   }
 

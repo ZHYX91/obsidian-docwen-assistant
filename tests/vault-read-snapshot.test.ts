@@ -578,6 +578,36 @@ describe("VaultReadSnapshot", () => {
     expect(captured.neutral.plan_sha256).toBe(captured.plan.plan_sha256);
   });
 
+  it.each([
+    "---\nvalue: |\n  # **Frontmatter ghost**\n---\n",
+    "<!--\n# **HTML comment ghost**\n```\n-->\n",
+    "%%\n# **Obsidian comment ghost**\n```\n%%\n",
+    "<div>\n# **HTML block ghost**\n</div>\n\n",
+    "<script>\n# **Script ghost**\n</script>\n",
+    "    # **Indented code ghost**\n",
+    "> ```\n> # **Quoted code ghost**\n> ```\n",
+  ])("excludes literal pseudo-headings without requesting stale metadata: %s", async (literal) => {
+    const { TFile } = await import("obsidian");
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = Object.assign(new TFile(), { path: "notes/literal.md", extension: "md" });
+    const source = `${literal}\n# Real heading\n`;
+    const app = {
+      workspace: { getLeavesOfType: vi.fn(() => []) },
+      vault: {
+        getFileByPath: (filePath: string) => filePath === file.path ? file : null,
+        readBinary: async () => new TextEncoder().encode(source).buffer,
+      },
+      metadataCache: { getFileCache: () => ({}), getFirstLinkpathDest: vi.fn() },
+    };
+    const result = await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      const inputs = await snapshot.getResolvedMarkdownInputs();
+      return JSON.parse(await readFile(inputs![0].path, "utf8"));
+    });
+    expect(result.value.document.targets).toEqual([expect.objectContaining({
+      authored_text: "Real heading", heading_level: 1, source_start: source.indexOf("# Real heading"),
+    })]);
+  });
+
   it("materializes a validated Number Suite v2 snapshot into DocWen exact-two inputs", async () => {
     const { TFile } = await import("obsidian");
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");

@@ -212,9 +212,10 @@ export async function atomicCommitDirectory(
         lockIdentity = await lock.stat({ bigint: true });
         await parent.assertCurrent();
         await requireAbsent(finalRoot);
-        throwIfAborted(signal);
-        beforePublish?.();
-        await publishDirectoryNoReplace(temporary, finalRoot);
+        await publishDirectoryNoReplace(temporary, finalRoot, () => {
+          throwIfAborted(signal);
+          beforePublish?.();
+        });
         committed = true;
       } finally {
         try {

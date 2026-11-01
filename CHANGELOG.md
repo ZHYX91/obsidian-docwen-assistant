@@ -4,6 +4,9 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Recheck cancellation and source identity immediately before Linux result-directory publication, including after native-helper loading.
+- Serialize settings storage across plugin reloads, suppress stale startup migrations, and wait for pending settings writes during host quit.
+- Exclude frontmatter, comments, raw HTML and code from the compatibility heading inventory while preserving source offsets.
 - Publish valid single DOCX and XLSX conversion results directly in the selected output folder, preserving no-overwrite, source-snapshot, parent-identity and cancellation checks; keep Markdown, attachments and grouped outputs in their complete result directories.
 
 ## [3.5.0] - 2026-10-25
