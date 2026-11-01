@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
       - name: Reproduce and exercise embedded Linux owner
@@ -64,7 +64,7 @@ jobs:
           TMPDIR="$RUNNER_TEMP/native-adapter" npm test -- tests/docwen-machine-linux-native.test.ts tests/native-fixture-lifecycle.test.ts tests/native-topology-fixture.test.ts --reporter=default --reporter=json --outputFile="$RUNNER_TEMP/owner-a/adapter-results.json"
       - name: Retain native architecture qualification
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-owner-${{ matrix.arch }}-${{ github.sha }}
           path: ${{ runner.temp }}/owner-a
@@ -87,7 +87,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up exact Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           cache: npm
@@ -117,7 +117,7 @@ jobs:
         run: npm run check
 
       - name: Upload production plugin
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: docwen-assistant-production
           path: |
@@ -137,7 +137,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up exact Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           cache: npm
@@ -193,7 +193,7 @@ jobs:
 
       - name: Retain MSVC provisioning diagnostics
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: recorded-msvc-provisioning
           path: ${{ runner.temp }}/recorded-msvc-provisioning
@@ -202,7 +202,7 @@ jobs:
 
       - name: Retain native rebuild identity for verification failures
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-owner-rebuild-diagnostic
           path: |

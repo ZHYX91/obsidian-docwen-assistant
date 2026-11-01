@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.5.1] - 2026-11-01
+
 - Recheck cancellation and source identity immediately before Linux result-directory publication, including after native-helper loading.
 - Serialize settings storage across plugin reloads, suppress stale startup migrations, and wait for pending settings writes during host quit.
 - Exclude frontmatter, comments, raw HTML and code from the compatibility heading inventory while preserving source offsets.
@@ -253,7 +255,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.1.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.1...HEAD
+[3.5.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.0...3.5.1
 [3.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.0.0...3.1.0
 [3.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.4.0...3.0.0
 [2.4.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.3.0...2.4.0
