@@ -9,7 +9,7 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-process-owner.ts` 将 procfs 身份与所属进程组清理从 Machine framing 和请求中分离；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
 
 ## DocWen 进程边界
 
@@ -18,6 +18,10 @@ translation_status: source
 Windows 自动模式验证固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名。GUI 控制从安全的临时工作目录启动该别名；Machine 内容操作则由 Windows Job 控制器通过 `GetPackagesByPackageFamily` 和 `GetPackagePathByFullName` 查询当前用户唯一注册的 DocWen 包，并在所属 Job 内启动包中的 `DocWenCLI.exe`。注册缺失或存在歧义时失败关闭。插件不搜索任意 `WindowsApps` 目录，不通过 `PATH` 解析裸命令，也不在设置中持久化带版本的包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.17.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
 
 ## 请求数据流
+
+健康检查投影正式的 `status` 与可为空的 `reason` 字段；仅 `all_ok` 决定总连接健康。受限传输队列只合并同一任务连续、有效且严格递增的进度通知，因此合法 stdout 分块不改变任务结果。控制与终态消息保留，畸形或非单调进度不会被合并掩盖。
+
+固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。宿主 cache 支持的活动引用式图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
 
 Assistant 界面语言只控制自身文案与方向。资源查询可以请求本地化显示名称，但转换请求使用稳定资源 ID，不把展示偏好复制成任务 `locale`；未指定的任务语言遵循 Core 输出设置。模板、显式 OCR 选择和校对规则各自拥有独立配置。同一固定任务不会因切换 Assistant 界面语言而改变选项。
 
@@ -38,7 +42,7 @@ provider-neutral 的 `resolved_document` + `numbering_export_plan` capability �
 
 ## 产物与提交
 
-DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。转换要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。
+DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。`docwen.artifact_layout.v1` 转换只接纳与请求目标一致的单个 DOCX 或 XLSX：只有一个首选 primary document，ordinal 为零，没有其他产物或关系，`logical_path` 与 `suggested_name` 是相同的便携文件名。在所选父目录准备文件，以原子 no-replace 硬链接发布。Markdown 和组合输出要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。两种发布形态都在最终原语前复核父目录身份、准备好的文件、取消状态和同步源 guard；都不替换已有目标。
 
 source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry，大小与 SHA-256 保留在已验证的 Bundle 中；普通转换无需节点 JSON，不包含原文伴随文件。反向转换读取独立 DOCX。合法的无编号引用保留已解析目标，以空 cached_number 表达没有编号，显示 Alias 或当前标题。
 
@@ -46,7 +50,7 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 ## Vault 写入
 
-导出在转换前记录所选父目录身份，并在该文件系统的自有空目录上探测原子发布及拒绝覆盖的能力。预检失败会在 Machine 转换前停止，提示选择其他输出目录或检查权限。探测结果不缓存，也不替代提交检查。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的结果目录或该目录内打开的编辑器，并在原子 no-replace 重命名前检查取消状态。最终碰撞检查只用于尽早给出清晰错误；安全性不依赖检查与重命名之间没有外部写者。父目录中的其他文件或编辑器不阻止导出。
+导出在转换前记录所选父目录身份，并在该文件系统的自有空目录上探测原子发布及拒绝覆盖的能力。预检失败会在 Machine 转换前停止，提示选择其他输出目录或检查权限。探测结果不缓存，也不替代提交检查。发布前再次核对父目录、源快照和准备好的文件字节，拒绝已存在的输出目标或该目标及其结果目录内打开的编辑器，并在原子 no-replace 发布前检查取消状态。最终碰撞检查只用于尽早给出清晰错误；安全性不依赖检查与重命名之间没有外部写者。父目录中的其他文件或编辑器不阻止导出。
 
 校对只读取报告。编号在隔离文件中生成，并由 `VaultWriteTransaction` 比对原快照及按路径唯一匹配的 Markdown leaf、view 与编辑器状态，同时核对原 TFile 对象、未变的路径、当前 Vault 注册与 view.file 身份；只有全部仍一致时才经 Editor 或 Vault API 一次提交。出现第二个匹配 view、打开/关闭状态切换、插件卸载、视图关闭或冲突都会取消或拒绝写入。
 
@@ -58,11 +62,13 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。Machine stdin Writable 的异步错误（包括对端关闭读取端后延迟出现的 `EPIPE`）进入同一会话失败队列，拒绝等待者并触发幂等、有界的进程树清理；`stdin.end()` 已发生后到达的取消不会再次写入已结束流。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
-Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux 继续使用既有 procfs 身份与进程组证据链。
+Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux x64 与 arm64 均使用原生 lifetime owner，其他架构在业务启动前失败关闭。
 
 导出和编号任务持续拥有选择窗口直至写入结束，选中条目不会启动脱离当前生命周期的任务。取消、新任务替换和卸载会关闭插件选择窗口及格式确认框，已排队的旧选择也失效。系统目录对话框可能保持打开直至用户关闭，但取消后返回的路径不会继续执行。文件菜单能力发现也由同一协调器管理，卸载后的菜单回调不能再调用操作。
 
 宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
+
+Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。未知 Linux 架构在 owner image 写入或业务 spawn 前失败，不存在 legacy 回退。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
 
 ## 信任边界
 

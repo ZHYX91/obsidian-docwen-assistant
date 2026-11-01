@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Window } from "happy-dom";
 import { useObsidianDom } from "./helpers/obsidian-dom";
 import DocWenPlugin from "../src/main";
 import { ProofreadView } from "../src/proofread-view";
@@ -59,6 +60,77 @@ function issue(text: string, offset: number, rule = "typo"): ProofreadIssue {
 }
 
 describe("proofreading view DOM integration", () => {
+  it("uses the report's document for keyboard focus in a popout", async () => {
+    const { view, root } = await createFixture();
+    const reportDocument = root.ownerDocument;
+    const otherWindow = new Window();
+    try {
+      vi.stubGlobal("document", otherWindow.document);
+      view.updateResults(Array.from({ length: 201 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
+      const more = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+      more.focus();
+      more.click();
+      expect(reportDocument.activeElement?.textContent).toContain("issue-200");
+      expect(otherWindow.document.activeElement).toBe(otherWindow.document.body);
+    } finally {
+      vi.stubGlobal("document", reportDocument);
+      await otherWindow.happyDOM.close();
+    }
+  });
+
+  it("bounds the initial DOM for ten thousand issues and reports the full total", async () => {
+    const { view, root } = await createFixture();
+    view.updateResults(Array.from({ length: 10_000 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
+    expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(200);
+    expect(root.querySelector(".docwen-proofread-count")?.textContent).toBe(t("proofreadIssueCount", { shown: "200", total: "10000" }));
+    expect(root.querySelector(".docwen-proofread-more")?.textContent).toBe(t("proofreadLoadMore", { count: "200" }));
+  });
+
+  it("makes every issue reachable, keeps scroll, and moves keyboard focus into each new batch", async () => {
+    const { view, root } = await createFixture();
+    view.updateResults(Array.from({ length: 401 }, (_, index) => issue(`issue-${index}`, index)), "Note.md", "Note.md", "a".repeat(64));
+    const first = root.querySelector(".docwen-proofread-item");
+    const sort = root.querySelectorAll(".docwen-proofread-btn")[1];
+    for (const [count, firstNew] of [[400, 200], [401, 400]]) {
+      root.querySelector<HTMLElement>(".docwen-proofread-list")!.scrollTop = 480;
+      const more = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+      more.focus();
+      more.click();
+      expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(count);
+      expect(root.querySelector(".docwen-proofread-item")).toBe(first);
+      expect(root.querySelectorAll(".docwen-proofread-btn")[1]).toBe(sort);
+      expect(document.activeElement?.textContent).toContain(`issue-${firstNew}`);
+      expect(root.querySelector<HTMLElement>(".docwen-proofread-list")?.scrollTop).toBe(480);
+    }
+    expect(root.querySelector(".docwen-proofread-more")).toBeNull();
+    expect(root.querySelectorAll(".docwen-proofread-item")[400].textContent).toContain("issue-400");
+  });
+
+  it("retains loaded results across sorting and RTL locale changes, and resets for a new report", async () => {
+    const { plugin, view, root } = await createFixture();
+    const issues = Array.from({ length: 450 }, (_, index) => issue(`issue-${index}`, index, index === 449 ? "sensitive" : "typo"));
+    view.updateResults(issues, "Note.md", "Note.md", "a".repeat(64));
+    root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!.click();
+    root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-btn")[1].click();
+    expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(400);
+    expect(root.querySelector(".docwen-proofread-item")?.textContent).toContain("issue-449");
+    const more = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+    more.focus();
+    plugin.settings.language = "ar";
+    await plugin.saveSettings();
+    expect(root.getAttribute("dir")).toBe("rtl");
+    expect(document.activeElement?.textContent).toBe(t("proofreadLoadMore", { count: "50" }));
+    expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(400);
+    const obsolete = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+    view.updateResults(issues, "New.md", "New.md", "b".repeat(64));
+    obsolete.click();
+    expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(200);
+    const closed = root.querySelector<HTMLButtonElement>(".docwen-proofread-more")!;
+    await view.onClose();
+    closed.click();
+    expect(root.querySelectorAll(".docwen-proofread-item")).toHaveLength(200);
+  });
+
   it("renders the initial empty state even when no operation is owned", async () => {
     const { root } = await createFixture();
     expect(root.querySelector('[role="status"]')?.textContent).toBe(t("proofreadOpenMdFile"));

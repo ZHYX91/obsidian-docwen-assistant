@@ -1,0 +1,33 @@
+{
+  "sourceSha256": "d07cbec88bb96d597de06ae24a8c4f02730000fadeba0fe5f1e86973ead09b41",
+  "binarySha256": "493d8a957616ab5b459e7f64f05446878a00cae85b96e22e08f9d8f5412cee3a",
+  "binaryBytes": 158416,
+  "platform": "linux",
+  "arch": "arm64",
+  "linkage": {
+    "kind": "static-musl",
+    "packageVersion": "1.2.4-2",
+    "archiveSha256": "d45f3b73f0659a04d9b471d6c3294d885c5ac21f44e7d8d598ffb5be3ad72135",
+    "licenseSha256": "dd775ee077963e377a0ab31e1db27229442d5cfd18f183c2df1e6a552522f585"
+  },
+  "provenance": {
+    "repository": "ZHYX91/docwen-openclaw",
+    "sourcePath": "native/linux-owner.c",
+    "license": "MIT",
+    "sourceSha256": "d07cbec88bb96d597de06ae24a8c4f02730000fadeba0fe5f1e86973ead09b41"
+  },
+  "compiler": "aarch64-linux-gnu-gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "args": [
+    "-static",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-fno-ident",
+    "-Wl,--build-id=none",
+    "native/linux-owner.c",
+    "-o",
+    "<output>/linux-owner-arm64"
+  ]
+}

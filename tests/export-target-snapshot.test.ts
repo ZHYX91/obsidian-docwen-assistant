@@ -59,6 +59,20 @@ describe("export directory snapshot", () => {
     expect(commit).not.toHaveBeenCalled();
   });
 
+  it("rejects an editor at a flat output file while permitting unrelated editors", async () => {
+    const f = await fixture();
+    const target = path.join(f.parent, "output.docx");
+    const snapshot = await f.capture();
+    f.leaf.view.file.absolutePath = target;
+    f.leaves.push(f.leaf);
+    const commit = vi.fn();
+    await expect(snapshot.publish(target, commit)).rejects.toMatchObject({ code: "vault_content_conflict" });
+    expect(commit).not.toHaveBeenCalled();
+    f.leaf.view.file.absolutePath = path.join(f.parent, "other.md");
+    await snapshot.publish(target, commit);
+    expect(commit).toHaveBeenCalledOnce();
+  });
+
   it("rejects a replaced parent even at the same path", async () => {
     const f = await fixture();
     const snapshot = await f.capture();

@@ -6,6 +6,30 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it.each(["stat", "modify-event"])("rejects a closed-source %s change after the final read", async (change) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md", stat: { mtime: 1, ctime: 1, size: 7 } };
+    let onModify: (changed: unknown) => void = () => undefined;
+    const offref = vi.fn();
+    const app = { workspace: { getLeavesOfType: () => [] }, vault: {
+      getFileByPath: () => file,
+      readBinary: async () => new TextEncoder().encode("# Before\n").buffer,
+      on: (_event: string, listener: typeof onModify) => { onModify = listener; return {}; },
+      offref,
+    } };
+    let published = false;
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal,
+      snapshot => snapshot.publish(async guard => {
+        await Promise.resolve();
+        if (change === "stat") file.stat.mtime += 1;
+        else onModify(file); // Same byte count and stat resolution must still conflict.
+        guard();
+        published = true;
+      }))).rejects.toMatchObject({ code: "vault_content_conflict" });
+    expect(published).toBe(false);
+    expect(offref).toHaveBeenCalledOnce();
+  });
+
   it.each(["capture", "publication"])("rejects a same-path editor rebound at %s", async (stage) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md" };
@@ -552,6 +576,36 @@ describe("VaultReadSnapshot", () => {
       materialization: null,
     }]);
     expect(captured.neutral.plan_sha256).toBe(captured.plan.plan_sha256);
+  });
+
+  it.each([
+    "---\nvalue: |\n  # **Frontmatter ghost**\n---\n",
+    "<!--\n# **HTML comment ghost**\n```\n-->\n",
+    "%%\n# **Obsidian comment ghost**\n```\n%%\n",
+    "<div>\n# **HTML block ghost**\n</div>\n\n",
+    "<script>\n# **Script ghost**\n</script>\n",
+    "    # **Indented code ghost**\n",
+    "> ```\n> # **Quoted code ghost**\n> ```\n",
+  ])("excludes literal pseudo-headings without requesting stale metadata: %s", async (literal) => {
+    const { TFile } = await import("obsidian");
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = Object.assign(new TFile(), { path: "notes/literal.md", extension: "md" });
+    const source = `${literal}\n# Real heading\n`;
+    const app = {
+      workspace: { getLeavesOfType: vi.fn(() => []) },
+      vault: {
+        getFileByPath: (filePath: string) => filePath === file.path ? file : null,
+        readBinary: async () => new TextEncoder().encode(source).buffer,
+      },
+      metadataCache: { getFileCache: () => ({}), getFirstLinkpathDest: vi.fn() },
+    };
+    const result = await new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, async (snapshot) => {
+      const inputs = await snapshot.getResolvedMarkdownInputs();
+      return JSON.parse(await readFile(inputs![0].path, "utf8"));
+    });
+    expect(result.value.document.targets).toEqual([expect.objectContaining({
+      authored_text: "Real heading", heading_level: 1, source_start: source.indexOf("# Real heading"),
+    })]);
   });
 
   it("materializes a validated Number Suite v2 snapshot into DocWen exact-two inputs", async () => {

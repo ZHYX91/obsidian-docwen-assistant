@@ -36,6 +36,7 @@ import {
 } from "./number-suite-interop";
 import { VaultWriteError } from "./vault-write-transaction";
 import { SourceTextIndex } from "./source-text-index";
+import { maskProtectedSource } from "./markdown-source-ownership";
 
 export interface IsolatedSnapshot {
   readonly inputPath: string;
@@ -69,6 +70,30 @@ export class VaultReadSnapshot {
     file: TFile,
     signal: AbortSignal,
     work: (snapshot: IsolatedSnapshot) => Promise<T>,
+  ): Promise<Completed<T>> {
+    const initialStat = file.stat ? { ...file.stat } : undefined;
+    let modified = false;
+    const reference = this.app.vault.on?.("modify", (changed) => {
+      if (changed === file) modified = true;
+    });
+    const assertRevision = (): void => {
+      if (modified || (initialStat && (file.stat.mtime !== initialStat.mtime
+        || file.stat.ctime !== initialStat.ctime || file.stat.size !== initialStat.size))) {
+        throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
+      }
+    };
+    try {
+      return await this.runCaptured(file, signal, work, assertRevision);
+    } finally {
+      if (reference) this.app.vault.offref(reference);
+    }
+  }
+
+  private async runCaptured<T>(
+    file: TFile,
+    signal: AbortSignal,
+    work: (snapshot: IsolatedSnapshot) => Promise<T>,
+    assertRevision: () => void,
   ): Promise<Completed<T>> {
     // Pin the path and Vault identity before any async source read. A rename,
     // delete, or replacement must never approve publication under a new owner.
@@ -113,6 +138,7 @@ export class VaultReadSnapshot {
         }
       } else {
         assertNoOpenMarkdownTarget(this.app, originalPath);
+        assertRevision();
       }
     };
     const assertCurrent = async (): Promise<void> => {
@@ -1183,36 +1209,31 @@ function resolvedHeadingTargets(
 
 function scanAtxHeadings(source: string): ScannedHeading[] {
   const headings: ScannedHeading[] = [];
+  const semanticSource = maskProtectedSource(source);
   let cursor = 0;
-  let fence: { character: "`" | "~"; length: number } | null = null;
   while (cursor < source.length) {
     const newline = source.indexOf("\n", cursor);
     const physicalEnd = newline < 0 ? source.length : newline;
     const contentEnd = physicalEnd > cursor && source[physicalEnd - 1] === "\r" ? physicalEnd - 1 : physicalEnd;
     const line = source.slice(cursor, contentEnd);
     const content = stripContainerPrefixes(line);
-    if (fence !== null) {
-      const closing = /^( {0,3})(`{3,}|~{3,})[ \t]*$/u.exec(content);
-      if (closing && closing[2][0] === fence.character && closing[2].length >= fence.length) fence = null;
-    } else {
-      const opening = /^( {0,3})(`{3,}|~{3,})(.*)$/u.exec(content);
-      if (opening && !(opening[2][0] === "`" && opening[3].includes("`"))) {
-        fence = { character: opening[2][0] as "`" | "~", length: opening[2].length };
-      } else {
-        const match = /^( {0,3})(#{1,9})[ \t]+(.*?)[ \t]*$/u.exec(content);
-        if (match) {
-          const body = match[3].replace(/[ \t]+#+[ \t]*$/u, "").trimEnd();
-          const idMatch = /^(.*?)[ \t]+\^([A-Za-z0-9-]{1,128})[ \t]*$/u.exec(body);
-          const visibleSource = (idMatch?.[1] ?? body).trimEnd();
-          headings.push({
-            jsStart: cursor,
-            jsEnd: contentEnd,
-            level: match[2].length,
-            targetId: idMatch?.[2] ?? null,
-            plainAuthoredText: hasInlineMarkup(visibleSource) ? null : visibleSource,
-          });
-        }
-      }
+    const semanticContent = stripContainerPrefixes(semanticSource.slice(cursor, contentEnd));
+    // Reuse the same literal ownership as declared exports while retaining
+    // the original heading bytes and DocWen's extended levels seven to nine.
+    if (/^ {0,3}#{1,9}[ \t]+/u.test(semanticContent)) {
+    const match = /^( {0,3})(#{1,9})[ \t]+(.*?)[ \t]*$/u.exec(content);
+    if (match) {
+      const body = match[3].replace(/[ \t]+#+[ \t]*$/u, "").trimEnd();
+      const idMatch = /^(.*?)[ \t]+\^([A-Za-z0-9-]{1,128})[ \t]*$/u.exec(body);
+      const visibleSource = (idMatch?.[1] ?? body).trimEnd();
+      headings.push({
+        jsStart: cursor,
+        jsEnd: contentEnd,
+        level: match[2].length,
+        targetId: idMatch?.[2] ?? null,
+        plainAuthoredText: hasInlineMarkup(visibleSource) ? null : visibleSource,
+      });
+    }
     }
     if (newline < 0) break;
     cursor = newline + 1;

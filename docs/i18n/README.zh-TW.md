@@ -64,11 +64,11 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 ## 使用
 
-**先確認目前檔案支援哪些操作。** 匯出命令由檔案內容和本機 DocWen 提供的功能決定是否顯示；匯出會在指定目錄建立獨立結果資料夾，校對不會改動筆記。**新增／移除標題編號會修改 Markdown 原文**，寫入前會核對目前編輯器或已儲存檔案的內容；同一路徑有多個無法唯一判定的編輯器時會停止。
+**先確認目前檔案支援哪些操作。** 匯出命令由檔案內容和本機 DocWen 提供的功能決定是否顯示；匯出會在指定目錄儲存獨立輸出，校對不會改動筆記。**新增／移除標題編號會修改 Markdown 原文**，寫入前會核對目前編輯器或已儲存檔案的內容；同一路徑有多個無法唯一判定的編輯器時會停止。
 
 可從側邊欄圖示、檔案清單的 **DocWen** 子選單或命令面板啟動 DocWen、匯出 Word／Excel／Markdown、新增或移除標題編號、校對目前 Markdown，以及檢查 DocWen 連線。
 
-若出現範本或轉換預設選項，先完成選擇，再指定輸出目錄。確認來源檔案、格式、儲存位置和本次選項後，按下**匯出**。確認視窗使用本次工作已取得的設定，取消不會開始轉換。每次轉換都會建立新的結果資料夾，並保留圖片等關聯資源。完成後可在通知中選擇**開啟結果資料夾**，既有結果不會被覆寫。
+若出現範本或轉換預設選項，先完成選擇，再指定輸出目錄。確認來源檔案、格式、儲存位置和本次選項後，按下**匯出**。確認視窗使用本次工作已取得的設定，取消不會開始轉換。DocWen 傳回單一 DOCX 或 XLSX 時，直接儲存在所選目錄；Markdown 和組合輸出仍使用獨立結果資料夾，保留圖片與附件。完成後可在通知中選擇**開啟結果資料夾**，既有檔案與資料夾不會被覆寫；此操作會開啟輸出所在的資料夾。
 
 ## 設定
 
@@ -88,7 +88,7 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 | 專案與用法 | 顯示、原文修改與輸出 |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.zh-TW.md) | 產生轉換後的檔案。輸入擴充解讀原文語法，匯出設定控制輸出及其編號。 |
-| [DocWen Assistant](../product-requirements.zh-CN.md) | 匯出會建立獨立的結果目錄，校對僅讀取內容；明確執行標題編號操作時會修改原始 Markdown。 |
+| [DocWen Assistant](../product-requirements.zh-CN.md) | 匯出會儲存獨立輸出，校對僅讀取內容；明確執行標題編號操作時會修改原始 Markdown。 |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.zh-TW.md) | 日曆與任務檢視讀取索引。勾選任務或調整日期會更新原始 Markdown，建立操作會新增筆記。 |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.zh-TW.md) | 候選設定改變選單。重排或移動值會修改相關 YAML 清單，也可能把非文字值轉成字串。 |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.zh-TW.md) | 規則篩選分析結果，或改變參與分析的圖連線；不會重寫筆記中的連結。 |

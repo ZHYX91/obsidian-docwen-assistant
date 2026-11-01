@@ -35,9 +35,14 @@ export function assertDirectoryPublicationSupported(
   }
 }
 
-export async function publishDirectoryNoReplace(source: string, destination: string): Promise<void> {
+export async function publishDirectoryNoReplace(
+  source: string,
+  destination: string,
+  beforePublish?: () => void,
+): Promise<void> {
   assertDirectoryPublicationSupported();
   if (process.platform === "win32") {
+    beforePublish?.();
     try {
       await rename(source, destination);
       return;
@@ -52,6 +57,7 @@ export async function publishDirectoryNoReplace(source: string, destination: str
   }
 
   const binding = await linuxDirectoryBinding();
+  beforePublish?.();
   const errno = binding.renameDirectory(source, destination);
   if (errno === 0) return;
   const code = errnoName(errno);

@@ -60,11 +60,11 @@ Lors d’une mise à jour manuelle, remplacez seulement `main.js`, `manifest.jso
 
 ## Utilisation
 
-**Les commandes proposées dépendent du fichier ouvert.** Une conversion nécessite une capacité compatible du DocWen connecté. L’export crée un dossier de résultat séparé, tandis que la relecture ne modifie pas la note. **L’ajout ou le retrait de numéros de titres modifie le Markdown.** Le texte de l’éditeur, même non enregistré, ou le fichier enregistré est vérifié avant l’écriture. Si plusieurs éditeurs du même fichier ne peuvent être distingués, l’opération s’arrête.
+**Les commandes proposées dépendent du fichier ouvert.** Une conversion nécessite une capacité compatible du DocWen connecté. L’export enregistre une sortie distincte, tandis que la relecture ne modifie pas la note. **L’ajout ou le retrait de numéros de titres modifie le Markdown.** Le texte de l’éditeur, même non enregistré, ou le fichier enregistré est vérifié avant l’écriture. Si plusieurs éditeurs du même fichier ne peuvent être distingués, l’opération s’arrête.
 
 L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et de choisir **Vérifier la connexion à DocWen**.
 
-Choisissez un modèle ou un préréglage de conversion si proposé, puis un dossier de sortie. Vérifiez la source, le format, la destination et les options, puis cliquez sur **Exporter**. La fenêtre reprend les réglages capturés pour cette tâche ; l’annulation ne lance aucune conversion. Chaque conversion crée un nouveau dossier contenant le résultat et les images liées. Après l’export, cliquez sur **Ouvrir le dossier du résultat** dans la notification. Les dossiers existants ne sont pas remplacés.
+Choisissez un modèle ou un préréglage de conversion si proposé, puis un dossier de sortie. Vérifiez la source, le format, la destination et les options, puis cliquez sur **Exporter**. La fenêtre reprend les réglages capturés pour cette tâche ; l’annulation ne lance aucune conversion. Un DOCX ou XLSX unique est enregistré directement dans le dossier choisi lorsque DocWen renvoie un seul fichier. Markdown et les sorties groupées conservent leur propre dossier avec les images et pièces jointes. Après l’export, cliquez sur **Ouvrir le dossier du résultat** dans la notification. Cette action ouvre le dossier contenant la sortie. Les fichiers et dossiers existants ne sont pas remplacés.
 
 ## Paramètres
 
@@ -84,7 +84,7 @@ L’export Word lit la syntaxe Number Suite même si ce plugin n’est pas insta
 | Projet et guide | Affichage, source et sortie |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.fr-FR.md) | Crée les fichiers convertis. Les extensions d’entrée interprètent la syntaxe source ; les réglages d’export déterminent la sortie et sa numérotation. |
-| [DocWen Assistant](../product-requirements.en.md) | L’export crée un dossier de résultats distinct ; la relecture est en lecture seule. Les actions explicites de numérotation des titres modifient le Markdown source. |
+| [DocWen Assistant](../product-requirements.en.md) | L’export enregistre une sortie distincte ; la relecture est en lecture seule. Les actions explicites de numérotation des titres modifient le Markdown source. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.fr-FR.md) | Les vues du calendrier et des tâches lisent l’index. Modifier l’état ou la date d’une tâche écrit dans son Markdown source ; les actions de création ajoutent des notes. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.fr-FR.md) | Les réglages de suggestions changent les menus. Réordonner ou déplacer des valeurs modifie les listes YAML concernées et peut convertir des valeurs non textuelles en chaînes. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.fr.md) | Les règles filtrent les résultats d’analyse ou déterminent les connexions du graphe prises en compte. Elles ne réécrivent pas les liens des notes. |

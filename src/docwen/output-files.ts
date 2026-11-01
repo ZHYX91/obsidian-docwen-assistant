@@ -5,7 +5,7 @@ import { copyFile, link, mkdir, rm } from "node:fs/promises";
 import * as path from "node:path";
 import { LocalCliError } from "./errors";
 import type { ValidatedArtifactBundle } from "./machine-client";
-import { operationWarning, publishOnce, type OperationWarning, type Completed } from "./operation-outcome";
+import { operationWarning, publishOnce, type OperationWarning, type Completed, type PublicationCommit } from "./operation-outcome";
 import {
   type FileIdentity, preferredArtifact, verifyArtifactIdentity, regularFileIdentity,
   sameFileIdentity, sha256File, throwIfAborted, isErrno,
@@ -45,7 +45,8 @@ export async function atomicCommitBundle(
   outputPath: string,
   overwrite: boolean,
   signal?: AbortSignal,
-  publish?: <T>(commit: () => Promise<T>) => Promise<T>,
+  publish?: <T>(commit: PublicationCommit<T>) => Promise<T>,
+  assertOutputDirectoryCurrent?: () => Promise<void>,
 ): Promise<{ outputs: string[]; warnings: OperationWarning[] }> {
   throwIfAborted(signal);
   const preferred = preferredArtifact(bundle);
@@ -93,13 +94,14 @@ export async function atomicCommitBundle(
       preparedOutput.temporaryIdentity = await verifyArtifactIdentity(artifact, temporary, false);
       await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
     }
-    const commit = async (): Promise<string[]> => {
+    const commit: PublicationCommit<string[]> = async (beforePublish) => {
       throwIfAborted(signal);
-      commitStarted = true;
+      await assertOutputDirectoryCurrent?.();
       for (let index = 0; index < prepared.length; index += 1) {
         const item = prepared[index];
         await assertCommitTargetUnchanged(item.target, item.expectedTarget);
         if (item.expectedTarget) {
+          commitStarted = true;
           item.backup = path.join(destinationRoot, `.docwen-${transactionId}-${index}.bak`);
           await link(item.target, item.backup);
           const backupIdentity = await regularFileIdentity(item.backup);
@@ -114,6 +116,15 @@ export async function atomicCommitBundle(
         }
       }
       for (const item of prepared) {
+        const current = await regularFileIdentity(item.temporary);
+        if (!sameFileIdentity(current, item.temporaryIdentity)) {
+          throw new LocalCliError("cli_integrity_error", "A prepared artifact changed during publication checks.");
+        }
+        await assertOutputDirectoryCurrent?.();
+        throwIfAborted(signal);
+        beforePublish?.();
+        throwIfAborted(signal);
+        commitStarted = true;
         await link(item.temporary, item.target);
         committed.push({ identity: item.temporaryIdentity, target: item.target });
         const [targetIdentity, temporaryIdentity] = await Promise.all([
