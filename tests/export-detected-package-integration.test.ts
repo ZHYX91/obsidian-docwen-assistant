@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,12 @@ import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acce
 
 const ui = vi.hoisted(() => ({
   sourcePath: "", outputDirectory: "", confirm: vi.fn(), review: vi.fn(), completed: vi.fn(),
+  tempDirectory: "",
 }));
+vi.mock("node:os", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:os")>();
+  return { ...actual, tmpdir: () => ui.tempDirectory || actual.tmpdir() };
+});
 vi.mock("obsidian", () => ({
   TFile: class TFile {}, MarkdownView: class MarkdownView {}, Modal: class Modal {},
   SuggestModal: class SuggestModal {}, getLanguage: () => "en",
@@ -51,6 +56,7 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ui.tempDirectory = "";
     ui.confirm.mockResolvedValue(true);
     ui.review.mockResolvedValue(true);
   });
@@ -60,11 +66,19 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
     if (root) await rm(root, { recursive: true, force: true });
   });
 
-  it.each(["continue", "cancel", "changed-at-confirmation", "changed-at-review", "replaced-at-review"])(
+  it.each(["continue", "aliased-temp", "cancel", "changed-at-confirmation", "changed-at-review", "replaced-at-review"])(
     "executes the real action/client/Core path for %s",
     async (scenario) => {
       const caseRoot = join(root, `case-${counter++}`);
       await mkdir(caseRoot);
+      const actualTemp = join(caseRoot, "actual-temp");
+      const aliasTemp = join(caseRoot, "alias-temp");
+      if (scenario === "aliased-temp") {
+        await mkdir(actualTemp);
+        await symlink(actualTemp, aliasTemp, process.platform === "win32" ? "junction" : "dir");
+        expect(await realpath(aliasTemp)).not.toBe(aliasTemp);
+        ui.tempDirectory = aliasTemp;
+      }
       ui.sourcePath = join(caseRoot, "Detected-format.txt");
       ui.outputDirectory = join(caseRoot, "published");
       await mkdir(ui.outputDirectory);
@@ -129,10 +143,14 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
           expect(request.sourceInput?.path).toMatch(/accepted-source\.docx$/u);
           expect(request.sourceInput?.logicalPath).toBe(file.path);
           expect(request.inputs).toEqual([request.sourceInput]);
+          if (scenario === "aliased-temp") {
+            expect(dirname(dirname(request.sourceInput!.path))).toBe(await realpath(actualTemp));
+            expect(await readdir(actualTemp)).toEqual([]);
+          }
         }
 
         const directories = await readdir(ui.outputDirectory);
-        if (scenario === "continue") {
+        if (scenario === "continue" || scenario === "aliased-temp") {
           expect(directories).toHaveLength(1);
           const result = await converted.mock.results[0].value;
           const markdown = await readFile(result.output, "utf8");
@@ -147,6 +165,8 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
         if (!scenario.startsWith("changed-")) expect(await readFile(ui.sourcePath)).toEqual(original);
         expect(await readFile(fixturePath)).toEqual(original);
       } finally {
+        ui.tempDirectory = "";
+        if (scenario === "aliased-temp") await unlink(aliasTemp);
         inspected.mockRestore();
         converted.mockRestore();
       }

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
-import { dirname, extname } from "node:path";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { dirname, extname, join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportActions } from "../src/actions/export-actions";
 import { DocWenCapabilityService } from "../src/docwen/capability-service";
@@ -8,7 +8,11 @@ import type { ConvertRequest, FileInspection, TaskInput } from "../src/docwen/cl
 import type { MachineCapability } from "../src/docwen/machine-client";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 
-const ui = vi.hoisted(() => ({ confirm: vi.fn(), review: vi.fn(), commit: vi.fn() }));
+const ui = vi.hoisted(() => ({ confirm: vi.fn(), review: vi.fn(), commit: vi.fn(), tempDirectory: "" }));
+vi.mock("node:os", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:os")>();
+  return { ...actual, tmpdir: () => ui.tempDirectory || actual.tmpdir() };
+});
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return { ...actual, writeFile: vi.fn(actual.writeFile) };
@@ -65,7 +69,7 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
     expect(isolated).toEqual(currentBytes);
     captured.push(source);
     const inspection: FileInspection = {
-      filePath: source.path, contentSha256: digest(isolated), sizeBytes: isolated.length,
+      filePath: await realpath(source.path), contentSha256: digest(isolated), sizeBytes: isolated.length,
       decision: extname(source.path) === (detectedMedia === DOCX ? ".docx" : ".pdf") ? "allow" : "require_explicit_acceptance",
       supportedActions: ["convert"], declaredFormat: extension,
       detectedFormat: detectedMedia === DOCX ? "docx" : "pdf", workflowCategory: "document",
@@ -107,8 +111,38 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
 describe("accepted detected-format exports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    ui.tempDirectory = "";
     ui.confirm.mockResolvedValue(true);
     ui.review.mockResolvedValue(true);
+  });
+
+  it("accepts a detected format when the temporary directory has a real filesystem alias", async () => {
+    const actualOs = await vi.importActual<typeof import("node:os")>("node:os");
+    const root = await realpath(await mkdtemp(join(actualOs.tmpdir(), "docwen-snapshot-alias-")));
+    const target = join(root, "actual-temp");
+    const alias = join(root, "alias-temp");
+    await mkdir(target);
+    await symlink(target, alias, process.platform === "win32" ? "junction" : "dir");
+    try {
+      expect(await realpath(alias)).toBe(target);
+      expect(alias).not.toBe(target);
+      ui.tempDirectory = alias;
+      const test = await fixture();
+      await test.run();
+      expect(ui.confirm).toHaveBeenCalledOnce();
+      expect(ui.review).toHaveBeenCalledOnce();
+      expect(test.convert).toHaveBeenCalledOnce();
+      expect(ui.commit).toHaveBeenCalledOnce();
+      for (const source of test.captured) {
+        expect(dirname(dirname(source.path))).toBe(target);
+      }
+      expect(test.inspections[2]).toMatchObject({ decision: "allow", detectedFormat: "docx" });
+      expect(await readdir(target)).toEqual([]);
+    } finally {
+      ui.tempDirectory = "";
+      await unlink(alias);
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it("cancels a real DOCX named .txt without starting review, conversion or publication", async () => {
