@@ -18,11 +18,11 @@ Read the issues found during proofreading and jump to the relevant line in your 
 
 ![DocWen proofreading sidebar](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-proofread-en.png)
 
-### Settings and DocWen connection
+### Proofreading settings
 
-Check the connection to DocWen and choose export and proofreading options in the four settings tabs.
+Choose the checks on the **Proofreading** tab shown here. DocWen installation selection and connection checks are on the separate **General** tab.
 
-![DocWen Assistant settings](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-settings-en.png)
+![Proofreading settings](https://raw.githubusercontent.com/ZHYX91/obsidian-docwen-assistant/main/docs/assets/docwen-assistant-settings-en.png)
 
 ### Export files
 

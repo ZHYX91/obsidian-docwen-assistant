@@ -18,11 +18,11 @@ Examinez les problèmes par ligne ou par règle et revenez à la plage source co
 
 ![Barre latérale de relecture DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Paramètres et connexion à DocWen
+### Paramètres de relecture
 
-Vérifiez la connexion à DocWen et choisissez les options de conversion et de relecture dans les quatre onglets.
+Choisissez les vérifications dans l’onglet **Relecture** illustré ici. Le choix de l’installation de DocWen et la vérification de la connexion se trouvent dans l’onglet distinct **Général**.
 
-![Paramètres de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+![Paramètres de relecture](../assets/docwen-assistant-settings-en.png)
 
 ### Exporter des fichiers
 

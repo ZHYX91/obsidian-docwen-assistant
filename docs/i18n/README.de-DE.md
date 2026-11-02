@@ -18,11 +18,11 @@ Prüfen Sie Probleme nach Zeile oder Regel und springen Sie zum passenden Quellb
 
 ![DocWen-Korrekturlese-Seitenleiste](../assets/docwen-assistant-proofread-en.png)
 
-### Einstellungen und DocWen-Verbindung
+### Einstellungen zum Korrekturlesen
 
-Prüfen Sie die DocWen-Verbindung und wählen Sie die Optionen für Export und Korrektur auf den vier Registerkarten.
+Wählen Sie die Prüfungen auf der hier gezeigten Registerkarte **Korrekturlesen**. Die Auswahl der DocWen-Installation und die Verbindungsprüfung befinden sich auf der separaten Registerkarte **Allgemein**.
 
-![DocWen-Assistant-Einstellungen](../assets/docwen-assistant-settings-en.png)
+![Einstellungen zum Korrekturlesen](../assets/docwen-assistant-settings-en.png)
 
 ### Dateien exportieren
 

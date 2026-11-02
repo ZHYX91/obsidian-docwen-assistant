@@ -18,11 +18,11 @@
 
 ![DocWen 校对侧边栏](../assets/docwen-assistant-proofread-en.png)
 
-### 设置与 DocWen 连接
+### 校对设置
 
-在四个设置页签中检查 DocWen 连接，选择转换和校对选项。
+在图示的**校对**页签中选择检查项。DocWen 安装选择与连接检查位于独立的**常规**页签。
 
-![DocWen Assistant 顶部页签设置](../assets/docwen-assistant-settings-en.png)
+![校对设置](../assets/docwen-assistant-settings-en.png)
 
 ### 导出文件
 

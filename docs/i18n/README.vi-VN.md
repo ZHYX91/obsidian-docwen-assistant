@@ -18,11 +18,11 @@ Xem vấn đề theo dòng hoặc quy tắc và quay lại đúng vùng nguồn 
 
 ![Thanh bên soát lỗi DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Cài đặt và kết nối DocWen
+### Cài đặt hiệu đính
 
-Kiểm tra kết nối DocWen và chọn tùy chọn chuyển đổi, soát lỗi trong bốn thẻ cài đặt.
+Chọn các mục kiểm tra trong thẻ **Hiệu đính** được minh họa ở đây. Việc chọn bản cài đặt DocWen và kiểm tra kết nối nằm trong thẻ **Chung** riêng biệt.
 
-![Cài đặt DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+![Cài đặt hiệu đính](../assets/docwen-assistant-settings-en.png)
 
 ### Xuất tệp
 

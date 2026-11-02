@@ -18,11 +18,11 @@ DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHY
 
 ![DocWen 校正サイドバー](../assets/docwen-assistant-proofread-en.png)
 
-### 設定と DocWen への接続
+### 校正設定
 
-4 つの設定タブで DocWen への接続を確認し、変換と校正の項目を選びます。
+ここに示した**校正**タブでチェック項目を選びます。DocWen のインストール先の選択と接続確認は、別の**一般**タブにあります。
 
-![DocWen Assistant の上部タブ設定](../assets/docwen-assistant-settings-en.png)
+![校正設定](../assets/docwen-assistant-settings-en.png)
 
 ### ファイルのエクスポート
 
