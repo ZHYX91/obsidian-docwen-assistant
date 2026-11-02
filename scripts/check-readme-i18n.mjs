@@ -7,10 +7,10 @@ const config = {
   repository: "ZHYX91/obsidian-docwen-assistant",
   repositoryLinks: [
     "docs/i18n/README.zh-CN.md",
-    "docs/product-requirements.en.md",
-    "docs/ux-spec.en.md",
-    "docs/architecture.en.md",
-    "docs/testing-strategy.en.md",
+    "docs/product-requirements.md",
+    "docs/ux-spec.md",
+    "docs/architecture.md",
+    "docs/testing-strategy.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
@@ -323,8 +323,8 @@ function validateReadme(language, title, navigation) {
   const repositoryTargets = validateLocalLinks(filePath, source);
   validateScreenshots(filePath, source);
   const expectedRepositoryLinks = filePath === "docs/i18n/README.zh-CN.md"
-    ? config.repositoryLinks.map((target) => target.endsWith(".en.md")
-      ? target.replace(/\.en\.md$/u, ".zh-CN.md")
+    ? config.repositoryLinks.map((target) => /^docs\/(?:product-requirements|ux-spec|architecture|testing-strategy)\.md$/u.test(target)
+      ? target.replace(/\.md$/u, ".zh-CN.md")
       : target)
     : config.repositoryLinks;
   for (const target of expectedRepositoryLinks) {

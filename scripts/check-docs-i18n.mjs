@@ -44,9 +44,9 @@ const REQUIRED_TOKENS = Object.freeze({
   ] },
 });
 const RETIRED_DOCUMENTS = Object.freeze([
-  "docs/product.en.md",
+  "docs/product.md",
   "docs/product.zh-CN.md",
-  "docs/ux.en.md",
+  "docs/ux.md",
   "docs/ux.zh-CN.md",
 ]);
 
@@ -123,14 +123,15 @@ export async function checkDocsI18n(projectRoot = process.cwd()) {
 
   const expectedLocalizedFiles = new Set(
     DOCUMENTS.flatMap((document) => [
-      `${document}.en.md`,
+      `${document}.md`,
       `${document}.zh-CN.md`,
     ]),
   );
   const unexpectedLocalizedFiles = (await readdir(path.join(projectRoot, "docs"), {
     withFileTypes: true,
   }))
-    .filter((entry) => entry.isFile() && /\.(?:en|zh-CN)\.md$/u.test(entry.name))
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md") &&
+      !["README.md", "cli-integration.md"].includes(entry.name))
     .map((entry) => entry.name)
     .filter((name) => !expectedLocalizedFiles.has(name));
   if (unexpectedLocalizedFiles.length > 0) {
@@ -141,7 +142,7 @@ export async function checkDocsI18n(projectRoot = process.cwd()) {
 
   for (const document of DOCUMENTS) {
     const sourcePath = `docs/${document}.zh-CN.md`;
-    const translationPath = `docs/${document}.en.md`;
+    const translationPath = `docs/${document}.md`;
     const [source, translation] = await Promise.all([
       readFile(path.join(projectRoot, sourcePath), "utf8"),
       readFile(path.join(projectRoot, translationPath), "utf8"),

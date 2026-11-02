@@ -88,7 +88,7 @@
 | المشروع والدليل | العرض وتعديل المصدر والمخرجات |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ar.md) | ينشئ الملفات المحوّلة. تفسّر امتدادات الإدخال صياغة المصدر، وتحدّد إعدادات التصدير المخرجات وترقيمها. |
-| [DocWen Assistant](../product-requirements.en.md) | يحفظ التصدير ناتجًا منفصلًا، والتدقيق للقراءة فقط. أما إجراءات ترقيم العناوين الصريحة فتعدّل Markdown المصدر. |
+| [DocWen Assistant](../product-requirements.md) | يحفظ التصدير ناتجًا منفصلًا، والتدقيق للقراءة فقط. أما إجراءات ترقيم العناوين الصريحة فتعدّل Markdown المصدر. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ar.md) | تقرأ عروض التقويم والمهام الفهرس. يحدّث تغيير حالة المهمة أو تاريخها Markdown المصدر، وتضيف إجراءات الإنشاء ملاحظات جديدة. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ar.md) | تغيّر إعدادات الاقتراحات القوائم المعروضة. تعيد عمليات ترتيب القيم أو نقلها كتابة قوائم YAML المعنية، وقد تحوّل القيم غير النصية إلى سلاسل نصية. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ar.md) | تصفّي القواعد نتائج التحليل أو تحدّد اتصالات الرسم البياني التي تُحتسب. ولا تعيد كتابة الروابط داخل الملاحظات. |
@@ -128,7 +128,7 @@ npm run check
 npm run release
 ```
 
-المصدر في `src/` والاختبارات في `tests/`. للمزيد: [المتطلبات](../product-requirements.en.md)، [مواصفات الواجهة](../ux-spec.en.md)، [البنية](../architecture.en.md)، [الاختبارات](../testing-strategy.en.md)، و[دليل مبسّط بالصينية](README.zh-CN.md).
+المصدر في `src/` والاختبارات في `tests/`. للمزيد: [المتطلبات](../product-requirements.md)، [مواصفات الواجهة](../ux-spec.md)، [البنية](../architecture.md)، [الاختبارات](../testing-strategy.md)، و[دليل مبسّط بالصينية](README.zh-CN.md).
 
 يمكنك أيضًا مراجعة [سجل التغييرات](../../CHANGELOG.md) و[دليل المساهمة](../../CONTRIBUTING.md) و[سياسة الأمان](../../SECURITY.md).
 

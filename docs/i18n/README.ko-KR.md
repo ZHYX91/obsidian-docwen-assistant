@@ -84,7 +84,7 @@ Number Suite가 설치되지 않아도 Word 내보내기는 Markdown의 해당 �
 | 프로젝트와 사용 안내 | 표시, 원본 편집, 출력 |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ko-KR.md) | 변환된 파일을 만듭니다. 입력 확장은 원본 구문을 해석하고, 내보내기 설정은 출력과 번호를 결정합니다. |
-| [DocWen Assistant](../product-requirements.en.md) | 내보내기는 별도의 출력을 저장하고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
+| [DocWen Assistant](../product-requirements.md) | 내보내기는 별도의 출력을 저장하고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ko-KR.md) | 달력과 작업 화면은 색인을 읽습니다. 완료 상태나 날짜를 바꾸면 원본 Markdown을 수정하고, 만들기 작업은 새 노트를 생성합니다. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ko-KR.md) | 후보 설정은 메뉴를 바꿉니다. 값을 정렬하거나 옮기면 해당 YAML 목록을 편집하며, 텍스트가 아닌 값이 문자열로 바뀔 수 있습니다. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ko.md) | 규칙은 분석 결과를 필터링하거나 분석에 포함할 그래프 연결을 바꿉니다. 노트의 링크는 다시 쓰지 않습니다. |
@@ -112,7 +112,7 @@ Word로 내보낸 뒤 다시 변환해도 원본 Markdown이 그대로 복원되
 
 Node.js 24.19.0과 npm 11.17.0을 사용합니다. `npm ci`, `npm run check`, `npm run release`를 실행합니다. 소스는 `src/`, 테스트는 `tests/`에 있으며 생성된 `dist/`와 `release/` 파일은 소스가 아닙니다.
 
-안정 문서: [제품 요구사항](../product-requirements.en.md) · [UX 사양](../ux-spec.en.md) · [아키텍처](../architecture.en.md) · [테스트 전략](../testing-strategy.en.md)
+안정 문서: [제품 요구사항](../product-requirements.md) · [UX 사양](../ux-spec.md) · [아키텍처](../architecture.md) · [테스트 전략](../testing-strategy.md)
 
 저장소 거버넌스: [변경 기록](../../CHANGELOG.md) · [기여 안내](../../CONTRIBUTING.md) · [보안](../../SECURITY.md)
 

@@ -84,7 +84,7 @@ Number Suite が未インストールでも、Word 出力は Markdown 内の対�
 | プロジェクトと使い方 | 表示・元のノートの編集・出力 |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ja-JP.md) | 変換後のファイルを生成します。入力拡張が元の構文を解釈し、エクスポート設定が出力内容と番号を決めます。 |
-| [DocWen Assistant](../product-requirements.en.md) | エクスポートは別の出力を保存し、校正は読み取りのみです。見出し番号の操作を実行すると、元の Markdown を編集します。 |
+| [DocWen Assistant](../product-requirements.md) | エクスポートは別の出力を保存し、校正は読み取りのみです。見出し番号の操作を実行すると、元の Markdown を編集します。 |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ja-JP.md) | カレンダーとタスクの表示はインデックスを参照します。完了状態や日付の変更は元の Markdown に書き込み、作成操作はノートを追加します。 |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ja-JP.md) | 候補の設定はメニューを変えます。値の並べ替えや移動は対象の YAML リストを編集し、文字列以外の値を文字列に変える場合があります。 |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ja.md) | ルールは分析結果を絞り込み、分析に含めるグラフの接続を変えます。ノート内のリンクは書き換えません。 |
@@ -112,7 +112,7 @@ Word への変換と再変換は、元の Markdown の完全なバックアッ�
 
 Node.js 24.19.0 と npm 11.17.0 を使用します。`npm ci`、`npm run check`、`npm run release` を実行します。ソースは `src/`、テストは `tests/` にあり、`dist/` と `release/` の生成物はソースではありません。
 
-安定版文書：[製品要件](../product-requirements.en.md) · [UX 仕様](../ux-spec.en.md) · [アーキテクチャ](../architecture.en.md) · [テスト戦略](../testing-strategy.en.md)
+安定版文書：[製品要件](../product-requirements.md) · [UX 仕様](../ux-spec.md) · [アーキテクチャ](../architecture.md) · [テスト戦略](../testing-strategy.md)
 
 リポジトリ運営：[変更履歴](../../CHANGELOG.md) · [コントリビューションガイド](../../CONTRIBUTING.md) · [セキュリティ](../../SECURITY.md)
 

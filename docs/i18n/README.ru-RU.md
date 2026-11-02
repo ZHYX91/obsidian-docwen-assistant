@@ -84,7 +84,7 @@ DocWen Assistant связывает Obsidian с локальной устано�
 | Проект и руководство | Отображение, исходный текст и результат |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ru-RU.md) | Создаёт преобразованные файлы. Расширения ввода интерпретируют исходный синтаксис; настройки экспорта определяют результат и его нумерацию. |
-| [DocWen Assistant](../product-requirements.en.md) | Экспорт сохраняет отдельный результат; проверка текста только читает заметку. Явные действия с нумерацией заголовков изменяют исходный Markdown. |
+| [DocWen Assistant](../product-requirements.md) | Экспорт сохраняет отдельный результат; проверка текста только читает заметку. Явные действия с нумерацией заголовков изменяют исходный Markdown. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ru-RU.md) | Календарь и списки задач читают индекс. Изменение состояния или даты задачи записывается в исходный Markdown; команды создания добавляют заметки. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ru-RU.md) | Настройки подсказок меняют меню. Перестановка или перемещение значений изменяет затронутые списки YAML и может превратить нетекстовые значения в строки. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ru.md) | Правила фильтруют результаты анализа или определяют учитываемые связи графа. Ссылки в заметках не переписываются. |
@@ -112,7 +112,7 @@ DocWen Assistant связывает Obsidian с локальной устано�
 
 Используйте Node.js 24.19.0 и npm 11.17.0. Выполните `npm ci`, `npm run check` и `npm run release`. Исходный код находится в `src/`, тесты — в `tests/`; созданные файлы в `dist/` и `release/` не являются исходным кодом.
 
-Стабильные документы: [Требования к продукту](../product-requirements.en.md) · [Спецификация UX](../ux-spec.en.md) · [Архитектура](../architecture.en.md) · [Стратегия тестирования](../testing-strategy.en.md)
+Стабильные документы: [Требования к продукту](../product-requirements.md) · [Спецификация UX](../ux-spec.md) · [Архитектура](../architecture.md) · [Стратегия тестирования](../testing-strategy.md)
 
 Управление репозиторием: [Журнал изменений](../../CHANGELOG.md) · [Как внести вклад](../../CONTRIBUTING.md) · [Безопасность](../../SECURITY.md)
 

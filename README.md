@@ -98,7 +98,7 @@ Word export reads Number Suite syntax from Markdown even when Number Suite is no
 | Project and guide | Display, source edits and output |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/README.md) | Creates converted files. Input extensions interpret source syntax; export settings control the output and its numbering. |
-| [DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) | Export saves separate output; proofreading is read-only. Explicit heading-number actions edit the source Markdown. |
+| [DocWen Assistant](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.md) | Export saves separate output; proofreading is read-only. Explicit heading-number actions edit the source Markdown. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/README.md) | Calendar and task views read the index. Completion and date edits update source Markdown; creation actions create notes. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/README.md) | Suggestions change menus. Reordering or moving values edits the affected YAML lists and can turn nontext values into strings. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/README.md) | Rules filter analysis results or change which graph connections count. They do not rewrite links in notes. |
@@ -138,7 +138,7 @@ npm run release
 
 Runtime source is under `src/`; the DocWen boundary is under `src/docwen/`; tests are under `tests/`. Generated `dist/` and `release/` files are not source.
 
-Stable documents: [Product requirements](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.en.md) · [UX specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/ux-spec.en.md) · [Architecture](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/architecture.en.md) · [Testing strategy](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)
+Stable documents: [Product requirements](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/product-requirements.md) · [UX specification](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/ux-spec.md) · [Architecture](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/architecture.md) · [Testing strategy](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.md)
 
 Repository governance: [Changelog](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CHANGELOG.md) · [Contributing](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/CONTRIBUTING.md) · [Security](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/SECURITY.md)
 

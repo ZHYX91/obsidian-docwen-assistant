@@ -5,7 +5,7 @@ translation_status: source
 
 # DocWen Assistant — 测试策略
 
-[English synced translation](testing-strategy.en.md)
+[English synced translation](testing-strategy.md)
 
 ## 原则
 
