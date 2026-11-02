@@ -10,7 +10,7 @@ import {
 export type { DeclaredMarkdownSnapshot } from "./declared-markdown-snapshot";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
@@ -158,12 +158,15 @@ export class VaultReadSnapshot {
       published = true;
       return committed;
     };
-    const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
+    const ownedWorkspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
     const extension = file.extension.replace(/[^a-z0-9]/giu, "") || "bin";
-    const inputPath = path.join(workspace, `source.${extension}`);
     let result: T;
     try {
       throwIfAborted(signal);
+      // Core inspections return canonical paths, including for aliased TEMP parents.
+      // Bind both snapshot copies to that spelling without relaxing inspection checks.
+      const workspace = await realpath(ownedWorkspace);
+      const inputPath = path.join(workspace, `source.${extension}`);
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
@@ -237,14 +240,14 @@ export class VaultReadSnapshot {
       // conflict after an output was already committed successfully.
       if (!published) await assertCurrent();
     } catch (primaryError) {
-      await rm(workspace, { recursive: true, force: true }).catch((cleanupError: unknown) => {
+      await rm(ownedWorkspace, { recursive: true, force: true }).catch((cleanupError: unknown) => {
         recordFailureWarning(primaryError, operationWarning("input_cleanup_failed", cleanupError));
       });
       throw primaryError;
     }
     const warnings: OperationWarning[] = [];
     try {
-      await rm(workspace, { recursive: true, force: true });
+      await rm(ownedWorkspace, { recursive: true, force: true });
     } catch (cleanupError) {
       warnings.push(operationWarning("input_cleanup_failed", cleanupError));
     }

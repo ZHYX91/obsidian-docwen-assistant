@@ -8,6 +8,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Show the source, declared format, detected format and resulting read behavior before accepting a file-format mismatch, in all twelve interface languages.
 - Point the Word export guide to DocWen's current Parse Markdown settings in all twelve interface languages.
+- Allow accepted detected-format exports when the temporary directory uses a path alias, while retaining exact source, inspection and content checks.
 - Align the resolved-numbering protocol example with Core's optional task-language override: omitted locale stays omitted.
 
 ## [3.5.1] - 2026-11-01
