@@ -18,11 +18,11 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 
 ![DocWen 校對側邊欄](../assets/docwen-assistant-proofread-en.png)
 
-### 設定與 DocWen 連線
+### 校對設定
 
-在四個設定分頁中檢查 DocWen 連線，選擇轉換與校對選項。
+在圖示的**校對**分頁中選擇檢查項目。DocWen 安裝選擇與連線檢查位於獨立的**一般**分頁。
 
-![DocWen Assistant 頂部分頁設定](../assets/docwen-assistant-settings-en.png)
+![校對設定](../assets/docwen-assistant-settings-en.png)
 
 ### 匯出檔案
 

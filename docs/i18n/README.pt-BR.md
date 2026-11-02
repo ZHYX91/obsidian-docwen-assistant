@@ -18,11 +18,11 @@ Revise problemas por linha ou regra e volte ao trecho correspondente da origem s
 
 ![Barra lateral de revisão do DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Configurações e conexão com o DocWen
+### Configurações de revisão
 
-Confira a conexão com o DocWen e escolha as opções de conversão e revisão nas quatro abas.
+Escolha as verificações na aba **Revisão** mostrada aqui. A seleção da instalação do DocWen e a verificação da conexão ficam na aba separada **Geral**.
 
-![Configurações do DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+![Configurações de revisão](../assets/docwen-assistant-settings-en.png)
 
 ### Exportar arquivos
 

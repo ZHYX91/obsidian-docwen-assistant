@@ -18,11 +18,11 @@ Revisa problemas por línea o regla y vuelve al intervalo de origen correspondie
 
 ![Barra lateral de revisión de DocWen](../assets/docwen-assistant-proofread-en.png)
 
-### Configuración y conexión con DocWen
+### Ajustes de corrección
 
-Comprueba la conexión con DocWen y elige las opciones de conversión y revisión en las cuatro pestañas.
+Elige las comprobaciones en la pestaña **Corrección** que se muestra aquí. La selección de la instalación de DocWen y la comprobación de la conexión están en la pestaña independiente **General**.
 
-![Configuración de DocWen Assistant](../assets/docwen-assistant-settings-en.png)
+![Ajustes de corrección](../assets/docwen-assistant-settings-en.png)
 
 ### Exportar archivos
 

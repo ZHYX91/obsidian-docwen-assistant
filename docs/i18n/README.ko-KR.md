@@ -18,11 +18,11 @@ DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen
 
 ![DocWen 교정 사이드바](../assets/docwen-assistant-proofread-en.png)
 
-### 설정과 DocWen 연결
+### 교정 설정
 
-네 설정 탭에서 DocWen 연결을 확인하고 변환 및 교정 옵션을 고릅니다.
+그림에 표시된 **교정** 탭에서 검사 항목을 선택합니다. DocWen 설치 선택과 연결 확인은 별도의 **일반** 탭에 있습니다.
 
-![DocWen Assistant 상단 탭 설정](../assets/docwen-assistant-settings-en.png)
+![교정 설정](../assets/docwen-assistant-settings-en.png)
 
 ### 파일 내보내기
 
