@@ -68,14 +68,14 @@ Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 
 
 ## 설정
 
-Word로 내보내기 전에 **DocWen → 설정 → Markdown 문법**에서 필요한 **입력 확장**을 켜세요. 새 설치에서는 꺼져 있으며, Obsidian 입력 사전 설정으로 관련 확장을 함께 켤 수 있습니다.
+Word로 내보내기 전에 **DocWen → 설정 → Markdown 해석**에서 필요한 **입력 확장**을 켜세요. 새 설치에서는 꺼져 있으며, Obsidian 입력 사전 설정으로 관련 확장을 함께 켤 수 있습니다.
 
 | 노트 내용 또는 작업 | DocWen 설정 |
 | --- | --- |
 | Structural Tables 병합 셀 | Structural Tables 입력 확장 |
 | Number Suite 캡션과 상호 참조 | 캡션 및 참조 입력 확장 |
 | H7–H9 제목 / 유형별 미주 | 해당 제목 / 미주 입력 확장 |
-| Word를 확장 Markdown으로 변환 | 해당 출력 확장 |
+| Word를 확장 Markdown으로 변환 | **설정 → Markdown 생성**: 해당 출력 확장 |
 
 Number Suite가 설치되지 않아도 Word 내보내기는 Markdown의 해당 문법을 읽습니다. 출력 번호는 DocWen 설정을 따르며 Number Suite의 표시 전용 번호를 복사하지 않습니다. 별도의 제목 번호 추가·제거 명령은 원본 노트를 수정하지만 내보내기는 수정하지 않습니다.
 

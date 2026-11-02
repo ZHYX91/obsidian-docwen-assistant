@@ -135,7 +135,11 @@ export class ExportActions {
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
       if (useDetectedFormat) {
-        const accepted = await confirmDetectedFormat(this.app, signal);
+        const accepted = await confirmDetectedFormat(this.app, signal, {
+          sourceName: capturedSource.logicalPath ?? file.path,
+          declaredFormat: capability.inspection.declaredFormat,
+          detectedFormat: capability.inspection.detectedFormat,
+        });
         if (!accepted || signal.aborted) return;
         sourceInput = await snapshot.getAcceptedDetectedSource(
           capability.inspection, route, (input) => this.docwen.inspect(input, signal),

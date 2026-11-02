@@ -68,14 +68,14 @@ Wählen Sie eine Vorlage oder ein Konvertierungsprofil, falls angeboten, und dan
 
 ## Einstellungen
 
-Aktivieren Sie vor dem Word-Export unter **DocWen → Einstellungen → Markdown-Syntax** die benötigten **Eingabe-Erweiterungen**. Bei einer Neuinstallation sind sie ausgeschaltet; die Obsidian-Eingabevoreinstellung aktiviert die zugehörige Gruppe.
+Aktivieren Sie vor dem Word-Export unter **DocWen → Einstellungen → Markdown einlesen** die benötigten **Eingabe-Erweiterungen**. Bei einer Neuinstallation sind sie ausgeschaltet; die Obsidian-Eingabevoreinstellung aktiviert die zugehörige Gruppe.
 
 | Inhalt oder Aufgabe | DocWen-Einstellung |
 | --- | --- |
 | Verbundene Structural-Tables-Zellen | Structural-Tables-Eingabe-Erweiterung |
 | Number-Suite-Beschriftungen und Querverweise | Eingabe-Erweiterung für Beschriftungen und Verweise |
 | H7–H9-Überschriften / typisierte Endnoten | Entsprechende Überschriften- / Endnoten-Eingabe-Erweiterungen |
-| Word zurück in erweitertes Markdown | Entsprechende Ausgabe-Erweiterungen |
+| Word zurück in erweitertes Markdown | **Einstellungen → Markdown erzeugen**: Entsprechende Ausgabe-Erweiterungen |
 
 Word-Export liest die Number-Suite-Syntax auch ohne installiertes Number Suite. Die Nummern im Export folgen den DocWen-Optionen, nicht den reinen Anzeigenummern von Number Suite. Die separaten Befehle zum Hinzufügen oder Entfernen von Überschriftennummern ändern die Quellnotiz; der Export tut das nicht.
 

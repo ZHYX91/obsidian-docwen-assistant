@@ -18,6 +18,7 @@ class FakeElement {
   createDiv() { return this.createEl("div"); }
   addEventListener(_event: string, callback: () => void) { this.click = callback; }
   setText(text: string) { this.text = text; }
+  setAttribute(_name: string, _value: string) {}
   empty() { this.children = []; }
 }
 class FakeModal {
@@ -37,7 +38,7 @@ class FakeModal {
   onChooseSuggestion(_item: PickerItem) {}
 }
 vi.mock("obsidian", () => ({ Modal: FakeModal, SuggestModal: FakeModal }));
-vi.mock("../src/i18n", () => ({ t: (key: string) => key }));
+vi.mock("../src/i18n", () => ({ t: (key: string) => key, getCurrentLocale: () => "en" }));
 beforeEach(async () => {
   state.modals = [];
   state.failOpen = false;
@@ -93,9 +94,11 @@ describe("owned picker lifecycle", () => {
 describe("owned detected-format confirmation", () => {
   it("uses localized controls and closes on cancellation before a late Continue", async () => {
     const controller = new AbortController();
-    const result = confirmDetectedFormat({} as never, controller.signal);
+    const result = confirmDetectedFormat({} as never, controller.signal, {
+      sourceName: "source.txt", declaredFormat: "txt", detectedFormat: "docx",
+    });
     const modal = state.modals[0];
-    const [cancel, proceed] = modal.contentEl.children[1].children;
+    const [cancel, proceed] = modal.contentEl.children.at(-1)!.children;
     expect(cancel.text).toBe("operationCancel");
     expect(proceed.text).toBe("dialogContinue");
     controller.abort();
@@ -108,8 +111,10 @@ describe("owned detected-format confirmation", () => {
   it("accepts one current confirmation and removes the abort listener", async () => {
     const controller = new AbortController();
     const remove = vi.spyOn(controller.signal, "removeEventListener");
-    const result = confirmDetectedFormat({} as never, controller.signal);
-    state.modals[0].contentEl.children[1].children[1].click!();
+    const result = confirmDetectedFormat({} as never, controller.signal, {
+      sourceName: "source.txt", declaredFormat: "txt", detectedFormat: "docx",
+    });
+    state.modals[0].contentEl.children.at(-1)!.children[1].click!();
     expect(await result).toBe(true);
     expect(remove).toHaveBeenCalledWith("abort", expect.any(Function));
   });

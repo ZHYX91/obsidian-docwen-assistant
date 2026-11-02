@@ -2,7 +2,12 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
-## [Unreleased]
+## [3.5.2] - 2026-11-02
+
+- Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.
+
+- Show the source, declared format, detected format and resulting read behavior before accepting a file-format mismatch, in all twelve interface languages.
+- Align the resolved-numbering protocol example with Core's optional task-language override: omitted locale stays omitted.
 
 ## [3.5.1] - 2026-11-01
 
@@ -255,7 +260,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.1...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.2...HEAD
+[3.5.2]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.1...3.5.2
 [3.5.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.0...3.5.1
 [3.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.0.0...3.1.0
 [3.0.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/2.4.0...3.0.0

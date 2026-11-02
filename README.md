@@ -82,14 +82,14 @@ Choose a template or conversion preset when offered, then an output folder. Revi
 
 ## Settings
 
-Before Word export, enable the needed **input extensions** in **DocWen → Settings → Markdown syntax**. They are off in a new installation; the **Use Obsidian extensions** input preset enables the related group.
+Before Word export, enable the needed **input extensions** in **DocWen → Settings → Parse Markdown**. They are off in a new installation; the **Use Obsidian extensions** input preset enables the related group.
 
 | Note content or task | Setting in DocWen |
 | --- | --- |
 | Merged Structural Tables cells | Structural Tables input extension |
 | Number Suite captions and cross-references | Captions and references input extension |
 | H7–H9 headings / typed endnotes | Matching heading / endnote input extensions |
-| Word back to extended Markdown | Matching output extensions |
+| Word back to extended Markdown | **Settings → Generate Markdown**: Matching output extensions |
 
 Word export reads Number Suite syntax from Markdown even when Number Suite is not installed. Exported numbers follow DocWen export options, not Number Suite’s display-only numbers. The separate Add/Remove numbering commands change the source note; exporting does not.
 

@@ -1,6 +1,6 @@
 {
   "name": "docwen-assistant",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "main": "dist/main.js",
   "scripts": {
@@ -35,7 +35,9 @@
     "release:publish-github": "node scripts/release.mjs publish-github",
     "release:post-verify": "node scripts/release.mjs post-verify",
     "release:docwen-compatibility": "node scripts/check-docwen-compatibility.mjs",
-    "release:check": "npm run check && npm run release:validate-tag"
+    "release:check": "npm run check && npm run release:validate-tag",
+    "postinstall": "node scripts/prepare-lint-dependencies.mjs",
+    "prelint": "node scripts/prepare-lint-dependencies.mjs && node scripts/check-lint-dependencies.mjs"
   },
   "keywords": [
     "obsidian",
@@ -77,6 +79,30 @@
   "overrides": {
     "obsidian": {
       "moment": "2.31.0"
+    },
+    "@eslint/config-array": {
+      "minimatch": "11.0.4"
+    },
+    "@eslint/eslintrc": {
+      "minimatch": "11.0.4"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.4"
+    },
+    "eslint": {
+      "minimatch": "11.0.4"
+    },
+    "eslint-plugin-json-schema-validator": {
+      "minimatch": "11.0.4"
+    },
+    "eslint-plugin-n": {
+      "minimatch": "11.0.4"
+    },
+    "eslint-plugin-import": {
+      "minimatch": "11.0.4"
+    },
+    "eslint-plugin-react": {
+      "minimatch": "11.0.4"
     }
   }
 }

@@ -42,6 +42,7 @@ those environments. Retain untested matrix entries as unverified.
 
 | Scenario | Independently prepared behavior |
 | --- | --- |
+| `desktop-detected-format-review` | Captured source and TXT/DOCX mismatch in English/Chinese, Cancel/Escape ownership and confirmed Markdown export |
 | `desktop-settings-surface` | Four tabs and help cards, recorded-host/theme/layout/locale combinations, saved controls and save-failure Retry |
 | `desktop-connection-discovery` | Native package/program selection, canonical CLI path, Doctor, capability/resource empty and failure states, Retry and obsolete-response suppression |
 | `desktop-file-handoff` | All 35 format examples, explicit GUI selection in single/batch modes, repeated and alternating requests, command/ribbon entry points and admission explanations |
