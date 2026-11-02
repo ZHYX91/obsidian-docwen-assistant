@@ -5,7 +5,7 @@ translation_status: source
 
 # DocWen Assistant — 交互规范
 
-[English synced translation](ux-spec.en.md)
+[English synced translation](ux-spec.md)
 
 ## 入口
 

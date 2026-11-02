@@ -84,7 +84,7 @@ Word-Export liest die Number-Suite-Syntax auch ohne installiertes Number Suite. 
 | Projekt und Anleitung | Anzeige, Quelldateien und Ausgabe |
 | --- | --- |
 | [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.de-DE.md) | Erzeugt konvertierte Dateien. Eingabeerweiterungen interpretieren die Quellsyntax; Exporteinstellungen bestimmen die Ausgabe und ihre Nummerierung. |
-| [DocWen Assistant](../product-requirements.en.md) | Der Export speichert separate Ergebnisse; Korrekturlesen greift nur lesend zu. Ausdrückliche Aktionen für Überschriftennummern ändern den Markdown-Quelltext. |
+| [DocWen Assistant](../product-requirements.md) | Der Export speichert separate Ergebnisse; Korrekturlesen greift nur lesend zu. Ausdrückliche Aktionen für Überschriftennummern ändern den Markdown-Quelltext. |
 | [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.de-DE.md) | Kalender- und Aufgabenansichten lesen den Index. Änderungen an Erledigungsstatus oder Datum schreiben in die Markdown-Quelle; Erstellungsaktionen legen Notizen an. |
 | [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.de-DE.md) | Vorschlagseinstellungen ändern Menüs. Neuordnen oder Verschieben von Werten bearbeitet die betroffenen YAML-Listen und kann Nichttextwerte in Zeichenketten umwandeln. |
 | [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.de.md) | Regeln filtern Analyseergebnisse oder bestimmen, welche Graphverbindungen zählen. Links in Notizen werden nicht umgeschrieben. |
@@ -112,7 +112,7 @@ Exporte werden im gewählten Ordner gespeichert; Korrekturlesen verändert keine
 
 Verwenden Sie Node.js 24.19.0 und npm 11.17.0. Führen Sie `npm ci`, `npm run check` und `npm run release` aus. Quellcode liegt unter `src/`, Tests unter `tests/`; erzeugte Dateien in `dist/` und `release/` sind kein Quellcode.
 
-Stabile Dokumente: [Produktanforderungen](../product-requirements.en.md) · [UX-Spezifikation](../ux-spec.en.md) · [Architektur](../architecture.en.md) · [Teststrategie](../testing-strategy.en.md)
+Stabile Dokumente: [Produktanforderungen](../product-requirements.md) · [UX-Spezifikation](../ux-spec.md) · [Architektur](../architecture.md) · [Teststrategie](../testing-strategy.md)
 
 Repository-Governance: [Änderungsprotokoll](../../CHANGELOG.md) · [Mitwirken](../../CONTRIBUTING.md) · [Sicherheit](../../SECURITY.md)
 

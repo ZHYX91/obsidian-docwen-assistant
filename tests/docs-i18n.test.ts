@@ -32,7 +32,7 @@ describe("stable documentation contract", () => {
 
   it("rejects wrong or additional translation metadata", async () => {
     await replaceInDocument(
-      "docs/product-requirements.en.md",
+      "docs/product-requirements.md",
       "translation_of: product-requirements.zh-CN.md",
       "translation_of: product.zh-CN.md\nstatus: stable",
     );
@@ -40,30 +40,30 @@ describe("stable documentation contract", () => {
   });
 
   it("rejects a missing or unregistered stable-language authority", async () => {
-    await rm(path.join(fixtureRoot, "docs/ux-spec.en.md"));
+    await rm(path.join(fixtureRoot, "docs/ux-spec.md"));
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow();
 
     await cp(
-      path.join(projectRoot, "docs/architecture.en.md"),
-      path.join(fixtureRoot, "docs/architecture-copy.en.md"),
+      path.join(projectRoot, "docs/architecture.md"),
+      path.join(fixtureRoot, "docs/architecture-copy.md"),
     );
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/unregistered/u);
   });
 
   it("rejects heading drift and broken or escaping relative links", async () => {
-    await replaceInDocument("docs/ux-spec.en.md", "## Entry points", "### Entry points");
+    await replaceInDocument("docs/ux-spec.md", "## Entry points", "### Entry points");
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/matching heading structures/u);
-    await replaceInDocument("docs/ux-spec.en.md", "### Entry points", "## Entry points");
+    await replaceInDocument("docs/ux-spec.md", "### Entry points", "## Entry points");
 
     await replaceInDocument(
-      "docs/architecture.en.md",
+      "docs/architecture.md",
       "(cli-integration.md)",
       "(missing-contract.md)",
     );
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/missing relative link/u);
 
     await replaceInDocument(
-      "docs/architecture.en.md",
+      "docs/architecture.md",
       "(missing-contract.md)",
       "(../../outside.md)",
     );
@@ -72,19 +72,19 @@ describe("stable documentation contract", () => {
 
   it("rejects a wrong existing relative link and removed critical token", async () => {
     await replaceInDocument(
-      "docs/architecture.en.md",
+      "docs/architecture.md",
       "(cli-integration.md)",
-      "(product-requirements.en.md)",
+      "(product-requirements.md)",
     );
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/relative-link sequences/u);
     await replaceInDocument(
-      "docs/architecture.en.md",
-      "(product-requirements.en.md)",
+      "docs/architecture.md",
+      "(product-requirements.md)",
       "(cli-integration.md)",
     );
 
     await replaceInDocument(
-      "docs/product-requirements.en.md",
+      "docs/product-requirements.md",
       "docwen.machine.v2",
       "machine protocol",
     );
@@ -92,12 +92,12 @@ describe("stable documentation contract", () => {
   });
 
   it("checks translated semantic tokens in their own language", async () => {
-    await replaceInDocument("docs/ux-spec.en.md", "top tabs", "settings pages");
-    await replaceInDocument("docs/ux-spec.en.md", "top tabs", "settings pages");
+    await replaceInDocument("docs/ux-spec.md", "top tabs", "settings pages");
+    await replaceInDocument("docs/ux-spec.md", "top tabs", "settings pages");
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/translation-language critical token/u);
 
-    await replaceInDocument("docs/ux-spec.en.md", "settings pages", "top tabs");
-    await replaceInDocument("docs/ux-spec.en.md", "settings pages", "top tabs");
+    await replaceInDocument("docs/ux-spec.md", "settings pages", "top tabs");
+    await replaceInDocument("docs/ux-spec.md", "settings pages", "top tabs");
     await replaceInDocument("docs/ux-spec.zh-CN.md", "顶部页签", "设置页面");
     await replaceInDocument("docs/ux-spec.zh-CN.md", "顶部页签", "设置页面");
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/source-language critical token/u);
@@ -105,7 +105,7 @@ describe("stable documentation contract", () => {
 
   it("rejects list, fence, or table structure drift", async () => {
     await replaceInDocument(
-      "docs/product-requirements.en.md",
+      "docs/product-requirements.md",
       "- Launch or activate",
       "1. Launch or activate",
     );

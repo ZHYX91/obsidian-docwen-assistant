@@ -5,7 +5,7 @@ translation_status: source
 
 # DocWen Assistant — 产品需求
 
-[English synced translation](product-requirements.en.md)
+[English synced translation](product-requirements.md)
 
 ## 产品定位
 

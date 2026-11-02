@@ -41,8 +41,8 @@ describe("README standardization contract", () => {
 
   it("keeps root links portable and translated guides usable offline", async () => {
     await replaceInReadme("README.md",
-      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)",
-      "](docs/testing-strategy.en.md)");
+      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.md)",
+      "](docs/testing-strategy.md)");
     expect(runReadmeCheck().stderr).toContain("README.md must use absolute repository links");
     await replaceInReadme("docs/i18n/README.zh-CN.md", "](../../README.md)",
       "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/README.md)");
@@ -60,10 +60,10 @@ describe("README standardization contract", () => {
   it("requires real links to every canonical contract and governance file", async () => {
     await replaceInReadme(
       "README.md",
-      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.en.md)",
+      "](https://github.com/ZHYX91/obsidian-docwen-assistant/blob/main/docs/testing-strategy.md)",
       "](#testing-contract)",
     );
-    expect(runReadmeCheck().stderr).toContain("must link repository contract: docs/testing-strategy.en.md");
+    expect(runReadmeCheck().stderr).toContain("must link repository contract: docs/testing-strategy.md");
 
     await rm(path.join(fixtureRoot, "SECURITY.md"));
     expect(runReadmeCheck().stderr).toContain("missing repository link");

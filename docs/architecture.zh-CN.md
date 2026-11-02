@@ -5,7 +5,7 @@ translation_status: source
 
 # DocWen Assistant — 架构
 
-[English synced translation](architecture.en.md)
+[English synced translation](architecture.md)
 
 ## 分层
 
