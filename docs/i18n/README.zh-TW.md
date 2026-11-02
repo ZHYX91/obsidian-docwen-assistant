@@ -72,14 +72,14 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 ## 設定
 
-匯出 Word 前，請在 **DocWen → 設定 → Markdown 語法**啟用需要的**輸入擴充**。新安裝時預設關閉，也可選擇輸入方向的 **Obsidian 擴充**預設。
+匯出 Word 前，請在 **DocWen → 設定 → 解析 Markdown**啟用需要的**輸入擴充**。新安裝時預設關閉，也可選擇輸入方向的 **使用 Obsidian 擴充預設**。
 
 | 筆記內容或操作 | DocWen 對應設定 |
 | --- | --- |
 | Structural Tables 合併儲存格 | Structural Tables 輸入擴充 |
 | Number Suite 題註與交互參照 | 題註與交互參照輸入擴充 |
 | H7–H9 標題／類型化尾註 | 相應的標題／尾註輸入擴充 |
-| Word 轉回擴充 Markdown | 相應的輸出擴充 |
+| Word 轉回擴充 Markdown | **設定 → 產生 Markdown**: 相應的輸出擴充 |
 
 即使未安裝 Number Suite，Word 匯出也能讀取 Markdown 中的相關語法。輸出編號由 DocWen 選項決定，不直接複製 Number Suite 的純顯示編號。獨立的「新增／移除標題編號」命令會修改來源筆記，匯出不會。
 

@@ -21,6 +21,10 @@ export interface Translations {
   dialogDiagnosticsPrivacy: string;
   dialogContinue: string;
   dialogDetectedFormat: string;
+  dialogDeclaredFormat: string;
+  dialogActualFormat: string;
+  dialogReadDetectedFormat: string;
+  dialogFormatUnknown: string;
   // Ribbon & Commands
   ribbonTooltip: string;
   commandLaunch: string;

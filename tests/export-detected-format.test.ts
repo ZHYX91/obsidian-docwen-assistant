@@ -116,6 +116,9 @@ describe("accepted detected-format exports", () => {
     ui.confirm.mockResolvedValue(false);
     await test.run();
     expect(ui.confirm).toHaveBeenCalledOnce();
+    expect(ui.confirm.mock.calls[0][2]).toEqual({
+      sourceName: "Detected-format.txt", declaredFormat: "txt", detectedFormat: "docx",
+    });
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();

@@ -1,7 +1,7 @@
 {
   "schema": "docwen.consumer_contract_snapshot.v1",
   "source_repository": "https://github.com/ZHYX91/DocWen",
-  "source_commit": "27325e7e04c7420dc60fab791d2f12a94274af8a",
+  "source_commit": "6344346a1a7a333c0c0e1ff89e59da7b5e587718",
   "normalization": "JSON: UTF-8, two-space indentation, one LF; data unchanged. Other files: original Git blob bytes.",
   "license": "AGPL-3.0-or-later (vendored test data only; see LICENSE)",
   "files": [
@@ -603,9 +603,9 @@
     {
       "path": "fixtures/valid/machine.resolved-numbering.trace.json",
       "source_path": "contracts/fixtures/valid/machine.resolved-numbering.trace.json",
-      "source_sha256": "c5b8a577b01196341d99c0783fa92ddfd6293a31ec70e8220b46ec9c8e956836",
-      "sha256": "aaf7b06863fb9cfb826e7842d922a2cbd406890cce4093e947b11e74674d8546",
-      "size_bytes": 5248
+      "source_sha256": "2e0940a119ba9c847843f3433291cc193dc9696e37f5732022f07137f4658b89",
+      "sha256": "d1a2ae55be3637f8434c8949feb413f2f82805c1221ec3cb78eca9e9a6598efe",
+      "size_bytes": 5185
     },
     {
       "path": "fixtures/valid/machine.task-cancelled.trace.json",

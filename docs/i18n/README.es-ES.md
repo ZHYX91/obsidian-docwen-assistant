@@ -68,14 +68,14 @@ Elige una plantilla o un preajuste de conversión si se ofrece y, después, una 
 
 ## Configuración
 
-Antes de exportar a Word, activa las **extensiones de entrada** necesarias en **DocWen → Configuración → Sintaxis Markdown**. Están desactivadas en una instalación nueva; también puedes usar el preajuste de entrada de Obsidian.
+Antes de exportar a Word, activa las **extensiones de entrada** necesarias en **DocWen → Configuración → Analizar Markdown**. Están desactivadas en una instalación nueva; también puedes usar el preajuste de entrada de Obsidian.
 
 | Contenido o tarea | Ajuste en DocWen |
 | --- | --- |
 | Celdas combinadas de Structural Tables | Extensión de entrada Structural Tables |
 | Leyendas y referencias de Number Suite | Extensión de entrada de leyendas y referencias |
 | Títulos H7–H9 / notas finales tipadas | Extensiones de entrada correspondientes |
-| Word a Markdown extendido | Extensiones de salida correspondientes |
+| Word a Markdown extendido | **Configuración → Generar Markdown**: Extensiones de salida correspondientes |
 
 La exportación a Word lee la sintaxis de Number Suite aunque ese complemento no esté instalado. Los números exportados siguen los ajustes de DocWen, no los números que Number Suite solo muestra en pantalla. Los comandos de añadir o quitar números de encabezado sí modifican la nota original; exportar no la modifica.
 

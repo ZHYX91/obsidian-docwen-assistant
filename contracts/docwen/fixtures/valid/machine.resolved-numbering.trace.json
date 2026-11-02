@@ -65,8 +65,7 @@
                   "ru_RU",
                   "vi_VN",
                   "zh_TW"
-                ],
-                "default": "zh_CN"
+                ]
               },
               "template_name": {
                 "type": "string",
@@ -150,7 +149,6 @@
       "plan_id": "plan.resolved-numbering.001",
       "capability_id": "convert.markdown.to_docx",
       "effective_options": {
-        "locale": "zh_CN",
         "template_name": "",
         "heading_merge_mode": "punct_required"
       },

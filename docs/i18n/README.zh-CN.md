@@ -78,14 +78,14 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 
 ## 设置
 
-导出 Word 前，请在 **DocWen → 设置 → Markdown 语法**开启需要的**输入扩展**。新安装时这些扩展默认关闭，也可使用输入方向的**使用 Obsidian 扩展**预设。
+导出 Word 前，请在 **DocWen → 设置 → 解析 Markdown**开启需要的**输入扩展**。新安装时这些扩展默认关闭，也可使用输入方向的**使用 Obsidian 扩展预设**。
 
 | 笔记内容或操作 | DocWen 中的对应设置 |
 | --- | --- |
 | Structural Tables 合并单元格 | Structural Tables 输入扩展 |
 | Number Suite 题注与交叉引用 | 题注与交叉引用输入扩展 |
 | H7–H9 标题／带类型的尾注 | 相应的标题／尾注输入扩展 |
-| Word 转回扩展 Markdown | 相应的输出扩展 |
+| Word 转回扩展 Markdown | **设置 → 生成 Markdown**: 相应的输出扩展 |
 
 即使没有安装 Number Suite，Word 导出也能读取 Markdown 中的相应语法。导出文档的编号按 DocWen 选项生成，不直接复制 Number Suite 的纯显示编号。独立的“添加／删除标题编号”命令会修改源笔记，导出不会。
 

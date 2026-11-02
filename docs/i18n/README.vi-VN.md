@@ -68,14 +68,14 @@ Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, r�
 
 ## Cài đặt plugin
 
-Trước khi xuất Word, bật **phần mở rộng đầu vào** cần thiết tại **DocWen → Cài đặt → Cú pháp Markdown**. Chúng mặc định tắt khi cài mới; cấu hình đầu vào Obsidian bật nhóm phần mở rộng liên quan.
+Trước khi xuất Word, bật **phần mở rộng đầu vào** cần thiết tại **DocWen → Cài đặt → Phân tích Markdown**. Chúng mặc định tắt khi cài mới; cấu hình đầu vào Obsidian bật nhóm phần mở rộng liên quan.
 
 | Nội dung hoặc tác vụ | Thiết lập DocWen |
 | --- | --- |
 | Ô gộp Structural Tables | Phần mở rộng đầu vào Structural Tables |
 | Chú thích và tham chiếu Number Suite | Phần mở rộng đầu vào chú thích và tham chiếu |
 | Tiêu đề H7–H9 / chú thích cuối có kiểu | Phần mở rộng đầu vào tương ứng |
-| Word về Markdown mở rộng | Phần mở rộng đầu ra tương ứng |
+| Word về Markdown mở rộng | **Cài đặt → Tạo Markdown**: Phần mở rộng đầu ra tương ứng |
 
 Xuất Word đọc cú pháp Number Suite ngay cả khi không cài plugin này. Số trong kết quả theo tùy chọn DocWen, không theo số chỉ hiển thị của Number Suite. Lệnh thêm hoặc xóa số thứ tự tiêu đề riêng sẽ sửa ghi chú nguồn; xuất tệp thì không.
 

@@ -13,6 +13,27 @@
   },
   "scenarios": [
     {
+      "id": "desktop-detected-format-review",
+      "title": "Source and detected-format review before conversion",
+      "surfaces": [
+        "desktop"
+      ],
+      "requiredCapabilities": {
+        "desktop": []
+      },
+      "steps": [
+        "In a disposable Vault configure the recorded full DocWen package and enable detection of all extensions. Make a byte-identical scratch copy of Formats/01-docx.docx named Detected-format.txt and record both input hashes.",
+        "Select English, invoke the scratch file's capability-selected Markdown export, complete any normal optimization choice and select an owned empty output parent. Inspect the ensuing format confirmation; record its source, declared format, detected format and explanation. Cancel and verify no output was created.",
+        "Select Simplified Chinese, repeat the same action with an owned empty output parent and inspect the localized summary. Continue and finish the normal export review; inspect the Markdown output for Document example, A short document with readable text and a small table., and the table values Example and 42. Recheck both input hashes.",
+        "Reopen the format confirmation and dismiss it with Escape. Start a fresh export and verify that the dismissed dialog cannot approve the new operation. Record viewport and screenshots of both language summaries."
+      ],
+      "expected": [
+        "The summary identifies Detected-format.txt, declared TXT and detected DOCX, and explains that Continue reads DOCX content. The source is shown as text and all labels/actions follow the chosen interface language.",
+        "Cancel and Escape start no conversion. Continue enters the existing export workflow and produces the expected Markdown content without replacing either input.",
+        "A closed or cancelled confirmation does not approve another operation; the new export requires its own current confirmation."
+      ]
+    },
+    {
       "id": "desktop-settings-surface",
       "title": "Four-tab settings, persistence, and desktop layout",
       "surfaces": [

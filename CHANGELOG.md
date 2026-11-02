@@ -2,7 +2,12 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
-## [Unreleased]
+## [3.5.2] - 2026-11-02
+
+- Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.
+
+- Show the source, declared format, detected format and resulting read behavior before accepting a file-format mismatch, in all twelve interface languages.
+- Align the resolved-numbering protocol example with Core's optional task-language override: omitted locale stays omitted.
 
 ## [3.5.1] - 2026-11-01
 

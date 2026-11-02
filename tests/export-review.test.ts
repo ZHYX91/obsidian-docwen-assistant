@@ -24,6 +24,48 @@ vi.mock("obsidian", () => ({
 useObsidianDom();
 beforeEach(() => { initI18n("en"); state.modal = null; });
 
+describe("detected-format confirmation", () => {
+  it("shows the source and both formats as text before continuing", async () => {
+    const { confirmDetectedFormat } = await import("../src/host/confirm");
+    const pending = confirmDetectedFormat({} as never, new AbortController().signal, {
+      sourceName: "Notes/<img src=x>.txt", declaredFormat: "txt", detectedFormat: "docx",
+    });
+    expect(Array.from(document.querySelectorAll("dd"), (item) => item.textContent))
+      .toEqual(["Notes/<img src=x>.txt", "TXT", "DOCX"]);
+    expect(document.querySelector("img")).toBeNull();
+    expect(state.modal?.contentEl.textContent).toContain("Continuing will read the file as DOCX.");
+    document.querySelector<HTMLButtonElement>(".mod-cta")!.click();
+    await expect(pending).resolves.toBe(true);
+  });
+
+  it("localizes the reading decision and makes an absent declared format explicit", async () => {
+    initI18n("zh-cn");
+    const { confirmDetectedFormat } = await import("../src/host/confirm");
+    const pending = confirmDetectedFormat({} as never, new AbortController().signal, {
+      sourceName: "报告", declaredFormat: "", detectedFormat: "pdf",
+    });
+    expect(Array.from(document.querySelectorAll("dd"), (item) => item.textContent))
+      .toEqual(["报告", "未声明", "PDF"]);
+    expect(state.modal?.contentEl.textContent).toContain("继续后将按 PDF 格式读取。");
+    state.modal!.close();
+    await expect(pending).resolves.toBe(false);
+  });
+
+  it.each(["abort", "close", "cancel"])("refuses stale acceptance after %s", async (event) => {
+    const { confirmDetectedFormat } = await import("../src/host/confirm");
+    const controller = new AbortController();
+    const pending = confirmDetectedFormat({} as never, controller.signal, {
+      sourceName: "source.txt", declaredFormat: "txt", detectedFormat: "docx",
+    });
+    const approve = document.querySelector<HTMLButtonElement>(".mod-cta")!;
+    if (event === "abort") controller.abort();
+    else if (event === "close") state.modal!.close();
+    else document.querySelector<HTMLButtonElement>("button:not(.mod-cta)")!.click();
+    approve.click();
+    await expect(pending).resolves.toBe(false);
+  });
+});
+
 function request(overrides: Partial<ConvertRequest> = {}): ConvertRequest {
   return {
     target: "docx", outputDirectory: "/exports",

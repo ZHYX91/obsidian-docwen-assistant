@@ -37,3 +37,20 @@ Source checks, a fixed packaged DocWen candidate, real minimum Obsidian 1.12.7 a
 A pull request should state the purpose, design boundary, tests run, remaining host or device gaps, and documentation impact. Include screenshots or short recordings for visible Obsidian UI changes. Do not include generated coverage, local release output, private data, or dependencies on sibling repositories or personal paths.
 
 Contributing a branch does not authorize pushing a tag, creating a GitHub Release, deploying to a Vault, or resetting user settings.
+
+## Lint dependency maintenance
+
+Caller-scoped overrides keep minimatch at 11.0.4 in the development dependency tree.
+`npm ci` runs `scripts/prepare-lint-dependencies.mjs` to adapt the legacy callers to its
+named exports and `Minimatch.match` API. The script accepts only reviewed package versions
+and exact source fragments; it fails if upstream changes invalidate a patch. Review and
+remove the corresponding adaptation when upgrading a caller that supports the new API.
+These changes do not enter the plugin runtime bundle.
+
+`npm run lint` first reapplies the adaptations idempotently, then runs
+`scripts/check-lint-dependencies.mjs`. The check verifies every locked and resolved minimatch
+version and exercises matching and nonmatching cases through the installed callers. Rule
+probes use each caller's installed ESLint peer; they do not establish compatibility with a
+different ESLint major. The normal lint command independently checks the active repository
+configuration without disabling rules. If installation used `--ignore-scripts`, run
+`npm run prelint` before invoking ESLint directly.
