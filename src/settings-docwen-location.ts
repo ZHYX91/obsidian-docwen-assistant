@@ -1,5 +1,6 @@
 import { Setting } from "obsidian";
 
+import { getWindowsOwnerRecoveryMessage } from "./actions/action-errors";
 import { LocalCliError } from "./docwen/errors";
 import type { DocWenConnectionStatus } from "./docwen/connection-status";
 import { DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "./docwen/links";
@@ -85,6 +86,8 @@ export function getDocWenConnectionDisplay(
     };
   }
   if (connection.state === "error") {
+    const recovery = getWindowsOwnerRecoveryMessage(connection.code, connection.details);
+    if (recovery) return { message: recovery, state: "error" };
     if (connection.code === "cli_alias_not_found") {
       return { message: t("settingsConnectionStoreMissing"), state: "error" };
     }

@@ -10,7 +10,6 @@ describe("settings page definitions", () => {
     const renderCliStatus = vi.fn();
     const renderPersistenceStatus = vi.fn();
     const renderNumberingScheme = vi.fn();
-    const runDoctor = vi.fn();
     const pages = getSettingsPages({
       settings: { ...DEFAULT_SETTINGS },
       renderCliPath,
@@ -21,7 +20,6 @@ describe("settings page definitions", () => {
       renderNumberingScheme,
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
-      runDoctor,
     });
     expect(pages).toHaveLength(4);
     expect(pages.map((page) => page.id)).toEqual(["general", "markdown", "word", "proofread"]);
@@ -52,7 +50,6 @@ describe("settings page definitions", () => {
     expect(renderCliStatus).not.toHaveBeenCalled();
     expect(renderPersistenceStatus).not.toHaveBeenCalled();
     expect(renderNumberingScheme).not.toHaveBeenCalled();
-    expect(runDoctor).not.toHaveBeenCalled();
   });
 
   it("uses live settings for disabled state", () => {
@@ -67,7 +64,6 @@ describe("settings page definitions", () => {
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
-      runDoctor: vi.fn(),
     });
     const controls = collectControls(pages.flatMap((page) => page.items));
     expect(readDisabled(controls.get("imageMode"))).toBe(true);
@@ -89,7 +85,6 @@ describe("settings page definitions", () => {
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
-      runDoctor: vi.fn(),
     });
 
     expect(collectControlKeys(definitions[1].items ?? [])).toContain("docToMdCleanNumbering");
@@ -115,7 +110,6 @@ describe("settings page definitions", () => {
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
-      runDoctor: vi.fn(),
     }, "linux");
     const connection = definitions[0].items.find(
       (item) => item.control?.key === "docwenConnectionMode",
@@ -140,7 +134,6 @@ describe("settings page definitions", () => {
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
-      runDoctor: vi.fn(),
     });
     const tableMerge = collectControls(definitions.flatMap((page) => page.items))
       .get("tableMergeStrategy") as { options?: Record<string, string> } | undefined;

@@ -82,7 +82,6 @@ export class SettingTab extends PluginSettingTab {
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
       renderGuide: renderSettingsGuide,
       renderSupport: renderSettingsSupport,
-      runDoctor: () => void this.runDoctorFromSettings(),
     });
   }
 
@@ -238,7 +237,10 @@ export class SettingTab extends PluginSettingTab {
     setting.descEl.setAttribute("role", "status");
     setting.descEl.setAttribute("aria-live", "polite");
     this.pathStatusElements.add(setting.descEl);
-    configureConnectionActions(setting, this.plugin, () => this.refreshPathStatus());
+    const generation = this.surfaceGeneration;
+    this.pageCleanups.push(configureConnectionActions(setting, this.plugin, () => {
+      if (this.isCurrentSurface(generation)) this.refreshPathStatus();
+    }));
     if (
       this.plugin.getDocWenConnectionStatus().state === "unchecked"
       && (
@@ -320,12 +322,6 @@ export class SettingTab extends PluginSettingTab {
       generation = this.surfaceGeneration;
     }
     showNotice(t("noticePathUpdated"));
-    await this.plugin.runDoctorCheck();
-    if (this.isCurrentSurface(generation)) this.refreshPathStatus();
-  }
-
-  private async runDoctorFromSettings(): Promise<void> {
-    const generation = this.surfaceGeneration;
     await this.plugin.runDoctorCheck();
     if (this.isCurrentSurface(generation)) this.refreshPathStatus();
   }

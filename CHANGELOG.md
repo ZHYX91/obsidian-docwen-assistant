@@ -2,6 +2,12 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
+## [Unreleased]
+
+- Place manual installation controls directly after the connection method and combine Check, Launch and Details in one connection card with distinct application/background status and repeated-click/dismissal guards.
+
+- Identify Windows lifetime-helper failures with redacted build hash, phase and system-code diagnostics, and provide safe recovery guidance without bypassing process ownership or security software.
+
 ## [3.5.2] - 2026-11-02
 
 - Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.
