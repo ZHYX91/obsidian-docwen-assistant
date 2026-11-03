@@ -482,6 +482,12 @@ button.docwen-proofread-item {
   color: var(--text-success);
 }
 
+.docwen-settings-connection .setting-item-control {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--size-4-2);
+}
+
 .docwen-cli-path-status {
   white-space: pre-line;
 }

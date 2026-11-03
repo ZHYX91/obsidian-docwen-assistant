@@ -647,6 +647,45 @@ describe("DocWenMachineClient", () => {
     await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_alias_not_found" });
   });
 
+  it("preserves asynchronous Windows helper launch diagnostics without calling it a missing alias", async () => {
+    vi.stubGlobal("process", Object.create(process, { platform: { value: "win32" } }));
+    spawnMock.mockImplementationOnce(() => {
+      const child = new FakeChild();
+      child.stdin.removeAllListeners("data");
+      setImmediate(() => child.emit("error", Object.assign(new Error("C:\\private\\windows-x64.exe"), { code: "EACCES" })));
+      return child;
+    });
+    const client = new DocWenMachineClient(() => ({ executable: "C:\\DocWen\\DocWenCLI.exe", cwd: "C:\\Temp", mode: "automatic" }), () => "en_US");
+    try {
+      await expect(client.query("health/check", {})).rejects.toMatchObject({
+        code: "cli_spawn_failed", details: { ownershipState: "windows_job", phase: "owner_spawn", systemCode: "EACCES", helperName: "windows-x64.exe" },
+      });
+      expect(spawnMock).toHaveBeenCalledTimes(1);
+    } finally { client.dispose(); }
+  });
+
+  it.each(["DOCWEN_OWNER_CREATE_ERROR:193\n", "private path: DOCWEN_OWNER_CREATE_ERROR:193\n"])(
+    "accepts only the exact bounded native startup record: %j", async (stderr) => {
+      vi.stubGlobal("process", Object.create(process, { platform: { value: "win32" } }));
+      spawnMock.mockImplementationOnce(() => {
+        const child = new FakeChild();
+        child.stdin.removeAllListeners("data");
+        setImmediate(() => { child.stderr.write(stderr); child.emit("close", 125); });
+        return child;
+      });
+      const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+      try {
+        await expect(client.query("health/check", {})).rejects.toMatchObject({
+          code: "cli_cleanup_failed", details: {
+            primaryCode: "cli_spawn_failed",
+            primaryPhase: stderr.startsWith("private") ? "owner_runtime" : "create_process",
+            primarySystemCode: stderr.startsWith("private") ? undefined : "WIN32_193",
+          },
+        });
+      } finally { client.dispose(); }
+    },
+  );
+
   it.skipIf(process.platform !== "win32")("classifies a controller failure during normal close as unconfirmed cleanup", async () => {
     const child = new FakeChild();
     child.stdin.removeAllListeners("finish");
