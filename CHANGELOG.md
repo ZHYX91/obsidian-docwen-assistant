@@ -2,6 +2,11 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
+## [Unreleased]
+
+- Proofread generated Word documents through DocWen's explicit four-rule conversion contract instead of advisory Markdown validation. Keep standalone Markdown proofreading and its sidebar independent.
+- Exclude spreadsheet exports from proofreading and its review options. Explain upgrade or disable steps when an older backend lacks Word proofreading support.
+
 ## [3.5.2] - 2026-11-02
 
 - Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.
