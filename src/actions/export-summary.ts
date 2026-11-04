@@ -10,7 +10,6 @@ export interface ExportSummaryRow {
 export function buildExportSummary(
   request: ConvertRequest,
   mediaType: string,
-  checks: readonly ProofreadCheck[] | null,
   template?: Pick<TemplateItem, "id" | "name" | "origin">,
 ): ExportSummaryRow[] {
   // Resource bindings are validated by the client, not displayed as settings.
@@ -49,7 +48,8 @@ export function buildExportSummary(
   choice("ocr_placement", "settingsOcrPlacement", { image_md: "settingsOcrPlacementImageMd", main_md: "settingsOcrPlacementMainMd" });
   choice("table_merge_strategy", "settingsTableMergeStrategy", { fill: "settingsTableMergeStrategyFill", empty: "settingsTableMergeStrategyEmpty", marker: "settingsTableMergeStrategyMarker" });
   add("render_dpi", "settingsRenderDpi");
-  if (checks !== null) {
+  if (request.target === "docx" && mediaType === "text/markdown") {
+    const checks = request.checks ?? ["none"];
     const labels: Array<[ProofreadCheck, keyof Translations]> = [
       ["typo", "settingsProofreadTypo"], ["symbol", "settingsProofreadSymbol"],
       ["punct", "settingsProofreadPunct"], ["sensitive", "settingsProofreadSensitive"],

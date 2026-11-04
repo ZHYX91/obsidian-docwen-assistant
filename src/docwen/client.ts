@@ -319,7 +319,7 @@ export class DocWenClient {
         );
         capabilityId = prepared.capability_id = selected.capability_id;
         prepared.options = buildConversionMachineOptions({
-          ...request, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
+          ...request, selectedCapability: selected, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
         }, inspection.mediaType);
         return prepared;
       }, signal);
@@ -692,6 +692,25 @@ export function buildConversionMachineOptions(request: ConvertRequest, inputMedi
   const setOption = (name: string, value: unknown) => {
     if (value !== undefined && accepts(name)) options[name] = value;
   };
+
+  if (request.checks !== undefined) {
+    const capability = request.selectedCapability;
+    const advertised = capability?.options_schema.properties;
+    const candidate = isObject(advertised) ? advertised.proofread : undefined;
+    const schema = isObject(candidate) ? candidate : {};
+    const properties = isObject(schema.properties) ? schema.properties : {};
+    const proofread = proofreadOptions(request.checks);
+    if (
+      request.target !== "docx" || inputMediaType !== "text/markdown"
+      || capability?.capability_id !== "convert.markdown_source.to_docx"
+      || !accepts("proofread") || schema.type !== "object" || schema.additionalProperties !== false
+      || Object.keys(proofread).length !== 4
+      || Object.keys(proofread).some((key) => !isObject(properties[key]) || properties[key].type !== "boolean")
+    ) {
+      throw new LocalCliError("cli_document_proofread_unavailable", "This DocWen capability does not support document proofreading.");
+    }
+    options.proofread = proofread;
+  }
 
   setOption("template_name", request.template);
   setOption("markdown_extensions", request.markdownExtensions);

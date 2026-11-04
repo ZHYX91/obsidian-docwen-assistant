@@ -8,7 +8,6 @@ import {
   type ConvertTarget,
   type DocWenClient,
   type DocWenCapabilityService,
-  type TaskInput,
   type TemplateItem,
   LocalCliError,
 } from "../docwen";
@@ -23,7 +22,6 @@ import { resolveAbsoluteFilePath } from "../host/vault-files";
 import { t } from "../i18n";
 import type { PluginSettings } from "../settings-model";
 import { pickItem, type PickerItem } from "../utils/suggest-modal";
-import { isCancellationError } from "./action-errors";
 import { ActionRunner } from "./action-runner";
 import { buildExportSummary } from "./export-summary";
 import {
@@ -197,16 +195,13 @@ export class ExportActions {
         selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
       };
-      const checks = capability.source.category === "markdown"
-        ? settings.proofreadOnConvert ? buildProofreadChecks(settings) : ["none"] as const
-        : null;
+      if (target === "docx" && capability.source.category === "markdown" && settings.proofreadOnConvert) {
+        request.checks = buildProofreadChecks(settings);
+      }
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", checks, selectedTemplate,
+        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", selectedTemplate,
       ), signal);
       if (!accepted || signal.aborted) return;
-      if (capability.source.category === "markdown" && settings.proofreadOnConvert) {
-        await this.runAdvisoryProofread(sourceInput, settings, signal);
-      }
       return this.docwen.convert(request, signal);
     });
     if (completed.value) {
@@ -226,24 +221,6 @@ export class ExportActions {
       );
     } else {
       this.runner.presentWarnings(completed.warnings);
-    }
-  }
-  private async runAdvisoryProofread(
-    input: TaskInput,
-    settings: PluginSettings,
-    signal: AbortSignal,
-  ): Promise<void> {
-    try {
-      await this.capabilities.requireAction(input.path, "validate", signal);
-      const report = await this.docwen.validate(
-        input,
-        buildProofreadChecks(settings),
-        signal,
-      );
-      this.runner.presentCompletion(t("noticeProofreadSuccess", { count: String(report.issues.length) }), report.warnings);
-    } catch (error) {
-      if (isCancellationError(error)) throw error;
-      this.runner.presentFailure("noticeProofreadFailed", error);
     }
   }
 }

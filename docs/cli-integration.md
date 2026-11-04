@@ -60,6 +60,20 @@ Validation accepts at most 1,024 artifacts, 1,024 entries and 4,096 relations, w
 
 Conversion selects an existing output parent. A `docwen.artifact_layout.v1` Bundle is accepted only for one DOCX or XLSX document matching the requested target, one preferred primary entry at ordinal zero, no other artifacts or relations, and equal portable `logical_path` and `suggested_name` basenames. Its prepared file is published with one atomic no-replace hard link. Markdown and grouped outputs preserve every validated `logical_path` inside one `docwen.document_node.v1` result directory, without requiring a node JSON. Source-native Markdown-to-DOCX requires one preferred DOCX and one primary entry, with exact size and SHA-256 in the Bundle. The preferred output is selected by the entry, not artifact ordering; manifests are excluded from the business output list. Names retain the producer's source stem, timestamp and admitted input format. Staged and prepared bytes are revalidated before publication. Both forms preserve the selected parent identity, cancellation and the synchronous host source guard; existing files or directories are never replaced. Grouped outputs use one atomic no-replace directory publication. The final absence check is diagnostic only: Windows uses the operating system's directory rename behavior, while Linux x64 uses an embedded Node-API 8 `renameat2(RENAME_NOREPLACE)` helper whose SHA-256 is checked before loading. The helper is bundled inside `main.js`; it adds no loose plugin asset or runtime dependency on another repository. Unsupported Linux architectures, runtimes, kernels or filesystems fail before publication. Existing result roots, including empty or non-empty roots created by an external writer after the final check, changed parents, source conflicts and cancellation before commit prevent publication; cancellation after publication does not turn a completed export into failure. The CLI never receives the user's destination path.
 
+Markdown-to-Word export proofreading is separate from direct Markdown validation. Only
+`convert.markdown_source.to_docx` may receive the advertised closed `proofread` object.
+Assistant sends all four booleans: `enable_symbol_pairing`, `enable_symbol_correction`,
+`enable_typos_rule`, and `enable_sensitive_word`, including explicit false values so
+request choices override Core configuration. All false means no checks. Disabling
+Word export proofreading omits the object and retains ordinary conversion behavior,
+including with older backends. Enabled requests require the object and all four
+boolean properties in the selected capability schema; missing or incompatible
+support fails before review/planning with upgrade or disable guidance. There is no
+fallback to Markdown validation, resolved-document conversion, or an unproofread
+success. Core checks the generated Word document and embeds Word comments before
+returning the result. Spreadsheet exports never request proofreading. Export success
+alone does not claim that comments were generated; the document may have no issues.
+
 Direct Markdown proofreading always selects the `validate.markdown` capability, reads the preferred `docwen.proofread_report.v2` JSON resource, and never commits that report. It does not invoke Markdown→DOCX conversion or DocWen's conversion post-processing pipeline. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
 
 ## Source ownership

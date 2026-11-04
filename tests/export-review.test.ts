@@ -80,7 +80,7 @@ describe("export summary", () => {
       template: `template.docx.${"a".repeat(64)}`, cleanNumbering: "remove", addNumbering: "scheme.not.supported",
       supportedOptions: ["template_name", "remove_numbering"],
       markdownResourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "private token", logical_path: "private-image.png" }] },
-    }), "text/markdown", ["none"], { id: `template.docx.${"a".repeat(64)}`, name: "Letter", origin: "builtin" });
+    }), "text/markdown", { id: `template.docx.${"a".repeat(64)}`, name: "Letter", origin: "builtin" });
     expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t("pickerTemplateBuiltin")}` });
     expect(rows).toContainEqual({ label: t("settingsCleanNumbering"), value: t("settingsNumberingRemove") });
     expect(rows.some((row) => row.label === t("settingsAddNumbering"))).toBe(false);
@@ -91,7 +91,7 @@ describe("export summary", () => {
     for (const origin of ["builtin", "custom"] as const) {
       const selected = { id: `template.docx.${(origin === "builtin" ? "a" : "b").repeat(64)}`, name: "Letter", origin };
       const input = request({ template: selected.id, supportedOptions: ["template_name"] });
-      const rows = buildExportSummary(input, "text/markdown", null, selected);
+      const rows = buildExportSummary(input, "text/markdown", selected);
       expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t(origin === "builtin" ? "pickerTemplateBuiltin" : "pickerTemplateCustom")}` });
       expect(input.template).toBe(selected.id);
       expect(rows.some((row) => row.value === selected.id)).toBe(false);
@@ -99,17 +99,21 @@ describe("export summary", () => {
   });
 
   it("uses the same option aliases and normalization as spreadsheet conversion", () => {
-    const rows = buildExportSummary(request({ target: "md", extractImages: true, enableOcr: false, tableMergeStrategy: "replicate", supportedOptions: ["to_md_keep_images", "to_md_enable_ocr", "table_merge_strategy"] }), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", null);
+    const rows = buildExportSummary(request({ target: "md", extractImages: true, enableOcr: false, tableMergeStrategy: "replicate", supportedOptions: ["to_md_keep_images", "to_md_enable_ocr", "table_merge_strategy"] }), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     expect(rows).toContainEqual({ label: t("settingsExtractImages"), value: t("exportReviewEnabled") });
     expect(rows).toContainEqual({ label: t("settingsEnableOcr"), value: t("exportReviewDisabled") });
     expect(rows).toContainEqual({ label: t("settingsTableMergeStrategy"), value: t("settingsTableMergeStrategyFill") });
     expect(rows.some((row) => row.label === t("settingsProofreadOnConvert"))).toBe(false);
   });
 
-  it("shows individual advisory checks without treating them as conversion options", () => {
-    const rows = buildExportSummary(request(), "text/markdown", ["typo", "punct"]);
-    expect(rows.at(-1)?.value).toBe(`${t("settingsProofreadTypo")} · ${t("settingsProofreadPunct")}`);
-    expect(buildExportSummary(request(), "text/markdown", ["all"]).at(-1)?.value).toContain(t("settingsProofreadSensitive"));
+  it("shows proofreading disabled when no document checks are requested", () => {
+    const rows = buildExportSummary(request(), "text/markdown");
+    expect(rows.at(-1)?.value).toBe(t("exportReviewDisabled"));
+  });
+
+  it("never shows proofreading on spreadsheet exports", () => {
+    const rows = buildExportSummary(request({ target: "xlsx" }), "text/markdown");
+    expect(rows.some((row) => row.label === t("settingsProofreadOnConvert"))).toBe(false);
   });
 });
 

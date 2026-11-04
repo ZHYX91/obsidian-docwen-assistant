@@ -300,137 +300,64 @@ describe("ExportActions optimization discovery", () => {
   });
 });
 
-describe("ExportActions advisory proofreading", () => {
+describe("ExportActions document proofreading", () => {
   beforeEach(() => {
     resetState();
   });
 
-  it("shows the proofreading result and converts without route-unsupported check options", async () => {
+  it.each(["all", "partial", "none", "disabled"])("passes %s checks to document conversion without validating Markdown", async (mode) => {
     const { ExportActions } = await import("../src/actions/export-actions");
+    const { confirmExport } = await import("../src/host/export-review");
     const signal = new AbortController().signal;
-    const runner = advisoryRunner(signal);
-    const capability = markdownCapability();
-    const capabilities = advisoryCapabilities(capability);
     const docwen = {
-      optimizations: vi.fn(),
-      validate: vi.fn().mockResolvedValue({ issues: [{ message: "typo" }] }),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
+      validate: vi.fn(),
+      convert: vi.fn().mockResolvedValue({ output: "note.docx", warnings: [] }),
     };
-    const actions = new ExportActions(
-      {} as never,
-      docwen as never,
-      capabilities as never,
-      () => markdownSettings(true) as never,
-      runner as never,
-    );
-
-    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
-
-    expect(capabilities.requireAction).toHaveBeenCalledWith(
-      "D:\\Temp\\input.bin",
-      "validate",
-      signal,
-    );
-    expect(docwen.validate).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "D:\\Temp\\input.bin", logicalPath: "note.md", role: "source" }),
-      ["all"],
-      signal,
-    );
-    expect(docwen.validate.mock.invocationCallOrder[0]).toBeLessThan(
-      docwen.convert.mock.invocationCallOrder[0],
-    );
-    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("checks");
-    expect(state.notices).toEqual([
-      "noticeProofreadSuccess:1",
-      "noticeExportSuccess:note.docx",
-    ]);
-    expect(runner.presentFailure).not.toHaveBeenCalled();
-  });
-
-  it("warns when proofreading fails and still performs the conversion", async () => {
-    const { ExportActions } = await import("../src/actions/export-actions");
-    const signal = new AbortController().signal;
-    const runner = advisoryRunner(signal);
-    const capability = markdownCapability();
-    const capabilities = advisoryCapabilities(capability);
-    const proofreadError = new Error("proofread unavailable");
-    const docwen = {
-      optimizations: vi.fn(),
-      validate: vi.fn().mockRejectedValue(proofreadError),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
+    const settings = {
+      ...markdownSettings(mode !== "disabled"),
+      proofreadTypo: mode !== "none", proofreadSymbol: mode === "all",
+      proofreadPunct: mode === "all", proofreadSensitive: mode === "all",
     };
-    const actions = new ExportActions(
-      {} as never,
-      docwen as never,
-      capabilities as never,
-      () => markdownSettings(true) as never,
-      runner as never,
-    );
-
+    const actions = new ExportActions({} as never, docwen as never,
+      advisoryCapabilities(markdownCapability()) as never, () => settings as never, advisoryRunner(signal) as never);
     await actions.toDocx({ path: "note.md", name: "note.md" } as never);
-
-    expect(runner.presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", proofreadError);
-    expect(docwen.convert).toHaveBeenCalledOnce();
-    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("checks");
+    expect(docwen.validate).not.toHaveBeenCalled();
+    const request = docwen.convert.mock.calls[0][0];
+    expect(request.checks).toEqual(mode === "disabled" ? undefined : mode === "all" ? ["all"] : mode === "none" ? ["none"] : ["typo"]);
+    expect(vi.mocked(confirmExport).mock.lastCall?.[1].at(-1)?.label).toBe("settingsProofreadOnConvert");
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
   });
 
-  it("does not invoke proofreading when the user disables the advisory", async () => {
+  it.each([new Error("document proofreading failed"), new DOMException("cancelled", "AbortError")])("propagates conversion failure or cancellation without a success notice", async (error) => {
     const { ExportActions } = await import("../src/actions/export-actions");
-    const signal = new AbortController().signal;
-    const runner = advisoryRunner(signal);
-    const capability = markdownCapability();
-    const capabilities = advisoryCapabilities(capability);
-    const docwen = {
-      optimizations: vi.fn(),
-      validate: vi.fn(),
-      convert: vi.fn().mockResolvedValue({ output: "D:\\Vault\\note.docx", outputs: [], bundleId: "bundle.1", warnings: [] }),
-    };
-    const actions = new ExportActions(
-      {} as never,
-      docwen as never,
-      capabilities as never,
-      () => ({
-        ...markdownSettings(false),
-        mdToDocCleanNumbering: "remove",
-        mdToDocAddNumbering: "legal",
-        headingNumberingRenderMode: "word_native",
-      }) as never,
-      runner as never,
-    );
-
-    await actions.toDocx({ path: "note.md", name: "note.md" } as never);
-
+    const docwen = { validate: vi.fn(), convert: vi.fn().mockRejectedValue(error) };
+    const actions = new ExportActions({} as never, docwen as never, advisoryCapabilities(markdownCapability()) as never,
+      () => markdownSettings(true) as never, advisoryRunner(new AbortController().signal) as never);
+    await expect(actions.toDocx({ path: "note.md", name: "note.md" } as never)).rejects.toBe(error);
     expect(docwen.validate).not.toHaveBeenCalled();
-    expect(docwen.convert).toHaveBeenCalledOnce();
-    expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("checks");
+    expect(state.notices).toEqual([]);
   });
 
-  it("honors explicit cancellation during advisory proofreading", async () => {
+  it.each([true, false])("handles an older backend explicitly (enabled=%s)", async (enabled) => {
     const { ExportActions } = await import("../src/actions/export-actions");
-    const signal = new AbortController().signal;
-    const runner = advisoryRunner(signal);
-    const capability = markdownCapability();
-    const capabilities = advisoryCapabilities(capability);
-    const docwen = {
-      optimizations: vi.fn(),
-      validate: vi.fn().mockRejectedValue(new DOMException("cancelled", "AbortError")),
-      convert: vi.fn(),
-    };
-    const actions = new ExportActions(
-      {} as never,
-      docwen as never,
-      capabilities as never,
-      () => markdownSettings(true) as never,
-      runner as never,
-    );
-
-    await expect(actions.toDocx({ path: "note.md", name: "note.md" } as never)).rejects.toThrow(
-      "cancelled",
-    );
-
-    expect(docwen.convert).not.toHaveBeenCalled();
-    expect(runner.presentFailure).not.toHaveBeenCalled();
+    const { confirmExport } = await import("../src/host/export-review");
+    vi.mocked(confirmExport).mockClear();
+    const capabilities = advisoryCapabilities(markdownCapability());
+    capabilities.requireConversionRoute.mockReturnValue({ options: [] } as never);
+    const docwen = { validate: vi.fn(), convert: vi.fn().mockResolvedValue({ output: "note.docx", warnings: [] }) };
+    const actions = new ExportActions({} as never, docwen as never, capabilities as never,
+      () => markdownSettings(enabled) as never, advisoryRunner(new AbortController().signal) as never);
+    const pending = actions.toDocx({ path: "note.md", name: "note.md" } as never);
+    if (enabled) {
+      await expect(pending).rejects.toMatchObject({ code: "cli_document_proofread_unavailable" });
+      expect(confirmExport).not.toHaveBeenCalled();
+      expect(docwen.convert).not.toHaveBeenCalled();
+      expect(state.notices).toEqual([]);
+    } else {
+      await pending;
+      expect(docwen.convert).toHaveBeenCalledOnce();
+    }
+    expect(docwen.validate).not.toHaveBeenCalled();
   });
 
   it("delegates Markdown source plus declared resources without consulting Number Suite projection", async () => {
@@ -511,7 +438,7 @@ function resetState(): void {
 describe("export review before content operations", () => {
   beforeEach(resetState);
 
-  it("starts neither advisory proofreading nor conversion after cancelling review", async () => {
+  it("starts neither proofreading nor conversion after cancelling review", async () => {
     const { ExportActions } = await import("../src/actions/export-actions");
     const { confirmExport } = await import("../src/host/export-review");
     vi.mocked(confirmExport).mockResolvedValueOnce(false);
@@ -546,7 +473,8 @@ describe("export review before content operations", () => {
       () => settings, advisoryRunner(new AbortController().signal) as never,
     );
     await actions.toDocx({ path: "note.md", name: "note.md" } as never);
-    expect(docwen.validate).toHaveBeenCalledWith(expect.anything(), ["all"], expect.anything());
+    expect(docwen.validate).not.toHaveBeenCalled();
+    expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ checks: ["all"] }), expect.anything());
     expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ cleanNumbering: "remove" }), expect.anything());
     expect(docwen.convert.mock.calls[0][0]).not.toHaveProperty("headingMergeMode");
   });
@@ -572,7 +500,13 @@ function markdownCapability() {
 function advisoryCapabilities(capability: ReturnType<typeof markdownCapability>) {
   return {
     requireAction: vi.fn().mockResolvedValue(capability),
-    requireConversionRoute: vi.fn().mockReturnValue({ options: [] }),
+    requireConversionRoute: vi.fn().mockReturnValue({ options: ["proofread"], capability: {
+      capability_id: "convert.markdown_source.to_docx",
+      options_schema: { properties: { proofread: { type: "object", additionalProperties: false, properties: {
+        enable_symbol_pairing: { type: "boolean" }, enable_symbol_correction: { type: "boolean" },
+        enable_typos_rule: { type: "boolean" }, enable_sensitive_word: { type: "boolean" },
+      } } } },
+    } }),
     requireTaskInputs: vi.fn(),
     optimizationActionIds: vi.fn().mockReturnValue([]),
     findApplicableOptimizations: vi.fn().mockReturnValue([]),
@@ -632,6 +566,8 @@ describe("Excel template choice", () => {
       expect(rows.some((row) => row.label === "exportReviewTemplate")).toBe(false);
     }
     expect(state.notices).not.toContain("noticeNoTemplatesAvailable");
+    expect(options).not.toHaveProperty("checks");
+    expect(rows.some((row) => row.label === "settingsProofreadOnConvert")).toBe(false);
   });
 });
 

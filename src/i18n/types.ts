@@ -108,6 +108,7 @@ export interface Translations {
   dialogDetails: string;
   errorOperationFailed: string;
   errorDocWenInternal: string;
+  errorDocumentProofreadUnavailable: string;
   errorCapabilityUnavailable: string;
   errorContentConflict: string;
   errorOperationTimeout: string;
