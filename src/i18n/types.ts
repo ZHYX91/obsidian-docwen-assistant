@@ -27,6 +27,12 @@ export interface Translations {
   dialogFormatUnknown: string;
   // Ribbon & Commands
   ribbonTooltip: string;
+  commandOpenSidebar: string;
+  sidebarTitle: string;
+  sidebarOpenGui: string;
+  sidebarCurrentFile: string;
+  sidebarNoFile: string;
+  noticeSidebarOpenFailed: string;
   commandLaunch: string;
   commandLaunchWithFile: string;
   commandExportDocx: string;

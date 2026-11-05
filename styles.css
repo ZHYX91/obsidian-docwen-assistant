@@ -268,7 +268,51 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.docwen-assistant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  flex-shrink: 0;
+}
+
+.docwen-assistant-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--size-4-2);
+  width: 100%;
+  min-height: 44px;
+  height: auto;
+  padding: var(--size-4-2) var(--size-4-3);
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.docwen-assistant-action > span:first-child {
+  flex-shrink: 0;
+}
+
+.docwen-assistant-action:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.docwen-assistant-file-context {
+  flex-shrink: 0;
+  margin-top: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.docwen-assistant-report-heading {
+  margin: var(--size-4-2) 0 0;
+  font-size: var(--font-ui-medium);
 }
 
 .docwen-proofread-toolbar {
@@ -389,7 +433,7 @@
 
 .docwen-proofread-list {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 120px;
   overflow-y: auto;
 }
 

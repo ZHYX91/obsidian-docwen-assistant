@@ -31,7 +31,13 @@ export const AR_TRANSLATIONS: Translations = {
   dialogReadDetectedFormat: "عند المتابعة، سيُقرأ الملف بتنسيق {format}.",
   dialogFormatUnknown: "غير معلن",
   dialogExportDirectory: "اختر مجلد النتائج",
-  ribbonTooltip: "فتح DocWen",
+  ribbonTooltip: "فتح الشريط الجانبي لـ DocWen Assistant",
+  commandOpenSidebar: "فتح الشريط الجانبي لـ DocWen Assistant",
+  sidebarTitle: "DocWen Assistant",
+  sidebarOpenGui: "فتح DocWen",
+  sidebarCurrentFile: "الملف الحالي: {filename}",
+  sidebarNoFile: "افتح ملفًا محليًا لاستخدام إجراءات الملفات.",
+  noticeSidebarOpenFailed: "تعذر فتح الشريط الجانبي لـ Assistant: {error}",
   commandLaunch: "فتح DocWen",
   commandLaunchWithFile: "فتح الملف الحالي في DocWen",
   commandExportDocx: "تصدير إلى Word في الخلفية",
@@ -101,7 +107,14 @@ export const AR_TRANSLATIONS: Translations = {
   settingsPathNotExecutable: "✗ لا يمكن تشغيل DocWenCLI",
   settingsPathUnsupportedSelection: "✗ اختر مجلد DocWen بعد فك ضغطه أو ملف DocWen أو DocWenCLI التنفيذي",
   settingsUsageTitle: "طريقة الاستخدام",
-  settingsUsageList: "<ul><li>اضغط أيقونة المستند في الشريط الجانبي لفتح DocWen أو إرسال الملف الحالي إليه.</li><li>اضغط بزر الفأرة الأيمن على ملف واختر قائمة <b>DocWen</b> للتحويل أو الترقيم أو الفتح.</li><li>افتح لوحة الأوامر (Ctrl/Cmd + P) وابحث عن <b>DocWen</b> لعرض الأوامر.</li><li>لا يُرسل مسار الملف الحالي إلا عند تشغيل عملية تحتاج إليه.</li></ul>",
+  settingsUsageList: `
+    <ul>
+      <li>اضغط أيقونة المستند في الشريط الأيسر لفتح الشريط الجانبي لـ DocWen Assistant أو التركيز عليه.</li>
+      <li>في الشريط الجانبي، اختر فتح DocWen أو فتح الملف الحالي في DocWen أو تدقيق ملف Markdown الحالي.</li>
+      <li>اضغط بزر الفأرة الأيمن على ملف واختر <b>DocWen</b>، أو ابحث عن <b>DocWen</b> في لوحة الأوامر (Ctrl/Cmd + P) للوصول إلى إجراءات أخرى.</li>
+      <li>لا يُرسل مسار الملف إلا عند تشغيل إجراء يستخدم ذلك الملف.</li>
+    </ul>
+  `,
   settingsPersistence: "حفظ الإعدادات",
   settingsChangesSaved: "حُفظت التغييرات.",
   settingsChangesPending: "لم تُحفظ التغييرات بعد.",

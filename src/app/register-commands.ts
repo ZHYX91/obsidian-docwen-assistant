@@ -9,7 +9,8 @@ type CommandActions = {
   app: App;
   addLocalizedCommand: (key: keyof Translations, command: Omit<Command, "name">) => void;
   launchDocWen: () => Promise<void>;
-  launchOrSendFile: () => Promise<void>;
+  openCurrentFile: () => Promise<void>;
+  openSidebar: () => Promise<void>;
   activeFileSupports: (predicate: (capability: FileCapability) => boolean) => boolean;
   capabilities: DocWenCapabilityService;
   exportCurrentFileToDocx: () => Promise<void>;
@@ -22,6 +23,11 @@ type CommandActions = {
 };
 
 export function registerCommands(actions: CommandActions): void {
+  actions.addLocalizedCommand("commandOpenSidebar", {
+    id: "open-assistant-sidebar",
+    callback: () => { void actions.openSidebar(); },
+  });
+
   // Add command palette commands
   actions.addLocalizedCommand("commandLaunch", {
     id: "launch-docwen",
@@ -36,7 +42,7 @@ export function registerCommands(actions: CommandActions): void {
       const activeFile = actions.app.workspace.getActiveFile();
       if (activeFile) {
         if (!checking) {
-          void actions.launchOrSendFile();
+          void actions.openCurrentFile();
         }
         return true;
       }
