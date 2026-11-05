@@ -2,6 +2,12 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
+## [Unreleased]
+
+- Make the ribbon and a dedicated command open or focus the Assistant sidebar, with separate controls for opening DocWen, opening the current file and proofreading current Markdown.
+- Reuse existing sidebar leaves and reports, refresh current-file actions through the host contract, and keep GUI and proofreading lifecycle ownership separate.
+- Update sidebar labels, usage help and guides in all twelve interface languages.
+
 ## [3.5.2] - 2026-11-02
 
 - Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.

@@ -17,7 +17,8 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 
 ## 核心能力
 
-- 启动或激活 DocWen，并可打开当前文件；
+- 左侧图标和独立命令打开或聚焦通用助手侧栏；无文件或尚未配置 DocWen 时也可打开，重复打开保留报告。
+- 在侧栏中分别打开 DocWen、在 DocWen 中打开当前文件、校对当前 Markdown；当前文件在点击时从宿主重新取得。
 - 根据文件检查和 Machine capability 提供 Word、Excel、Markdown 导出；
 - 为一个 Markdown 文件添加或删除标题编号；
 - 在只读侧栏展示 Markdown 校对结果；

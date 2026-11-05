@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Window } from "happy-dom";
-import { useObsidianDom } from "./helpers/obsidian-dom";
+import { createAssistantViewActions, useObsidianDom } from "./helpers/obsidian-dom";
 import DocWenPlugin from "../src/main";
-import { ProofreadView } from "../src/proofread-view";
+import { AssistantView } from "../src/assistant-view";
 import { getCurrentLocale, initI18n, t } from "../src/i18n";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 import { OperationCoordinator } from "../src/runtime/operation-coordinator";
@@ -11,7 +11,7 @@ import type { ProofreadIssue } from "../src/docwen";
 
 vi.mock("obsidian", async () => import("./helpers/obsidian-dom"));
 
-const fixtures: Array<{ view: ProofreadView; operations: OperationCoordinator }> = [];
+const fixtures: Array<{ view: AssistantView; operations: OperationCoordinator }> = [];
 useObsidianDom();
 
 beforeEach(() => {
@@ -28,9 +28,9 @@ afterEach(async () => {
 
 async function createFixture() {
   const operations = new OperationCoordinator();
-  const leaves: Array<{ view: ProofreadView }> = [];
+  const leaves: Array<{ view: AssistantView }> = [];
   const app = { workspace: { getLeavesOfType: () => leaves }, vault: {} };
-  const view = new ProofreadView({ app } as never, async () => {}, operations);
+  const view = new AssistantView({ app } as never, async () => {}, operations, createAssistantViewActions());
   leaves.push({ view });
   const saved: unknown[] = [];
   const plugin = new DocWenPlugin(app as never, { id: "docwen-assistant" } as never);
@@ -133,7 +133,7 @@ describe("proofreading view DOM integration", () => {
 
   it("renders the initial empty state even when no operation is owned", async () => {
     const { root } = await createFixture();
-    expect(root.querySelector('[role="status"]')?.textContent).toBe(t("proofreadOpenMdFile"));
+    expect(root.querySelector('.docwen-proofread-status')?.textContent).toBe(t("proofreadOpenMdFile"));
   });
 
   it("updates an open report through saveSettings, including direction and accessible labels", async () => {
@@ -143,7 +143,7 @@ describe("proofreading view DOM integration", () => {
     await plugin.saveSettings();
     expect(getCurrentLocale()).toBe("zh-cn");
     expect(root.querySelector(".docwen-proofread-status")?.textContent).toBe(t("proofreadNoIssues"));
-    expect(root.querySelector("button")?.getAttribute("aria-label")).toBe(t("proofreadRefresh"));
+    expect(root.querySelector('[data-docwen-view-key="refresh"]')?.getAttribute("aria-label")).toBe(t("proofreadRefresh"));
     expect(root.getAttribute("lang")).toBe("zh-cn");
     expect(root.getAttribute("dir")).toBe("ltr");
 
