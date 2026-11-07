@@ -29,6 +29,14 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。
 
+本地诊断命令明确区分测试范围：
+
+- `npm run test:source` 运行 Linux 和 Windows Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
+- `npm run test:native:linux` 在 Linux x64/arm64 运行真实 Machine 生命周期测试。整组测试前只检查一次内嵌 owner 映像、`/usr/bin/python3` 的 pidfd 支持、运行器的 `/proc` 身份，以及独立 session 哨兵自己报告的身份与运行器观测是否一致。前提失败会在任何生命周期用例执行前使测试组失败，输出失败阶段和观测结果，并在专用临时目录保留 `prerequisites.json` 诊断；哨兵始终通过本次拥有的进程句柄清理。
+- `npm run test:native:windows` 在 Windows 运行现有生命周期测试；因平台跳过的部分仍未获验证。
+
+`npm test`、`npm run test:coverage` 和 `npm run check` 保持默认完整测试集。仅源码测试通过不能替代受支持宿主上的原生进程验证。前提检查不会延长生命周期等待期限，也不会跳过失败环境。
+
 ## 固定 DocWen 包
 
 `npm run acceptance:docwen-package` 只接受绑定版本、Candidate Bundle v3 身份和哈希的完整 DocWen 0.17.0 或更高 Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、单 DOCX 在所选父目录直接发布、完整 Markdown `docwen.document_node.v1` 目录发布、无需节点 JSON 的发布与关联图片不计入业务输出数量、同一父目录连续导出与 DocWen Bundle v3 写入边界；没有精确候选身份时应跳过或失败关闭，不能转称为源码通过。
