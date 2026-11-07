@@ -24,6 +24,8 @@ Source regressions additionally cover closed-file stat/modify events after the l
 
 Public conversion-client regressions validate the actual Bundle before publication and cover single DOCX/XLSX outputs, existing targets, an external file appearing after the final absence check, source guards, output-editor rejection, cancellation, changed parents, inconsistent flat Bundles, and complete Markdown directories with independently owned attachment resources. These source tests do not establish fixed-Core or Obsidian host acceptance. CSV is not an Assistant conversion target.
 
+Image-budget regressions call both declared and resolved snapshot entry points. They prove that known single-image or cumulative overflow prevents that image read, understated cached sizes still face actual-byte rejection, empty content is rejected, repeated references at the exact budget are read once, and cancellation during reading is preserved. Oversized-file prechecks use tiny sentinel payloads rather than exhausting host memory.
+
 ## Repository quality gate
 
 Under the pinned toolchain, `npm run check` runs runtime verification, lint, formatting, README and stable-document contracts, coverage, type checking, build, artifact checks, and the high-severity dependency audit. Formatting and bilingual scripts read real repository content and are not placeholder no-ops. Artifact checking also verifies the Linux helper's pinned provenance and source/binary digests and requires the built `dist/main.js` to retain the exact embedded payload; this proves bundle inclusion, not Electron/Obsidian loading.

@@ -132,14 +132,8 @@ app: App,
     imageBindings.set(authoredToken, logicalPath);
     if (resources.has(linked.path)) continue;
 
-    const content = Buffer.from(await app.vault.readBinary(linked));
+    const content = await readEmbeddedImage(app, linked, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
     totalResourceBytes += content.length;
-    if (content.length === 0 || totalResourceBytes > MAX_EMBEDDED_RESOURCE_BYTES) {
-      throw new VaultWriteError(
-        "vault_input_invalid",
-        "Embedded image bytes exceed the DocWen declared-resource limit.",
-      );
-    }
     const resourcePath = path.join(workspace, `linked-${resources.size + 1}.${extension}`);
     await writeFile(resourcePath, content);
     resources.set(linked.path, {
@@ -163,7 +157,26 @@ app: App,
   };
 }
 
-
+/** Bound unique image reads by the remaining budget; cached sizes never replace byte checks. */
+export async function readEmbeddedImage(
+  app: App,
+  file: TFile,
+  remainingBytes: number,
+  signal: AbortSignal,
+): Promise<Buffer> {
+  throwIfAborted(signal);
+  const message = "Embedded image bytes exceed the DocWen resource limit.";
+  const knownSize = file.stat?.size;
+  if (knownSize != null && knownSize > remainingBytes) {
+    throw new VaultWriteError("vault_input_invalid", message);
+  }
+  const content = await app.vault.readBinary(file);
+  throwIfAborted(signal);
+  if (content.byteLength === 0 || content.byteLength > remainingBytes) {
+    throw new VaultWriteError("vault_input_invalid", message);
+  }
+  return Buffer.from(content);
+}
 
 function isLocalWikiNavigationLink(link: string): boolean {
   const target = (link.split("|", 1)[0] ?? "").trim();

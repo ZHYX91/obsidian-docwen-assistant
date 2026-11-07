@@ -4,6 +4,7 @@ import {
   logicalPathFor,
   IMAGE_LIKE_EXTENSIONS,
   MAX_EMBEDDED_RESOURCE_BYTES,
+  readEmbeddedImage,
   SUPPORTED_IMAGE_MEDIA_TYPES,
   type DeclaredMarkdownSnapshot,
 } from "./declared-markdown-snapshot";
@@ -314,14 +315,8 @@ export class VaultReadSnapshot {
       }
       let resourceId = resourcesByPath.get(linked.path);
       if (!resourceId) {
-        const content = Buffer.from(await this.app.vault.readBinary(linked));
+        const content = await readEmbeddedImage(this.app, linked, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
         totalResourceBytes += content.length;
-        if (content.length === 0 || totalResourceBytes > MAX_EMBEDDED_RESOURCE_BYTES) {
-          throw new VaultWriteError(
-            "vault_input_invalid",
-            "Embedded image bytes exceed the DocWen resolved-document limit.",
-          );
-        }
         resourceId = `image-${resources.length + 1}`;
         resourcesByPath.set(linked.path, resourceId);
         resources.push({

@@ -2,6 +2,10 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
+## [Unreleased]
+
+- Reject embedded images whose known size exceeds the remaining resource budget before reading their bytes. Declared and resolved snapshots share the same guard, retain actual-byte validation and count repeated resources once.
+
 ## [3.5.2] - 2026-11-02
 
 - Update the development-only minimatch dependencies to 11.0.4 with reviewed legacy lint-call adaptations and installed-caller regression checks.
