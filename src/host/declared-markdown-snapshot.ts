@@ -14,8 +14,8 @@ export interface DeclaredMarkdownSnapshot {
   readonly resourceBindings?: MarkdownResourceBindings;
 }
 
-export const MAX_EMBEDDED_RESOURCE_BYTES = 6_000_000;
-export const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
+const MAX_EMBEDDED_RESOURCE_BYTES = 6_000_000;
+const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
   ["png", "image/png"],
   ["jpg", "image/jpeg"],
   ["jpeg", "image/jpeg"],
@@ -23,7 +23,7 @@ export const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
   ["bmp", "image/bmp"],
   ["webp", "image/webp"],
 ]);
-export const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
+const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
 
 export async function buildDeclaredMarkdownInputs(
 app: App,
@@ -158,7 +158,7 @@ app: App,
 }
 
 /** Bound unique image reads by the remaining budget; cached sizes never replace byte checks. */
-export async function readEmbeddedImage(
+async function readEmbeddedImage(
   app: App,
   file: TFile,
   remainingBytes: number,
@@ -192,7 +192,7 @@ function obsidianNavigationHref(vaultName: string, resolvedPath: string, authore
 }
 
 
-export function extensionForLink(link: string): string {
+function extensionForLink(link: string): string {
   const withoutAnchor = link.split("#", 1)[0] ?? link;
   const segments = withoutAnchor.replace(/\\/gu, "/").split("/");
   const finalSegment = segments[segments.length - 1] ?? "";

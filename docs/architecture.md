@@ -10,7 +10,7 @@ translation_status: synced
 
 ## Layers
 
-`src/main.ts` owns only plugin composition and lifecycle. `src/actions/` orchestrates user operations; `src/docwen/` owns path, Machine protocol, and Artifact Bundle boundaries; `src/host/` adapts Obsidian, Electron, and the filesystem; `src/runtime/` manages concurrency and disposal. The top-tab settings surface uses one shared page model without depending on sibling repositories. Settings persistence uses schema v1: unversioned data is normalized once into an owned snapshot, while an invalid or newer explicit schema is opened read-only and is never rewritten. Localization uses one shared model. `linux-native-owner.ts` selects an architecture-bound static native lifetime owner; Linux has no JavaScript process-group/procfs fallback. `declared-markdown-snapshot.ts` resolves declared image and navigation inputs; `vault-read-snapshot.ts` owns source capture, publication checks, and the retained resolved-document compatibility projection.
+`src/main.ts` owns only plugin composition and lifecycle. `src/actions/` orchestrates user operations; `src/docwen/` owns path, Machine protocol, and Artifact Bundle boundaries; `src/host/` adapts Obsidian, Electron, and the filesystem; `src/runtime/` manages concurrency and disposal. The top-tab settings surface uses one shared page model without depending on sibling repositories. Settings persistence uses schema v1: unversioned data is normalized once into an owned snapshot, while an invalid or newer explicit schema is opened read-only and is never rewritten. Localization uses one shared model. `linux-native-owner.ts` selects an architecture-bound static native lifetime owner; Linux has no JavaScript process-group/procfs fallback. `declared-markdown-snapshot.ts` resolves declared image and navigation inputs; `vault-read-snapshot.ts` owns source capture and publication checks. Assistant does not produce resolved-document or Number Suite interop snapshots.
 
 ## DocWen process boundary
 
@@ -42,7 +42,7 @@ The conversion request, rather than any installed editing plugin, owns numbering
 
 The provider-neutral `resolved_document` + `numbering_export_plan` capability remains a separate exact-two interface for consumers that already own a fully resolved semantic/numbering plan. Ordinary Assistant Word export does not use Number Suite `interop.v2`, its `enabled`/`derivedNumber` state, or that resolved-provider route. Number Suite may still expose its interop API for independent validation or other consumers, but it is not conversion authority for Assistant. Given the same authored Markdown, declared resources and explicit DocWen conversion options, direct DocWen and Assistant→DocWen must have the same observable targets, numbering, references and round-trip declarations.
 
-Both resource snapshot paths share a 6,000,000-byte total image budget. Before reading each unique image, its host-reported size is checked against the remaining budget; the actual bytes are checked afterward and empty content is rejected. Stale cached sizes cannot bypass the byte check. Repeated references are read and counted once, and cancellation stops resource preparation.
+Declared Markdown inputs have a 6,000,000-byte total image budget. Before reading each unique image, its host-reported size is checked against the remaining budget; the actual bytes are checked afterward and empty content is rejected. Stale cached sizes cannot bypass the byte check. Repeated references are read and counted once, and cancellation stops resource preparation.
 
 ## Artifacts and commit
 
