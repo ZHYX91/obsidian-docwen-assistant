@@ -40,6 +40,8 @@ Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.
 
 provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 
+两条资源快照路径共用 6,000,000 字节的图片总预算。每个唯一图片在读取前先按宿主已知文件大小检查剩余预算，读取后再核对实际字节数并拒绝空内容；缓存大小过期不能绕过实际字节检查。重复引用只读取一次并计入一次预算，取消后不继续构建资源输入。
+
 ## 产物与提交
 
 DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。`docwen.artifact_layout.v1` 转换只接纳与请求目标一致的单个 DOCX 或 XLSX：只有一个首选 primary document，ordinal 为零，没有其他产物或关系，`logical_path` 与 `suggested_name` 是相同的便携文件名。在所选父目录准备文件，以原子 no-replace 硬链接发布。Markdown 和组合输出要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。两种发布形态都在最终原语前复核父目录身份、准备好的文件、取消状态和同步源 guard；都不替换已有目标。

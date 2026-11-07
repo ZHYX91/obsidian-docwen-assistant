@@ -23,6 +23,8 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 公共转换 client 回归在发布前实际验证 Bundle，覆盖单 DOCX/XLSX、已有目标、最终不存在检查后出现的外部文件、源 guard、输出编辑器拒绝、取消、父目录变化、不一致平铺 Bundle，以及附件资源独立拥有的完整 Markdown 目录。这些源码测试不建立固定 Core 或 Obsidian 宿主验收证明。CSV 不是 Assistant 的转换目标。
 
+图片预算回归同时调用 declared 与 resolved 快照入口，验证已知单张或累计超限时不读取该图片、缓存低报时仍按实际字节拒绝、空内容拒绝、恰好达到预算的重复引用只读取一次，以及读取期间取消。超大文件预检使用小字节哨兵，不以宿主内存耗尽作为测试手段。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。
