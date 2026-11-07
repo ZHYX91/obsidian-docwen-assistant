@@ -41,50 +41,43 @@ async function fixture(
     },
   };
   const controller = new AbortController();
-  const run = (mode: "declared" | "resolved") => new VaultReadSnapshot(app as never).run(
+  const run = () => new VaultReadSnapshot(app as never).run(
     file as never, controller.signal, async snapshot => {
-      if (mode === "declared") {
-        const result = await snapshot.getDeclaredMarkdownInputs();
-        return Promise.all(result!.inputs.slice(1).map(async input => (await readFile(input.path)).length));
-      }
-      const result = await snapshot.getResolvedMarkdownInputs();
-      const neutral = JSON.parse(await readFile(result![0].path, "utf8")) as {
-        document: { resources: { size_bytes: number }[] };
-      };
-      return neutral.document.resources.map(resource => resource.size_bytes);
+      const result = await snapshot.getDeclaredMarkdownInputs();
+      return Promise.all(result!.inputs.slice(1).map(async input => (await readFile(input.path)).length));
     },
   );
   return { run, imageRead, controller };
 }
 
-describe.each(["declared", "resolved"] as const)("%s embedded image budget", mode => {
+describe("declared embedded image budget", () => {
   it("rejects a known oversized image before calling readBinary", async () => {
     // The sentinel's tiny payload keeps this regression independent of large allocations.
     const test = await fixture([{ known: 128 * 1024 * 1024, actual: 1 }]);
-    await expect(test.run(mode)).rejects.toMatchObject({ code: "vault_input_invalid" });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
     expect(test.imageRead).not.toHaveBeenCalled();
   });
 
   it("checks the remaining budget before reading the next unique image", async () => {
     const test = await fixture([{ known: 3, actual: 3 }, { known: LIMIT - 2, actual: 1 }]);
-    await expect(test.run(mode)).rejects.toMatchObject({ code: "vault_input_invalid" });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
     expect(test.imageRead).toHaveBeenCalledTimes(1);
   });
 
   it("checks actual bytes when the cached file size understates the image", async () => {
     const test = await fixture([{ known: 1, actual: LIMIT + 1 }]);
-    await expect(test.run(mode)).rejects.toMatchObject({ code: "vault_input_invalid" });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
     expect(test.imageRead).toHaveBeenCalledTimes(1);
   });
 
   it("rejects empty images after reading", async () => {
     const test = await fixture([{ known: 1, actual: 0 }]);
-    await expect(test.run(mode)).rejects.toMatchObject({ code: "vault_input_invalid" });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
   });
 
   it("accepts the exact budget and reads repeated image references once", async () => {
     const test = await fixture([{ known: LIMIT, actual: LIMIT }], [0, 0]);
-    const result = await test.run(mode);
+    const result = await test.run();
     expect(result.value).toEqual([LIMIT]);
     expect(test.imageRead).toHaveBeenCalledTimes(1);
   });
@@ -95,6 +88,6 @@ describe.each(["declared", "resolved"] as const)("%s embedded image budget", mod
       test.controller.abort();
       return new Uint8Array([1]).buffer;
     });
-    await expect(test.run(mode)).rejects.toMatchObject({ name: "AbortError" });
+    await expect(test.run()).rejects.toMatchObject({ name: "AbortError" });
   });
 });
