@@ -15,6 +15,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Reject embedded images whose known size exceeds the remaining resource budget before reading their bytes. Declared snapshots retain actual-byte validation and count repeated resources once.
 - Diagnose Linux native test prerequisites once before Machine lifecycle cases, preserve failure observations, and expose separate source and native test commands while retaining the complete default quality gate.
 
+- Proofread generated Word documents through DocWen's explicit four-rule conversion contract instead of advisory Markdown validation. Keep standalone Markdown proofreading and its sidebar independent.
+- Exclude spreadsheet exports from proofreading and its review options. Explain upgrade or disable steps when an older backend lacks Word proofreading support.
 
 ## [3.5.2] - 2026-11-02
 

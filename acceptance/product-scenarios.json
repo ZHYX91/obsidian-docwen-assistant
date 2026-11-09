@@ -140,7 +140,7 @@
         "From Conversion.md run the advertised DOCX and XLSX exports, selecting the offered template or direct spreadsheet option; from Formats/01-docx.docx run the advertised Markdown export and choose only a route-applicable optimization or None",
         "Choose the owned output parent in the native directory dialog for each conversion; verify single DOCX/XLSX results directly in that parent and Markdown in its complete result directory; run a second export into the same parent and inspect each result's generated names, business outputs and linked resources",
         "For a recorded input whose Core Markdown output includes attachments, verify the complete result directory, attachment links and each attachment's own resources after publication; if this input is unavailable, keep attachment-host coverage explicitly unverified",
-        "Inspect DOCX paragraph/table content, XLSX cells and Markdown text for the source markers; repeat Markdown-to-DOCX with advisory proofreading enabled then disabled and inspect the notifications",
+        "Inspect DOCX paragraph/table content, XLSX cells and Markdown text for the source markers; repeat Markdown-to-DOCX with document proofreading enabled then disabled, verify generated Word comments and unchanged source Markdown, verify all four rule overrides, and confirm XLSX never invokes proofreading or shows proofreading options",
         "In this Vault create a byte-identical scratch copy of Formats/01-docx.docx named Detected-format.txt; invoke its capability-selected Markdown conversion, first Cancel then Continue the detected-format confirmation"
       ],
       "expected": [

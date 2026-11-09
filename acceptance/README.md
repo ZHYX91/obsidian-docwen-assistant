@@ -47,7 +47,7 @@ those environments. Retain untested matrix entries as unverified.
 | `desktop-connection-discovery` | Native package/program selection, canonical CLI path, Doctor, capability/resource empty and failure states, Retry and obsolete-response suppression |
 | `desktop-file-handoff` | All 35 format examples, explicit GUI selection in single/batch modes, repeated and alternating requests, command/ribbon entry points and admission explanations |
 | `desktop-proofread-validation` | Direct Markdown validation, read-only sidebar results, sorting/keyboard navigation, source refresh and latest-request ownership |
-| `desktop-conversion-exports` | DOCX/XLSX/Markdown routes, template/optimization choices, actual output content, successive single-file DOCX/XLSX and complete Markdown/grouped result directories, advisory proofreading and detected-format confirmation |
+| `desktop-conversion-exports` | DOCX/XLSX/Markdown routes, template/optimization choices, actual output content, successive single-file DOCX/XLSX and complete Markdown/grouped result directories, generated Word proofreading/comments, spreadsheet proofreading exclusion and detected-format confirmation |
 | `desktop-heading-numbering` | Add/remove numbering on an unsaved unique editor buffer and a separately prepared inactive Vault file |
 | `desktop-vault-conflicts` | Concurrent source/editor/file-identity changes, stale report/export rejection and unconfirmed-write handling |
 | `desktop-output-conflicts` | Occupied/changed output destinations, staged artifact drift, related-output collisions and owned-staging cleanup |

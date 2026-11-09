@@ -191,6 +191,34 @@ function conversionQuery(file: string, capability = conversionCapability(), form
 }
 
 describe("DocWenClient Machine semantics", () => {
+  it.each([true, false])("sends Word proofreading through the selected capability (prepared=%s)", async (prepared) => {
+    const root = await temporaryRoot();
+    const source = path.join(root, "note.md");
+    await writeFile(source, "# Unchanged source");
+    const proofread = { enable_symbol_pairing: true, enable_symbol_correction: false, enable_typos_rule: true, enable_sensitive_word: false };
+    const capability: MachineCapability = {
+      ...conversionCapability(), capability_id: "convert.markdown_source.to_docx",
+      input_shape: { slots: [{ role: "source", kind: "document", media_types: ["text/markdown"], min_items: 1, max_items: 1 }], undeclared_roles: "reject" },
+      options_schema: { properties: { proofread: { type: "object", additionalProperties: false,
+        properties: Object.fromEntries(Object.keys(proofread).map((key) => [key, { type: "boolean" }])) } } },
+    };
+    const query = conversionQuery(source, capability);
+    const runTask = vi.fn(async (request: MachineTaskRequest) => {
+      expect(request.capability_id).toBe("convert.markdown_source.to_docx");
+      expect(request.options).toEqual({ proofread });
+      throw new Error("captured document-proofreading plan");
+    });
+    const transport = machine(query, runTask);
+    await expect(new DocWenClient(transport).convert({
+      inputs: [sourceInput(source)], target: "docx", checks: ["typo", "punct"], outputDirectory: root,
+      ...(prepared ? { selectedCapability: capability } : {}),
+    })).rejects.toThrow("captured document-proofreading plan");
+    expect(runTask).toHaveBeenCalledOnce();
+    expect(query.mock.calls.map(([method]) => method)).toEqual(prepared ? ["file/inspect"] : ["file/inspect", "capability/list"]);
+    expect(await readFile(source, "utf8")).toBe("# Unchanged source");
+    expect(await readdir(root)).toEqual(["note.md"]);
+  });
+
   it.each([true, false])("keeps Arabic display language out of conversion options (%s)", async (supportsLocale) => {
     const root = await temporaryRoot();
     const source = path.join(root, "عربي.md");
