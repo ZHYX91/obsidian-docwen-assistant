@@ -7,6 +7,13 @@ const state = vi.hoisted(() => ({
   cleanup: [] as string[],
   commands: [] as Array<Record<string, unknown>>,
   guiPaths: [] as Array<string | undefined>,
+  ribbon: () => {},
+  sidebarOpens: 0,
+  sidebarActive: (): boolean => true,
+  sidebarError: null as Error | null,
+  failures: [] as Array<[string, unknown]>,
+  notices: [] as string[],
+  leaves: [] as Array<{ view: unknown }>,
   loadData: async (): Promise<unknown> => ({}),
   operationItems: [] as Array<{ generation: number; kind: string; state: string }>,
   cancelled: [] as number[],
@@ -34,7 +41,7 @@ vi.mock("obsidian", () => ({
     app = {
       workspace: {
         getActiveFile: () => state.activeFile,
-        getLeavesOfType: () => [],
+        getLeavesOfType: () => state.leaves,
         on: (name: string, callback: (...args: unknown[]) => unknown) => {
           state.workspaceEvents.set(name, callback);
           return { unload: () => undefined };
@@ -51,7 +58,8 @@ vi.mock("obsidian", () => ({
     loadData = () => state.loadData();
     saveData = async (value: unknown) => { state.savedData.push(structuredClone(value)); };
     registerEvent(): void {}
-    addRibbonIcon(): FakeElement {
+    addRibbonIcon(_icon: string, _title: string, callback: () => void): FakeElement {
+      state.ribbon = callback;
       if (state.throwFromRibbon) throw new Error("ribbon failed");
       return new FakeElement();
     }
@@ -78,13 +86,28 @@ vi.mock("../src/host/vault-files", () => ({
   resolveAbsoluteVaultPath: (_vault: unknown, vaultPath: string) =>
     `D:\\Vault\\${vaultPath}`,
 }));
-vi.mock("../src/host/notices", () => ({ showNotice: () => undefined }));
-vi.mock("../src/proofread-view", () => ({
-  PROOFREAD_VIEW_TYPE: "docwen-proofread",
-  ProofreadView: class ProofreadView {},
+vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => { state.notices.push(message); } }));
+vi.mock("../src/assistant-view", () => ({
+  ASSISTANT_VIEW_TYPE: "docwen-proofread-view",
+  AssistantView: class AssistantView { refreshActiveFile = vi.fn(); },
+}));
+vi.mock("../src/host/assistant-sidebar", () => ({
+  AssistantSidebarClosedError: class AssistantSidebarClosedError extends Error {},
+  createAssistantSidebarOpener: (_app: unknown, _operations: unknown, isActive: () => boolean) => {
+    state.sidebarActive = isActive;
+    return async () => {
+      state.sidebarOpens += 1;
+      if (state.sidebarError) throw state.sidebarError;
+      return {};
+    };
+  },
 }));
 vi.mock("../src/app/register-file-menu", () => ({ registerFileMenu: () => undefined }));
-vi.mock("../src/actions/action-runner", () => ({ ActionRunner: class ActionRunner {} }));
+vi.mock("../src/actions/action-runner", () => ({
+  ActionRunner: class ActionRunner {
+    presentFailure(key: string, error: unknown): void { state.failures.push([key, error]); }
+  },
+}));
 vi.mock("../src/actions/export-actions", () => ({ ExportActions: class ExportActions {} }));
 vi.mock("../src/actions/gui-actions", () => ({
   GuiActions: class GuiActions {
@@ -166,6 +189,11 @@ describe("DocWenPlugin lifecycle", () => {
     state.processCoordinators.length = 0;
     state.commands.length = 0;
     state.guiPaths.length = 0;
+    state.sidebarOpens = 0;
+    state.sidebarError = null;
+    state.failures.length = 0;
+    state.notices.length = 0;
+    state.leaves.length = 0;
     state.activeFile = null;
     state.cachedCapability = null;
     state.operationItems.length = 0;
@@ -203,6 +231,77 @@ describe("DocWenPlugin lifecycle", () => {
     closeGui();
     await checking;
     expect(background).toHaveBeenCalledOnce();
+    plugin.onunload();
+  });
+
+  it("opens the sidebar from ribbon and command without requiring a file or starting a backend action", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    state.ribbon();
+    state.ribbon();
+    const open = state.commands.find((command) => command.id === "open-assistant-sidebar");
+    (open?.callback as () => void)();
+    await Promise.resolve();
+    expect(state.sidebarOpens).toBe(3);
+    expect(state.guiPaths).toEqual([]);
+    expect(state.capabilityPreloads).toEqual([]);
+    expect(state.failures).toEqual([]);
+    expect(state.sidebarActive()).toBe(true);
+    plugin.onunload();
+    expect(state.sidebarActive()).toBe(false);
+  });
+
+  it("presents host opening failures but treats closing or unloading as controlled cancellation", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const { AssistantSidebarClosedError } = await import("../src/host/assistant-sidebar");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    state.sidebarError = new Error("host unavailable");
+    state.ribbon();
+    await Promise.resolve();
+    expect(state.failures).toEqual([["noticeSidebarOpenFailed", state.sidebarError]]);
+    state.failures.length = 0;
+    state.sidebarError = new AssistantSidebarClosedError();
+    state.ribbon();
+    await Promise.resolve();
+    expect(state.failures).toEqual([]);
+    state.sidebarError = new Error("late failure");
+    state.ribbon();
+    plugin.onunload();
+    await Promise.resolve();
+    expect(state.failures).toEqual([]);
+  });
+
+  it("refreshes sidebar file controls on focus, file, rename and delete events", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const { AssistantView } = await import("../src/assistant-view");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    const view = Object.create(AssistantView.prototype) as InstanceType<typeof AssistantView>;
+    view.refreshActiveFile = vi.fn();
+    state.leaves.push({ view });
+    state.workspaceEvents.get("file-open")?.(null);
+    state.workspaceEvents.get("active-leaf-change")?.(null);
+    state.vaultEvents.get("rename")?.({ path: "renamed" }, "old");
+    state.vaultEvents.get("delete")?.({ path: "deleted" });
+    expect(view.refreshActiveFile).toHaveBeenCalledTimes(4);
+    expect(state.guiPaths).toEqual([]);
+    plugin.onunload();
+  });
+
+  it("resolves the current GUI file at click time and reports a missing file without launching the app", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    state.activeFile = { path: "first.md" };
+    await plugin.openCurrentFileInDocWen();
+    state.activeFile = { path: "second.md" };
+    await plugin.openCurrentFileInDocWen();
+    state.activeFile = null;
+    await plugin.openCurrentFileInDocWen();
+    expect(state.guiPaths).toEqual(["D:\\Vault\\first.md", "D:\\Vault\\second.md"]);
+    expect(state.notices).toEqual(["sidebarNoFile"]);
     plugin.onunload();
   });
 

@@ -8,7 +8,7 @@ export const AR_TRANSLATIONS: Translations = {
   exportReviewTemplate: "القالب",
   exportReviewOptimization: "إعداد التحويل",
   exportReviewDestination: "مجلد حفظ النتائج",
-  exportReviewInherited: "تتبع الخيارات غير المعروضة إعدادات DocWen. ينشئ التصدير مجلدًا جديدًا ولا يغيّر الملف المصدر.",
+  exportReviewInherited: "تتبع الخيارات غير المعروضة إعدادات DocWen. يُحفظ ملف DOCX أو XLSX المنفرد مباشرةً في المجلد المحدد؛ أما Markdown والنتائج المجمعة فتُنشئ مجلد نتائج جديدًا. يبقى الملف المصدر دون تغيير.",
   exportReviewEnabled: "مفعّل",
   exportReviewDisabled: "معطّل",
   exportReviewStart: "تصدير",
@@ -23,6 +23,8 @@ export const AR_TRANSLATIONS: Translations = {
   noticeCleanupWarning: "تعذّر إكمال حذف البيانات المؤقتة. راجع التفاصيل.",
   errorOutputUnconfirmed: "تعذّر التأكد من حفظ النتيجة. افحص مجلد الوجهة قبل المحاولة مجددًا.",
   errorOutputFilesystemUnsupported: "لا يمكن حفظ النتائج بأمان على نظام الملفات هذا. اختر مجلدًا آخر؛ وفي WSL جرّب مجلدًا داخل نظام ملفات Linux.",
+  errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+  errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
   errorOutputPreflightFailed: "تعذّر الحفظ بأمان في هذا المجلد. تحقّق من الأذونات أو اختر مجلدًا آخر.",
   dialogContinue: "متابعة",
   dialogDetectedFormat: "اكتشف DocWen أن تنسيق الملف يختلف عن امتداده. هل تريد المتابعة بالتنسيق المكتشف؟",
@@ -31,7 +33,13 @@ export const AR_TRANSLATIONS: Translations = {
   dialogReadDetectedFormat: "عند المتابعة، سيُقرأ الملف بتنسيق {format}.",
   dialogFormatUnknown: "غير معلن",
   dialogExportDirectory: "اختر مجلد النتائج",
-  ribbonTooltip: "فتح DocWen",
+  ribbonTooltip: "فتح الشريط الجانبي لـ DocWen Assistant",
+  commandOpenSidebar: "فتح الشريط الجانبي لـ DocWen Assistant",
+  sidebarTitle: "DocWen Assistant",
+  sidebarOpenGui: "فتح DocWen",
+  sidebarCurrentFile: "الملف الحالي: {filename}",
+  sidebarNoFile: "افتح ملفًا محليًا لاستخدام إجراءات الملفات.",
+  noticeSidebarOpenFailed: "تعذر فتح الشريط الجانبي لـ Assistant: {error}",
   commandLaunch: "فتح DocWen",
   commandLaunchWithFile: "فتح الملف الحالي في DocWen",
   commandExportDocx: "تصدير إلى Word في الخلفية",
@@ -75,7 +83,7 @@ export const AR_TRANSLATIONS: Translations = {
   settingsSelectProgram: "اختيار البرنامج…",
   settingsSelectFolder: "اختيار مجلد DocWen…",
   settingsDownloadDocWen: "تنزيل DocWen",
-  settingsDownloadDocWenDesc: "على Windows يمكنك التثبيت من Microsoft Store، أو تنزيل الحزمة المحمولة المناسبة لنظامك وفك ضغطها.",
+  settingsDownloadDocWenDesc: "على Windows يمكنك التثبيت من Microsoft Store، أو تنزيل الحزمة المحمولة المناسبة لنظامك وفك ضغطها بالكامل. يتطلب Linux حزمة محمولة متوافقة.",
   settingsViewReleases: "عرض إصدارات DocWen ↗",
   settingsGetFromStore: "التنزيل من Microsoft Store ↗",
   settingsDownloadPortable: "تنزيل الحزمة المحمولة ↗",
@@ -101,7 +109,14 @@ export const AR_TRANSLATIONS: Translations = {
   settingsPathNotExecutable: "✗ لا يمكن تشغيل DocWenCLI",
   settingsPathUnsupportedSelection: "✗ اختر مجلد DocWen بعد فك ضغطه أو ملف DocWen أو DocWenCLI التنفيذي",
   settingsUsageTitle: "طريقة الاستخدام",
-  settingsUsageList: "<ul><li>اضغط أيقونة المستند في الشريط الجانبي لفتح DocWen أو إرسال الملف الحالي إليه.</li><li>اضغط بزر الفأرة الأيمن على ملف واختر قائمة <b>DocWen</b> للتحويل أو الترقيم أو الفتح.</li><li>افتح لوحة الأوامر (Ctrl/Cmd + P) وابحث عن <b>DocWen</b> لعرض الأوامر.</li><li>لا يُرسل مسار الملف الحالي إلا عند تشغيل عملية تحتاج إليه.</li></ul>",
+  settingsUsageList: `
+    <ul>
+      <li>اضغط أيقونة المستند في الشريط الأيسر لفتح الشريط الجانبي لـ DocWen Assistant أو التركيز عليه.</li>
+      <li>في الشريط الجانبي، اختر فتح DocWen أو فتح الملف الحالي في DocWen أو تدقيق ملف Markdown الحالي.</li>
+      <li>اضغط بزر الفأرة الأيمن على ملف واختر <b>DocWen</b>، أو ابحث عن <b>DocWen</b> في لوحة الأوامر (Ctrl/Cmd + P) للوصول إلى إجراءات أخرى.</li>
+      <li>لا يُرسل مسار الملف إلا عند تشغيل إجراء يستخدم ذلك الملف.</li>
+    </ul>
+  `,
   settingsPersistence: "حفظ الإعدادات",
   settingsChangesSaved: "حُفظت التغييرات.",
   settingsChangesPending: "لم تُحفظ التغييرات بعد.",

@@ -7,6 +7,9 @@
     "check:runtime": "node scripts/check-runtime.mjs",
     "format:check": "node scripts/check-format.mjs",
     "test": "vitest run",
+    "test:source": "vitest run --exclude tests/docwen-machine-linux-native.test.ts --exclude tests/docwen-machine-windows-lifetime.test.ts",
+    "test:native:linux": "vitest run tests/docwen-machine-linux-native.test.ts",
+    "test:native:windows": "vitest run tests/docwen-machine-windows-lifetime.test.ts",
     "test:coverage": "vitest run --coverage --coverage.reporter=text --coverage.reporter=json-summary",
     "test:watch": "vitest",
     "dev": "esbuild src/main.ts --bundle --outfile=dist/main.js --platform=node --external:obsidian --watch",
@@ -23,7 +26,7 @@
     "check": "npm run check:runtime && npm run lint && npm run format:check && npm run check:readme-i18n && npm run check:docs-i18n && npm run test:coverage && npm run build && npm run artifact:check && npm run audit:all && npm run release:validate",
     "clean": "node scripts/clean.mjs",
     "clean:deps": "node scripts/clean.mjs --deps",
-    "prebuild": "node scripts/prepare-build.mjs prepare",
+    "prebuild": "node scripts/check-runtime.mjs && node scripts/prepare-build.mjs prepare",
     "version:set": "node scripts/set-version.mjs",
     "release": "npm run release:check && node scripts/release.mjs bundle --output-dir release",
     "release:validate": "node scripts/release.mjs validate",
@@ -36,8 +39,11 @@
     "release:post-verify": "node scripts/release.mjs post-verify",
     "release:docwen-compatibility": "node scripts/check-docwen-compatibility.mjs",
     "release:check": "npm run check && npm run release:validate-tag",
-    "postinstall": "node scripts/prepare-lint-dependencies.mjs",
-    "prelint": "node scripts/prepare-lint-dependencies.mjs && node scripts/check-lint-dependencies.mjs"
+    "postinstall": "node scripts/check-shared-tools.mjs && node scripts/prepare-lint-dependencies.mjs",
+    "prelint": "node scripts/check-shared-tools.mjs && node scripts/prepare-lint-dependencies.mjs && node scripts/check-lint-dependencies.mjs",
+    "check:tools": "node scripts/check-shared-tools.mjs",
+    "test:tools": "vitest run tests/scripts/shared-maintenance-tools.test.ts",
+    "prebuild:quick": "node scripts/check-runtime.mjs"
   },
   "keywords": [
     "obsidian",

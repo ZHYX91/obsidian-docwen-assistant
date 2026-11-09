@@ -1,5 +1,6 @@
 import { Window } from "happy-dom";
 import { afterEach, beforeEach, vi } from "vitest";
+import type { AssistantViewActions } from "../../src/assistant-view";
 
 /** Keep the normal Node test environment, with a fresh DOM for each UI test. */
 export function useObsidianDom(): void {
@@ -47,7 +48,10 @@ export class ItemView {
   readonly app: { vault: Record<string, unknown>; workspace: Record<string, unknown> };
   readonly containerEl: HTMLElement;
   constructor(public readonly leaf: { app?: ItemView["app"] }) {
-    this.app = leaf.app ?? { vault: {}, workspace: {} };
+    this.app = {
+      vault: leaf.app?.vault ?? {},
+      workspace: { getActiveFile: () => null, ...leaf.app?.workspace },
+    };
     this.containerEl = document.createElement("div");
     this.containerEl.append(document.createElement("div"), document.createElement("div"));
     document.body.append(this.containerEl);
@@ -78,4 +82,12 @@ export function getLanguage(): string { return "en"; }
 export function parseLinktext(text: string): { path: string; subpath: string } {
   const [path, ...rest] = text.split("#");
   return { path, subpath: rest.length ? `#${rest.join("#")}` : "" };
+}
+
+export function createAssistantViewActions(): AssistantViewActions {
+  return {
+    openGui: vi.fn().mockResolvedValue(undefined),
+    openCurrentFile: vi.fn().mockResolvedValue(undefined),
+    proofreadCurrentFile: vi.fn().mockResolvedValue(undefined),
+  };
 }

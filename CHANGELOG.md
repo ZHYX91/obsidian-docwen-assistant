@@ -4,6 +4,17 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Make the ribbon and a dedicated command open or focus the Assistant sidebar, with separate controls for opening DocWen, opening the current file and proofreading current Markdown.
+- Reuse existing sidebar leaves and reports, refresh current-file actions through the host contract, and keep GUI and proofreading lifecycle ownership separate.
+- Update sidebar labels, usage help and guides in all twelve interface languages.
+- Place manual installation controls directly after the connection method and combine Check, Launch and Details in one connection card with distinct application/background status and repeated-click/dismissal guards.
+
+- Identify Windows lifetime-helper failures with redacted build hash, phase and system-code diagnostics, and provide safe recovery guidance without bypassing process ownership or security software.
+- Remove the unused resolved-document snapshot producer and its Number Suite interop adapter. Markdown exports retain the declared-source path, resource checks and publication guards.
+
+- Reject embedded images whose known size exceeds the remaining resource budget before reading their bytes. Declared snapshots retain actual-byte validation and count repeated resources once.
+- Diagnose Linux native test prerequisites once before Machine lifecycle cases, preserve failure observations, and expose separate source and native test commands while retaining the complete default quality gate.
+
 - Proofread generated Word documents through DocWen's explicit four-rule conversion contract instead of advisory Markdown validation. Keep standalone Markdown proofreading and its sidebar independent.
 - Exclude spreadsheet exports from proofreading and its review options. Explain upgrade or disable steps when an older backend lacks Word proofreading support.
 

@@ -151,3 +151,25 @@ describe("export review ownership", () => {
     await expect(pending).resolves.toBe(false);
   });
 });
+
+// The copy describes both delivery shapes; one-file exports do not create a wrapper folder.
+describe("localized output and installation guidance", () => {
+  it.each(["zh-cn", "zh-tw", "en", "de", "fr", "ru", "pt", "ja", "ko", "es", "vi", "ar"])(
+    "shows delivery distinctions and platform-qualified installation help in %s",
+    async (locale) => {
+      initI18n(locale);
+      const { confirmExport } = await import("../src/host/export-review");
+      const pending = confirmExport({} as never, [], new AbortController().signal);
+      const guidance = t("exportReviewInherited");
+      expect(state.modal!.contentEl.textContent).toContain(guidance);
+      expect(guidance).toContain("DOCX");
+      expect(guidance).toContain("XLSX");
+      expect(guidance).toContain("Markdown");
+      expect(t("settingsDownloadDocWenDesc")).toContain("Windows");
+      expect(t("settingsDownloadDocWenDesc")).toContain("Linux");
+      expect(t("settingsDownloadDocWenDesc")).toContain("Microsoft Store");
+      state.modal!.close();
+      await expect(pending).resolves.toBe(false);
+    },
+  );
+});

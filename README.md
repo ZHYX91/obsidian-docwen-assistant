@@ -67,9 +67,19 @@ When updating manually, replace only `main.js`, `manifest.json` and `styles.css`
 
 **Choose the action for the current file.** Export commands appear only when the file and the connected DocWen capabilities support the conversion. Export saves separate output; proofreading reports issues without editing the note. **Add/Remove numbering changes Markdown text** after checking the current editor or saved-file snapshot for conflicts. Unsaved edits in the matching open editor are included; ambiguous multiple editors for one path are rejected.
 
-Use the ribbon icon, file-explorer **DocWen** submenu, or Command Palette:
+Click the ribbon icon or run **Open DocWen Assistant sidebar** to open or focus the Assistant sidebar. The sidebar opens even when no file is open or DocWen is not configured, and reopening it keeps the current report.
 
-- **Launch DocWen** opens or activates the app; **Launch DocWen with current file** also opens the active file.
+The sidebar has three separate actions:
+
+- **Open DocWen** opens or activates the desktop app.
+- **Open current file in DocWen** opens the file currently selected by Obsidian; it is disabled when no local file is available.
+- **Proofread current Markdown file** starts proofreading for the current Markdown note; it is disabled for other files or while this sidebar owns a proofreading task.
+
+File actions use Obsidian’s current file when clicked, including when the sidebar has focus. Switching files updates the controls without replacing the displayed report. The report’s refresh control still checks its original source note. Closing the sidebar cancels only its own proofreading task; GUI control is independent.
+
+The file-explorer **DocWen** submenu and Command Palette also offer these actions:
+
+- **Launch DocWen** opens or activates the app; **Open current file in DocWen** also opens the active file.
 - **Export to Word (Docx) in background**
 - **Export to Excel (XLSX) in background**
 - **Export to Markdown (MD) in background**

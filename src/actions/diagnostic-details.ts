@@ -22,8 +22,18 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
   }
   const incompatibility = read("incompatibility");
   if (read("phase") === "initialize") details.phase = "initialize";
-  if (read("phase") === "create_process") details.phase = "create_process";
-  if (read("primaryPhase") === "create_process") details.primaryPhase = "create_process";
+  for (const key of ["phase", "primaryPhase"]) {
+    const phase = read(key);
+    if (["create_process", "owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(typeof phase === "string" ? phase : "")) {
+      details[key] = phase;
+    }
+  }
+  if (read("ownershipState") === "windows_job") details.ownershipState = "windows_job";
+  if (read("helperName") === "windows-x64.exe") details.helperName = "windows-x64.exe";
+  const helperExpectedSha256 = read("helperExpectedSha256");
+  if (typeof helperExpectedSha256 === "string" && /^[0-9a-f]{64}$/u.test(helperExpectedSha256)) details.helperExpectedSha256 = helperExpectedSha256;
+  const helperExpectedBytes = read("helperExpectedBytes");
+  if (typeof helperExpectedBytes === "number" && Number.isSafeInteger(helperExpectedBytes) && helperExpectedBytes > 0) details.helperExpectedBytes = helperExpectedBytes;
   if (
     incompatibility === "machine_protocol"
     || incompatibility === "artifact_bundle"

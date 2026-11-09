@@ -8,7 +8,6 @@ const state = vi.hoisted(() => ({
   choose: undefined as ((item: { id: string } | null) => void) | undefined,
   openDialog: vi.fn(),
   getDeclaredMarkdownInputs: vi.fn(),
-  getResolvedMarkdownInputs: vi.fn(),
 }));
 
 vi.mock("obsidian", () => ({ TFile: class TFile {}, Modal: class Modal {} }));
@@ -46,7 +45,6 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         sourceInput: unknown;
         inputs: unknown[];
         getDeclaredMarkdownInputs: () => Promise<{ inputs: unknown[] }>;
-        getResolvedMarkdownInputs: () => Promise<unknown[]>;
       }) => Promise<T>,
     ): Promise<{ value: T; warnings: [] }> {
       const sourceInput = {
@@ -67,22 +65,6 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         },
       ];
       state.getDeclaredMarkdownInputs.mockResolvedValue({ inputs: declaredInputs, resourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "![[chart.png]]", logical_path: "assets/chart.png" }] } });
-      state.getResolvedMarkdownInputs.mockResolvedValue([
-        {
-          path: "D:\\Temp\\resolved-document.json",
-          kind: "document",
-          role: "neutral_document",
-          logicalPath: "resolved-document.json",
-          mediaType: "application/vnd.docwen.resolved-document+json",
-        },
-        {
-          path: "D:\\Temp\\numbering-export-plan.json",
-          kind: "resource",
-          role: "numbering_export_plan",
-          logicalPath: "numbering-export-plan.json",
-          mediaType: "application/vnd.docwen.numbering-export-plan+json",
-        },
-      ]);
       const value = await work({
         inputPath: "D:\\Temp\\input.bin",
         contentSha256: "sha",
@@ -90,7 +72,6 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
         sourceInput,
         inputs: [sourceInput],
         getDeclaredMarkdownInputs: state.getDeclaredMarkdownInputs,
-        getResolvedMarkdownInputs: state.getResolvedMarkdownInputs,
       });
       return { value, warnings: [] };
     }
@@ -404,7 +385,6 @@ describe("ExportActions document proofreading", () => {
     await actions.toDocx({ path: "note.md", name: "note.md" } as never);
 
     expect(state.getDeclaredMarkdownInputs).toHaveBeenCalledOnce();
-    expect(state.getResolvedMarkdownInputs).not.toHaveBeenCalled();
     expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({
       inputs: [
         expect.objectContaining({ role: "source", mediaType: "text/markdown" }),
@@ -432,7 +412,6 @@ function resetState(): void {
   state.choose = undefined;
   state.openDialog.mockReset().mockResolvedValue({ canceled: false, filePaths: ["D:\\Vault"] });
   state.getDeclaredMarkdownInputs.mockReset();
-  state.getResolvedMarkdownInputs.mockReset();
 }
 
 describe("export review before content operations", () => {

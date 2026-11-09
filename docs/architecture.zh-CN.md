@@ -9,7 +9,9 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 负责源捕获与发布检查。Assistant 不生成 resolved-document 或 Number Suite interop 快照。
+
+`src/host/assistant-sidebar.ts` 是打开或聚焦侧栏的唯一宿主入口，合并尚未完成的打开请求，使用 Obsidian 的正式 deferred-leaf 恢复接口，并在视图关闭或插件卸载后拒绝旧请求。迟到的清理只作用于本次运行时创建且生命周期仍有效的视图，不能关闭重载后替换的视图。`src/assistant-view.ts` 负责通用动作区及既有校对报告；视图类型保持 `docwen-proofread-view`，工作区恢复继续使用同一契约。打开侧栏不分配任务 lease，不清空报告，也不调用 DocWen。`ProofreadActions` 复用该入口后才开始显式校对，GUI 按钮继续委托 `GuiActions`。文件动作每次从 `workspace.getActiveFile()` 获取身份，侧栏不维护第二份当前文件缓存；文件事件只刷新按钮和上下文。
 
 ## DocWen 进程边界
 
@@ -40,6 +42,8 @@ Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.
 
 provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 
+声明式 Markdown 输入的图片总预算为 6,000,000 字节。每个唯一图片在读取前先按宿主已知文件大小检查剩余预算，读取后再核对实际字节数并拒绝空内容；缓存大小过期不能绕过实际字节检查。重复引用只读取一次并计入一次预算，取消后不继续构建资源输入。
+
 ## 产物与提交
 
 DocWen 只写请求拥有的 staging 目录。Assistant 校验 Bundle v3 身份、图、逻辑路径、角色、关系、普通文件身份、大小与 SHA-256。`docwen.artifact_layout.v1` 转换只接纳与请求目标一致的单个 DOCX 或 XLSX：只有一个首选 primary document，ordinal 为零，没有其他产物或关系，`logical_path` 与 `suggested_name` 是相同的便携文件名。在所选父目录准备文件，以原子 no-replace 硬链接发布。Markdown 和组合输出要求 `docwen.document_node.v1`：在所选目录内准备完整逻辑目录，并以单次原子 no-replace 目录重命名发布；已有结果目录以及最终检查后由外部写者创建的空或非空目录都拒绝覆盖。Windows 使用系统目录重命名的 no-replace 行为；Linux x64 使用随 `main.js` 内嵌、运行时校验 SHA-256 与 Node-API 8 下限的最小 `renameat2(RENAME_NOREPLACE)` 边界，不增加新的插件运行时资产，也没有仓库间运行时依赖。Linux 不支持的架构、运行时、内核或文件系统在发布前失败关闭。普通转换无需节点 JSON，字节数、哈希与关系来自已校验的 Bundle。界面只列业务输出，绑定的布局清单和图片资源不计入输出数量。两种发布形态都在最终原语前复核父目录身份、准备好的文件、取消状态和同步源 guard；都不替换已有目标。
@@ -63,6 +67,8 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。Machine stdin Writable 的异步错误（包括对端关闭读取端后延迟出现的 `EPIPE`）进入同一会话失败队列，拒绝等待者并触发幂等、有界的进程树清理；`stdin.end()` 已发生后到达的取消不会再次写入已结束流。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
 Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux x64 与 arm64 均使用原生 lifetime owner，其他架构在业务启动前失败关闭。
+
+Windows 辅助程序失败时，可分享诊断只保留固定的 `windows-x64.exe` 名称、内嵌构建预期的 SHA-256 和字节数，以及限定的阶段和系统代码。预期哈希仅标识构建，不代表已读取隔离文件的哈希、发布者认证或恶意软件判断。辅助程序启动与目标进程创建仍分别记录。恢复提示要求用户查看安全软件记录、核实版本来源并在解决原因后重启，不关闭防护，也不绕过 Job 所有权。无法确认清理时继续失败关闭，重启前须检查残留进程。
 
 导出和编号任务持续拥有选择窗口直至写入结束，选中条目不会启动脱离当前生命周期的任务。取消、新任务替换和卸载会关闭插件选择窗口及格式确认框，已排队的旧选择也失效。系统目录对话框可能保持打开直至用户关闭，但取消后返回的路径不会继续执行。文件菜单能力发现也由同一协调器管理，卸载后的菜单回调不能再调用操作。
 

@@ -10,6 +10,8 @@ export function getErrorMessage(error: unknown): string {
   if (typeof details === "object" && details !== null && "outputState" in details && details.outputState === "unconfirmed") {
     return t("errorOutputUnconfirmed");
   }
+  const recovery = getWindowsOwnerRecoveryMessage(code, details);
+  if (recovery) return recovery;
   if (error instanceof RemoteMachineError) {
     if (error.category === "internal") return t("errorDocWenInternal");
     if (["unsupported", "unavailable", "dependency"].includes(error.category)) {
@@ -58,4 +60,14 @@ export function getErrorDetails(error: unknown): unknown {
 export function isCancellationError(error: unknown): boolean {
   return getLocalErrorCode(error) === "cli_cancelled" ||
     (error instanceof DOMException && error.name === "AbortError");
+}
+
+/** Use only observed owner failures; a target CreateProcess error is not an antivirus diagnosis. */
+export function getWindowsOwnerRecoveryMessage(code: string, value: unknown): string | null {
+  const details = diagnosticDetails(value);
+  if (details.ownershipState !== "windows_job") return null;
+  if (code === "cli_cleanup_failed") return t("errorWindowsOwnerCleanup");
+  if (!["cli_spawn_failed", "cli_integrity_error"].includes(code)) return null;
+  if (!["owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(String(details.phase))) return null;
+  return t("errorWindowsOwnerRecovery");
 }
