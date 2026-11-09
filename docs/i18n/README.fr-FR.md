@@ -62,7 +62,17 @@ Lors d’une mise à jour manuelle, remplacez seulement `main.js`, `manifest.jso
 
 **Les commandes proposées dépendent du fichier ouvert.** Une conversion nécessite une capacité compatible du DocWen connecté. L’export enregistre une sortie distincte, tandis que la relecture ne modifie pas la note. **L’ajout ou le retrait de numéros de titres modifie le Markdown.** Le texte de l’éditeur, même non enregistré, ou le fichier enregistré est vérifié avant l’écriture. Si plusieurs éditeurs du même fichier ne peuvent être distingués, l’opération s’arrête.
 
-L'icône, le sous-menu **DocWen** et la palette de commandes permettent de lancer DocWen, d'exporter Word/Excel/Markdown, de modifier la numérotation des titres, de relire le Markdown et de choisir **Vérifier la connexion à DocWen**.
+Cliquez sur l’icône ou lancez **Ouvrir le panneau latéral DocWen Assistant** pour ouvrir ou sélectionner le panneau. Il s’ouvre même sans fichier ouvert ou sans configuration de DocWen. Une nouvelle ouverture conserve le rapport actuel.
+
+Le panneau propose trois actions distinctes :
+
+- **Ouvrir DocWen** ouvre ou active l’application de bureau.
+- **Ouvrir le fichier actuel dans DocWen** ouvre le fichier actuellement sélectionné par Obsidian ; le bouton est désactivé sans fichier local.
+- **Relire le fichier Markdown actuel** vérifie la note Markdown actuelle ; le bouton est désactivé pour les autres fichiers ou pendant une relecture appartenant à ce panneau.
+
+Les actions déterminent le fichier actuel d’Obsidian au clic, même quand le panneau a le focus. Changer de fichier actualise les boutons et conserve le rapport. Le bouton d’actualisation du rapport vérifie toujours sa note d’origine. Fermer le panneau annule uniquement sa propre relecture ; le contrôle de l’application de bureau reste indépendant.
+
+Le sous-menu **DocWen** et la palette de commandes proposent aussi l’ouverture de l’application, l’export Word/Excel/Markdown, la numérotation des titres, la relecture et la commande **Vérifier la connexion à DocWen**.
 
 Choisissez un modèle ou un préréglage de conversion si proposé, puis un dossier de sortie. Vérifiez la source, le format, la destination et les options, puis cliquez sur **Exporter**. La fenêtre reprend les réglages capturés pour cette tâche ; l’annulation ne lance aucune conversion. Un DOCX ou XLSX unique est enregistré directement dans le dossier choisi lorsque DocWen renvoie un seul fichier. Markdown et les sorties groupées conservent leur propre dossier avec les images et pièces jointes. Après l’export, cliquez sur **Ouvrir le dossier du résultat** dans la notification. Cette action ouvre le dossier contenant la sortie. Les fichiers et dossiers existants ne sont pas remplacés.
 

@@ -62,7 +62,17 @@ Na atualização manual, substitua apenas `main.js`, `manifest.json` e `styles.c
 
 **Os comandos dependem do arquivo aberto.** A conversão só aparece quando o conteúdo e o DocWen conectado oferecem a capacidade correspondente. A exportação salva uma saída separada; a revisão não altera a nota. **Adicionar ou remover números de títulos altera o Markdown.** Antes da gravação, o conteúdo atual do editor, incluindo alterações não salvas, ou o arquivo salvo é conferido. Se houver vários editores ambíguos para o mesmo arquivo, a operação é interrompida.
 
-O ícone, o submenu **DocWen** e a paleta de comandos permitem iniciar o DocWen, exportar Word/Excel/Markdown, alterar a numeração de títulos, revisar Markdown e executar **Verificar conexão com o DocWen**.
+Clique no ícone ou execute **Abrir a barra lateral do DocWen Assistant** para abrir ou focar a barra. Ela abre mesmo sem um arquivo aberto ou sem o DocWen configurado. Abrir novamente preserva o relatório atual.
+
+A barra oferece três ações separadas:
+
+- **Abrir DocWen** abre ou ativa o aplicativo de desktop.
+- **Abrir arquivo atual no DocWen** abre o arquivo selecionado pelo Obsidian; fica desativado quando não há um arquivo local.
+- **Revisar arquivo Markdown atual** revisa a nota Markdown atual; fica desativado para outros arquivos ou enquanto esta barra executa sua própria revisão.
+
+As ações consultam o arquivo atual do Obsidian ao clicar, inclusive quando a barra está em foco. Trocar de arquivo atualiza os botões e preserva o relatório. O botão de atualização do relatório continua revisando a nota de origem. Fechar a barra cancela apenas a revisão que pertence a ela; o controle do aplicativo de desktop é independente.
+
+O submenu **DocWen** e a paleta de comandos também oferecem abertura do aplicativo, exportação Word/Excel/Markdown, numeração de títulos, revisão e **Verificar conexão com o DocWen**.
 
 Escolha um modelo ou uma predefinição de conversão, se houver, e depois a pasta de saída. Confira a origem, o formato, o destino e as opções e clique em **Exportar**. A janela usa as configurações capturadas para essa tarefa; cancelar não inicia a conversão. Um único DOCX ou XLSX é salvo diretamente na pasta escolhida quando o DocWen retorna um arquivo. Markdown e saídas agrupadas mantêm sua própria pasta com imagens e anexos. Ao concluir, clique em **Abrir pasta do resultado** na notificação. Essa ação abre a pasta que contém a saída. Arquivos e pastas existentes não são substituídos.
 

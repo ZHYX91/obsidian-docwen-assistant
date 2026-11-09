@@ -28,9 +28,9 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
     }
   },
 }));
-vi.mock("../src/proofread-view", () => ({
-  ProofreadView: class ProofreadView {},
-  PROOFREAD_VIEW_TYPE: "docwen-proofread-view",
+vi.mock("../src/assistant-view", () => ({
+  AssistantView: class AssistantView {},
+  ASSISTANT_VIEW_TYPE: "docwen-proofread-view",
 }));
 
 describe("ProofreadActions", () => {
@@ -44,8 +44,7 @@ describe("ProofreadActions", () => {
     const file = { path: "Selected.md" };
     const view = {};
     const actions = new ProofreadActions({} as never, {} as never, {} as never,
-      () => ({} as never), {} as never);
-    vi.spyOn(actions, "activateView").mockResolvedValue(view as never);
+      () => ({} as never), {} as never, vi.fn().mockResolvedValue(view));
     const run = vi.spyOn(actions, "run").mockResolvedValue();
     await actions.activateAndRun(file as never);
     expect(run).toHaveBeenCalledWith(file, view);
@@ -58,7 +57,7 @@ describe("ProofreadActions", () => {
     const getFileByPath = vi.fn().mockReturnValue(file);
     const actions = new ProofreadActions(
       { vault: { getFileByPath }, workspace: { getActiveFile } } as never,
-      {} as never, {} as never, () => ({} as never), {} as never,
+      {} as never, {} as never, () => ({} as never), {} as never, vi.fn(),
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
     await actions.refresh(file.path, {} as never);
@@ -72,7 +71,7 @@ describe("ProofreadActions", () => {
     const getActiveFile = vi.fn().mockReturnValue({ path: "Other.md" });
     const actions = new ProofreadActions(
       { vault: { getFileByPath: () => null }, workspace: { getActiveFile } } as never,
-      {} as never, {} as never, () => ({} as never), {} as never,
+      {} as never, {} as never, () => ({} as never), {} as never, vi.fn(),
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
     await actions.refresh("Deleted.md", {} as never);
@@ -83,14 +82,36 @@ describe("ProofreadActions", () => {
 
   it("uses the active note only when the view has no previous source", async () => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
-    const file = { path: "First.md" };
+    const file = { path: "First.md", extension: "md" };
     const actions = new ProofreadActions(
       { workspace: { getActiveFile: () => file } } as never,
-      {} as never, {} as never, () => ({} as never), {} as never,
+      {} as never, {} as never, () => ({} as never), {} as never, vi.fn(),
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
     await actions.refresh("", {} as never);
     expect(run).toHaveBeenCalledWith(file, {});
+  });
+
+  it("resolves the current Markdown file for each explicit sidebar request", async () => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const first = { path: "First.md", extension: "md" };
+    const second = { path: "Second.MD", extension: "MD" };
+    const getActiveFile = vi.fn().mockReturnValue(first);
+    const actions = new ProofreadActions(
+      { workspace: { getActiveFile } } as never,
+      {} as never, {} as never, () => ({} as never), {} as never, vi.fn(),
+    );
+    const view = {} as never;
+    const run = vi.spyOn(actions, "run").mockResolvedValue();
+    await actions.runActive(view);
+    getActiveFile.mockReturnValue(second);
+    await actions.runActive(view);
+    getActiveFile.mockReturnValue({ path: "Document.pdf", extension: "pdf" });
+    await actions.runActive(view);
+    getActiveFile.mockReturnValue(null);
+    await actions.runActive(view);
+    expect(run.mock.calls).toEqual([[first, view], [second, view]]);
+    expect(state.notices).toEqual(["noticeProofreadNoMdFile", "noticeProofreadNoMdFile"]);
   });
 
   it("labels results with the Vault file name instead of the temporary snapshot name", async () => {
@@ -129,6 +150,7 @@ describe("ProofreadActions", () => {
         proofreadSensitive: true,
       } as never),
       runner as never,
+      vi.fn(),
     );
     const file = { name: "Proofread example.md", path: "Examples/Proofread example.md" };
 

@@ -1,7 +1,7 @@
 /**
  * DocWen Assistant - Obsidian Plugin
  *
- * Launch DocWen converter from Obsidian and pass the current file path.
+ * Open the Assistant sidebar and run explicit local DocWen actions.
  * Uses Machine Protocol v2 for content operations and the public local GUI
  * control command for launch/open so window access is not gated by conversion negotiation.
  */
@@ -26,13 +26,14 @@ import { ProofreadActions } from "./actions/proofread-actions";
 import { registerCommands } from "./app/register-commands";
 import { registerFileMenu } from "./app/register-file-menu";
 import { showNotice } from "./host/notices";
+import { createAssistantSidebarOpener, AssistantSidebarClosedError, type OpenAssistantSidebar } from "./host/assistant-sidebar";
 import { openPluginSettings } from "./host/settings-navigation";
 import {
   getDocWenLanguage,
   initializePluginI18n,
 } from "./host-language";
 import { resolveAbsoluteFilePath, resolveAbsoluteVaultPath } from "./host/vault-files";
-import { ProofreadView, PROOFREAD_VIEW_TYPE } from "./proofread-view";
+import { AssistantView, ASSISTANT_VIEW_TYPE } from "./assistant-view";
 import {
   DocWenMachineClient,
   DocWenCapabilityService,
@@ -62,6 +63,7 @@ export default class DocWenPlugin extends Plugin {
   private guiActions!: GuiActions;
   private numberingActions!: NumberingActions;
   private proofreadActions!: ProofreadActions;
+  private openSidebar!: OpenAssistantSidebar;
   private capabilities!: DocWenCapabilityService;
   private operations!: OperationCoordinator;
   private actionRunner!: ActionRunner;
@@ -246,7 +248,11 @@ export default class DocWenPlugin extends Plugin {
       const filePath = resolveAbsoluteFilePath(this.app.vault, file);
       if (filePath) void this.capabilities.preload(filePath);
     };
-    this.registerEvent(this.app.workspace.on("file-open", preloadCapabilities));
+    this.registerEvent(this.app.workspace.on("file-open", (file) => {
+      preloadCapabilities(file);
+      this.refreshSidebarFiles();
+    }));
+    this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshSidebarFiles()));
     this.registerEvent(this.app.vault.on("modify", (file) => {
       const modifiedFile = file instanceof TFile ? file : null;
       const filePath = modifiedFile
@@ -258,6 +264,7 @@ export default class DocWenPlugin extends Plugin {
       }
     }));
     this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
+      this.refreshSidebarFiles();
       if (!(file instanceof TFile)) {
         // A folder move may change every cached descendant path. Invalidate
         // the complete map rather than guessing which children were reported.
@@ -272,6 +279,7 @@ export default class DocWenPlugin extends Plugin {
       preloadCapabilities(file);
     }));
     this.registerEvent(this.app.vault.on("delete", (file) => {
+      this.refreshSidebarFiles();
       if (!(file instanceof TFile)) {
         this.capabilities.invalidate();
         preloadCapabilities(this.app.workspace.getActiveFile());
@@ -298,12 +306,17 @@ export default class DocWenPlugin extends Plugin {
       this.guiControl,
       this.actionRunner,
     );
+    const sidebarOperations = this.operations;
+    this.openSidebar = createAssistantSidebarOpener(
+      this.app, sidebarOperations, () => !this.unloaded && epoch === this.runtimeEpoch,
+    );
     this.proofreadActions = new ProofreadActions(
       this.app,
       this.docwen,
       this.capabilities,
       () => this.settings,
       this.actionRunner,
+      this.openSidebar,
     );
 
     // Add Ribbon Icon (left sidebar icon)
@@ -311,7 +324,7 @@ export default class DocWenPlugin extends Plugin {
       "file-text",
       t("ribbonTooltip"),
       (_evt: MouseEvent) => {
-        void this.launchOrSendFile();
+        void this.showAssistantSidebar();
       }
     );
 
@@ -322,14 +335,19 @@ export default class DocWenPlugin extends Plugin {
     // Add settings tab
     this.addSettingTab(new SettingTab(this.app, this));
 
-    // Register proofreading sidebar view
-    this.runtimeDisposer.add(() => this.app.workspace.detachLeavesOfType(PROOFREAD_VIEW_TYPE));
+    // Register the Assistant sidebar and its proofreading report
+    this.runtimeDisposer.add(() => this.app.workspace.detachLeavesOfType(ASSISTANT_VIEW_TYPE));
     this.registerView(
-      PROOFREAD_VIEW_TYPE,
-      (leaf) => new ProofreadView(
+      ASSISTANT_VIEW_TYPE,
+      (leaf) => new AssistantView(
         leaf,
         (vaultPath, view) => this.proofreadActions.refresh(vaultPath, view),
-        this.operations,
+        sidebarOperations,
+        {
+          openGui: () => this.guiActions.open(),
+          openCurrentFile: () => this.openCurrentFileInDocWen(),
+          proofreadCurrentFile: (view) => this.proofreadActions.runActive(view),
+        },
       ),
     );
 
@@ -337,7 +355,8 @@ export default class DocWenPlugin extends Plugin {
       app: this.app,
       addLocalizedCommand: (key, command) => this.addLocalizedCommand(key, command),
       launchDocWen: () => this.guiActions.open(),
-      launchOrSendFile: () => this.launchOrSendFile(),
+      openCurrentFile: () => this.openCurrentFileInDocWen(),
+      openSidebar: () => this.showAssistantSidebar(),
       activeFileSupports: (predicate) => this.activeFileSupports(predicate),
       capabilities: this.capabilities,
       exportCurrentFileToDocx: () => this.exportCurrentFileToDocx(),
@@ -422,8 +441,8 @@ export default class DocWenPlugin extends Plugin {
     this.ribbonIconEl?.setAttribute("title", ribbonTitle);
     for (const item of this.localizedCommands) item.command.name = `DocWen: ${t(item.key)}`;
     this.operationStatus?.refresh();
-    for (const leaf of this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE)) {
-      if (leaf.view instanceof ProofreadView) leaf.view.refreshLocale();
+    for (const leaf of this.app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)) {
+      if (leaf.view instanceof AssistantView) leaf.view.refreshLocale();
     }
   }
 
@@ -441,14 +460,25 @@ export default class DocWenPlugin extends Plugin {
     return this.settingsSaves.retry();
   }
 
-  /** Open the active file, or start/activate DocWen when there is no active file. */
-  async launchOrSendFile(): Promise<void> {
+  private refreshSidebarFiles(): void {
+    for (const leaf of this.app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)) {
+      if (leaf.view instanceof AssistantView) leaf.view.refreshActiveFile();
+    }
+  }
+
+  private async showAssistantSidebar(): Promise<void> {
+    try { await this.openSidebar(); }
+    catch (error) {
+      if (!this.unloaded && !(error instanceof AssistantSidebarClosedError)) {
+        this.actionRunner.presentFailure("noticeSidebarOpenFailed", error);
+      }
+    }
+  }
+
+  async openCurrentFileInDocWen(): Promise<void> {
     const activeFile = this.app.workspace.getActiveFile();
     const filePath = activeFile ? resolveAbsoluteFilePath(this.app.vault, activeFile) : null;
-    if (filePath) {
-      await this.guiActions.open(filePath);
-      return;
-    }
-    await this.guiActions.open();
+    if (!filePath) { showNotice(t("sidebarNoFile")); return; }
+    await this.guiActions.open(filePath);
   }
 }

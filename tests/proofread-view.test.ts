@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { MarkdownView, TFile } from "obsidian";
+import { createAssistantSidebarOpener } from "../src/host/assistant-sidebar";
 import { describe, expect, it, vi } from "vitest";
-import { useObsidianDom } from "./helpers/obsidian-dom";
+import { createAssistantViewActions, useObsidianDom } from "./helpers/obsidian-dom";
 
 useObsidianDom();
 
@@ -25,11 +26,11 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
 
 vi.mock("obsidian", async () => import("./helpers/obsidian-dom"));
 
-describe("ProofreadView", () => {
+describe("AssistantView", () => {
   it("opens through the host view lifecycle without shadowing its open method", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
-    const view = new ProofreadView({} as never, async () => {}, new OperationCoordinator());
+    const view = new AssistantView({} as never, async () => {}, new OperationCoordinator(), createAssistantViewActions());
     const hostView = view as unknown as { open(): Promise<void> };
     await hostView.open();
     expect(view.captureLifetime()()).toBe(true);
@@ -46,7 +47,7 @@ describe("ProofreadView", () => {
     "menu-dispose-error",
   ])(
     "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
-      const { ProofreadView } = await import("../src/proofread-view");
+      const { AssistantView } = await import("../src/assistant-view");
       const { ProofreadActions } = await import("../src/actions/proofread-actions");
       const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
       const operations = new OperationCoordinator();
@@ -71,7 +72,7 @@ describe("ProofreadView", () => {
           try { return await work(lease); } finally { lease.finish(); }
         },
       };
-      const leaves: Array<{ view: InstanceType<typeof ProofreadView> }> = [];
+      const leaves: Array<{ view: InstanceType<typeof AssistantView> }> = [];
       let reveal!: () => void;
       let rejectReveal!: (error: Error) => void;
       const app = {
@@ -81,17 +82,18 @@ describe("ProofreadView", () => {
           revealLeaf: () => new Promise<void>((resolve, reject) => { reveal = resolve; rejectReveal = reject; }),
         },
       };
+      const openSidebar = createAssistantSidebarOpener(app as never, operations, () => true);
       const actions = new ProofreadActions({
         ...app,
       } as never, { validate } as never, { requireAction: async () => ({}) } as never,
-      () => ({} as never), runner as never);
+      () => ({} as never), runner as never, openSidebar);
       let pending: Promise<void> | undefined;
-      const refresh = (path: string, target: InstanceType<typeof ProofreadView>) => {
+      const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
         pending = actions.refresh(path, target);
         return pending;
       };
-      const a = new ProofreadView({} as never, refresh, operations);
-      const b = new ProofreadView({} as never, refresh, operations);
+      const a = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
+      const b = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
       leaves.push({ view: a }, { view: b });
       await a.onOpen();
       await b.onOpen();
@@ -138,7 +140,7 @@ describe("ProofreadView", () => {
         const activation = activated.mock.results[0].value;
         if (change.endsWith("close")) await a.onClose();
         if (change.endsWith("replace")) {
-          const newView = new ProofreadView({} as never, refresh, operations);
+          const newView = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
           await newView.onOpen();
           leaves[0].view = newView;
         }
@@ -153,11 +155,11 @@ describe("ProofreadView", () => {
       }
       if (change.startsWith("activate-")) {
         const rejected = vi.fn();
-        const activation = actions.activateView().then((view) => actions.run(file as never, view)).catch(rejected);
+        const activation = openSidebar().then((view) => actions.run(file as never, view)).catch(rejected);
         if (change === "activate-close" || change === "activate-reopen") await a.onClose();
         if (change === "activate-reopen") await a.onOpen();
         if (change === "activate-replace") {
-          const replacement = new ProofreadView({} as never, refresh, operations);
+          const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
           await replacement.onOpen();
           leaves[0].view = replacement;
         }
@@ -177,7 +179,7 @@ describe("ProofreadView", () => {
       const cancelled = ["close-owner", "reopen-owner", "replace-owner", "unload"].includes(change);
       if (cancelled && change !== "unload") await b.onClose();
       if (change === "reopen-owner") await b.onOpen();
-      const replacement = new ProofreadView({} as never, refresh, operations);
+      const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
       const updateReplacement = vi.spyOn(replacement, "updateResults");
       if (change === "replace-owner") {
         leaves[1] = { view: replacement };
@@ -201,10 +203,10 @@ describe("ProofreadView", () => {
   );
 
   it("passes the displayed source path when refreshing a detached view", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const refresh = vi.fn().mockResolvedValue(undefined);
-    const view = new ProofreadView({} as never, refresh, new OperationCoordinator());
+    const view = new AssistantView({} as never, refresh, new OperationCoordinator(), createAssistantViewActions());
     view.updateResults([], "Source.md", "Notes/Source.md", digest("source"));
     const content = view.containerEl.children[1] as HTMLElement;
     findByClass(content, "docwen-proofread-btn")?.click();
@@ -212,12 +214,12 @@ describe("ProofreadView", () => {
   });
 
   it("cancels only its owned proofread generation when the view closes", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const operations = new OperationCoordinator();
     const proofread = operations.begin({ key: "proofread", kind: "proofread" });
     const exportLease = operations.begin({ key: "export", kind: "export" });
-    const view = new ProofreadView({} as never, async () => undefined, operations);
+    const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
     view.ownOperation(proofread);
     expect((view.containerEl.children[1] as HTMLElement).classList)
@@ -231,10 +233,10 @@ describe("ProofreadView", () => {
   });
 
   it("shows a keyboard-operable cancel control until the lease finishes", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const operations = new OperationCoordinator();
-    const view = new ProofreadView({} as never, async () => undefined, operations);
+    const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
     view.ownOperation(lease);
@@ -261,9 +263,9 @@ describe("ProofreadView", () => {
   });
 
   it("renders issues as native keyboard-operable buttons", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
-    const view = new ProofreadView({} as never, async () => undefined, new OperationCoordinator());
+    const view = new AssistantView({} as never, async () => undefined, new OperationCoordinator(), createAssistantViewActions());
     view.updateResults([{
       range: {
         start: { offset: 0, line: 0, column: 0 },
@@ -289,10 +291,10 @@ describe("ProofreadView", () => {
   });
 
   it("keeps cancellation distinct from previous successful results until a new result arrives", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const operations = new OperationCoordinator();
-    const view = new ProofreadView({} as never, async () => undefined, operations);
+    const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
@@ -313,22 +315,22 @@ describe("ProofreadView", () => {
     expect(findByClass(content, "docwen-proofread-status")?.textContent).toBe("No issues found");
   });
 
-  it("keeps controls visible while long issue content scrolls and wraps", () => {
+  it("keeps controls reachable in short sidebars while long issue content scrolls and wraps", () => {
     const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
-    expect(css).toMatch(/\.docwen-proofread-root\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s);
-    expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
+    expect(css).toMatch(/\.docwen-proofread-root\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/s);
+    expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
   });
 
   it("localizes unmatched-symbol diagnostics without offering their explanation as replacement text", async () => {
-    const { ProofreadView } = await import("../src/proofread-view");
+    const { AssistantView } = await import("../src/assistant-view");
     const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
     const { initI18n } = await import("../src/i18n");
     initI18n("zh-cn");
     try {
-      const view = new ProofreadView({} as never, async () => undefined, new OperationCoordinator());
+      const view = new AssistantView({} as never, async () => undefined, new OperationCoordinator(), createAssistantViewActions());
       view.updateResults([{
         range: { start: { offset: 0, line: 0, column: 0 }, end: { offset: 1, line: 0, column: 1 } },
         matched_text: "（", error_text: "（", rule_key: "symbol_pair",
@@ -345,7 +347,7 @@ describe("ProofreadView", () => {
   });
 
   it("converts Unicode code-point columns to Obsidian UTF-16 columns", async () => {
-    const { unicodeColumnToUtf16Column } = await import("../src/proofread-view");
+    const { unicodeColumnToUtf16Column } = await import("../src/assistant-view");
 
     expect(unicodeColumnToUtf16Column("A😀é", 0)).toBe(0);
     expect(unicodeColumnToUtf16Column("A😀é", 2)).toBe(3);
@@ -431,10 +433,10 @@ function digest(value: string): string {
 }
 
 async function navigationFixture() {
-  const { ProofreadView } = await import("../src/proofread-view");
+  const { AssistantView } = await import("../src/assistant-view");
   const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
   const operations = new OperationCoordinator();
-  const view = new ProofreadView({} as never, async () => undefined, operations);
+  const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
   const content = { value: "A😀bad" };
   const currentFile = { value: Object.assign(new TFile(), { path: "Proofread.md" }) };
   const editor = {

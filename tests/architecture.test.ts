@@ -21,7 +21,7 @@ describe("architecture boundaries", () => {
     expect(main).not.toContain("numberMarkdown(");
     expect(main).not.toContain("docwen.validate(");
     expect(main).toContain("this.runtimeDisposer.dispose()");
-    expect(main.indexOf("detachLeavesOfType(PROOFREAD_VIEW_TYPE)"))
+    expect(main.indexOf("detachLeavesOfType(ASSISTANT_VIEW_TYPE)"))
       .toBeLessThan(main.indexOf("this.registerView("));
   });
 

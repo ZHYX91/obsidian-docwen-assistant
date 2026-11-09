@@ -11,6 +11,8 @@ translation_status: source
 
 `src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 保留源捕获、发布检查及 resolved-document 兼容投影。
 
+`src/host/assistant-sidebar.ts` 是打开或聚焦侧栏的唯一宿主入口，合并尚未完成的打开请求，使用 Obsidian 的正式 deferred-leaf 恢复接口，并在视图关闭或插件卸载后拒绝旧请求。迟到的清理只作用于本次运行时创建且生命周期仍有效的视图，不能关闭重载后替换的视图。`src/assistant-view.ts` 负责通用动作区及既有校对报告；视图类型保持 `docwen-proofread-view`，工作区恢复继续使用同一契约。打开侧栏不分配任务 lease，不清空报告，也不调用 DocWen。`ProofreadActions` 复用该入口后才开始显式校对，GUI 按钮继续委托 `GuiActions`。文件动作每次从 `workspace.getActiveFile()` 获取身份，侧栏不维护第二份当前文件缓存；文件事件只刷新按钮和上下文。
+
 ## DocWen 进程边界
 
 子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
