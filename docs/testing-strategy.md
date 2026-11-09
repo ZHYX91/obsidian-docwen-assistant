@@ -30,6 +30,14 @@ Image-budget regressions call the declared snapshot entry point used by exports.
 
 Under the pinned toolchain, `npm run check` runs runtime verification, lint, formatting, README and stable-document contracts, coverage, type checking, build, artifact checks, and the high-severity dependency audit. Formatting and bilingual scripts read real repository content and are not placeholder no-ops. Artifact checking also verifies the Linux helper's pinned provenance and source/binary digests and requires the built `dist/main.js` to retain the exact embedded payload; this proves bundle inclusion, not Electron/Obsidian loading.
 
+Local diagnostic commands expose their test scope explicitly:
+
+- `npm run test:source` runs the source suite except the Linux and Windows Machine lifetime files. It still exercises Python fixture helpers and platform-selected publication helpers; it does not establish Machine process cleanup.
+- `npm run test:native:linux` runs the real Linux Machine lifetime suite on Linux x64/arm64. A one-time prerequisite check verifies the embedded owner image, `/usr/bin/python3` pidfd support, the runner's `/proc` identity, and a detached sentinel's own identity against the runner's observation. A failure rejects the suite before any lifecycle case, prints the failed phase and facts, and preserves a `prerequisites.json` diagnostic in a dedicated temporary directory. The sentinel is always cleaned through its owned process handle.
+- `npm run test:native:windows` runs the existing Windows lifetime suite on Windows. Platform skips remain unproven.
+
+`npm test`, `npm run test:coverage` and `npm run check` retain the complete default suite. A source-only pass never replaces native process verification on a supported host. The prerequisite check does not change lifecycle deadlines or skip a failing environment.
+
 ## Fixed DocWen package
 
 `npm run acceptance:docwen-package` accepts only a full DocWen 0.17.0-or-later Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, single-file DOCX publication directly into the selected parent, complete Markdown `docwen.document_node.v1` publication, publication without node JSON and exclusion of linked images from business output counts, and successive exports into a chosen parent, and DocWen Bundle v3 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.

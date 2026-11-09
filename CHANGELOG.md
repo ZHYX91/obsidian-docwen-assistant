@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Diagnose Linux native test prerequisites once before Machine lifecycle cases, preserve failure observations, and expose separate source and native test commands while retaining the complete default quality gate.
+
 - Remove the unused resolved-document snapshot producer and its Number Suite interop adapter. Markdown exports retain the declared-source path, resource checks and publication guards.
 
 - Reject embedded images whose known size exceeds the remaining resource budget before reading their bytes. Declared snapshots retain actual-byte validation and count repeated resources once.

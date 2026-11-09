@@ -6,35 +6,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { DocWenMachineClient, type MachineTaskRequest } from "../src/docwen/machine-client";
 import { isJsonObject, MachineFrameDecoder } from "../src/docwen/machine-framing";
 import * as nativeOwner from "../src/docwen/linux-native-owner";
+import {
+  checkLinuxNativePrerequisites,
+  readLinuxProcessIdentity as identity,
+  type LinuxProcessIdentity as Identity,
+} from "./helpers/linux-native-prerequisites";
 
-type Identity = {
-  pid: number;
-  parent: number;
-  group: number;
-  session: number;
-  state: string;
-  startTime: string;
-};
 type Mode = "normal" | "abort" | "dispose" | "epipe" | "task-epipe" | "cancel-epipe" | "owner-failure";
 type Outcome = { value: unknown; error?: never } | { error: unknown; value?: never };
-
-async function identity(pid: number): Promise<Identity | null> {
-  try {
-    const text = await readFile(`/proc/${pid}/stat`, "utf8");
-    const fields = text.slice(text.lastIndexOf(")") + 2).trim().split(/\s+/u);
-    return { pid, state: fields[0], parent: Number(fields[1]), group: Number(fields[2]),
-      session: Number(fields[3]), startTime: fields[19] };
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT"
-      || (error as NodeJS.ErrnoException).code === "ESRCH") return null;
-    throw error;
-  }
-}
 
 async function waitFor<T>(read: () => Promise<T | null | false>, label: string, timeoutMs = 3000): Promise<T> {
   const deadline = Date.now() + timeoutMs;
@@ -344,6 +328,8 @@ async function runNativeCase(mode: Mode): Promise<void> {
 }
 
 describe.skipIf(process.platform !== "linux" || !["x64", "arm64"].includes(process.arch))("real Linux native Machine ownership", () => {
+  beforeAll(checkLinuxNativePrerequisites, 10000);
+
   it.each(["normal", "abort", "dispose", "epipe", "task-epipe", "cancel-epipe", "owner-failure"] as const)(
     "reaps a pre-existing setsid heartbeat and preserves a sentinel during %s",
     runNativeCase,
