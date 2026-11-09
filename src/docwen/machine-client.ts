@@ -15,7 +15,7 @@ import {
   normalizeDocWenLaunchTarget,
   type DocWenLaunchTarget,
 } from "./process-launch";
-import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
+import { containsMachineProtocolFrame, encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
 import { fileIdentity, sameFileIdentity } from "./output-integrity";
 import {
   spawnWindowsOwnedMachineProcess,
@@ -469,21 +469,19 @@ class MachineSession {
     if (this.queue.drain().length > 0 || this.deferred.length > 0) {
       throw protocolError("unexpected messages after the operation completed");
     }
-    let stderrText = Buffer.concat(this.stderr).toString("utf8");
-    if (this.stderrBytes > STDERR_LIMIT_BYTES) stderrText += "\n<truncated>";
     if (this.windowsOwned && code === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
       throw windowsOwnerCleanupUnconfirmed("The Windows Machine lifetime owner failed during normal shutdown.");
     }
+    const stderr = Buffer.concat(this.stderr);
+    this.stderr.length = 0;
     if (code !== 0) {
       throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol exited with an error.", {
         exitCode: code,
-        stderr: stderrText,
+        stderr: stderr.toString("utf8"),
       });
     }
-    if (stderrText.length > 0) {
-      throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol wrote unexpected stderr.", {
-        stderr: stderrText,
-      });
+    if (containsMachineProtocolFrame(stderr)) {
+      throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol wrote a protocol frame to stderr.");
     }
   }
 

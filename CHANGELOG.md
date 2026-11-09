@@ -22,6 +22,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Clarify where Word, Excel and Markdown exports are saved and show platform-specific installation guidance in all twelve interface languages.
 - Pin the shared maintenance scripts and verify their hashes before build, install and lint.
+- Accept bounded runtime diagnostics from successful Machine sessions while rejecting protocol frames on stderr. On Linux, upgrade Assistant 3.5.2 or earlier before using a DocWen package that emits runtime warnings on this stream.
 
 ## [3.5.2] - 2026-11-02
 

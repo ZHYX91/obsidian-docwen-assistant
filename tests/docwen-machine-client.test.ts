@@ -130,14 +130,14 @@ class FakeChild extends EventEmitter {
   private readonly decoder = new MachineFrameDecoder();
   private taskPlan: JsonObject | null = null;
 
-  constructor(closeDelayMs = 0) {
+  constructor(closeDelayMs = 0, closeCode = 0) {
     super();
     this.stdin.on("data", (chunk: Buffer) => {
       for (const message of this.decoder.feed(Buffer.from(chunk))) this.handle(message);
     });
     this.stdin.on("finish", () => {
-      if (closeDelayMs > 0) setTimeout(() => this.emit("close", 0), closeDelayMs);
-      else queueMicrotask(() => this.emit("close", 0));
+      if (closeDelayMs > 0) setTimeout(() => this.emit("close", closeCode), closeDelayMs);
+      else queueMicrotask(() => this.emit("close", closeCode));
     });
   }
 
@@ -348,6 +348,72 @@ describe("DocWenMachineClient", () => {
       process.platform === "win32" ? [] : ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
+  });
+
+  it.each([
+    ["human diagnostics", Buffer.from("\u001b[33mWARNING: 本地诊断\u001b[0m\n")],
+    ["a header-like log", Buffer.from("Content-Length: 2\r\n\r\n{}\n")],
+    ["a truncated frame example", Buffer.from('Content-Length: 100\r\n\r\n{"jsonrpc":"2.0"}')],
+    ["logs at the byte limit", Buffer.alloc(256 * 1024, 0x78)],
+  ] as const)("returns the query result without exposing %s on stderr", async (_description, stderr) => {
+    const child = new FakeChild();
+    child.stdin.once("finish", () => child.stderr.write(stderr));
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).resolves.toEqual({
+      all_ok: true,
+      checks: [{ id: "config", kind: "config", label: "Config", status: "ok", reason: null }],
+    });
+    expect(child.exitCode).toBe(0);
+    expect(child.killed).toBe(false);
+  });
+
+  it("rejects a canonical JSON-RPC frame split across stderr chunks and surrounded by logs", async () => {
+    const child = new FakeChild();
+    const frame = encodeMachineFrame({ jsonrpc: "2.0", method: "task/progress", params: { label: "文档" } });
+    child.stdin.once("finish", () => {
+      child.stderr.write(Buffer.concat([Buffer.from("警告：Content-Length: 9999\r\n\r\n诊断 "), frame.subarray(0, 8)]));
+      child.stderr.write(frame.subarray(8, -2));
+      child.stderr.write(Buffer.concat([frame.subarray(-2), Buffer.from(" more diagnostic\n")]));
+    });
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_protocol_error",
+      message: "DocWen Machine Protocol wrote a protocol frame to stderr.",
+      details: {},
+    });
+  });
+
+  it("keeps the nonzero exit failure when stderr contains human diagnostics", async () => {
+    const child = new FakeChild(0, 3);
+    const stderr = "WARNING: private runtime diagnostics\n";
+    child.stdin.once("finish", () => child.stderr.write(stderr));
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_protocol_error",
+      message: "DocWen Machine Protocol exited with an error.",
+      details: { exitCode: 3, stderr },
+    });
+  });
+
+  it("rejects incomplete stdout at EOF even when stderr contains ordinary logs", async () => {
+    const child = new FakeChild();
+    child.stdin.once("finish", () => {
+      child.stderr.write("WARNING: diagnostic\n");
+      child.stdout.write("Content-Length: 2\r\n\r\n{");
+    });
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+
+    await expect(client.query("health/check", {})).rejects.toMatchObject({
+      code: "cli_protocol_error",
+      details: { cause: "docwen_machine_truncated_frame" },
+    });
   });
 
   it("prepares and validates a task in one process without caching the next operation", async () => {
