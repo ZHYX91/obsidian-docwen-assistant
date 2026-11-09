@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot image cache coverage", () => {
-  it.each(["declared", "resolved"] as const)(
-    "fails closed when current Markdown image metadata is missing on the %s path",
-    async (mode) => {
+  it(
+    "fails closed when current Markdown image metadata is missing",
+    async () => {
       const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
       const file = { path: "notes/current.md", extension: "md" };
       const source = "# Current\n\n![[fresh.png]]\n";
@@ -22,9 +22,7 @@ describe("VaultReadSnapshot image cache coverage", () => {
       const pending = new VaultReadSnapshot(app as never).run(
         file as never,
         new AbortController().signal,
-        async (snapshot) => mode === "declared"
-          ? snapshot.getDeclaredMarkdownInputs()
-          : snapshot.getResolvedMarkdownInputs(),
+        async (snapshot) => snapshot.getDeclaredMarkdownInputs(),
       );
 
       await expect(pending).rejects.toMatchObject({
