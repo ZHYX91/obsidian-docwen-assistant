@@ -62,7 +62,17 @@ Khi cập nhật thủ công, chỉ thay `main.js`, `manifest.json` và `styles.
 
 **Lệnh khả dụng phụ thuộc vào tệp đang mở.** Chức năng chuyển đổi chỉ xuất hiện nếu DocWen được kết nối hỗ trợ thao tác đó cho nội dung tệp. Xuất lưu kết quả riêng; soát lỗi không sửa ghi chú. **Thêm hoặc xóa số thứ tự tiêu đề sẽ sửa Markdown.** Trước khi ghi, plugin kiểm tra nội dung trình soạn thảo (kể cả thay đổi chưa lưu) hoặc tệp đã lưu; nếu có nhiều trình soạn thảo cùng đường dẫn mà không xác định được nguồn, thao tác dừng lại.
 
-Biểu tượng, menu con **DocWen** và bảng lệnh cho phép khởi chạy DocWen, xuất Word/Excel/Markdown, thay đổi số thứ tự tiêu đề, soát lỗi Markdown và chạy lệnh **Kiểm tra kết nối DocWen**.
+Bấm biểu tượng hoặc chạy **Mở thanh bên DocWen Assistant** để mở hoặc đưa tiêu điểm đến thanh bên. Bạn vẫn mở được thanh bên khi chưa mở tệp hoặc chưa cấu hình DocWen. Mở lại sẽ giữ báo cáo hiện tại.
+
+Thanh bên có ba nút riêng biệt:
+
+- **Mở DocWen** mở hoặc kích hoạt ứng dụng máy tính.
+- **Mở tệp hiện tại trong DocWen** mở tệp Obsidian đang chọn; nút bị vô hiệu hóa khi không có tệp cục bộ.
+- **Hiệu đính tệp Markdown hiện tại** kiểm tra ghi chú Markdown hiện tại; nút bị vô hiệu hóa với loại tệp khác hoặc khi thanh bên này đang chạy tác vụ hiệu đính của nó.
+
+Thao tác với tệp lấy tệp hiện tại của Obsidian ngay khi bấm, kể cả khi thanh bên đang có tiêu điểm. Chuyển tệp sẽ cập nhật các nút và giữ báo cáo. Nút làm mới báo cáo vẫn kiểm tra ghi chú nguồn ban đầu. Đóng thanh bên chỉ hủy tác vụ hiệu đính thuộc thanh bên đó; điều khiển ứng dụng máy tính hoạt động độc lập.
+
+Menu con **DocWen** và bảng lệnh cũng cung cấp thao tác mở ứng dụng, xuất Word/Excel/Markdown, đánh số tiêu đề, hiệu đính và **Kiểm tra kết nối DocWen**.
 
 Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, rồi chọn thư mục đầu ra. Kiểm tra tệp nguồn, định dạng, nơi lưu và các tùy chọn trước khi bấm **Xuất**. Cửa sổ dùng thiết lập đã lấy cho tác vụ này; hủy sẽ không bắt đầu chuyển đổi. Một DOCX hoặc XLSX được lưu trực tiếp vào thư mục đã chọn khi DocWen trả về một tệp. Markdown và các đầu ra theo nhóm giữ thư mục riêng chứa ảnh và tệp đính kèm. Sau khi hoàn tất, chọn **Mở thư mục kết quả** trong thông báo. Thao tác này mở thư mục chứa đầu ra. Tệp và thư mục có sẵn không bị ghi đè.
 

@@ -19,6 +19,7 @@ import { encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject 
 import { fileIdentity, sameFileIdentity } from "./output-integrity";
 import {
   spawnWindowsOwnedMachineProcess,
+  windowsMachineOwnerDetails,
   WINDOWS_MACHINE_OWNER_FAILURE_EXIT,
   WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT,
   WindowsMachineOwnerStore,
@@ -287,7 +288,7 @@ class MachineSession {
             : "DocWen Machine Protocol process failed.", {
           cause: error.message,
           mode: target.mode,
-          ...(this.windowsOwned ? { ownershipState: "windows_job" } : {}),
+          ...(this.windowsOwned ? windowsMachineOwnerDetails(this.child.pid ? "owner_runtime" : "owner_spawn", error) : {}),
           ...(this.linuxOwnership ? { ownershipState: "linux_supervisor", ...this.linuxOwnership.diagnostics } : {}),
         });
         this.queue.fail(failure);
@@ -1253,14 +1254,14 @@ function windowsOwnerEarlyExit(
       mode === "automatic"
         ? "The DocWen application execution alias is unavailable."
         : "The configured DocWen Machine executable could not be started.",
-      { exitCode, mode, ownershipState: "windows_job", ...systemError },
+      { exitCode, mode, ...windowsMachineOwnerDetails("owner_runtime"), ...systemError },
     );
   }
   if (exitCode === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
     return new LocalCliError(
       "cli_spawn_failed",
       "The Windows Machine lifetime owner failed before the operation completed.",
-      { exitCode, mode, ownershipState: "windows_job", ...systemError },
+      { exitCode, mode, ...windowsMachineOwnerDetails("owner_runtime"), ...systemError },
     );
   }
   return new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
@@ -1272,7 +1273,7 @@ function windowsOwnerEarlyExit(
 function windowsOwnerCleanupUnconfirmed(message: string): LocalCliError {
   return new LocalCliError("cli_cleanup_failed", message, {
     cleanupState: "unconfirmed",
-    ownershipState: "windows_job",
+    ...windowsMachineOwnerDetails("owner_runtime"),
   });
 }
 

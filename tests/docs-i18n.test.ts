@@ -106,8 +106,8 @@ describe("stable documentation contract", () => {
   it("rejects list, fence, or table structure drift", async () => {
     await replaceInDocument(
       "docs/product-requirements.md",
-      "- Launch or activate",
-      "1. Launch or activate",
+      "- Open or focus",
+      "1. Open or focus",
     );
     await expect(checkDocsI18n(fixtureRoot)).rejects.toThrow(/block structures/u);
   });

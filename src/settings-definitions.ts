@@ -24,7 +24,6 @@ export interface SettingsPageContext {
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
   readonly renderGuide: (setting: Setting, title: string, body: string) => void;
   readonly renderSupport: (setting: Setting) => void;
-  readonly runDoctor: () => void;
 }
 
 export function getSettingsPages(
@@ -49,15 +48,14 @@ export function getSettingsPages(
               }
             : { manual: t("settingsConnectionManual") },
         ),
-        { name: t("settingsCliPathStatus"), render: context.renderCliStatus },
-        { name: t("settingsDownloadDocWen"), desc: t("settingsDownloadDocWenDesc"), render: context.renderDocWenDownload },
         {
           name: t("settingsCliPath"),
           desc: t("settingsCliPathDesc"),
           render: context.renderCliPath,
           visible: () => context.settings.docwenConnectionMode === "manual",
         },
-        { name: t("commandDoctor"), desc: t("settingsDoctorDesc"), action: context.runDoctor },
+        { name: t("settingsCliPathStatus"), render: context.renderCliStatus },
+        { name: t("settingsDownloadDocWen"), desc: t("settingsDownloadDocWenDesc"), render: context.renderDocWenDownload },
         { name: t("settingsHelpTitle"), render: context.renderSupport },
         {
           name: t("settingsPersistence"),

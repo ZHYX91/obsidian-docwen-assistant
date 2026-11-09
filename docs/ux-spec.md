@@ -10,7 +10,11 @@ translation_status: synced
 
 ## Entry points
 
-Users can start actions from the ribbon icon, the file explorer **DocWen** submenu, and the Command Palette. Menu availability follows current-file inspection and Machine capabilities rather than extension guesses.
+The ribbon icon and independent Open DocWen Assistant sidebar command only open or focus the general Assistant sidebar. Opening it starts no GUI action, proofreading, capability discovery or connection check. It remains available without a current file or configured DocWen installation. Concurrent or repeated opens reuse one leaf and retain the report, focus and scroll.
+
+The sidebar provides three explicit buttons: Open DocWen, Open current file in DocWen, and Proofread current Markdown file. Without a local file, the latter two are disabled; for a non-Markdown file only proofreading is disabled. While this sidebar owns a running proofreading task, repeat proofreading is disabled and GUI controls remain independently available. File actions read the host's current file again when clicked and never cache a TFile. Obsidian's getActiveFile returns the most recently active file when the active view is not a FileView, so focusing the sidebar does not invalidate file actions. The host's new state after switching, closing, renaming or deleting a file governs the next action. Updating file context does not replace the existing report, whose refresh remains bound to its original source.
+
+The file explorer **DocWen** submenu and Command Palette continue to expose independent actions. Export menu availability follows current-file inspection and Machine capabilities rather than extension guesses. Sidebar file eligibility does not replace execution-time inspection, capability checks or source-identity validation.
 
 When inspection and discovery succeed but no available Machine capability matches the file, explain that the feature is unsupported or unavailable in the current environment, rather than reporting a malformed response. Actual query failures remain failures and are never disguised as an empty capability list.
 
@@ -22,7 +26,7 @@ Template, optimization and numbering choices remain part of the active operation
 
 ## Numbering and proofreading
 
-Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation observed by that view. Issue navigation is bound to the source digest captured for the report; content and editor identity are checked around file opening, and changes or ambiguity require a refresh instead of applying old positions. A new report, view closure, or new proofreading operation invalidates pending navigation from the old report.
+Heading numbering runs against an isolated copy and rechecks the uniquely path-matched Markdown leaf, view, editor, and source snapshot before commit; multiple matching views fail closed. Proofreading appears in a sidebar and never rewrites the note directly. Issue items are keyboard-operable controls, and closing the view cancels only the proofreading generation owned by that view. GUI control belongs to its independent action, while plugin unload disposes all owned operations. Issue navigation is bound to the source digest captured for the report; content and editor identity are checked around file opening, and changes or ambiguity require a refresh instead of applying old positions. A new report, view closure, or new proofreading operation invalidates pending navigation from the old report.
 
 The sidebar reacts only to its own operation’s generation, kind and state. Unrelated background work leaves its DOM and keyboard focus intact. Sorting or changing the interface language retains the focused control and issue-list scroll when the same item remains available; a new report does not reuse a stale issue target.
 
@@ -40,7 +44,7 @@ Error-detail previews and copies use the same redacted data: stable codes, user 
 
 ## Settings surface
 
-The four top tabs are General, Export to Markdown, Export to Word, and Proofreading; there is no standalone Usage tab. Short help cards live on the relevant tabs and follow the same information icon, accent border, and theme-variable treatment as sibling plugins. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. Assistant settings override individual tasks started by Assistant and never rewrite DocWen's own saved settings. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered. When persisted settings declare an invalid or newer schema, a prominent incompatibility notice identifies the stored and supported versions, every settings control is disabled, and no retry or save path may rewrite the data.
+The four top tabs are General, Export to Markdown, Export to Word, and Proofreading; there is no standalone Usage tab. Short help cards live on the relevant tabs and follow the same information icon, accent border, and theme-variable treatment as sibling plugins. General defaults to automatic Microsoft Store discovery, shows a verified connection status, and reveals path controls only for a manual portable installation. Assistant settings override individual tasks started by Assistant and never rewrite DocWen's own saved settings. The Obsidian 1.13 surface renders the tabs from one shared page model. Building the top tabs performs no filesystem or process work; the General status row may start one silent bounded connection check after it is rendered. When persisted settings declare an invalid or newer schema, a prominent incompatibility notice identifies the stored and supported versions, every settings control is disabled, and no retry or save path may rewrite the data. In manual mode, the installation location appears immediately below the connection method. The connection card keeps application control and background integration distinct and stacks native Check, Launch DocWen and Details buttons in that order. Repeated clicks on a pending action do not start another copy; completion cannot update a dismissed settings surface. Background-check failure leaves Launch available.
 
 General includes User guide and Report a problem links. The guide opens the selected language’s README. Ordinary controls follow the host cursor preference.
 
@@ -51,6 +55,8 @@ The UI, notices, and resource queries use one resolved locale. The default follo
 ## Accessibility and layout
 
 The tab list exposes complete tab, tabpanel, selection, and roving-tabindex semantics. Left/Right honor RTL, Up/Down move between tabs, Home/End jump to boundaries, and the active tab scrolls into view. The active tab combines an accent underline with a semibold label, and stable space separates the baseline from the content panel. Tabs tolerate 20 px UI text, narrow widths, third-party themes, and 44 px coarse-pointer targets. A tab is the page heading, so its panel never repeats the same title. Cancel, retry, and issue controls remain keyboard operable and use native Obsidian controls and theme variables.
+
+The Assistant sidebar uses focusable native buttons for its three actions, with visible localized labels and targets at least 44 px high. Long labels, filenames and RTL text wrap in narrow sidebars; controls use theme colors and focus outlines. Short sidebars allow the entire content to scroll, and long reports retain a separate scrollable list.
 
 ## Safety feedback
 

@@ -4,12 +4,11 @@ import { type DocWenClient, type DocWenCapabilityService } from "../docwen";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
 import { t } from "../i18n";
-import { ProofreadView, PROOFREAD_VIEW_TYPE } from "../proofread-view";
+import type { AssistantView } from "../assistant-view";
+import { AssistantSidebarClosedError, type OpenAssistantSidebar } from "../host/assistant-sidebar";
 import type { PluginSettings } from "../settings-model";
 import { ActionRunner } from "./action-runner";
 import { buildProofreadChecks } from "./conversion-options";
-
-class ProofreadViewExpiredError extends Error {}
 
 export class ProofreadActions {
   private readonly snapshots: VaultReadSnapshot;
@@ -20,20 +19,21 @@ export class ProofreadActions {
     private readonly capabilities: DocWenCapabilityService,
     private readonly getSettings: () => PluginSettings,
     private readonly runner: ActionRunner,
+    private readonly openSidebar: OpenAssistantSidebar,
   ) {
     this.snapshots = new VaultReadSnapshot(app);
   }
 
-  async runActive(view: ProofreadView): Promise<void> {
+  async runActive(view: AssistantView): Promise<void> {
     const activeFile = this.app.workspace.getActiveFile();
-    if (!activeFile) {
+    if (!activeFile || activeFile.extension.toLowerCase() !== "md") {
       showNotice(t("noticeProofreadNoMdFile"));
       return;
     }
     await this.run(activeFile, view);
   }
 
-  async refresh(vaultPath: string, view: ProofreadView): Promise<void> {
+  async refresh(vaultPath: string, view: AssistantView): Promise<void> {
     if (!vaultPath) {
       await this.runActive(view);
       return;
@@ -46,7 +46,7 @@ export class ProofreadActions {
     await this.run(file, view);
   }
 
-  async run(file: TFile, view: ProofreadView): Promise<void> {
+  async run(file: TFile, view: AssistantView): Promise<void> {
     // No asynchronous gap before begin: a stale request must not replace live work.
     if (!view.captureLifetime()()) return;
     await this.runner.run(
@@ -83,35 +83,15 @@ export class ProofreadActions {
   async activateAndRun(file: TFile, isActive: () => boolean = () => true): Promise<void> {
     try {
       if (!isActive()) return;
-      const view = await this.activateView();
+      const view = await this.openSidebar();
       if (isActive()) await this.run(file, view);
     } catch (error) {
       // Closing the requested view is a controlled cancellation. Other host
       // activation failures retain the normal proofreading error surface.
-      if (isActive() && !(error instanceof ProofreadViewExpiredError)) {
+      if (isActive() && !(error instanceof AssistantSidebarClosedError)) {
         this.runner.presentFailure("noticeProofreadFailed", error);
       }
     }
-  }
-
-  async activateView(): Promise<ProofreadView> {
-    let leaf = this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE)[0];
-    if (!leaf) {
-      const rightLeaf = this.app.workspace.getRightLeaf(false);
-      if (rightLeaf) {
-        leaf = rightLeaf;
-        await leaf.setViewState({ type: PROOFREAD_VIEW_TYPE, active: true });
-      }
-    }
-    const view = leaf?.view;
-    if (!leaf || !(view instanceof ProofreadView)) throw new Error("Proofread view is unavailable.");
-    const isOpen = view.captureLifetime();
-    await this.app.workspace.revealLeaf(leaf);
-    if (!isOpen() || leaf.view !== view
-      || !this.app.workspace.getLeavesOfType(PROOFREAD_VIEW_TYPE).includes(leaf)) {
-      throw new ProofreadViewExpiredError("Proofread view is unavailable.");
-    }
-    return view;
   }
 
 }

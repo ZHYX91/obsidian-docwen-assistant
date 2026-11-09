@@ -27,6 +27,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "无法确认写入结果。请先检查目标内容，避免重复执行。",
     errorOutputFilesystemUnsupported: "此文件系统无法安全保存结果。请选择其他输出目录；在 WSL 中可选择原生 Linux 文件夹。",
     errorOutputPreflightFailed: "无法安全保存到此目录。请检查权限或选择其他输出目录。",
+    errorWindowsOwnerRecovery: "Windows 进程保护辅助程序（windows-x64.exe）不可用或发生故障。请检查安全软件的隔离区和拦截记录，并将诊断中的预期哈希与可信插件版本核对；这些信息不能证明警报可安全忽略。请保持防护开启，不确定时联系管理员或插件维护者。解决原因后重启 Obsidian，再检查连接。",
+    errorWindowsOwnerCleanup: "无法确认 Windows 进程清理完成，后续后台启动已被阻止。请保存工作、关闭 Obsidian，并检查是否仍有 DocWen 进程，再重新启动。请查看诊断详情和安全软件记录，不要关闭防护或信任来源不明的文件。",
     dialogContinue: "继续",
     dialogDetectedFormat: "DocWen 检测到的内容格式与文件名不同。是否按检测到的格式继续？",
     dialogDeclaredFormat: "文件名声明格式",
@@ -34,9 +36,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "继续后将按 {format} 格式读取。",
     dialogFormatUnknown: "未声明",
     dialogExportDirectory: "选择输出目录",
-    ribbonTooltip: "启动 DocWen",
+    ribbonTooltip: "打开 DocWen Assistant 侧栏",
+    commandOpenSidebar: "打开 DocWen Assistant 侧栏",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "打开 DocWen",
+    sidebarCurrentFile: "当前文件：{filename}",
+    sidebarNoFile: "请先打开一个本地文件，再使用文件操作。",
+    noticeSidebarOpenFailed: "无法打开助手侧栏：{error}",
     commandLaunch: "启动 DocWen",
-    commandLaunchWithFile: "使用当前文件启动 DocWen",
+    commandLaunchWithFile: "在 DocWen 中打开当前文件",
     commandExportDocx: "后台导出为 Word（Docx）",
     commandExportMd: "后台导出为 Markdown（MD）",
     commandExportXlsx: "后台导出为 Excel（XLSX）",
@@ -108,10 +116,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "使用方法",
     settingsUsageList: `
       <ul>
-        <li>点击左侧栏的文档图标，启动 DocWen 或将当前文件发送给 DocWen</li>
-        <li>在文件列表中右键文件，选择 <b>DocWen</b> 子菜单：转换格式、添加/清理序号、用 DocWen 打开</li>
-        <li>使用命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b>，可使用启动、导出、序号、自检等命令</li>
-        <li>只有执行“启动或发送当前文件”等 DocWen 操作时，才会传递当前文件路径</li>
+        <li>点击左侧栏的文档图标，打开或聚焦 DocWen Assistant 侧栏。</li>
+        <li>在助手侧栏中分别选择打开 DocWen、在 DocWen 中打开当前文件、校对当前 Markdown 文件。</li>
+        <li>在文件列表中右键文件选择 <b>DocWen</b>，或在命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b> 使用更多操作。</li>
+        <li>只有执行需要文件的操作时，才会传递相应文件路径。</li>
       </ul>
     `,
 
@@ -279,6 +287,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "無法確認寫入結果。請先檢查目標內容，避免重複執行。",
     errorOutputFilesystemUnsupported: "此檔案系統無法安全發布結果目錄。請選擇其他輸出目錄；在 WSL 中可選擇原生 Linux 資料夾。",
     errorOutputPreflightFailed: "無法安全儲存至此目錄。請檢查權限或選擇其他輸出目錄。",
+    errorWindowsOwnerRecovery: "Windows 程序保護輔助程式（windows-x64.exe）無法使用或發生故障。請檢查安全軟體的隔離區及攔截記錄，並將診斷中的預期雜湊值與可信外掛版本核對；這不能證明警報可安全忽略。請保持防護開啟，不確定時聯絡管理員或外掛維護者。解決原因後重新啟動 Obsidian，再檢查連線。",
+    errorWindowsOwnerCleanup: "無法確認 Windows 程序清理完成，後續背景啟動已被阻止。請儲存工作、關閉 Obsidian，並檢查是否仍有 DocWen 程序，再重新啟動。請查看診斷詳情及安全軟體記錄，不要關閉防護或信任來源不明的檔案。",
     dialogContinue: "繼續",
     dialogDetectedFormat: "DocWen 偵測到的內容格式與檔名不同。是否按偵測到的格式繼續？",
     dialogDeclaredFormat: "檔名宣告格式",
@@ -286,9 +296,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "繼續後將以 {format} 格式讀取。",
     dialogFormatUnknown: "未宣告",
     dialogExportDirectory: "選擇輸出目錄",
-    ribbonTooltip: "啟動 DocWen",
+    ribbonTooltip: "開啟 DocWen Assistant 側欄",
+    commandOpenSidebar: "開啟 DocWen Assistant 側欄",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "開啟 DocWen",
+    sidebarCurrentFile: "目前檔案：{filename}",
+    sidebarNoFile: "請先開啟一個本機檔案，再使用檔案操作。",
+    noticeSidebarOpenFailed: "無法開啟助手側欄：{error}",
     commandLaunch: "啟動 DocWen",
-    commandLaunchWithFile: "使用當前檔案啟動 DocWen",
+    commandLaunchWithFile: "在 DocWen 中開啟目前檔案",
     commandExportDocx: "背景匯出為 Word（Docx）",
     commandExportMd: "背景匯出為 Markdown（MD）",
     commandExportXlsx: "背景匯出為 Excel（XLSX）",
@@ -360,10 +376,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "使用方法",
     settingsUsageList: `
       <ul>
-        <li>點擊左側欄的文件圖示，啟動 DocWen 或將當前檔案傳送給 DocWen</li>
-        <li>在檔案列表中右鍵檔案，選擇 <b>DocWen</b> 子選單：轉換格式、添加/清理序號、用 DocWen 開啟</li>
-        <li>使用命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b>，可使用啟動、匯出、序號、自檢等命令</li>
-        <li>只有執行「啟動或傳送目前檔案」等 DocWen 操作時，才會傳遞目前檔案路徑</li>
+        <li>點擊左側欄的文件圖示，開啟或聚焦 DocWen Assistant 側欄。</li>
+        <li>在助手側欄中分別選擇開啟 DocWen、在 DocWen 中開啟目前檔案、校對目前的 Markdown 檔案。</li>
+        <li>在檔案清單中右鍵選擇 <b>DocWen</b>，或在命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b> 使用更多操作。</li>
+        <li>只有執行需要檔案的操作時，才會傳遞相應檔案路徑。</li>
       </ul>
     `,
 
@@ -531,6 +547,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "The write result could not be confirmed. Check the destination before running again.",
     errorOutputFilesystemUnsupported: "This filesystem cannot safely publish a result directory. Choose another output folder; in WSL, try a native Linux folder.",
     errorOutputPreflightFailed: "Cannot safely save to this folder. Check its permissions or choose another output folder.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Continue",
     dialogDetectedFormat: "DocWen detected content that differs from the filename. Continue with the detected format?",
     dialogDeclaredFormat: "Format declared by filename",
@@ -538,9 +556,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "Continuing will read the file as {format}.",
     dialogFormatUnknown: "Not declared",
     dialogExportDirectory: "Choose output folder",
-    ribbonTooltip: "Launch DocWen",
+    ribbonTooltip: "Open DocWen Assistant sidebar",
+    commandOpenSidebar: "Open DocWen Assistant sidebar",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Open DocWen",
+    sidebarCurrentFile: "Current file: {filename}",
+    sidebarNoFile: "Open a local file to use the file actions.",
+    noticeSidebarOpenFailed: "Could not open the Assistant sidebar: {error}",
     commandLaunch: "Launch DocWen",
-    commandLaunchWithFile: "Launch DocWen with current file",
+    commandLaunchWithFile: "Open current file in DocWen",
     commandExportDocx: "Export to Word (Docx) in background",
     commandExportMd: "Export to Markdown (MD) in background",
     commandExportXlsx: "Export to Excel (XLSX) in background",
@@ -612,10 +636,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Usage",
     settingsUsageList: `
       <ul>
-        <li>Click the document icon in the left sidebar to launch DocWen or send the current file</li>
-        <li>Right-click a file in the file list and use the <b>DocWen</b> submenu: convert formats, manage numbering, or open in DocWen</li>
-        <li>Use the command palette (Ctrl/Cmd + P) and search <b>DocWen</b> for launch, export, numbering, and connection commands</li>
-        <li>The current file path is passed only when you run a DocWen action such as launch or send current file</li>
+        <li>Click the document icon in the left ribbon to open or focus the DocWen Assistant sidebar.</li>
+        <li>In the sidebar, choose Open DocWen, Open current file in DocWen, or Proofread current Markdown file.</li>
+        <li>Right-click a file and choose <b>DocWen</b>, or search for <b>DocWen</b> in the command palette (Ctrl/Cmd + P) for more actions.</li>
+        <li>A file path is sent only when you run an action that uses that file.</li>
       </ul>
     `,
 
@@ -786,6 +810,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "Das Schreibergebnis konnte nicht bestätigt werden. Prüfen Sie das Ziel vor einer erneuten Ausführung.",
     errorOutputFilesystemUnsupported: "Dieses Dateisystem kann den Ergebnisordner nicht sicher bereitstellen. Wählen Sie einen anderen Ausgabeordner; unter WSL einen nativen Linux-Ordner.",
     errorOutputPreflightFailed: "In diesem Ordner kann nicht sicher gespeichert werden. Prüfen Sie die Berechtigungen oder wählen Sie einen anderen Ausgabeordner.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Fortfahren",
     dialogDetectedFormat: "DocWen hat ein Inhaltsformat erkannt, das vom Dateinamen abweicht. Mit dem erkannten Format fortfahren?",
     dialogDeclaredFormat: "Format laut Dateiname",
@@ -793,9 +819,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "Beim Fortfahren wird die Datei als {format} gelesen.",
     dialogFormatUnknown: "Nicht angegeben",
     dialogExportDirectory: "Ausgabeordner auswählen",
-    ribbonTooltip: "DocWen starten",
+    ribbonTooltip: "DocWen Assistant-Seitenleiste öffnen",
+    commandOpenSidebar: "DocWen Assistant-Seitenleiste öffnen",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "DocWen öffnen",
+    sidebarCurrentFile: "Aktuelle Datei: {filename}",
+    sidebarNoFile: "Öffnen Sie eine lokale Datei, um die Dateiaktionen zu verwenden.",
+    noticeSidebarOpenFailed: "Die Assistant-Seitenleiste konnte nicht geöffnet werden: {error}",
     commandLaunch: "DocWen starten",
-    commandLaunchWithFile: "DocWen mit aktueller Datei starten",
+    commandLaunchWithFile: "Aktuelle Datei in DocWen öffnen",
     commandExportDocx: "Als Word (Docx) im Hintergrund exportieren",
     commandExportMd: "Als Markdown (MD) im Hintergrund exportieren",
     commandExportXlsx: "Als Excel (XLSX) im Hintergrund exportieren",
@@ -867,11 +899,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Verwendung",
     settingsUsageList: `
       <ul>
-        <li>Klicken Sie auf das Dokumentsymbol in der linken Seitenleiste, um DocWen zu starten oder die aktuelle Datei zu senden</li>
-        <li>Rechtsklicken Sie auf eine Datei in der Dateiliste und verwenden Sie das <b>DocWen</b>-Untermenü: Formate konvertieren, Nummerierung verwalten oder in DocWen öffnen</li>
-        <li>Verwenden Sie die Befehlspalette (Strg/Cmd + P) und suchen Sie nach <b>DocWen</b> für alle verfügbaren Befehle</li>
-        <li>Der aktuelle Dateipfad wird nur übergeben, wenn Sie eine DocWen-Aktion wie Starten oder aktuelle Datei senden ausführen</li>
-        <li>Mit einer kompatiblen Number-Suite-Version übernimmt der Word-Export geprüfte virtuelle Überschriften- und Beschriftungsnummern sowie Verweise innerhalb derselben Notiz, ohne die Notiz umzuschreiben</li>
+        <li>Klicken Sie auf das Dokumentsymbol in der linken Symbolleiste, um die DocWen Assistant-Seitenleiste zu öffnen oder zu fokussieren.</li>
+        <li>Wählen Sie in der Seitenleiste DocWen öffnen, Aktuelle Datei in DocWen öffnen oder Aktuelle Markdown-Datei korrekturlesen.</li>
+        <li>Klicken Sie mit der rechten Maustaste auf eine Datei und wählen Sie <b>DocWen</b>, oder suchen Sie in der Befehlspalette (Strg/Cmd + P) nach <b>DocWen</b>, um weitere Aktionen aufzurufen.</li>
+        <li>Ein Dateipfad wird nur übermittelt, wenn Sie eine Aktion für diese Datei ausführen.</li>
       </ul>
     `,
 
@@ -1039,6 +1070,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "Le résultat de l’écriture n’a pas pu être confirmé. Vérifiez la destination avant de relancer.",
     errorOutputFilesystemUnsupported: "Ce système de fichiers ne permet pas de publier le dossier de résultats en toute sécurité. Choisissez un autre dossier de sortie ; sous WSL, essayez un dossier Linux natif.",
     errorOutputPreflightFailed: "Impossible d’enregistrer dans ce dossier en toute sécurité. Vérifiez les autorisations ou choisissez un autre dossier de sortie.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Continuer",
     dialogDetectedFormat: "DocWen a détecté un format différent de celui du nom de fichier. Continuer avec le format détecté ?",
     dialogDeclaredFormat: "Format indiqué par le nom du fichier",
@@ -1046,9 +1079,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "En continuant, le fichier sera lu au format {format}.",
     dialogFormatUnknown: "Non indiqué",
     dialogExportDirectory: "Choisir le dossier de sortie",
-    ribbonTooltip: "Lancer DocWen",
+    ribbonTooltip: "Ouvrir le panneau latéral DocWen Assistant",
+    commandOpenSidebar: "Ouvrir le panneau latéral DocWen Assistant",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Ouvrir DocWen",
+    sidebarCurrentFile: "Fichier actuel : {filename}",
+    sidebarNoFile: "Ouvrez un fichier local pour utiliser les actions sur les fichiers.",
+    noticeSidebarOpenFailed: "Impossible d’ouvrir le panneau Assistant : {error}",
     commandLaunch: "Lancer DocWen",
-    commandLaunchWithFile: "Lancer DocWen avec le fichier actuel",
+    commandLaunchWithFile: "Ouvrir le fichier actuel dans DocWen",
     commandExportDocx: "Exporter en Word (Docx) en arrière-plan",
     commandExportMd: "Exporter en Markdown (MD) en arrière-plan",
     commandExportXlsx: "Exporter en Excel (XLSX) en arrière-plan",
@@ -1120,10 +1159,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Utilisation",
     settingsUsageList: `
       <ul>
-        <li>Cliquez sur l'icône de document dans la barre latérale gauche pour lancer DocWen ou envoyer le fichier actuel</li>
-        <li>Faites un clic droit sur un fichier dans la liste et utilisez le sous-menu <b>DocWen</b> : convertir, numéroter ou ouvrir dans DocWen</li>
-        <li>Utilisez la palette de commandes (Ctrl/Cmd + P) et recherchez <b>DocWen</b> pour toutes les commandes disponibles</li>
-        <li>Le chemin du fichier actuel est transmis uniquement lorsque vous lancez une action DocWen, comme démarrer ou envoyer le fichier actuel</li>
+        <li>Cliquez sur l’icône de document dans la barre de gauche pour ouvrir ou activer le panneau latéral DocWen Assistant.</li>
+        <li>Dans ce panneau, choisissez Ouvrir DocWen, Ouvrir le fichier actuel dans DocWen ou Relire le fichier Markdown actuel.</li>
+        <li>Faites un clic droit sur un fichier et choisissez <b>DocWen</b>, ou recherchez <b>DocWen</b> dans la palette de commandes (Ctrl/Cmd + P) pour accéder aux autres actions.</li>
+        <li>Le chemin d’un fichier n’est transmis que lorsque vous lancez une action qui utilise ce fichier.</li>
       </ul>
     `,
 
@@ -1291,6 +1330,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "Не удалось подтвердить результат записи. Проверьте целевой файл перед повторным запуском.",
     errorOutputFilesystemUnsupported: "Эта файловая система не позволяет безопасно опубликовать папку результатов. Выберите другую папку; в WSL попробуйте папку в собственной файловой системе Linux.",
     errorOutputPreflightFailed: "Не удаётся безопасно сохранить результат в эту папку. Проверьте права доступа или выберите другую папку.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Продолжить",
     dialogDetectedFormat: "DocWen обнаружил формат содержимого, отличный от указанного в имени файла. Продолжить с обнаруженным форматом?",
     dialogDeclaredFormat: "Формат в имени файла",
@@ -1298,9 +1339,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "При продолжении файл будет прочитан как {format}.",
     dialogFormatUnknown: "Не указан",
     dialogExportDirectory: "Выбрать папку вывода",
-    ribbonTooltip: "Запустить DocWen",
+    ribbonTooltip: "Открыть боковую панель DocWen Assistant",
+    commandOpenSidebar: "Открыть боковую панель DocWen Assistant",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Открыть DocWen",
+    sidebarCurrentFile: "Текущий файл: {filename}",
+    sidebarNoFile: "Откройте локальный файл, чтобы использовать действия с файлами.",
+    noticeSidebarOpenFailed: "Не удалось открыть панель Assistant: {error}",
     commandLaunch: "Запустить DocWen",
-    commandLaunchWithFile: "Запустить DocWen с текущим файлом",
+    commandLaunchWithFile: "Открыть текущий файл в DocWen",
     commandExportDocx: "Экспорт в Word (Docx) в фоне",
     commandExportMd: "Экспорт в Markdown (MD) в фоне",
     commandExportXlsx: "Экспорт в Excel (XLSX) в фоне",
@@ -1372,10 +1419,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Использование",
     settingsUsageList: `
       <ul>
-        <li>Нажмите на значок документа на левой боковой панели, чтобы запустить DocWen или отправить текущий файл</li>
-        <li>Щёлкните правой кнопкой мыши по файлу в списке и используйте подменю <b>DocWen</b>: конвертировать, нумеровать или открыть в DocWen</li>
-        <li>Используйте палитру команд (Ctrl/Cmd + P) и найдите <b>DocWen</b> для всех доступных команд</li>
-        <li>Путь к текущему файлу передаётся только при выполнении действия DocWen, например запуска или отправки текущего файла</li>
+        <li>Нажмите значок документа на левой панели, чтобы открыть боковую панель DocWen Assistant или перейти к ней.</li>
+        <li>На панели выберите «Открыть DocWen», «Открыть текущий файл в DocWen» или «Проверить текущий файл Markdown».</li>
+        <li>Нажмите правой кнопкой мыши на файл и выберите <b>DocWen</b> или найдите <b>DocWen</b> в палитре команд (Ctrl/Cmd + P), чтобы вызвать другие действия.</li>
+        <li>Путь к файлу передаётся только при выполнении действия, использующего этот файл.</li>
       </ul>
     `,
 
@@ -1543,6 +1590,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "Não foi possível confirmar o resultado da gravação. Verifique o destino antes de executar novamente.",
     errorOutputFilesystemUnsupported: "Este sistema de arquivos não permite publicar a pasta de resultados com segurança. Escolha outra pasta de saída; no WSL, tente uma pasta nativa do Linux.",
     errorOutputPreflightFailed: "Não é possível salvar nesta pasta com segurança. Verifique as permissões ou escolha outra pasta de saída.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Continuar",
     dialogDetectedFormat: "O DocWen detectou um formato diferente do nome do arquivo. Continuar com o formato detectado?",
     dialogDeclaredFormat: "Formato indicado pelo nome do arquivo",
@@ -1550,9 +1599,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "Ao continuar, o arquivo será lido como {format}.",
     dialogFormatUnknown: "Não indicado",
     dialogExportDirectory: "Escolher pasta de saída",
-    ribbonTooltip: "Iniciar DocWen",
+    ribbonTooltip: "Abrir a barra lateral do DocWen Assistant",
+    commandOpenSidebar: "Abrir a barra lateral do DocWen Assistant",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Abrir DocWen",
+    sidebarCurrentFile: "Arquivo atual: {filename}",
+    sidebarNoFile: "Abra um arquivo local para usar as ações de arquivo.",
+    noticeSidebarOpenFailed: "Não foi possível abrir a barra lateral do Assistant: {error}",
     commandLaunch: "Iniciar DocWen",
-    commandLaunchWithFile: "Iniciar DocWen com arquivo atual",
+    commandLaunchWithFile: "Abrir arquivo atual no DocWen",
     commandExportDocx: "Exportar para Word (Docx) em segundo plano",
     commandExportMd: "Exportar para Markdown (MD) em segundo plano",
     commandExportXlsx: "Exportar para Excel (XLSX) em segundo plano",
@@ -1624,10 +1679,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Uso",
     settingsUsageList: `
       <ul>
-        <li>Clique no ícone de documento na barra lateral esquerda para iniciar o DocWen ou enviar o arquivo atual</li>
-        <li>Clique com o botão direito em um arquivo na lista e use o submenu <b>DocWen</b>: converter formatos, gerenciar numeração ou abrir no DocWen</li>
-        <li>Use a paleta de comandos (Ctrl/Cmd + P) e pesquise <b>DocWen</b> para todos os comandos disponíveis</li>
-        <li>O caminho do arquivo atual só é enviado quando você executa uma ação do DocWen, como iniciar ou enviar o arquivo atual</li>
+        <li>Clique no ícone de documento na barra esquerda para abrir ou focar a barra lateral do DocWen Assistant.</li>
+        <li>Na barra lateral, escolha Abrir DocWen, Abrir arquivo atual no DocWen ou Revisar arquivo Markdown atual.</li>
+        <li>Clique com o botão direito em um arquivo e escolha <b>DocWen</b>, ou pesquise <b>DocWen</b> na paleta de comandos (Ctrl/Cmd + P) para acessar mais ações.</li>
+        <li>O caminho de um arquivo só é enviado quando você executa uma ação que usa esse arquivo.</li>
       </ul>
     `,
 
@@ -1795,6 +1850,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "書き込み結果を確認できませんでした。再実行する前に保存先を確認してください。",
     errorOutputFilesystemUnsupported: "このファイルシステムでは結果フォルダーを安全に確定できません。別の出力先を選択してください。WSL では Linux 固有のフォルダーをお試しください。",
     errorOutputPreflightFailed: "このフォルダーに安全に保存できません。アクセス権を確認するか、別の出力先を選択してください。",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "続行",
     dialogDetectedFormat: "DocWen が検出した内容の形式はファイル名と異なります。検出した形式で続行しますか？",
     dialogDeclaredFormat: "ファイル名が示す形式",
@@ -1802,9 +1859,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "続行すると {format} 形式として読み取ります。",
     dialogFormatUnknown: "指定なし",
     dialogExportDirectory: "出力フォルダーを選択",
-    ribbonTooltip: "DocWen を起動",
+    ribbonTooltip: "DocWen Assistant サイドバーを開く",
+    commandOpenSidebar: "DocWen Assistant サイドバーを開く",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "DocWen を開く",
+    sidebarCurrentFile: "現在のファイル: {filename}",
+    sidebarNoFile: "ファイル操作を使うには、ローカルファイルを開いてください。",
+    noticeSidebarOpenFailed: "Assistant サイドバーを開けませんでした: {error}",
     commandLaunch: "DocWen を起動",
-    commandLaunchWithFile: "現在のファイルで DocWen を起動",
+    commandLaunchWithFile: "現在のファイルを DocWen で開く",
     commandExportDocx: "バックグラウンドで Word（Docx）へ書き出し",
     commandExportMd: "バックグラウンドで Markdown（MD）へ書き出し",
     commandExportXlsx: "バックグラウンドで Excel（XLSX）へ書き出し",
@@ -1876,10 +1939,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "使用方法",
     settingsUsageList: `
       <ul>
-        <li>左サイドバーのドキュメントアイコンをクリックして DocWen を起動、または現在のファイルを送信</li>
-        <li>ファイルリストでファイルを右クリックし、<b>DocWen</b> サブメニューを使用：形式変換、番号管理、DocWen で開く</li>
-        <li>コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索し、すべてのコマンドを利用</li>
-        <li>現在のファイルパスは、DocWen の起動や現在のファイルの送信などの操作を実行した場合にのみ渡されます</li>
+        <li>左のリボンにある文書アイコンをクリックすると、DocWen Assistant サイドバーが開くか、既存のサイドバーにフォーカスします。</li>
+        <li>サイドバーで「DocWen を開く」「現在のファイルを DocWen で開く」「現在の Markdown ファイルを校正」を選択できます。</li>
+        <li>ファイルを右クリックして <b>DocWen</b> を選ぶか、コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索すると、その他の操作を利用できます。</li>
+        <li>ファイルのパスは、そのファイルを使う操作を実行したときにのみ送信されます。</li>
       </ul>
     `,
 
@@ -2046,6 +2109,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "쓰기 결과를 확인할 수 없습니다. 다시 실행하기 전에 대상을 확인하세요.",
     errorOutputFilesystemUnsupported: "이 파일 시스템에서는 결과 폴더를 안전하게 저장할 수 없습니다. 다른 출력 폴더를 선택하세요. WSL에서는 Linux 파일 시스템의 폴더를 사용해 보세요.",
     errorOutputPreflightFailed: "이 폴더에 안전하게 저장할 수 없습니다. 권한을 확인하거나 다른 출력 폴더를 선택하세요.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "계속",
     dialogDetectedFormat: "DocWen이 파일 이름과 다른 콘텐츠 형식을 감지했습니다. 감지된 형식으로 계속할까요?",
     dialogDeclaredFormat: "파일 이름에 표시된 형식",
@@ -2053,9 +2118,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "계속하면 파일을 {format} 형식으로 읽습니다.",
     dialogFormatUnknown: "지정되지 않음",
     dialogExportDirectory: "출력 폴더 선택",
-    ribbonTooltip: "DocWen 실행",
+    ribbonTooltip: "DocWen Assistant 사이드바 열기",
+    commandOpenSidebar: "DocWen Assistant 사이드바 열기",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "DocWen 열기",
+    sidebarCurrentFile: "현재 파일: {filename}",
+    sidebarNoFile: "파일 작업을 사용하려면 로컬 파일을 여세요.",
+    noticeSidebarOpenFailed: "Assistant 사이드바를 열 수 없습니다: {error}",
     commandLaunch: "DocWen 실행",
-    commandLaunchWithFile: "현재 파일로 DocWen 실행",
+    commandLaunchWithFile: "현재 파일을 DocWen에서 열기",
     commandExportDocx: "백그라운드에서 Word(Docx)로 내보내기",
     commandExportMd: "백그라운드에서 Markdown(MD)로 내보내기",
     commandExportXlsx: "백그라운드에서 Excel(XLSX)로 내보내기",
@@ -2127,10 +2198,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "사용 방법",
     settingsUsageList: `
       <ul>
-        <li>왼쪽 사이드바의 문서 아이콘을 클릭하여 DocWen을 실행하거나 현재 파일을 전송</li>
-        <li>파일 목록에서 파일을 우클릭하고 <b>DocWen</b> 하위 메뉴 사용: 형식 변환, 번호 관리, DocWen에서 열기</li>
-        <li>명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하여 모든 명령 사용</li>
-        <li>현재 파일 경로는 DocWen 실행 또는 현재 파일 전송 같은 작업을 실행할 때만 전달됩니다</li>
+        <li>왼쪽 리본의 문서 아이콘을 클릭하면 DocWen Assistant 사이드바가 열리거나 기존 사이드바로 포커스가 이동합니다.</li>
+        <li>사이드바에서 DocWen 열기, 현재 파일을 DocWen에서 열기, 현재 Markdown 파일 교정을 선택할 수 있습니다.</li>
+        <li>파일을 오른쪽 클릭하여 <b>DocWen</b>을 선택하거나 명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하면 더 많은 작업을 사용할 수 있습니다.</li>
+        <li>파일 경로는 해당 파일을 사용하는 작업을 실행할 때만 전달됩니다.</li>
       </ul>
     `,
 
@@ -2297,6 +2368,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "No se pudo confirmar el resultado de la escritura. Revise el destino antes de volver a ejecutar.",
     errorOutputFilesystemUnsupported: "Este sistema de archivos no permite publicar la carpeta de resultados de forma segura. Elige otra carpeta de salida; en WSL, prueba una carpeta nativa de Linux.",
     errorOutputPreflightFailed: "No se puede guardar de forma segura en esta carpeta. Revisa los permisos o elige otra carpeta de salida.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Continuar",
     dialogDetectedFormat: "DocWen detectó un formato diferente al del nombre del archivo. ¿Continuar con el formato detectado?",
     dialogDeclaredFormat: "Formato indicado por el nombre del archivo",
@@ -2304,9 +2377,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "Al continuar, el archivo se leerá como {format}.",
     dialogFormatUnknown: "No indicado",
     dialogExportDirectory: "Elegir carpeta de salida",
-    ribbonTooltip: "Iniciar DocWen",
+    ribbonTooltip: "Abrir la barra lateral de DocWen Assistant",
+    commandOpenSidebar: "Abrir la barra lateral de DocWen Assistant",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Abrir DocWen",
+    sidebarCurrentFile: "Archivo actual: {filename}",
+    sidebarNoFile: "Abre un archivo local para usar las acciones de archivo.",
+    noticeSidebarOpenFailed: "No se pudo abrir la barra lateral de Assistant: {error}",
     commandLaunch: "Iniciar DocWen",
-    commandLaunchWithFile: "Iniciar DocWen con el archivo actual",
+    commandLaunchWithFile: "Abrir el archivo actual en DocWen",
     commandExportDocx: "Exportar a Word (Docx) en segundo plano",
     commandExportMd: "Exportar a Markdown (MD) en segundo plano",
     commandExportXlsx: "Exportar a Excel (XLSX) en segundo plano",
@@ -2378,10 +2457,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Uso",
     settingsUsageList: `
       <ul>
-        <li>Haz clic en el icono de documento en la barra lateral izquierda para iniciar DocWen o enviar el archivo actual</li>
-        <li>Haz clic derecho en un archivo de la lista y usa el submenú <b>DocWen</b>: convertir formatos, gestionar numeración o abrir en DocWen</li>
-        <li>Usa la paleta de comandos (Ctrl/Cmd + P) y busca <b>DocWen</b> para todos los comandos disponibles</li>
-        <li>La ruta del archivo actual solo se envía al ejecutar una acción de DocWen, como iniciar o enviar el archivo actual</li>
+        <li>Haz clic en el icono de documento de la barra izquierda para abrir o enfocar la barra lateral de DocWen Assistant.</li>
+        <li>En la barra lateral, elige Abrir DocWen, Abrir el archivo actual en DocWen o Corregir archivo Markdown actual.</li>
+        <li>Haz clic derecho en un archivo y elige <b>DocWen</b>, o busca <b>DocWen</b> en la paleta de comandos (Ctrl/Cmd + P) para acceder a más acciones.</li>
+        <li>La ruta de un archivo solo se envía cuando ejecutas una acción que utiliza ese archivo.</li>
       </ul>
     `,
 
@@ -2548,6 +2627,8 @@ export const translations: Record<string, Translations> = {
     errorOutputUnconfirmed: "Không thể xác nhận kết quả ghi. Hãy kiểm tra đích trước khi chạy lại.",
     errorOutputFilesystemUnsupported: "Hệ thống tệp này không thể lưu thư mục kết quả an toàn. Hãy chọn thư mục đầu ra khác; trong WSL, hãy thử thư mục thuộc hệ thống tệp Linux.",
     errorOutputPreflightFailed: "Không thể lưu an toàn vào thư mục này. Hãy kiểm tra quyền hoặc chọn thư mục đầu ra khác.",
+    errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+    errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
     dialogContinue: "Tiếp tục",
     dialogDetectedFormat: "DocWen phát hiện định dạng nội dung khác với tên tệp. Tiếp tục với định dạng đã phát hiện?",
     dialogDeclaredFormat: "Định dạng theo tên tệp",
@@ -2555,9 +2636,15 @@ export const translations: Record<string, Translations> = {
     dialogReadDetectedFormat: "Tiếp tục sẽ đọc tệp dưới dạng {format}.",
     dialogFormatUnknown: "Chưa khai báo",
     dialogExportDirectory: "Chọn thư mục đầu ra",
-    ribbonTooltip: "Khởi chạy DocWen",
+    ribbonTooltip: "Mở thanh bên DocWen Assistant",
+    commandOpenSidebar: "Mở thanh bên DocWen Assistant",
+    sidebarTitle: "DocWen Assistant",
+    sidebarOpenGui: "Mở DocWen",
+    sidebarCurrentFile: "Tệp hiện tại: {filename}",
+    sidebarNoFile: "Hãy mở một tệp cục bộ để sử dụng các thao tác với tệp.",
+    noticeSidebarOpenFailed: "Không thể mở thanh bên Assistant: {error}",
     commandLaunch: "Khởi chạy DocWen",
-    commandLaunchWithFile: "Khởi chạy DocWen với tệp hiện tại",
+    commandLaunchWithFile: "Mở tệp hiện tại trong DocWen",
     commandExportDocx: "Xuất Word (Docx) chạy nền",
     commandExportMd: "Xuất Markdown (MD) chạy nền",
     commandExportXlsx: "Xuất Excel (XLSX) chạy nền",
@@ -2629,10 +2716,10 @@ export const translations: Record<string, Translations> = {
     settingsUsageTitle: "Cách dùng",
     settingsUsageList: `
       <ul>
-        <li>Nhấn biểu tượng tài liệu ở thanh bên trái để khởi chạy DocWen hoặc gửi tệp hiện tại</li>
-        <li>Nhấp chuột phải vào tệp trong danh sách và dùng menu con <b>DocWen</b>: chuyển đổi định dạng, đánh số hoặc mở trong DocWen</li>
-        <li>Dùng bảng lệnh (Ctrl/Cmd + P) và tìm <b>DocWen</b> để xem tất cả lệnh có sẵn</li>
-        <li>Đường dẫn tệp hiện tại chỉ được gửi khi bạn chạy một thao tác DocWen như khởi chạy hoặc gửi tệp hiện tại</li>
+        <li>Nhấp vào biểu tượng tài liệu trên dải công cụ bên trái để mở hoặc đưa tiêu điểm đến thanh bên DocWen Assistant.</li>
+        <li>Trong thanh bên, chọn Mở DocWen, Mở tệp hiện tại trong DocWen hoặc Hiệu đính tệp Markdown hiện tại.</li>
+        <li>Nhấp chuột phải vào tệp và chọn <b>DocWen</b>, hoặc tìm <b>DocWen</b> trong bảng lệnh (Ctrl/Cmd + P) để dùng thêm các thao tác.</li>
+        <li>Đường dẫn tệp chỉ được gửi khi bạn chạy một thao tác sử dụng tệp đó.</li>
       </ul>
     `,
 
