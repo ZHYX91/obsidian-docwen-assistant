@@ -10,6 +10,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Place manual installation controls directly after the connection method and combine Check, Launch and Details in one connection card with distinct application/background status and repeated-click/dismissal guards.
 
 - Identify Windows lifetime-helper failures with redacted build hash, phase and system-code diagnostics, and provide safe recovery guidance without bypassing process ownership or security software.
+- Remove the unused resolved-document snapshot producer and its Number Suite interop adapter. Markdown exports retain the declared-source path, resource checks and publication guards.
+
+- Reject embedded images whose known size exceeds the remaining resource budget before reading their bytes. Declared snapshots retain actual-byte validation and count repeated resources once.
+- Diagnose Linux native test prerequisites once before Machine lifecycle cases, preserve failure observations, and expose separate source and native test commands while retaining the complete default quality gate.
+
 
 ## [3.5.2] - 2026-11-02
 

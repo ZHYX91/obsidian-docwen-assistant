@@ -14,8 +14,8 @@ export interface DeclaredMarkdownSnapshot {
   readonly resourceBindings?: MarkdownResourceBindings;
 }
 
-export const MAX_EMBEDDED_RESOURCE_BYTES = 6_000_000;
-export const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
+const MAX_EMBEDDED_RESOURCE_BYTES = 6_000_000;
+const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
   ["png", "image/png"],
   ["jpg", "image/jpeg"],
   ["jpeg", "image/jpeg"],
@@ -23,7 +23,7 @@ export const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
   ["bmp", "image/bmp"],
   ["webp", "image/webp"],
 ]);
-export const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
+const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
 
 export async function buildDeclaredMarkdownInputs(
 app: App,
@@ -132,14 +132,8 @@ app: App,
     imageBindings.set(authoredToken, logicalPath);
     if (resources.has(linked.path)) continue;
 
-    const content = Buffer.from(await app.vault.readBinary(linked));
+    const content = await readEmbeddedImage(app, linked, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
     totalResourceBytes += content.length;
-    if (content.length === 0 || totalResourceBytes > MAX_EMBEDDED_RESOURCE_BYTES) {
-      throw new VaultWriteError(
-        "vault_input_invalid",
-        "Embedded image bytes exceed the DocWen declared-resource limit.",
-      );
-    }
     const resourcePath = path.join(workspace, `linked-${resources.size + 1}.${extension}`);
     await writeFile(resourcePath, content);
     resources.set(linked.path, {
@@ -163,7 +157,26 @@ app: App,
   };
 }
 
-
+/** Bound unique image reads by the remaining budget; cached sizes never replace byte checks. */
+async function readEmbeddedImage(
+  app: App,
+  file: TFile,
+  remainingBytes: number,
+  signal: AbortSignal,
+): Promise<Buffer> {
+  throwIfAborted(signal);
+  const message = "Embedded image bytes exceed the DocWen resource limit.";
+  const knownSize = file.stat?.size;
+  if (knownSize != null && knownSize > remainingBytes) {
+    throw new VaultWriteError("vault_input_invalid", message);
+  }
+  const content = await app.vault.readBinary(file);
+  throwIfAborted(signal);
+  if (content.byteLength === 0 || content.byteLength > remainingBytes) {
+    throw new VaultWriteError("vault_input_invalid", message);
+  }
+  return Buffer.from(content);
+}
 
 function isLocalWikiNavigationLink(link: string): boolean {
   const target = (link.split("|", 1)[0] ?? "").trim();
@@ -179,7 +192,7 @@ function obsidianNavigationHref(vaultName: string, resolvedPath: string, authore
 }
 
 
-export function extensionForLink(link: string): string {
+function extensionForLink(link: string): string {
   const withoutAnchor = link.split("#", 1)[0] ?? link;
   const segments = withoutAnchor.replace(/\\/gu, "/").split("/");
   const finalSegment = segments[segments.length - 1] ?? "";

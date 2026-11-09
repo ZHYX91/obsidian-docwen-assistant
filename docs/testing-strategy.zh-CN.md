@@ -13,7 +13,7 @@ translation_status: source
 
 ## 源码自动测试
 
-Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试必须覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、UTF-16 到 Unicode 码点坐标转换、缺失/不支持/超限资源，以及 `neutral_document + numbering_export_plan` 精确双输入。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。 Machine 生命周期回归还必须在 Linux x64/arm64 使用真实 native owner 与受控子进程，在 query、task/execute 与已接收任务的 task/cancel 写入前关闭读取端，观测真实写入帧与 EPIPE，证明不会产生未处理异常、等待者会在有界时间内结束、不会生成额外 staging 输出，并回收已拥有的跨 session 后代。 Windows 专用 CI 另外使用真实受控进程与原生关闭 stdin 夹具，覆盖直接 root 正常退出但独立 stdio 后代继续存活的旧反例，以及 timeout、已接收任务取消、插件卸载、真实 EPIPE、抵抗正常结束的后代、无关 sentinel 保活和 owner 创建/内嵌 PE 身份失败时在目标启动前失败关闭；这些进程级证据仍不替代 Obsidian 宿主验收。结果目录发布测试在最后一次碰撞检查与实际发布原语之间设置确定性屏障，让外部写者分别创建空目录和含用户字节的非空目录；两种情况都必须拒绝、保留目标目录身份与用户字节，并只清理自己的暂存目录。Linux x64 Node-API helper 的公开来源、C 源 SHA-256、内嵌二进制 SHA-256 与 Node-API 下限也由源码测试固定。
+Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、手动路径启动目标、独立 `gui open` 控制进程及其 CLI protocol 3 成功信封、连接取消与去重、两侧 Machine 协议/最低产品版本诊断、旧能力结果抑制、预加载去重与重试、连接状态迁移与展示、framing、Machine 进程、取消、Bundle v3 校验与其他 schema 拒绝、能力投影、动作、Vault 快照与事务、设置、本地化、运行时释放和发布治理。直接 Markdown 校对必须固定为 `validate.markdown` 与 `docwen.proofread_report.v2`，并明确证明它不经过 Markdown→DOCX 后处理链。设置用例证明规范化纯净且幂等、无版本数据只迁移一次、默认值各自拥有独立副本，以及遇到更高版本 schema 时启动和后续均零写入、未知字段保持完整、四页签界面明确只读。资源测试通过声明输入路径覆盖跨目录短 Wiki 链接、带空格文件名、重复出现去重、精确原文字节与绑定，以及缺失/不支持/超限资源。通用 capability 与 client 测试继续验证正式的 `neutral_document + numbering_export_plan` 输入合同，Assistant 不再生成这种快照。负例应证明错误发生在任务规划或写入之前，并验证失败后的资源清理。 Machine 生命周期回归还必须在 Linux x64/arm64 使用真实 native owner 与受控子进程，在 query、task/execute 与已接收任务的 task/cancel 写入前关闭读取端，观测真实写入帧与 EPIPE，证明不会产生未处理异常、等待者会在有界时间内结束、不会生成额外 staging 输出，并回收已拥有的跨 session 后代。 Windows 专用 CI 另外使用真实受控进程与原生关闭 stdin 夹具，覆盖直接 root 正常退出但独立 stdio 后代继续存活的旧反例，以及 timeout、已接收任务取消、插件卸载、真实 EPIPE、抵抗正常结束的后代、无关 sentinel 保活和 owner 创建/内嵌 PE 身份失败时在目标启动前失败关闭；这些进程级证据仍不替代 Obsidian 宿主验收。结果目录发布测试在最后一次碰撞检查与实际发布原语之间设置确定性屏障，让外部写者分别创建空目录和含用户字节的非空目录；两种情况都必须拒绝、保留目标目录身份与用户字节，并只清理自己的暂存目录。Linux x64 Node-API helper 的公开来源、C 源 SHA-256、内嵌二进制 SHA-256 与 Node-API 下限也由源码测试固定。
 
 校对生命周期和视图状态测试使用每例独立的 happy-dom 文档，只通过小型适配器模拟 Obsidian 的 DOM 扩展方法。测试触发 DOM 点击并验证真实属性、节点连接、当前焦点和滚动状态，不再依赖创建元素时记录的参数。集成用例一起运行真实插件的 saveSettings、AssistantView 和 OperationCoordinator，覆盖初始空状态、同一任务取消、语言切换、外部焦点与视图关闭后重开。大报告用例以 10,000 个问题验证首次 DOM 有界，分批访问所有问题，并检查键盘焦点、滚动、排序、RTL 本地化、新报告重置及旧控件失效。原有来源摘要和视图归属用例继续保留。DOM 夹具不代表浏览器布局或真实宿主验收。
 
@@ -25,9 +25,19 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 侧栏入口用例验证无文件／未配置时可打开、并发打开合并、已有及 deferred leaf 复用、失败后重试，以及关闭／卸载期间旧请求失效。真实 DOM 用例验证三个按钮的独立行为、当前文件在点击时重新读取、侧栏获得焦点后仍采用宿主返回的最近活跃文件、切换为非 Markdown 或关闭文件后的禁用状态，以及重复打开保留报告、焦点和滚动。校对期间 GUI 按钮保持独立，旧视图按钮不能在重开后执行。十二种语言检查可见标签、语言与 RTL 方向；窄栏换行、较矮窗口滚动和 44 px 目标仍须浏览器及真实宿主视觉验收。
 
+图片预算回归调用导出实际使用的 declared 快照入口，验证已知单张或累计超限时不读取该图片、缓存低报时仍按实际字节拒绝、空内容拒绝、恰好达到预算的重复引用只读取一次，以及读取期间取消。超大文件预检使用小字节哨兵，不以宿主内存耗尽作为测试手段。
+
 ## 仓库质量门
 
 `npm run check` 在锁定工具链下运行运行时检查、lint、格式、README 与稳定文档合同、覆盖率、类型检查、构建、制品检查和高风险依赖审计。格式与双语脚本必须实际读取仓库内容，不能是无操作占位符。 制品检查还会核对 Linux helper 锁定的来源、源码/二进制摘要，并要求构建后的 `dist/main.js` 保留完全相同的内嵌 payload；这只能证明 payload 已进入 bundle，不能证明它已在 Electron/Obsidian 中成功加载。
+
+本地诊断命令明确区分测试范围：
+
+- `npm run test:source` 运行 Linux 和 Windows Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
+- `npm run test:native:linux` 在 Linux x64/arm64 运行真实 Machine 生命周期测试。整组测试前只检查一次内嵌 owner 映像、`/usr/bin/python3` 的 pidfd 支持、运行器的 `/proc` 身份，以及独立 session 哨兵自己报告的身份与运行器观测是否一致。前提失败会在任何生命周期用例执行前使测试组失败，输出失败阶段和观测结果，并在专用临时目录保留 `prerequisites.json` 诊断；哨兵始终通过本次拥有的进程句柄清理。
+- `npm run test:native:windows` 在 Windows 运行现有生命周期测试；因平台跳过的部分仍未获验证。
+
+`npm test`、`npm run test:coverage` 和 `npm run check` 保持默认完整测试集。仅源码测试通过不能替代受支持宿主上的原生进程验证。前提检查不会延长生命周期等待期限，也不会跳过失败环境。
 
 ## 固定 DocWen 包
 
