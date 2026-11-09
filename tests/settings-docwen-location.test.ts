@@ -27,6 +27,28 @@ describe("DocWen settings location picker", () => {
     showNotice.mockReset();
   });
 
+  it.each(["en", "zh-cn"])("shows safe helper recovery in %s without blaming the target installation", async (locale) => {
+    initI18n(locale);
+    const { getDocWenConnectionDisplay } = await import("../src/settings-docwen-location");
+    const { getErrorMessage } = await import("../src/actions/action-errors");
+    const { LocalCliError } = await import("../src/docwen/errors");
+    const details = { ownershipState: "windows_job", phase: "owner_spawn", systemCode: "EACCES" };
+    const result = getDocWenConnectionDisplay("manual", "", {
+      state: "error", mode: "manual", code: "cli_spawn_failed", details,
+    }, "win32");
+    expect(result.message).toContain("windows-x64.exe");
+    expect(result.message).toContain(locale === "en" ? "Keep protection enabled" : "保持防护开启");
+    expect(getErrorMessage(new LocalCliError("cli_spawn_failed", "private", details))).toBe(result.message);
+    const target = getDocWenConnectionDisplay("automatic", "", {
+      state: "error", mode: "automatic", code: "cli_spawn_failed", details: { ...details, phase: "create_process" },
+    }, "win32");
+    expect(target.message).not.toContain("windows-x64.exe");
+    const cleanup = getDocWenConnectionDisplay("automatic", "", {
+      state: "error", mode: "automatic", code: "cli_cleanup_failed", details,
+    }, "win32");
+    expect(cleanup.message).toContain(locale === "en" ? "cleanup could not be confirmed" : "无法确认 Windows 进程清理完成");
+  });
+
   it("turns automatic connection outcomes into user-facing status messages", async () => {
     const { getDocWenConnectionDisplay } = await import("../src/settings-docwen-location");
 

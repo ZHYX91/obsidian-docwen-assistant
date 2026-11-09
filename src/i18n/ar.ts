@@ -23,6 +23,8 @@ export const AR_TRANSLATIONS: Translations = {
   noticeCleanupWarning: "تعذّر إكمال حذف البيانات المؤقتة. راجع التفاصيل.",
   errorOutputUnconfirmed: "تعذّر التأكد من حفظ النتيجة. افحص مجلد الوجهة قبل المحاولة مجددًا.",
   errorOutputFilesystemUnsupported: "لا يمكن حفظ النتائج بأمان على نظام الملفات هذا. اختر مجلدًا آخر؛ وفي WSL جرّب مجلدًا داخل نظام ملفات Linux.",
+  errorWindowsOwnerRecovery: "The Windows process-protection helper (windows-x64.exe) is unavailable or failed. Check security-software quarantine/history and the expected diagnostic hash against a trusted plugin release. This does not establish whether an alert is safe to ignore. Keep protection enabled; ask your administrator or the plugin maintainer if unsure. After resolving the cause, restart Obsidian and check the connection again.",
+  errorWindowsOwnerCleanup: "Windows process cleanup could not be confirmed. Further background starts are blocked. Save your work, close Obsidian, and check for remaining DocWen processes before restarting. Review diagnostic details and security-software history; do not disable protection or trust an unknown file.",
   errorOutputPreflightFailed: "تعذّر الحفظ بأمان في هذا المجلد. تحقّق من الأذونات أو اختر مجلدًا آخر.",
   dialogContinue: "متابعة",
   dialogDetectedFormat: "اكتشف DocWen أن تنسيق الملف يختلف عن امتداده. هل تريد المتابعة بالتنسيق المكتشف؟",

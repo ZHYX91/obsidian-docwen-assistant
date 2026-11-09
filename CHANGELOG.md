@@ -7,6 +7,9 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 - Make the ribbon and a dedicated command open or focus the Assistant sidebar, with separate controls for opening DocWen, opening the current file and proofreading current Markdown.
 - Reuse existing sidebar leaves and reports, refresh current-file actions through the host contract, and keep GUI and proofreading lifecycle ownership separate.
 - Update sidebar labels, usage help and guides in all twelve interface languages.
+- Place manual installation controls directly after the connection method and combine Check, Launch and Details in one connection card with distinct application/background status and repeated-click/dismissal guards.
+
+- Identify Windows lifetime-helper failures with redacted build hash, phase and system-code diagnostics, and provide safe recovery guidance without bypassing process ownership or security software.
 
 ## [3.5.2] - 2026-11-02
 

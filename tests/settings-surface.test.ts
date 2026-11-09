@@ -318,7 +318,8 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const doctor = settings.find((setting) => setting.nameEl.textContent === "Check DocWen connection")!;
+    expect(settings.some((setting) => setting.nameEl.textContent === "Check DocWen connection")).toBe(false);
+    const doctor = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!;
 
     doctor.settingEl.dispatch("keydown", "Escape");
     expect(plugin.runDoctorCheck).not.toHaveBeenCalled();
@@ -330,6 +331,86 @@ describe("settings surface lifecycle", () => {
     check.click?.();
     expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
     expect(doctor.settingEl.attributes.get("role")).toBeUndefined();
+  });
+
+  it("places the manual location immediately after connection method and stacks Check before Launch", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const tab = new SettingTab({} as never, settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "manual" }) as never);
+    tab.display();
+    const names = settings.map((setting) => setting.nameEl.textContent);
+    const method = names.indexOf("Connection method");
+    expect(method).toBeGreaterThan(-1);
+    expect(names[method + 1]).toBe("Manual installation location");
+    expect(names[method + 2]).toBe("DocWen connection");
+    const check = buttons.findIndex((button) => button.label === "Check");
+    expect(buttons[check + 1].label).toBe("Launch DocWen");
+    const status = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!;
+    expect(status.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-connection");
+    expect(status.descEl.attributes.get("aria-live")).toBe("polite");
+    expect(status.descEl.textContent).toContain("Open DocWen:");
+    expect(status.descEl.textContent).toContain("Conversion, numbering, and proofreading:");
+  });
+
+  it("deduplicates Check, preserves independent Launch, and ignores dismissed controls", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    let finish!: () => void;
+    plugin.runDoctorCheck.mockImplementation(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const check = buttons.find((button) => button.label === "Check")!;
+    const launch = buttons.find((button) => button.label === "Launch DocWen")!;
+    check.click?.();
+    check.click?.();
+    expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
+    expect(check.disabled).toBe(true);
+    expect(check.buttonEl.attributes.get("aria-busy")).toBe("true");
+    expect(launch.disabled).toBe(false);
+    launch.click?.();
+    launch.click?.();
+    expect(plugin.openDocWenApplication).toHaveBeenCalledOnce();
+    tab.hide();
+    finish();
+    await Promise.resolve();
+    await Promise.resolve();
+    check.click?.();
+    launch.click?.();
+    expect(plugin.runDoctorCheck).toHaveBeenCalledOnce();
+    expect(plugin.openDocWenApplication).toHaveBeenCalledOnce();
+    expect(check.disabled).toBe(true);
+  });
+
+  it("keeps GUI failure visible when background integration succeeds", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { connectionDisplay } = await import("../src/settings-connection");
+    const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
+    plugin.getGuiConnectionStatus.mockImplementation(() => ({ state: "error", mode: "automatic", code: "cli_gui_control_failed" }));
+    plugin.getDocWenConnectionStatus.mockReturnValue({ state: "connected", mode: "automatic", productVersion: "0.17.0" });
+    const display = connectionDisplay(plugin as never);
+    expect(display.state).toBe("error");
+    expect(display.message).toContain("Open DocWen:");
+    expect(display.message).toContain("0.17.0");
+    expect(display.message.split("\n")).toHaveLength(2);
+  });
+
+  it("restores Check after rejection without an unhandled promise", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    plugin.runDoctorCheck.mockRejectedValue(new Error("test failure"));
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const check = buttons.find((button) => button.label === "Check")!;
+    check.click?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(check.disabled).toBe(false);
+    expect(check.buttonEl.attributes.get("aria-busy")).toBe("false");
+    check.click?.();
+    expect(plugin.runDoctorCheck).toHaveBeenCalledTimes(2);
+    await Promise.resolve();
   });
 
   it("persists tab controls and refreshes dependent disabled states", async () => {

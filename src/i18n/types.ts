@@ -18,6 +18,8 @@ export interface Translations {
   errorOutputUnconfirmed: string;
   errorOutputFilesystemUnsupported: string;
   errorOutputPreflightFailed: string;
+  errorWindowsOwnerRecovery: string;
+  errorWindowsOwnerCleanup: string;
   dialogDiagnosticsPrivacy: string;
   dialogContinue: string;
   dialogDetectedFormat: string;

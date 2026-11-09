@@ -16,6 +16,22 @@ export const WINDOWS_MACHINE_OWNER_TARGET_ENV = "DOCWEN_ASSISTANT_JOB_TARGET";
 export const WINDOWS_MACHINE_OWNER_FAILURE_EXIT = 125;
 export const WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT = 126;
 
+export type WindowsMachineOwnerPhase = "owner_materialize" | "owner_verify" | "owner_spawn" | "owner_runtime";
+
+/** Build identity, not a publisher signature or a malware verdict. Never include local paths. */
+export function windowsMachineOwnerDetails(phase: WindowsMachineOwnerPhase, error?: unknown): Record<string, unknown> {
+  const code = typeof error === "object" && error !== null
+    ? Object.getOwnPropertyDescriptor(error, "code")?.value as unknown : undefined;
+  return {
+    ownershipState: "windows_job",
+    helperName: "windows-x64.exe",
+    helperExpectedSha256: WINDOWS_X64_MACHINE_OWNER_SHA256,
+    helperExpectedBytes: WINDOWS_X64_MACHINE_OWNER_BYTES,
+    phase,
+    ...(typeof code === "string" && /^E[A-Z0-9_]{1,39}$/u.test(code) ? { systemCode: code } : {}),
+  };
+}
+
 export type WindowsMachineOwnerImage = {
   root: string;
   executable: string;
@@ -54,7 +70,7 @@ export class WindowsMachineOwnerStore {
         throw new LocalCliError(
           "cli_integrity_error",
           "The materialized Windows Machine lifetime owner could not be verified.",
-          { cause: errorMessage(error), ownershipState: "windows_job" },
+          windowsMachineOwnerDetails("owner_verify", error),
         );
       }
       this.assertAvailable();
@@ -152,8 +168,7 @@ export async function spawnWindowsOwnedMachineProcess(
     lease.release();
     if (error instanceof LocalCliError) throw error;
     throw new LocalCliError("cli_spawn_failed", "Unable to start the Windows Machine lifetime owner.", {
-      cause: errorMessage(error),
-      ownershipState: "windows_job",
+      ...windowsMachineOwnerDetails("owner_spawn", error),
     });
   }
 }
@@ -181,8 +196,7 @@ export async function materializeWindowsMachineOwner(
     if (root) await rm(root, { recursive: true, force: true }).catch(() => undefined);
     if (error instanceof LocalCliError) throw error;
     throw new LocalCliError("cli_spawn_failed", "Unable to materialize the Windows Machine lifetime owner.", {
-      cause: errorMessage(error),
-      ownershipState: "windows_job",
+      ...windowsMachineOwnerDetails("owner_materialize", error),
     });
   }
 }
@@ -210,19 +224,21 @@ export function verifyWindowsMachineOwnerImage(bytes: Buffer): void {
 }
 
 async function verifyWindowsMachineOwnerFile(filename: string): Promise<void> {
-  const info = await lstat(filename);
-  if (!info.isFile() || info.isSymbolicLink()) {
-    throw ownerIntegrityError("The materialized Windows Machine lifetime owner is not a regular file.");
+  try {
+    const info = await lstat(filename);
+    if (!info.isFile() || info.isSymbolicLink()) {
+      throw ownerIntegrityError("The materialized Windows Machine lifetime owner is not a regular file.");
+    }
+    verifyWindowsMachineOwnerImage(await readFile(filename));
+  } catch (error) {
+    if (error instanceof LocalCliError) throw error;
+    throw new LocalCliError("cli_integrity_error", "Unable to verify the Windows Machine lifetime owner.",
+      windowsMachineOwnerDetails("owner_verify", error));
   }
-  verifyWindowsMachineOwnerImage(await readFile(filename));
 }
 
 function ownerIntegrityError(message: string): LocalCliError {
   return new LocalCliError("cli_integrity_error", message, {
-    ownershipState: "windows_job",
+    ...windowsMachineOwnerDetails("owner_verify"),
   });
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

@@ -73,6 +73,25 @@ DocWen. The controller drops its private target-path environment variable before
 closes its duplicate stdin read handle before resuming the target, preserving the existing bounded
 environment, cwd, Unicode path and real broken-pipe semantics.
 
+The temporary filename is `windows-x64.exe` under `docwen-assistant-owner-*`. It is the
+plugin's embedded controller, not the installed DocWen CLI. Redacted diagnostics retain its
+fixed name, expected embedded SHA-256 and byte length, the observed stage (materialization,
+verification, helper launch, or runtime), and a bounded system error code when available.
+The expected hash identifies the bundled build even when file creation or verification failed;
+it is not a measured hash of a quarantined file. Target `CreateProcessW` failures remain
+separate from helper-launch failures. Arbitrary native stderr and local paths are not exported.
+
+An antivirus alert cannot be classified as a false positive from its filename, a matching hash,
+or a successful restart. The runtime checks establish consistency with the plugin bundle, not
+publisher authentication or safety. Source/build-record digest checks likewise do not reproduce
+the source-to-binary build; that requires the pinned Windows toolchain and two clean builds.
+For a blocked helper, review security-software quarantine/history and compare the diagnostic
+identity with a trusted plugin release. Keep protection enabled and ask the administrator or
+maintainer if provenance is uncertain; do not automatically trust, rename, or exclude the helper.
+After resolving the cause, restart Obsidian and check the connection again. If cleanup was
+unconfirmed, save work, close Obsidian and check for remaining DocWen processes before restarting;
+a fresh session alone is not evidence that the old processes exited.
+
 Controller exit 125 denotes an internal owner failure; exit 126 means target creation failed
 because the executable was not found. After a target starts and its Job is successfully closed,
 target exits 125 and 126 are mapped to ordinary target failure 127, so target errors cannot be
