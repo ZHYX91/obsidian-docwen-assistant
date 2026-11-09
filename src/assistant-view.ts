@@ -1,10 +1,6 @@
 /**
- * DocWen Proofreading Sidebar View
- *
- * Displays proofreading results in a side panel with:
- * - Refresh button to re-run proofreading
- * - Sort toggle (by line number / by rule type)
- * - Clickable issue list that navigates to the source location
+ * DocWen Assistant sidebar with explicit GUI/file/proofreading actions and a
+ * source-bound proofreading report. Opening the view never starts an action.
  */
 
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
@@ -13,6 +9,7 @@ import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
+import { resolveAbsoluteFilePath } from "./host/vault-files";
 import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
   type OperationCoordinator,
@@ -21,7 +18,14 @@ import {
   type OperationSnapshot,
 } from "./runtime/operation-coordinator";
 
-export const PROOFREAD_VIEW_TYPE = "docwen-proofread-view";
+// Stable workspace identity for this sidebar and its report.
+export const ASSISTANT_VIEW_TYPE = "docwen-proofread-view";
+
+export interface AssistantViewActions {
+  openGui(): Promise<void>;
+  openCurrentFile(): Promise<void>;
+  proofreadCurrentFile(view: AssistantView): Promise<void>;
+}
 
 type SortMode = "line" | "rule";
 const ISSUE_BATCH_SIZE = 200;
@@ -33,7 +37,7 @@ const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
   sensitive: "settingsProofreadSensitive",
 };
 
-export class ProofreadView extends ItemView {
+export class AssistantView extends ItemView {
   private issues: ProofreadIssue[] = [];
   private issueIndices = new Map<ProofreadIssue, number>();
   private sortedIssuesCache: { revision: number; mode: SortMode; issues: ProofreadIssue[] } | null = null;
@@ -48,33 +52,37 @@ export class ProofreadView extends ItemView {
   private cancelled = false;
   private unsubscribeOperations: (() => void) | null = null;
   // Keep lifecycle state separate from the host View.open() method.
-  private proofreadViewOpen = false;
+  private sidebarOpen = false;
   private lifecycle = 0;
   private ownedGeneration: number | null = null;
   private renderedLocale: string | null = null;
+  private fileContext: HTMLElement | null = null;
+  private openFileButton: HTMLButtonElement | null = null;
+  private proofreadButton: HTMLButtonElement | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
-    private readonly refresh: (vaultPath: string, view: ProofreadView) => Promise<void>,
+    private readonly refresh: (vaultPath: string, view: AssistantView) => Promise<void>,
     private readonly operations: OperationCoordinator,
+    private readonly actions: AssistantViewActions,
   ) {
     super(leaf);
   }
 
   getViewType(): string {
-    return PROOFREAD_VIEW_TYPE;
+    return ASSISTANT_VIEW_TYPE;
   }
 
   getDisplayText(): string {
-    return t("proofreadViewTitle");
+    return t("sidebarTitle");
   }
 
   getIcon(): string {
-    return "check-circle";
+    return "file-text";
   }
 
   async onOpen(): Promise<void> {
-    this.proofreadViewOpen = true;
+    this.sidebarOpen = true;
     this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
     this.render();
@@ -85,7 +93,7 @@ export class ProofreadView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    this.proofreadViewOpen = false;
+    this.sidebarOpen = false;
     this.lifecycle += 1;
     this.resultsRevision += 1;
     const generation = this.ownedGeneration;
@@ -93,6 +101,9 @@ export class ProofreadView extends ItemView {
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
     this.activeOperation = null;
+    this.fileContext = null;
+    this.openFileButton = null;
+    this.proofreadButton = null;
     (this.containerEl.children[1] as HTMLElement).removeClass("docwen-proofread-root");
     if (generation !== null) this.operations.cancelGeneration(generation);
   }
@@ -109,14 +120,36 @@ export class ProofreadView extends ItemView {
     return () => isOpen() && this.ownedGeneration === lease.generation && lease.isCurrent();
   }
 
+  /** Scope late host cleanup to the runtime that constructed this view. */
+  belongsToRuntime(operations: OperationCoordinator): boolean {
+    return this.operations === operations;
+  }
+
   captureLifetime(): () => boolean {
     const lifecycle = this.lifecycle;
-    return () => this.proofreadViewOpen && this.lifecycle === lifecycle;
+    return () => this.sidebarOpen && this.lifecycle === lifecycle;
   }
 
   /** Refresh existing reports when the plugin's effective interface language changes. */
   refreshLocale(): void {
-    if (this.proofreadViewOpen && this.renderedLocale !== getCurrentLocale()) this.render();
+    if (this.sidebarOpen && this.renderedLocale !== getCurrentLocale()) this.render();
+  }
+
+  /** File changes update only the action controls; the report, focus and scroll stay intact. */
+  refreshActiveFile(): void {
+    if (!this.sidebarOpen) return;
+    // Public host contract: non-FileView focus retains the most recently active file.
+    // Read it afresh; file changes and closure must never reuse a cached TFile.
+    const file = this.app.workspace.getActiveFile();
+    const localFile = file && resolveAbsoluteFilePath(this.app.vault, file) ? file : null;
+    const isMarkdown = localFile?.extension.toLowerCase() === "md";
+    if (this.openFileButton) this.openFileButton.disabled = !localFile;
+    if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
+    if (this.fileContext) {
+      this.fileContext.setText(localFile
+        ? `${t("sidebarCurrentFile", { filename: localFile.name })}${isMarkdown ? "" : `\n${t("noticeProofreadNoMdFile")}`}`
+        : t("sidebarNoFile"));
+    }
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
@@ -176,7 +209,10 @@ export class ProofreadView extends ItemView {
     container.setAttribute("dir", this.renderedLocale === "ar" ? "rtl" : "ltr");
     container.empty();
 
-    // Toolbar
+    this.renderActions(container);
+    container.createEl("h3", { cls: "docwen-assistant-report-heading", text: t("proofreadViewTitle") });
+
+    // Report toolbar
     const toolbar = container.createDiv({ cls: "docwen-proofread-toolbar" });
 
     const refreshBtn = toolbar.createEl("button", {
@@ -291,6 +327,37 @@ export class ProofreadView extends ItemView {
     const revision = this.resultsRevision;
     this.appendIssues(list, sorted, revision, 0, shown);
     this.appendLoadMore(list, count, sorted, revision, shown);
+  }
+
+  private renderActions(container: HTMLElement): void {
+    const group = container.createDiv({
+      cls: "docwen-assistant-actions",
+      attr: { role: "group", "aria-label": t("sidebarTitle") },
+    });
+    const isOpen = this.captureLifetime();
+    const button = (key: keyof Translations, icon: string, identity: string, action: () => Promise<void>): HTMLButtonElement => {
+      const element = group.createEl("button", {
+        cls: "docwen-assistant-action",
+        attr: { type: "button", "data-docwen-view-key": identity },
+      });
+      const image = element.createSpan({ attr: { "aria-hidden": "true" } });
+      setIcon(image, icon);
+      element.createSpan({ text: t(key) });
+      element.addEventListener("click", () => {
+        if (!isOpen() || !element.isConnected) return;
+        this.refreshActiveFile();
+        if (!element.disabled) void action();
+      });
+      return element;
+    };
+    button("sidebarOpenGui", "external-link", "open-gui", () => this.actions.openGui());
+    this.openFileButton = button("commandLaunchWithFile", "file-input", "open-current-file", () => this.actions.openCurrentFile());
+    this.proofreadButton = button("commandProofread", "check-circle", "proofread-current-file", () => this.actions.proofreadCurrentFile(this));
+    this.fileContext = container.createDiv({
+      cls: "docwen-assistant-file-context",
+      attr: { role: "status", "aria-live": "polite" },
+    });
+    this.refreshActiveFile();
   }
 
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {

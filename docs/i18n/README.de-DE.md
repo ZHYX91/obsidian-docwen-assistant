@@ -62,7 +62,17 @@ Ersetzen Sie bei manuellen Updates nur `main.js`, `manifest.json` und `styles.cs
 
 **Welche Befehle verfügbar sind, hängt von der Datei ab.** Die Konvertierung erfordert eine passende Funktion der verbundenen DocWen-Installation. Der Export speichert separate Ergebnisse; Korrekturlesen verändert die Notiz nicht. **Das Hinzufügen und Entfernen von Überschriftennummern ändert dagegen den Markdown-Text.** Vor dem Speichern werden Editorinhalt oder gespeicherte Datei auf Änderungen geprüft. Bei mehreren nicht eindeutig zuordenbaren Editoren derselben Datei wird abgebrochen.
 
-Über das Symbol, das **DocWen**-Untermenü oder die Befehlspalette können Sie DocWen starten, Word/Excel/Markdown exportieren, Überschriftennummern ändern, Markdown prüfen und **DocWen-Verbindung prüfen** ausführen.
+Klicken Sie auf das Symbol oder führen Sie **DocWen Assistant-Seitenleiste öffnen** aus, um die Seitenleiste zu öffnen oder zu fokussieren. Sie lässt sich auch ohne geöffnete Datei oder eingerichtetes DocWen öffnen. Erneutes Öffnen erhält den aktuellen Bericht.
+
+Die Seitenleiste bietet drei getrennte Aktionen:
+
+- **DocWen öffnen** öffnet oder aktiviert die Desktop-Anwendung.
+- **Aktuelle Datei in DocWen öffnen** öffnet die von Obsidian aktuell ausgewählte Datei und ist ohne lokale Datei deaktiviert.
+- **Aktuelle Markdown-Datei korrekturlesen** prüft die aktuelle Markdown-Notiz und ist für andere Dateien oder während einer Korrekturprüfung dieser Seitenleiste deaktiviert.
+
+Dateiaktionen ermitteln die aktuelle Obsidian-Datei beim Klicken, auch wenn die Seitenleiste den Fokus hat. Ein Dateiwechsel aktualisiert die Schaltflächen und erhält den Bericht. Dessen Aktualisierung prüft weiterhin die ursprüngliche Notiz. Das Schließen der Seitenleiste bricht nur ihre eigene Korrekturprüfung ab; die Steuerung der Desktop-Anwendung läuft unabhängig.
+
+Das **DocWen**-Untermenü und die Befehlspalette bieten außerdem App-Start, Word/Excel/Markdown-Export, Überschriftennummerierung, Korrekturlesen und **DocWen-Verbindung prüfen**.
 
 Wählen Sie eine Vorlage oder ein Konvertierungsprofil, falls angeboten, und danach den Ausgabeordner. Prüfen Sie Quelldatei, Format, Ziel und Optionen und klicken Sie auf **Exportieren**. Die Übersicht verwendet die für diesen Auftrag erfassten Einstellungen; beim Abbrechen startet keine Konvertierung. Ein einzelnes DOCX oder XLSX wird direkt im gewählten Ordner gespeichert, wenn DocWen eine Datei liefert. Markdown und gruppierte Ergebnisse behalten ihren eigenen Ordner mit Bildern und Anhängen. Klicken Sie nach Abschluss in der Meldung auf **Ergebnisordner öffnen**. Dies öffnet den Ordner mit der Ausgabe. Vorhandene Dateien und Ordner bleiben erhalten.
 
