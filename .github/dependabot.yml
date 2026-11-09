@@ -13,6 +13,10 @@ updates:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
+      # Keep the API declarations on the verified Obsidian 1.13 baseline.
+      - dependency-name: "obsidian"
+        update-types:
+          - version-update:semver-minor
     groups:
       non-major:
         applies-to: version-updates
