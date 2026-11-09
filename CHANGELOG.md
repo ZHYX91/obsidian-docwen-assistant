@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-11-09
+
 - Make the ribbon and a dedicated command open or focus the Assistant sidebar, with separate controls for opening DocWen, opening the current file and proofreading current Markdown.
 - Reuse existing sidebar leaves and reports, refresh current-file actions through the host contract, and keep GUI and proofreading lifecycle ownership separate.
 - Update sidebar labels, usage help and guides in all twelve interface languages.
@@ -17,6 +19,9 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Proofread generated Word documents through DocWen's explicit four-rule conversion contract instead of advisory Markdown validation. Keep standalone Markdown proofreading and its sidebar independent.
 - Exclude spreadsheet exports from proofreading and its review options. Explain upgrade or disable steps when an older backend lacks Word proofreading support.
+
+- Clarify where Word, Excel and Markdown exports are saved and show platform-specific installation guidance in all twelve interface languages.
+- Pin the shared maintenance scripts and verify their hashes before build, install and lint.
 
 ## [3.5.2] - 2026-11-02
 
@@ -278,7 +283,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.2...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.6.0...HEAD
+[3.6.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.2...3.6.0
 [3.5.2]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.1...3.5.2
 [3.5.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.0...3.5.1
 [3.1.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.0.0...3.1.0
