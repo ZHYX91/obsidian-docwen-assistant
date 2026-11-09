@@ -64,7 +64,7 @@
     "ajv": "8.20.0",
     "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
-    "eslint-plugin-obsidianmd": "^0.5.1",
+    "eslint-plugin-obsidianmd": "^0.4.2",
     "happy-dom": "21.0.4",
     "obsidian": "^1.13.1",
     "tslib": "^2.9.1",
