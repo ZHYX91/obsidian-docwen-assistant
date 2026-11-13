@@ -4,6 +4,11 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.1] - 2026-11-13
+
+- Give cold GUI launches a bounded 90-second request budget, preserve structured Core failure codes, and prioritize explicit GUI opens over queued background work.
+- Serialize background capability inspections, debounce active-file edits, and invalidate other changed files without eagerly inspecting the whole Vault.
+
 ## [3.6.0] - 2026-11-09
 
 - Make the ribbon and a dedicated command open or focus the Assistant sidebar, with separate controls for opening DocWen, opening the current file and proofreading current Markdown.

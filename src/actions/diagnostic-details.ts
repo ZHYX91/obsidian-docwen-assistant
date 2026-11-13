@@ -24,7 +24,7 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
   if (read("phase") === "initialize") details.phase = "initialize";
   for (const key of ["phase", "primaryPhase"]) {
     const phase = read(key);
-    if (["create_process", "owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(typeof phase === "string" ? phase : "")) {
+    if (["queue", "gui_control", "create_process", "owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(typeof phase === "string" ? phase : "")) {
       details[key] = phase;
     }
   }

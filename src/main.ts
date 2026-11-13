@@ -243,12 +243,19 @@ export default class DocWenPlugin extends Plugin {
       operationStatus.dispose();
       if (this.operationStatus === operationStatus) this.operationStatus = null;
     });
+    let modifiedPreloadTimer: number | undefined;
+    const cancelModifiedPreload = (): void => {
+      if (modifiedPreloadTimer !== undefined) window.clearTimeout(modifiedPreloadTimer);
+      modifiedPreloadTimer = undefined;
+    };
+    this.runtimeDisposer.add(cancelModifiedPreload);
     const preloadCapabilities = (file: TFile | null): void => {
       if (!file) return;
       const filePath = resolveAbsoluteFilePath(this.app.vault, file);
       if (filePath) void this.capabilities.preload(filePath);
     };
     this.registerEvent(this.app.workspace.on("file-open", (file) => {
+      cancelModifiedPreload();
       preloadCapabilities(file);
       this.refreshSidebarFiles();
     }));
@@ -260,7 +267,13 @@ export default class DocWenPlugin extends Plugin {
         : null;
       if (filePath) {
         this.capabilities.invalidate(filePath);
-        preloadCapabilities(modifiedFile);
+        if (modifiedFile === this.app.workspace.getActiveFile()) {
+          cancelModifiedPreload();
+          modifiedPreloadTimer = window.setTimeout(() => {
+            modifiedPreloadTimer = undefined;
+            if (modifiedFile === this.app.workspace.getActiveFile()) preloadCapabilities(modifiedFile);
+          }, 300);
+        }
       }
     }));
     this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
@@ -276,7 +289,7 @@ export default class DocWenPlugin extends Plugin {
       if (oldAbsolute) this.capabilities.invalidate(oldAbsolute);
       const currentAbsolute = resolveAbsoluteFilePath(this.app.vault, file);
       if (currentAbsolute) this.capabilities.invalidate(currentAbsolute);
-      preloadCapabilities(file);
+      if (file === this.app.workspace.getActiveFile()) preloadCapabilities(file);
     }));
     this.registerEvent(this.app.vault.on("delete", (file) => {
       this.refreshSidebarFiles();

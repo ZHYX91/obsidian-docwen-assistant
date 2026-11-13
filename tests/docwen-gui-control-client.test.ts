@@ -48,6 +48,27 @@ class FakeChild extends EventEmitter {
 }
 
 describe("DocWenGuiControlClient", () => {
+  it("keeps a slow cold launch alive until the original file request is accepted", async () => {
+    vi.useFakeTimers();
+    const child = new FakeChild(0, false);
+    spawnMock.mockReturnValue(child);
+    const pending = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open("C:\\Vault\\note.md");
+    await vi.advanceTimersByTimeAsync(25_000);
+    expect(child.killed).toBe(false);
+    child.stdout.write(JSON.stringify({ protocol_version: 3, product_version: "0.23.0", success: true,
+      command: "gui open", data: { accepted: true }, error: null }));
+    child.emit("close", 0);
+    await expect(pending).resolves.toBeUndefined();
+    expect(spawnMock).toHaveBeenCalledOnce();
+  });
+
+  it("retains the structured Core timeout code", async () => {
+    spawnMock.mockImplementation(() => new FakeChild(8, true, JSON.stringify({
+      protocol_version: 3, command: "gui open", success: false, error: { code: "timeout" },
+    })));
+    await expect(new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open())
+      .rejects.toMatchObject({ code: "cli_timeout", details: { primaryCode: "timeout", phase: "gui_control" } });
+  });
   afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     spawnMock.mockReset();
@@ -66,7 +87,7 @@ describe("DocWenGuiControlClient", () => {
 
     expect(spawnMock).toHaveBeenCalledWith(
       target.executable,
-      ["gui", "open", "--json", "--quiet", "--timeout", "10", "C:\\Vault\\note.md"],
+      ["gui", "open", "--json", "--quiet", "--timeout", "75", "C:\\Vault\\note.md"],
       expect.objectContaining({
         cwd: target.cwd,
         shell: false,
@@ -91,7 +112,7 @@ describe("DocWenGuiControlClient", () => {
       "--json",
       "--quiet",
       "--timeout",
-      "10",
+      "75",
     ]);
   });
 
@@ -189,7 +210,7 @@ describe("DocWenGuiControlClient", () => {
     spawnMock.mockReturnValue(child);
     const pending = new DocWenGuiControlClient(() => "C:\\DocWen\\DocWenCLI.exe").open();
     const failure = expect(pending).rejects.toMatchObject({ code: "cli_timeout" });
-    await vi.advanceTimersByTimeAsync(15_500);
+    await vi.advanceTimersByTimeAsync(90_500);
     await failure;
     expect(signals).toEqual(["SIGTERM", "SIGKILL"]);
   });
