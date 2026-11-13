@@ -15,6 +15,7 @@ import {
 export const WINDOWS_MACHINE_OWNER_TARGET_ENV = "DOCWEN_ASSISTANT_JOB_TARGET";
 export const WINDOWS_MACHINE_OWNER_FAILURE_EXIT = 125;
 export const WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT = 126;
+export const WINDOWS_MACHINE_TARGET_CREATE_FAILED_EXIT = 128;
 
 export type WindowsMachineOwnerPhase = "owner_materialize" | "owner_verify" | "owner_spawn" | "owner_runtime";
 

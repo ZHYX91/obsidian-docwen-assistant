@@ -41,8 +41,11 @@ typedef unsigned char BYTE;
 #define WRAPPER_ERROR 125u
 #define TARGET_NOT_FOUND 126u
 #define TARGET_FAILURE 127u
+#define TARGET_CREATE_FAILED 128u
 #define ERROR_FILE_NOT_FOUND 2u
 #define ERROR_PATH_NOT_FOUND 3u
+#define ERROR_SHARING_VIOLATION 32u
+#define ERROR_LOCK_VIOLATION 33u
 #define MAX_TARGET 16384u
 #define MAX_COMMAND 32767u
 
@@ -66,6 +69,8 @@ __declspec(dllimport) BOOL WINAPI SetStdHandle(DWORD, HANDLE);
 __declspec(dllimport) BOOL WINAPI SetHandleInformation(HANDLE, DWORD, DWORD);
 __declspec(dllimport) DWORD WINAPI GetEnvironmentVariableW(LPCWSTR, LPWSTR, DWORD);
 __declspec(dllimport) DWORD WINAPI GetLastError(void);
+__declspec(dllimport) ULONGLONG WINAPI GetTickCount64(void);
+__declspec(dllimport) void WINAPI Sleep(DWORD);
 __declspec(dllimport) BOOL WINAPI SetEnvironmentVariableW(LPCWSTR, LPCWSTR);
 __declspec(dllimport) BOOL WINAPI WriteFile(HANDLE, LPCVOID, DWORD, DWORD *, LPVOID);
 __declspec(dllimport) void WINAPI ExitProcess(UINT);
@@ -180,13 +185,14 @@ static void fail_target_create(HANDLE job, DWORD createError) {
   message[length++] = '\n';
   WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, length, &written, (LPVOID)0);
   if (job && job != INVALID_HANDLE_VALUE) {
-    TerminateJobObject(job, WRAPPER_ERROR);
-    CloseHandle(job);
+    /* CreateProcess returned false: no target ever joined this private job.
+       Distinguish this empty, closed owner from unconfirmed runtime cleanup. */
+    if (!CloseHandle(job)) ExitProcess(WRAPPER_ERROR);
   }
   if (createError == ERROR_FILE_NOT_FOUND || createError == ERROR_PATH_NOT_FOUND) {
     ExitProcess(TARGET_NOT_FOUND);
   }
-  ExitProcess(WRAPPER_ERROR);
+  ExitProcess(TARGET_CREATE_FAILED);
 }
 
 static BOOL build_command_line(DWORD targetLength) {
@@ -284,7 +290,13 @@ void entry(void) {
   startup.StartupInfo.hStdInput = input;
   startup.StartupInfo.hStdOutput = output;
   startup.StartupInfo.hStdError = error;
-  if (!CreateProcessW(
+  ULONGLONG createStarted = GetTickCount64();
+  for (;;) {
+    /* CreateProcess may modify its command line even when it fails. Retry only
+       sharing/locking failures before any child exists, inside the same owner.
+       The parent operation deadline and cancellation still terminate this owner. */
+    if (!build_command_line(targetLength)) fail(job, (HANDLE)0, (HANDLE)0);
+    if (CreateProcessW(
         target,
         commandLine,
         (LPVOID)0,
@@ -294,9 +306,13 @@ void entry(void) {
         (LPVOID)0,
         (LPCWSTR)0,
         &startup.StartupInfo,
-        &processInfo)) {
+        &processInfo)) break;
     DWORD createError = GetLastError();
-    fail_target_create(job, createError);
+    if ((createError != ERROR_SHARING_VIOLATION && createError != ERROR_LOCK_VIOLATION) ||
+        GetTickCount64() - createStarted >= 5000u) {
+      fail_target_create(job, createError);
+    }
+    Sleep(100u);
   }
   DeleteProcThreadAttributeList(startup.lpAttributeList);
   HeapFree(heap, 0, startup.lpAttributeList);
@@ -332,6 +348,6 @@ void entry(void) {
   }
   CloseHandle(job);
   /* Keep controller failures distinct from a successfully launched target. */
-  ExitProcess(exitCode == WRAPPER_ERROR || exitCode == TARGET_NOT_FOUND
+  ExitProcess(exitCode == WRAPPER_ERROR || exitCode == TARGET_NOT_FOUND || exitCode == TARGET_CREATE_FAILED
     ? TARGET_FAILURE : exitCode);
 }

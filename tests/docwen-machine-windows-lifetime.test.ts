@@ -105,26 +105,61 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     }
   }, 10_000);
 
-  it("retains the Windows startup error alongside an unconfirmed cleanup result", async () => {
-    const root = await mkdtemp(path.join(tmpdir(), "docwen-invalid-executable-"));
-    roots.push(root);
-    const executable = path.join(root, "invalid.exe");
+  it("does not block later operations when Windows never created the target", async () => {
+    const fixture = await createNodeFixture("root-exit");
+    const executable = path.join(fixture.root, "invalid.exe");
     await writeFile(executable, "This is not a Windows executable.");
-    const client = new DocWenMachineClient(() => executable, () => "ar_SA");
+    let selected = executable;
+    const client = new DocWenMachineClient(() => ({ executable: selected, cwd: fixture.root, mode: "manual" }), () => "ar_SA");
     try {
       await expect(client.query("health/check", {}, undefined, 5_000)).rejects.toMatchObject({
-        code: "cli_cleanup_failed",
+        code: "cli_spawn_failed",
         details: {
-          cleanupState: "unconfirmed",
-          primaryCode: "cli_spawn_failed",
-          primaryPhase: "create_process",
-          primarySystemCode: expect.stringMatching(/^WIN32_(193|216)$/u),
+          phase: "create_process",
+          systemCode: expect.stringMatching(/^WIN32_(193|216)$/u),
         },
       });
+      selected = fixture.executable;
+      await expect(client.query("health/check", {}, undefined, 5_000)).resolves.toMatchObject({ all_ok: true });
     } finally {
       client.dispose();
     }
   }, 10_000);
+
+  it.each(["temporary", "persistent", "cancelled"] as const)(
+    "handles %s executable sharing contention without duplicate or late starts",
+    async (mode) => {
+      const fixture = await createNodeFixture("root-exit");
+      const abort = new AbortController();
+      let released: Promise<void> = Promise.resolve();
+      const store = new WindowsMachineOwnerStore(async () => {
+        const image = await materializeWindowsMachineOwner();
+        released = (await holdExecutable(fixture.executable, mode === "persistent" ? 6500 : mode === "cancelled" ? 1500 : 750)).closed;
+        if (mode === "cancelled") setTimeout(() => abort.abort(), 250);
+        return image;
+      });
+      const client = new DocWenMachineClient(() => fixture.executable, () => "en_US", undefined, store);
+      try {
+        const query = client.query("health/check", {}, abort.signal, 12_000);
+        if (mode === "temporary") {
+          await expect(query).resolves.toMatchObject({ all_ok: true });
+        } else {
+          await expect(query).rejects.toMatchObject(mode === "cancelled"
+            ? { code: "cli_cancelled" }
+            : { code: "cli_spawn_failed", details: { phase: "create_process", systemCode: "WIN32_32" } });
+          await released;
+          await expect(lstat(fixture.trace)).rejects.toMatchObject({ code: "ENOENT" });
+          await expect(client.query("health/check", {}, undefined, 5000)).resolves.toMatchObject({ all_ok: true });
+        }
+        await released;
+        const events = (await readFile(fixture.trace, "utf8")).trim().split("\n").map(line => JSON.parse(line) as { event: string });
+        expect(events.filter(row => row.event === "root_started")).toHaveLength(1);
+      } finally {
+        client.dispose();
+        await released;
+      }
+    }, 20_000,
+  );
 
   it("cleans an independent-stdio descendant after the direct root exits normally", async () => {
     const fixture = await createNodeFixture("root-exit");
@@ -241,8 +276,8 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
     }
   }, 10_000);
 
-  it("keeps an early target exit 126 separate from target discovery failure", async () => {
-    const fixture = await createNodeFixture("target-exit-126");
+  it.each(["target-exit-126", "target-exit-128"] as const)("keeps %s separate from owner startup failure", async (mode) => {
+    const fixture = await createNodeFixture(mode);
     const client = new DocWenMachineClient(() => ({
       executable: fixture.executable, cwd: fixture.root, mode: "manual",
     }), () => "en_US");
@@ -358,7 +393,33 @@ describe.skipIf(process.platform !== "win32")("DocWenMachineClient Windows lifet
   });
 });
 
-type FixtureMode = "root-exit" | "target-exit-125" | "target-exit-126" | "timeout" | "cancel" | "unload" | "marker";
+type FixtureMode = "root-exit" | "target-exit-125" | "target-exit-126" | "target-exit-128" | "timeout" | "cancel" | "unload" | "marker";
+
+async function holdExecutable(executable: string, milliseconds: number): Promise<{ closed: Promise<void> }> {
+  const script = path.join(path.dirname(executable), "hold-executable.ps1");
+  await writeFile(script, [
+    "param([string]$Target,[int]$Milliseconds)",
+    "$ErrorActionPreference='Stop'",
+    "$handle=[IO.File]::Open($Target,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None)",
+    "try{[Console]::WriteLine('locked');Start-Sleep -Milliseconds $Milliseconds}finally{$handle.Dispose()}",
+  ].join("\n"), "utf8");
+  const child = spawn(path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+    ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "RemoteSigned", "-File", script, executable, String(milliseconds)],
+    { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] });
+  controls.push(child);
+  const closed = new Promise<void>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", code => code === 0 ? resolve() : reject(new Error(`Lock fixture exited ${code}`)));
+  });
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Lock fixture did not become ready")), 5000);
+    let output = "";
+    child.stdout.on("data", (data: Buffer) => { output += data.toString("utf8"); if (output.includes("locked")) { clearTimeout(timer); resolve(); } });
+    void closed.then(() => { clearTimeout(timer); reject(new Error("Lock fixture exited before readiness")); }, error => { clearTimeout(timer); reject(error); });
+  });
+  // Return an object rather than the promise itself: async would await/unlock it.
+  return { closed };
+}
 
 async function createNodeFixture(mode: FixtureMode): Promise<{ root: string; executable: string; trace: string }> {
   const root = await mkdtemp(path.join(tmpdir(), "docwen-windows-owner-"));
@@ -504,6 +565,7 @@ function handle(message) {
 }
 record("root_started");
 if (mode === "target-exit-126") process.exit(126);
+if (mode === "target-exit-128") process.exit(128);
 process.stdin.on("data", (chunk) => {
   buffer = Buffer.concat([buffer, chunk]);
   while (true) {

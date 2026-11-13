@@ -6,6 +6,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [3.6.1] - 2026-11-13
 
+- Retry brief Windows executable sharing contention within the existing operation deadline, and keep confirmed pre-creation failures separate from unconfirmed process cleanup so a failed start does not unnecessarily block later operations.
 - Give cold GUI launches a bounded 90-second request budget, preserve structured Core failure codes, and prioritize explicit GUI opens over queued background work.
 - Serialize background capability inspections, debounce active-file edits, and invalidate other changed files without eagerly inspecting the whole Vault.
 
