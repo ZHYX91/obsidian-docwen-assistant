@@ -8,6 +8,7 @@ EXPORTS
   GetEnvironmentVariableW
   GetExitCodeProcess
   GetLastError
+  GetTickCount64
   GetPackagePathByFullName
   GetPackagesByPackageFamily
   GetProcessHeap
@@ -20,6 +21,7 @@ EXPORTS
   SetHandleInformation
   SetInformationJobObject
   SetStdHandle
+  Sleep
   TerminateJobObject
   TerminateProcess
   UpdateProcThreadAttribute

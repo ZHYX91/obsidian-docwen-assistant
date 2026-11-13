@@ -22,6 +22,7 @@ import {
   windowsMachineOwnerDetails,
   WINDOWS_MACHINE_OWNER_FAILURE_EXIT,
   WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT,
+  WINDOWS_MACHINE_TARGET_CREATE_FAILED_EXIT,
   WindowsMachineOwnerStore,
 } from "./windows-machine-owner";
 
@@ -1255,7 +1256,7 @@ function windowsOwnerEarlyExit(
       { exitCode, mode, ...windowsMachineOwnerDetails("owner_runtime"), ...systemError },
     );
   }
-  if (exitCode === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
+  if (exitCode === WINDOWS_MACHINE_OWNER_FAILURE_EXIT || exitCode === WINDOWS_MACHINE_TARGET_CREATE_FAILED_EXIT) {
     return new LocalCliError(
       "cli_spawn_failed",
       "The Windows Machine lifetime owner failed before the operation completed.",
