@@ -62,6 +62,7 @@ export class DocWenCapabilityService {
   private projectionRequest: ProjectionRequest | null = null;
   private readonly fileCache = new Map<string, FileCapability | Error>();
   private readonly preloadRequests = new Map<string, PreloadRequest>();
+  private preloadTail: Promise<void> | null = null;
 
   constructor(private readonly client: DocWenClient) {}
 
@@ -209,7 +210,13 @@ export class DocWenCapabilityService {
     const controller = new AbortController();
     const generation = this.generation;
     let request!: PreloadRequest;
-    const promise = this.forFile(filePath, controller.signal).then(
+    const inspect = async (): Promise<FileCapability> => {
+      if (controller.signal.aborted || generation !== this.generation) {
+        throw new LocalCliError("cli_cancelled", "Superseded background inspection.");
+      }
+      return this.forFile(filePath, controller.signal);
+    };
+    const promise = (this.preloadTail ? this.preloadTail.then(inspect) : inspect()).then(
       (capability) => {
         if (this.isCurrentPreload(filePath, request)) this.fileCache.set(filePath, capability);
       },
@@ -220,9 +227,11 @@ export class DocWenCapabilityService {
       },
     ).finally(() => {
       if (this.preloadRequests.get(filePath) === request) this.preloadRequests.delete(filePath);
+      if (this.preloadTail === promise) this.preloadTail = null;
     });
     request = { controller, generation, promise };
     this.preloadRequests.set(filePath, request);
+    this.preloadTail = promise;
     return promise;
   }
 

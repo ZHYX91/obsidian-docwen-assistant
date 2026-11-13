@@ -341,7 +341,7 @@ describe("DocWenPlugin lifecycle", () => {
     expect(remove).toBeDefined();
     rename?.(newFile, "old.md");
     expect(state.capabilityInvalidations).toEqual(["D:\\Vault\\old.md", "D:\\Vault\\new.md"]);
-    expect(state.capabilityPreloads).toContain("D:\\Vault\\new.md");
+    expect(state.capabilityPreloads).not.toContain("D:\\Vault\\new.md");
     remove?.(newFile);
     expect(state.capabilityInvalidations.at(-1)).toBe("D:\\Vault\\new.md");
     plugin.onunload();
@@ -379,9 +379,9 @@ describe("DocWenPlugin lifecycle", () => {
       : Object.assign(new TFile(), { path: event === "rename" ? "new.md" : "old.md" });
     state.vaultEvents.get(event.endsWith("rename") ? "rename" : "delete")?.(source, "old.md");
     state.workspaceEvents.get("file-open")?.(Object.assign(new TFile(), { path: "old.md" }));
-    await vi.waitFor(() => expect(service.peek(path)).toBe(replacement));
     rejectOld(new Error("stale source inspection failed later"));
     await old;
+    await vi.waitFor(() => expect(service.peek(path)).toBe(replacement));
     expect(service.peek(path)).toBe(replacement);
     plugin.onunload();
   });

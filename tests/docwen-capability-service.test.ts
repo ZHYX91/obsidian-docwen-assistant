@@ -156,6 +156,23 @@ function deferred<T>() {
 }
 
 describe("DocWenCapabilityService", () => {
+  it("bounds a burst of different-file background inspections to one active request", async () => {
+    let active = 0;
+    let peak = 0;
+    const inspect = vi.fn(async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      await Promise.resolve();
+      active -= 1;
+      return inspection();
+    });
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    await Promise.all(Array.from({ length: 40 }, (_, index) => service.preload(`D:\\file-${index}.md`)));
+    expect(inspect).toHaveBeenCalledTimes(40);
+    expect(peak).toBe(1);
+  });
   it("joins optimizer resources by declared identity and keeps ordinary conversion separate", async () => {
     const ordinary = capability("ordinary", "convert", "text/markdown");
     const optimized = { ...capability("opaque-capability", "transform", "text/markdown", { recognize_text: { type: "boolean" } }), optimization_id: "gongwen" };
@@ -359,9 +376,11 @@ describe("DocWenCapabilityService", () => {
 
     const oldPreload = service.preload("D:\\note.md");
     service.reset();
-    await service.preload("D:\\note.md");
+    const replacementPreload = service.preload("D:\\note.md");
+    expect(client.inspect).toHaveBeenCalledOnce();
     oldInspection.resolve(inspection({ reasonCode: "stale" }));
     await oldPreload;
+    await replacementPreload;
 
     expect(service.peek("D:\\note.md")).toMatchObject({
       inspection: { reasonCode: "replacement" },
@@ -401,9 +420,10 @@ describe("DocWenCapabilityService", () => {
     const path = "D:\\note.md";
     const old = service.preload(path);
     service.invalidate(all ? undefined : path);
-    await service.preload(path);
+    const replacementPreload = service.preload(path);
     stale.reject(new Error("late failure from the removed source"));
     await old;
+    await replacementPreload;
     expect(service.peek(path)).toMatchObject({ inspection: { reasonCode: "replacement" } });
   });
 

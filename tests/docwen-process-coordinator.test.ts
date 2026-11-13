@@ -10,6 +10,19 @@ function deferred() {
 }
 
 describe("DocWen Store process coordination", () => {
+  it("prioritizes waiting interactive requests without interrupting the current owner", async () => {
+    const coordinator = new DocWenProcessCoordinator();
+    const closed = deferred();
+    const events: string[] = [];
+    const active = coordinator.run(() => closed.promise, [], 1000);
+    const background = coordinator.run(async () => { events.push("background"); }, [], 1000);
+    const first = coordinator.run(async () => { events.push("first"); }, [], 1000, true);
+    const second = coordinator.run(async () => { events.push("second"); }, [], 1000, true);
+    expect(events).toEqual([]);
+    closed.resolve();
+    await Promise.all([active, background, first, second]);
+    expect(events).toEqual(["first", "second", "background"]);
+  });
   it("rejects queued and future starts after unconfirmed process cleanup", async () => {
     const coordinator = new DocWenProcessCoordinator();
     const failed = deferred();

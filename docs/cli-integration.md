@@ -20,6 +20,10 @@ DocWen Assistant requires DocWen 0.17.0 or later. Content operations consume `do
 
 ## Methods used
 
+GUI open has one 90-second budget beginning before the Windows queue; waiting for that queue is capped at 15 seconds. The remaining process budget includes a 15-second CLI-startup allowance, with the rest passed to Core as the control deadline. Status queries use a 15-second total budget and a five-second Core deadline. Successful open still requires Core's accepted response; a visible window alone does not establish file delivery. Structured nonzero-exit error codes are retained separately from queue and process timeout phases. Cancellation terminates only the owned control CLI, not an independently running GUI.
+
+Explicit GUI opens take priority among waiting Windows requests without interrupting the current process owner. Background file inspections run serially, coalesce the same pending path, and discard superseded results. Edits to the active file debounce for 300 ms; edits to other files invalidate their cached inspection without eagerly starting a process. Opening those files or explicitly requesting an action performs the required inspection.
+
 The resource-query locale is a display preference, not a conversion default. Conversion tasks do not derive `options.locale` from Assistant's interface language; the connected Core owns omitted output-language defaults. Numeric Windows owner startup diagnostics are retained separately from unconfirmed cleanup and pass through the finite shareable-diagnostic filter.
 
 Optimization choices join `resource/list` IDs to available `transform` capabilities through

@@ -11,8 +11,10 @@ import {
   type DocWenLaunchTarget,
 } from "./process-launch";
 
-const GUI_OPEN_TIMEOUT_SECONDS = 10;
-const PROCESS_TIMEOUT_MS = 15_000;
+const OPEN_REQUEST_TIMEOUT_MS = 90_000;
+const STATUS_REQUEST_TIMEOUT_MS = 15_000;
+const QUEUE_TIMEOUT_MS = 15_000;
+const CLI_STARTUP_ALLOWANCE_MS = 15_000;
 const OUTPUT_LIMIT_BYTES = 256 * 1024;
 const TERMINATE_GRACE_MS = 500;
 
@@ -32,11 +34,13 @@ export class DocWenGuiControlClient {
   }
 
   private async execute(command: "open" | "status", filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
-    const run = (): Promise<GuiResult> => this.executeUncoordinated(command, filePath, signal);
-    return this.processCoordinator ? this.processCoordinator.run(run, [signal], PROCESS_TIMEOUT_MS) : run();
+    const budget = command === "open" ? OPEN_REQUEST_TIMEOUT_MS : STATUS_REQUEST_TIMEOUT_MS;
+    const deadline = performance.now() + budget;
+    const run = (): Promise<GuiResult> => this.executeUncoordinated(command, deadline, filePath, signal);
+    return this.processCoordinator ? this.processCoordinator.run(run, [signal], Math.min(QUEUE_TIMEOUT_MS, budget), command === "open") : run();
   }
 
-  private async executeUncoordinated(command: "open" | "status", filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
+  private async executeUncoordinated(command: "open" | "status", deadline: number, filePath?: string, signal?: AbortSignal): Promise<GuiResult> {
     if (signal?.aborted) {
       throw new LocalCliError("cli_cancelled", "DocWen GUI open was cancelled.");
     }
@@ -45,13 +49,18 @@ export class DocWenGuiControlClient {
     }
 
     const target = normalizeDocWenLaunchTarget(this.resolveLaunchTarget());
+    const remainingMs = Math.ceil(deadline - performance.now());
+    if (remainingMs < 1_000) {
+      throw new LocalCliError("cli_timeout", "DocWen GUI request expired before launch.", { phase: "queue" });
+    }
+    const controlSeconds = command === "status" ? 5 : Math.max(1, Math.floor((remainingMs - CLI_STARTUP_ALLOWANCE_MS) / 1_000));
     const args = [
       "gui",
       command,
       "--json",
       "--quiet",
       "--timeout",
-      String(GUI_OPEN_TIMEOUT_SECONDS),
+      String(controlSeconds),
       ...(filePath ? [filePath] : []),
     ];
     const child = spawn(target.executable, args, {
@@ -125,10 +134,23 @@ export class DocWenGuiControlClient {
         if (settled) return;
         if (stopping) { finish(stopping); return; }
         if (code !== 0) {
+          let remoteCode: string | undefined;
+          try {
+            const value: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(stdout)));
+            if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+              const envelope = value as Record<string, unknown>;
+              const error = envelope.error;
+              if (envelope.protocol_version === 3 && envelope.command === `gui ${command}`
+                && envelope.success === false && typeof error === "object" && error !== null && !Array.isArray(error)) {
+                const code = (error as Record<string, unknown>).code;
+                if (typeof code === "string" && /^[a-z][a-z0-9_]{0,95}$/u.test(code)) remoteCode = code;
+              }
+            }
+          } catch { /* Preserve the process failure when no valid error envelope exists. */ }
           finish(new LocalCliError(
-            "cli_gui_control_failed",
+            remoteCode === "timeout" ? "cli_timeout" : "cli_gui_control_failed",
             "DocWen rejected the GUI control request.",
-            { exitCode: code },
+            { exitCode: code, ...(remoteCode ? { primaryCode: remoteCode, phase: "gui_control" } : {}) },
           ));
           return;
         }
@@ -144,9 +166,9 @@ export class DocWenGuiControlClient {
 
       timer = scheduleTimeout(() => {
         terminate(new LocalCliError("cli_timeout", "DocWen GUI control timed out.", {
-          timeoutMs: PROCESS_TIMEOUT_MS,
+          timeoutMs: remainingMs, phase: "gui_control",
         }));
-      }, PROCESS_TIMEOUT_MS);
+      }, remainingMs);
       signal?.addEventListener("abort", onAbort, { once: true });
       if (signal?.aborted) onAbort();
     });

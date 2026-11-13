@@ -6,10 +6,10 @@ import { LocalCliError } from "./errors";
 export class DocWenProcessCoordinator {
   private busy = false;
   private blocked: LocalCliError | undefined;
-  private readonly waiting: Array<() => void> = [];
+  private readonly waiting: Array<{ start: () => void; interactive: boolean }> = [];
 
-  async run<T>(operation: () => Promise<T>, signals: readonly (AbortSignal | undefined)[], timeoutMs: number): Promise<T> {
-    const release = await this.acquire(signals, timeoutMs);
+  async run<T>(operation: () => Promise<T>, signals: readonly (AbortSignal | undefined)[], timeoutMs: number, interactive = false): Promise<T> {
+    const release = await this.acquire(signals, timeoutMs, interactive);
     try {
       if (this.blocked) throw this.blocked;
       if (signals.some((signal) => signal?.aborted)) throw this.cancelled();
@@ -26,7 +26,7 @@ export class DocWenProcessCoordinator {
     }
   }
 
-  private acquire(signals: readonly (AbortSignal | undefined)[], timeoutMs: number): Promise<() => void> {
+  private acquire(signals: readonly (AbortSignal | undefined)[], timeoutMs: number, interactive: boolean): Promise<() => void> {
     if (this.blocked) return Promise.reject(this.blocked);
     if (signals.some((signal) => signal?.aborted)) return Promise.reject(this.cancelled());
     return new Promise((resolve, reject) => {
@@ -36,7 +36,7 @@ export class DocWenProcessCoordinator {
         for (const signal of signals) signal?.removeEventListener("abort", abort);
       };
       const fail = (error: LocalCliError): void => {
-        const index = this.waiting.indexOf(start);
+        const index = this.waiting.findIndex((item) => item.start === start);
         if (index < 0) return;
         this.waiting.splice(index, 1);
         cleanup();
@@ -51,14 +51,16 @@ export class DocWenProcessCoordinator {
           if (released) return;
           released = true;
           const next = this.waiting.shift();
-          if (next) next();
+          if (next) next.start();
           else this.busy = false;
         });
       };
       if (!this.busy) { start(); return; }
-      this.waiting.push(start);
+      const index = interactive ? this.waiting.findIndex((item) => !item.interactive) : -1;
+      if (index < 0) this.waiting.push({ start, interactive });
+      else this.waiting.splice(index, 0, { start, interactive });
       for (const signal of signals) signal?.addEventListener("abort", abort, { once: true });
-      timer = setTimeout(() => fail(new LocalCliError("cli_timeout", "DocWen process startup queue timed out.", { timeoutMs })), timeoutMs);
+      timer = setTimeout(() => fail(new LocalCliError("cli_timeout", "DocWen process startup queue timed out.", { timeoutMs, phase: "queue" })), timeoutMs);
     });
   }
 
