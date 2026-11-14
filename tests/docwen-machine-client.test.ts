@@ -10,7 +10,6 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMachineFrame, MachineFrameDecoder, type JsonObject } from "../src/docwen/machine-framing";
-import { WindowsMachineOwnerStore } from "../src/docwen/windows-machine-owner";
 
 const { spawnMock, serverState } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
@@ -23,10 +22,10 @@ const { spawnMock, serverState } = vi.hoisted(() => ({
     holdTask: false,
     ignoreCancellation: false,
     serverName: "DocWen",
-    serverVersion: "0.17.0",
+    serverVersion: "0.23.0",
     stderrOverflow: false,
     taskAccepted: false,
-    bundleVersion: "0.17.0",
+    bundleVersion: "0.23.0",
     artifactBundleSchema: "docwen.artifact_bundle.v3",
     protocolMajor: 2,
     protocolMinor: 0,
@@ -57,7 +56,6 @@ import {
 } from "../src/docwen/machine-client";
 
 const temporaryRoots: string[] = [];
-const fakeWindowsOwner = path.join(tmpdir(), "mock-machine-owner.exe");
 
 afterEach(async () => {
   vi.restoreAllMocks();
@@ -130,8 +128,9 @@ class FakeChild extends EventEmitter {
   private readonly decoder = new MachineFrameDecoder();
   private taskPlan: JsonObject | null = null;
 
-  constructor(closeDelayMs = 0, closeCode = 0) {
+  constructor(closeDelayMs = 0, closeCode = 0, managedReady = true) {
     super();
+    if (process.platform === "win32" && managedReady) queueMicrotask(() => this.stderr.write("DOCWEN_PROCESS_OWNER_READY:1\n"));
     this.stdin.on("data", (chunk: Buffer) => {
       for (const message of this.decoder.feed(Buffer.from(chunk))) this.handle(message);
     });
@@ -306,12 +305,8 @@ class FakeChild extends EventEmitter {
 describe("DocWenMachineClient", () => {
   beforeEach(() => {
     vi.stubGlobal("window", { setTimeout, clearTimeout });
-    // This suite models framed transport; native Job ownership has its own real-process suite.
-    vi.spyOn(WindowsMachineOwnerStore.prototype, "acquire").mockResolvedValue({
-      executable: fakeWindowsOwner,
-      assertActive: () => {},
-      release: () => {},
-    });
+    // Job mechanics are exercised by Core; this suite models its readiness and framed transport.
+    vi.stubEnv("LOCALAPPDATA", "C:\\Users\\Tester\\AppData\\Local");
     spawnMock.mockReset();
     serverState.cancelRequested = false;
     serverState.cancellationDelayMs = 0;
@@ -322,10 +317,10 @@ describe("DocWenMachineClient", () => {
     serverState.holdTask = false;
     serverState.ignoreCancellation = false;
     serverState.serverName = "DocWen";
-    serverState.serverVersion = "0.17.0";
+    serverState.serverVersion = "0.23.0";
     serverState.stderrOverflow = false;
     serverState.taskAccepted = false;
-    serverState.bundleVersion = "0.17.0";
+    serverState.bundleVersion = "0.23.0";
     serverState.artifactBundleSchema = "docwen.artifact_bundle.v3";
     serverState.protocolMajor = 2;
     serverState.protocolMinor = 0;
@@ -344,17 +339,58 @@ describe("DocWenMachineClient", () => {
       checks: [{ id: "config", kind: "config", label: "Config", status: "ok", reason: null }],
     });
     expect(spawnMock).toHaveBeenCalledWith(
-      process.platform === "win32" ? fakeWindowsOwner : "C:\\DocWen\\DocWenCLI.exe",
-      process.platform === "win32" ? [] : ["serve", "--stdio"],
+      "C:\\DocWen\\DocWenCLI.exe",
+      process.platform === "win32" ? ["serve", "--stdio", "--managed", "--parent-pid", String(process.pid)] : ["serve", "--stdio"],
       expect.objectContaining({ shell: false, windowsHide: true }),
     );
+  });
+
+  it.skipIf(process.platform !== "win32")("waits for the complete managed readiness record before sending any frame", async () => {
+    const child = new FakeChild(0, 0, false);
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const pending = client.query("health/check", {});
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    child.stderr.write("DOCWEN_PROCESS_OWNER_RE");
+    expect(serverState.requests).toEqual([]);
+    child.stderr.write("ADY:1\n");
+    await expect(pending).resolves.toMatchObject({ all_ok: true });
+  });
+
+  it.skipIf(process.platform !== "win32")("asks for a Core upgrade when the installed CLI lacks managed stdio", async () => {
+    const child = new FakeChild(0, 0, false);
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const pending = client.query("health/check", {});
+    setImmediate(() => {
+      child.stderr.write("unrecognized arguments: --managed --parent-pid\n");
+      child.emit("close", 2);
+    });
+    await expect(pending).rejects.toMatchObject({
+      code: "cli_incompatible_version",
+      details: { minimumProductVersion: "0.23.0", incompatibility: "process_ownership" },
+    });
+    expect(serverState.requests).toEqual([]);
+  });
+
+  it.skipIf(process.platform !== "win32").each(["timeout", "cancel", "unload"])("settles %s before managed readiness without sending business frames", async (reason) => {
+    const child = new FakeChild(0, 0, false);
+    spawnMock.mockReturnValueOnce(child);
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    const controller = new AbortController();
+    const pending = client.query("health/check", {}, controller.signal, 50);
+    if (reason === "cancel") setImmediate(() => controller.abort());
+    if (reason === "unload") setImmediate(() => client.dispose());
+    await expect(pending).rejects.toMatchObject({ code: reason === "timeout" ? "cli_timeout" : "cli_cancelled" });
+    expect(child.killed).toBe(true);
+    expect(serverState.requests).toEqual([]);
   });
 
   it.each([
     ["human diagnostics", Buffer.from("\u001b[33mWARNING: 本地诊断\u001b[0m\n")],
     ["a header-like log", Buffer.from("Content-Length: 2\r\n\r\n{}\n")],
     ["a truncated frame example", Buffer.from('Content-Length: 100\r\n\r\n{"jsonrpc":"2.0"}')],
-    ["logs at the byte limit", Buffer.alloc(256 * 1024, 0x78)],
+    ["logs at the byte limit", Buffer.alloc(256 * 1024 - (process.platform === "win32" ? Buffer.byteLength("DOCWEN_PROCESS_OWNER_READY:1\n") : 0), 0x78)],
   ] as const)("returns the query result without exposing %s on stderr", async (_description, stderr) => {
     const child = new FakeChild();
     child.stdin.once("finish", () => child.stderr.write(stderr));
@@ -548,7 +584,7 @@ describe("DocWenMachineClient", () => {
       code: "cli_incompatible_version",
       details: {
         incompatibility: "product_version",
-        minimumProductVersion: "0.17.0",
+        minimumProductVersion: process.platform === "win32" ? "0.23.0" : "0.17.0",
         actualProductVersion: version,
       },
     });
@@ -594,6 +630,7 @@ describe("DocWenMachineClient", () => {
   });
 
   it("launches the fixed automatic alias with an explicit safe working directory", async () => {
+    vi.stubEnv("LOCALAPPDATA", "C:\\Users\\Tester\\AppData\\Local");
     const aliasPath = "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe";
     const client = new DocWenMachineClient(
       () => ({ executable: aliasPath, cwd: "C:\\Temp", mode: "automatic" }),
@@ -602,12 +639,12 @@ describe("DocWenMachineClient", () => {
 
     await expect(client.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
     expect(spawnMock).toHaveBeenCalledWith(
-      process.platform === "win32" ? fakeWindowsOwner : aliasPath,
-      process.platform === "win32" ? [] : ["serve", "--stdio"],
+      aliasPath,
+      process.platform === "win32" ? ["serve", "--stdio", "--managed", "--parent-pid", String(process.pid)] : ["serve", "--stdio"],
       expect.objectContaining({ cwd: "C:\\Temp", shell: false }),
     );
     if (process.platform === "win32") {
-      expect(spawnMock.mock.calls[0][2].env.DOCWEN_ASSISTANT_JOB_TARGET).toBe(aliasPath);
+      expect(spawnMock.mock.calls[0][2].env).not.toHaveProperty("DOCWEN_ASSISTANT_JOB_TARGET");
     }
   });
 
@@ -641,7 +678,7 @@ describe("DocWenMachineClient", () => {
     vi.stubEnv("DOCWEN_LOG_TO_TEMP", "false");
     vi.stubEnv("NODE_OPTIONS", "must-not-cross-boundary");
     const client = new DocWenMachineClient(
-      () => ({ executable: "C:\\DocWen\\DocWenCLI.exe", cwd: "C:\\Other", mode: "automatic" }),
+      () => ({ executable: "C:\\DocWen\\DocWenCLI.exe", cwd: "C:\\Other", mode: "manual" }),
       () => "en_US",
     );
 
@@ -713,18 +750,18 @@ describe("DocWenMachineClient", () => {
     await expect(client.query("health/check", {})).rejects.toMatchObject({ code: "cli_alias_not_found" });
   });
 
-  it("preserves asynchronous Windows helper launch diagnostics without calling it a missing alias", async () => {
+  it("preserves asynchronous Windows CLI launch diagnostics without calling it a missing alias", async () => {
     vi.stubGlobal("process", Object.create(process, { platform: { value: "win32" } }));
     spawnMock.mockImplementationOnce(() => {
       const child = new FakeChild();
       child.stdin.removeAllListeners("data");
-      setImmediate(() => child.emit("error", Object.assign(new Error("C:\\private\\windows-x64.exe"), { code: "EACCES" })));
+      setImmediate(() => child.emit("error", Object.assign(new Error("C:\\private\\DocWenCLI.exe"), { code: "EACCES" })));
       return child;
     });
-    const client = new DocWenMachineClient(() => ({ executable: "C:\\DocWen\\DocWenCLI.exe", cwd: "C:\\Temp", mode: "automatic" }), () => "en_US");
+    const client = new DocWenMachineClient(() => ({ executable: "C:\\Users\\Tester\\AppData\\Local\\Microsoft\\WindowsApps\\docwen.exe", cwd: "C:\\Temp", mode: "automatic" }), () => "en_US");
     try {
       await expect(client.query("health/check", {})).rejects.toMatchObject({
-        code: "cli_spawn_failed", details: { ownershipState: "windows_job", phase: "owner_spawn", systemCode: "EACCES", helperName: "windows-x64.exe" },
+        code: "cli_spawn_failed", details: { ownershipState: "windows_job", phase: "owner_spawn", systemCode: "EACCES", ownerComponent: "DocWenCLI" },
       });
       expect(spawnMock).toHaveBeenCalledTimes(1);
     } finally { client.dispose(); }
@@ -734,7 +771,7 @@ describe("DocWenMachineClient", () => {
     "accepts only the exact bounded native startup record: %j", async (stderr) => {
       vi.stubGlobal("process", Object.create(process, { platform: { value: "win32" } }));
       spawnMock.mockImplementationOnce(() => {
-        const child = new FakeChild();
+        const child = new FakeChild(0, 0, false);
         child.stdin.removeAllListeners("data");
         setImmediate(() => { child.stderr.write(stderr); child.emit("close", 125); });
         return child;
@@ -961,13 +998,13 @@ describe("DocWenMachineClient", () => {
       code: "cli_incompatible_version",
       details: expect.objectContaining({
         incompatibility: "product_version",
-        minimumProductVersion: "0.17.0",
+        minimumProductVersion: process.platform === "win32" ? "0.23.0" : "0.17.0",
         actualProductVersion: "0.12.1",
       }),
     });
 
-    serverState.serverVersion = "0.18.0";
-    serverState.bundleVersion = "0.18.0";
+    serverState.serverVersion = "0.24.0";
+    serverState.bundleVersion = "0.24.0";
     const futureProductWithCurrentProtocol = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
@@ -977,17 +1014,17 @@ describe("DocWenMachineClient", () => {
     const exactCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.17.0",
+      "0.23.0",
     );
     await expect(exactCandidate.query("health/check", {})).rejects.toMatchObject({
       code: "cli_incompatible_version",
-      details: expect.objectContaining({ expectedProductVersion: "0.17.0", actualProductVersion: "0.18.0" }),
+      details: expect.objectContaining({ expectedProductVersion: "0.23.0", actualProductVersion: "0.24.0" }),
     });
 
     const matchingCandidate = new DocWenMachineClient(
       () => "C:\\DocWen\\DocWenCLI.exe",
       () => "en_US",
-      "0.18.0",
+      "0.24.0",
     );
     await expect(matchingCandidate.query("health/check", {})).resolves.toMatchObject({ all_ok: true });
   });

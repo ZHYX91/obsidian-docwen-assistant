@@ -2,7 +2,7 @@
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
-DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows または Linux、Obsidian 1.12.7 以降、安定版 DocWen 0.17.0 以降 が必要です。
+DocWen Assistant は Obsidian とローカルの [DocWen](https://github.com/ZHYX91/docwen) を接続します。Windows または Linux、Obsidian 1.12.7 以降、安定版 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 以降 が必要です。
 
 > **DocWen 本体が必要です。** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換バージョンをインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) のポータブル ZIP を完全に展開してください。
 
@@ -37,7 +37,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 ## 要件と互換性
 
 - Windows または Linux と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
-- Windows では Store 版または完全に展開したポータブル版の DocWen 0.17.0 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux でのエクスポートには x64 と、既存のデータを上書きせずに結果を保存できるファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
+- Windows では Store 版または完全に展開したポータブル版の DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux でのエクスポートには x64 と、既存のデータを上書きせずに結果を保存できるファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 - バックグラウンド変換の接続に互換性がない場合でも、DocWen デスクトップアプリは別に開くことができます。
 
@@ -49,7 +49,7 @@ Store のインストールがこれらの要件を満たさない場合は、�
 
 ### DocWen とプラグインをインストール
 
-1. Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換性のある DocWen 0.17.0 以降をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) の Windows パッケージを完全に展開します。Linux x64 では同じページの Linux パッケージを展開します。
+1. Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換性のある DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 以降をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) の Windows パッケージを完全に展開します。Linux x64 では同じページの Linux パッケージを展開します。
 2. Community Plugins から DocWen Assistant をインストールします。手動の場合は[プラグインのリリース](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)から `docwen-assistant-x.y.z.zip` を取得し、`main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。
 3. Community Plugins を再読み込みし、DocWen Assistant を有効にします。
 4. Windows の Store 版は自動検出できます。Windows ポータブル版と Linux では **設定 → DocWen Assistant → 一般**で手動接続を選び、展開したフォルダーまたは実行ファイルを指定します。

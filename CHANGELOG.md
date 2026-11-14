@@ -2,10 +2,9 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
-## [Unreleased]
+## [3.6.1] - 2026-11-14
 
-## [3.6.1] - 2026-11-13
-
+- Move Windows Machine lifetime management into installed DocWenCLI 0.23.0 or later. Stop generating a temporary helper EXE, wait for managed readiness, and preserve bounded cancellation and descendant cleanup.
 - Retry brief Windows executable sharing contention within the existing operation deadline, and keep confirmed pre-creation failures separate from unconfirmed process cleanup so a failed start does not unnecessarily block later operations.
 - Give cold GUI launches a bounded 90-second request budget, preserve structured Core failure codes, and prioritize explicit GUI opens over queued background work.
 - Serialize background capability inspections, debounce active-file edits, and invalidate other changed files without eagerly inspecting the whole Vault.

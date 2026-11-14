@@ -119,7 +119,7 @@ vi.mock("../src/actions/proofread-actions", () => ({ ProofreadActions: class Pro
 vi.mock("../src/docwen", () => ({
   resolveDocWenLaunchTarget: (_mode: string, value: string) => value,
   DocWenMachineClient: class DocWenMachineClient {
-    constructor(_target: unknown, _locale: unknown, _version: unknown, _owner: unknown, coordinator: unknown) {
+    constructor(_target: unknown, _locale: unknown, _version: unknown, coordinator: unknown) {
       state.processCoordinators.push(coordinator);
     }
     dispose(): void {

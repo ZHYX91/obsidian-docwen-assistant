@@ -4,7 +4,7 @@
 
 在 Obsidian 里就能用 DocWen 转换文件、校对 Markdown、给标题编号，不用每次切到另一个程序。实际处理由你电脑上安装的 [DocWen](https://github.com/ZHYX91/docwen) 完成；插件负责把 Obsidian 和它连接起来。
 
-> **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
+> **必须安装 DocWen 本体。** 推荐从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更高版本，也可以从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 ZIP 便携版。
 
 界面语言改变 Assistant 自身的文案和布局，已打开的校对报告也会立即更新。转换语言、模板与 OCR 由任务选项和 DocWen 设置控制。
 
@@ -41,7 +41,7 @@
 ## 使用要求与兼容性
 
 - 需要 Windows 或 Linux 上的 Obsidian 桌面版 1.12.7 或更高版本；移动版不支持；
-- 需要另行安装兼容的 DocWen 0.17.0 或更高版本。Windows 可以使用 Microsoft Store 或便携版；Linux 要手动选择安装位置，结果目录导出要求 x64 和支持安全写入的文件系统。插件不会代你下载安装 DocWen；
+- 需要另行安装兼容的 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更高版本。Windows 可以使用 Microsoft Store 或便携版；Linux 要手动选择安装位置，结果目录导出要求 x64 和支持安全写入的文件系统。插件不会代你下载安装 DocWen；
 - 导出、校对和编号需要 DocWen 支持 Machine Protocol v2 和 Artifact Bundle v3。如果版本不兼容，插件会提示你更新，请按提示更新后重试。
 - 即使后台转换接口不兼容，仍可尝试单独打开 DocWen 桌面程序。
 
@@ -53,7 +53,7 @@ Windows 商店安装版不满足以上要求时，请使用兼容的便携包，
 
 ### 安装 DocWen 与插件
 
-1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.17.0 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包。Linux x64 请从同一页面下载并解压 Linux 包。
+1. Windows 可从 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安装兼容的 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更高版本，也可从 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下载并完整解压 Windows 便携包。Linux x64 请从同一页面下载并解压 Linux 包。
 2. 从 Obsidian 第三方插件市场安装 DocWen Assistant。手动安装时，从[插件发布页](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)下载 `docwen-assistant-x.y.z.zip`，将 `main.js`、`manifest.json`、`styles.css` 复制到 `<Vault>/.obsidian/plugins/docwen-assistant/`。
 3. 重新加载第三方插件并启用 DocWen Assistant。
 4. Windows 商店版可自动检测。Windows 便携版和 Linux 用户请打开 **设置 → DocWen Assistant → 常规**，将连接方式设为**手动选择安装位置**，再选择解压后的文件夹或可执行文件。

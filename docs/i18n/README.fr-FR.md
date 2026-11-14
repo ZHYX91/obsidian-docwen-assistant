@@ -2,7 +2,7 @@
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
-DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://github.com/ZHYX91/docwen). Il nécessite Windows ou Linux, Obsidian 1.12.7 ou ultérieur et une version stable de DocWen 0.17.0 ou ultérieure.
+DocWen Assistant relie Obsidian à une installation locale de [DocWen](https://github.com/ZHYX91/docwen). Il nécessite Windows ou Linux, Obsidian 1.12.7 ou ultérieur et une version stable de DocWen 0.23.0 (Windows) / 0.17.0 (Linux) ou ultérieure.
 
 > **DocWen est requis.** Installez une version compatible depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez entièrement le ZIP portable proposé dans [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -37,7 +37,7 @@ Le plugin ouvre les fichiers dans DocWen, exporte vers Word/Excel/Markdown avec 
 ## Configuration requise et compatibilité
 
 - Windows ou Linux et Obsidian 1.12.7 ou ultérieur ; le plugin fonctionne uniquement sur ordinateur.
-- Sous Windows, utilisez une version DocWen 0.17.0 ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export sous Linux nécessite x64 et un système de fichiers capable de créer un dossier de résultat sans écraser les données existantes ; le plugin ne télécharge pas DocWen automatiquement.
+- Sous Windows, utilisez une version DocWen 0.23.0 (Windows) / 0.17.0 (Linux) ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export sous Linux nécessite x64 et un système de fichiers capable de créer un dossier de résultat sans écraser les données existantes ; le plugin ne télécharge pas DocWen automatiquement.
 - Le plugin exige `docwen.machine.v2` et `docwen.artifact_bundle.v3` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
 - Même si la connexion pour la conversion en arrière-plan est incompatible, vous pouvez essayer d’ouvrir l’application DocWen séparément.
 
@@ -49,7 +49,7 @@ La détection automatique est réservée à Windows, utilise l’alias enregistr
 
 ### Installer DocWen et le plugin
 
-1. Sous Windows, installez une version compatible de DocWen 0.17.0 ou ultérieure depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez le paquet Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez entièrement le paquet Linux de la même page.
+1. Sous Windows, installez une version compatible de DocWen 0.23.0 (Windows) / 0.17.0 (Linux) ou ultérieure depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez le paquet Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez entièrement le paquet Linux de la même page.
 2. Installez DocWen Assistant depuis Community Plugins. Pour l’installation manuelle, téléchargez `docwen-assistant-x.y.z.zip` depuis les [versions du plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) et copiez `main.js`, `manifest.json` et `styles.css` dans `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Rechargez Community Plugins et activez DocWen Assistant.
 4. La version Windows du Store peut être détectée automatiquement. Pour Windows portable ou Linux, ouvrez **Paramètres → DocWen Assistant → Général**, choisissez la connexion manuelle, puis le dossier extrait ou l’exécutable.
