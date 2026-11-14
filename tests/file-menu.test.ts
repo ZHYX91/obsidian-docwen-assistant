@@ -175,7 +175,10 @@ describe("file menu capability states", () => {
   it("groups conversion, numbering and proofreading, then keeps Open last", async () => {
     const capability = {
       inspection: { supportedActions: ["convert", "number markdown", "validate"] },
-      source: { routes: [] },
+      source: { routes: [
+        { action: "number markdown", available: true },
+        { action: "validate", available: true },
+      ] },
     };
     const findConversionRoute = vi.fn((_capability: unknown, target: string) =>
       target === "xlsx" ? null : { target });
@@ -205,9 +208,40 @@ describe("file menu capability states", () => {
     expectValidSections(submenu);
   });
 
+  it.each(["submenu", "fallback", "picker"])("does not offer generic DOCX validation without a Machine route (%s)", async (surface) => {
+    const capability = {
+      inspection: { supportedActions: ["convert", "validate"] },
+      source: { routes: [{ operation: "conversion", action: null, target: "md", available: true }] },
+    };
+    let loaded = surface !== "picker";
+    const { handler } = await register({
+      peek: () => loaded ? capability : null,
+      preload: async () => { loaded = true; },
+      findConversionRoute: (_capability: unknown, target: string) => target === "md" ? {} : null,
+    });
+    const menu = new FakeMenu(surface !== "fallback");
+    handler(menu, { path: "note.docx" });
+    if (surface === "picker") {
+      menu.items[0].submenu!.items[0].click?.();
+      await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
+      expect(menuState.pickers[0].items.map(({ label }) => label)).toEqual(["contextMenuConvertToMd"]);
+      return;
+    }
+    const items = surface === "fallback" ? menu.items : menu.items[0].submenu!.items;
+    expect(items.some(({ title }) => title.includes("contextMenuProofread"))).toBe(false);
+    expect(items.some(({ title }) => title.includes("contextMenuConvertToMd"))).toBe(true);
+    expect(items.some(({ title }) => title.includes("contextMenuOpenInDocWen"))).toBe(true);
+  });
+
   it.each([true, false])("does not invoke cached menu actions after unload (submenu=%s)", async (submenu) => {
     const { handler, actions, dispose } = await register({
-      peek: () => ({ inspection: { supportedActions: ["convert", "number markdown", "validate"] } }),
+      peek: () => ({
+        inspection: { supportedActions: ["convert", "number markdown", "validate"] },
+        source: { routes: [
+          { action: "number markdown", available: true },
+          { action: "validate", available: true },
+        ] },
+      }),
       findConversionRoute: () => ({}),
     });
     const menu = new FakeMenu(submenu);
@@ -267,6 +301,7 @@ async function register(
   presentCapabilityFailure = vi.fn(),
 ) {
   const { registerFileMenu } = await import("../src/app/register-file-menu");
+  const { DocWenCapabilityService } = await import("../src/docwen/capability-service");
   let handler!: (menu: FakeMenu, file: { path: string }) => void;
   let dispose!: () => void;
   const controller = new AbortController();
@@ -301,7 +336,7 @@ async function register(
     proofread: {
       activateAndRun: vi.fn().mockResolvedValue(undefined),
     },
-    capabilities,
+    capabilities: { supportsAction: DocWenCapabilityService.prototype.supportsAction, ...capabilities },
     presentCapabilityFailure,
   };
   registerFileMenu(plugin as never, actions as never);

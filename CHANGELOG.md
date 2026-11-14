@@ -2,6 +2,10 @@
 
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
+## [Unreleased]
+
+- Show file-menu proofreading and numbering only when both file inspection and the applicable Machine capability support the action, preventing an unusable DOCX proofreading command.
+
 ## [3.6.1] - 2026-11-14
 
 - Move Windows Machine lifetime management into installed DocWenCLI 0.23.0 or later. Stop generating a temporary helper EXE, wait for managed readiness, and preserve bounded cancellation and descendant cleanup.

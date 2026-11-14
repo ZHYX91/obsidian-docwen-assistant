@@ -257,6 +257,23 @@ describe("DocWenCapabilityService", () => {
     expect(service.findConversionRoute(file, "docx")).toBeNull();
   });
 
+  it.each(["inspection", "machine", "unavailable"])("keeps menu support and execution aligned when validation is missing from %s", async (reason) => {
+    const advertised = projection();
+    if (reason === "machine") {
+      advertised.capabilities = advertised.capabilities.filter((item) => item.capability_id !== "validate.markdown");
+    } else if (reason === "unavailable") {
+      advertised.capabilities.find((item) => item.capability_id === "validate.markdown")!.availability = "unavailable";
+    }
+    const client = {
+      inspect: vi.fn().mockResolvedValue(inspection(reason === "inspection" ? { supportedActions: ["convert"] } : {})),
+      runtimeCapabilities: vi.fn().mockResolvedValue(advertised),
+    } as unknown as DocWenClient;
+    const service = new DocWenCapabilityService(client);
+    const file = await service.forFile("D:\\note.md");
+    expect(service.supportsAction(file, "validate")).toBe(false);
+    await expect(service.requireAction("D:\\note.md", "validate")).rejects.toMatchObject({ code: "cli_invalid_envelope" });
+  });
+
   it.each(["inspect", "runtimeCapabilities"] as const)("preserves %s failure without classifying it as unsupported", async (method) => {
     const failure = new Error("unavailable");
     const client = {

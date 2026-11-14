@@ -100,10 +100,7 @@ export class DocWenCapabilityService {
 
   async requireAction(input: TaskInput | string, action: string, signal?: AbortSignal): Promise<FileCapability> {
     const capability = await this.forFile(input, signal);
-    const machineSupports = action === "convert"
-      ? capability.source.routes.some((route) => route.operation === "conversion")
-      : capability.source.routes.some((route) => route.action === action);
-    if (!capability.inspection.supportedActions.includes(action) || !machineSupports) {
+    if (!this.supportsAction(capability, action)) {
       throw new LocalCliError(
         "cli_invalid_envelope",
         `DocWen does not advertise ${action} for this file through Machine v2.`,
@@ -111,6 +108,13 @@ export class DocWenCapabilityService {
       );
     }
     return capability;
+  }
+
+  supportsAction(capability: FileCapability, action: string): boolean {
+    return capability.inspection.supportedActions.includes(action)
+      && capability.source.routes.some((route) => route.available && (action === "convert"
+        ? route.operation === "conversion"
+        : route.action === action));
   }
 
   findConversionRoute(capability: FileCapability, target: ConvertTarget, optimizationId?: string): RuntimeRoute | null {
