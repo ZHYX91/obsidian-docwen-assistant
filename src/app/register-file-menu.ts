@@ -167,11 +167,11 @@ function actionSections(
   if (conversion.length > 0) sections.push(conversion);
 
   const editing: MenuEntry[] = [];
-  if (cached.inspection.supportedActions.includes("number markdown")) {
+  if (actions.capabilities.supportsAction(cached, "number markdown")) {
     editing.push(actionEntry("contextMenuAddNumbering", "list-ordered", () => actions.numbering.add(file)));
     editing.push(actionEntry("contextMenuRemoveNumbering", "list-x", () => actions.numbering.remove(file)));
   }
-  if (cached.inspection.supportedActions.includes("validate")) {
+  if (actions.capabilities.supportsAction(cached, "validate")) {
     editing.push(actionEntry("contextMenuProofread", "check-circle",
       () => actions.proofread.activateAndRun(file, isActive)));
   }
