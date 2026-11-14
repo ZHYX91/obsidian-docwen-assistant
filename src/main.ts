@@ -195,7 +195,6 @@ export default class DocWenPlugin extends Plugin {
         () => this.resolveCliExecutable(),
         () => this.getDocwenLangCode(),
         undefined,
-        undefined,
         processCoordinator,
       ),
     );

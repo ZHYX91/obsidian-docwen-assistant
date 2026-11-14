@@ -2,7 +2,7 @@
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
-DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows hoặc Linux, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.17.0 trở lên ổn định.
+DocWen Assistant kết nối Obsidian với bản [DocWen](https://github.com/ZHYX91/docwen) cục bộ. Yêu cầu Windows hoặc Linux, Obsidian 1.12.7 trở lên và một bản DocWen từ 0.23.0 (Windows) / 0.17.0 (Linux) trở lên ổn định.
 
 > **Bắt buộc có DocWen.** Cài bản tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén hoàn toàn bản ZIP portable trong [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
@@ -37,7 +37,7 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown vào thư mục đíc
 ## Yêu cầu và khả năng tương thích
 
 - Windows hoặc Linux và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
-- Trên Windows, dùng DocWen 0.17.0 trở lên tương thích từ Store hoặc gói portable đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mới mà không ghi đè dữ liệu hiện có; plugin không tự động tải DocWen.
+- Trên Windows, dùng DocWen 0.23.0 (Windows) / 0.17.0 (Linux) trở lên tương thích từ Store hoặc gói portable đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mới mà không ghi đè dữ liệu hiện có; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
 - Ngay cả khi kết nối chuyển đổi nền không tương thích, bạn vẫn có thể thử mở riêng ứng dụng DocWen.
 
@@ -49,7 +49,7 @@ Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe
 
 ### Cài DocWen và plugin
 
-1. Trên Windows, cài DocWen 0.17.0 trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
+1. Trên Windows, cài DocWen 0.23.0 (Windows) / 0.17.0 (Linux) trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
 2. Cài DocWen Assistant từ Community Plugins. Nếu cài thủ công, tải `docwen-assistant-x.y.z.zip` từ [trang phát hành plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) rồi sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Tải lại Community Plugins rồi bật DocWen Assistant.
 4. Bản Windows từ Store có thể được nhận diện tự động. Với Windows portable hoặc Linux, mở **Cài đặt → DocWen Assistant → Chung**, chọn kết nối thủ công rồi chọn thư mục đã giải nén hoặc tệp thực thi.

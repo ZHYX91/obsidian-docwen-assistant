@@ -23,7 +23,8 @@ import {
   WINDOWS_MACHINE_OWNER_FAILURE_EXIT,
   WINDOWS_MACHINE_TARGET_NOT_FOUND_EXIT,
   WINDOWS_MACHINE_TARGET_CREATE_FAILED_EXIT,
-  WindowsMachineOwnerStore,
+  WINDOWS_MACHINE_OWNER_READY,
+  WINDOWS_MINIMUM_DOCWEN_VERSION,
 } from "./windows-machine-owner";
 
 export type { JsonObject } from "./machine-framing";
@@ -222,6 +223,8 @@ function canReplaceProgress(previous: JsonObject, current: JsonObject): boolean 
 
 class MachineSession {
   private readonly queue = new MessageQueue();
+  private readonly ownershipQueue = new MessageQueue();
+  private windowsOwnerReady = false;
   private readonly decoder = new MachineFrameDecoder();
   private readonly deferred: JsonObject[] = [];
   private readonly stderr: Buffer[] = [];
@@ -237,13 +240,12 @@ class MachineSession {
 
   static async create(
     rawTarget: string | DocWenLaunchTarget,
-    windowsOwnerStore: WindowsMachineOwnerStore,
     assertStartAllowed: () => void,
   ): Promise<MachineSession> {
     const target = normalizeDocWenLaunchTarget(rawTarget);
     assertStartAllowed();
     if (process.platform === "win32") {
-      const child = await spawnWindowsOwnedMachineProcess(target, windowsOwnerStore, assertStartAllowed);
+      const child = await spawnWindowsOwnedMachineProcess(target, assertStartAllowed);
       return new MachineSession(target, child, true);
     }
     if (process.platform === "linux") {
@@ -281,7 +283,7 @@ class MachineSession {
         // Only the ChildProcess "exit" event is direct evidence that a
         // successfully spawned process has exited. Other "error" events are
         // stream/process failures, not ownership release evidence.
-        const aliasMissing = !this.windowsOwned && target.mode === "automatic" && isErrno(error, "ENOENT");
+        const aliasMissing = target.mode === "automatic" && isErrno(error, "ENOENT");
         const failure = new LocalCliError(
           aliasMissing ? "cli_alias_not_found" : "cli_spawn_failed",
           aliasMissing
@@ -292,7 +294,7 @@ class MachineSession {
           ...(this.windowsOwned ? windowsMachineOwnerDetails(this.child.pid ? "owner_runtime" : "owner_spawn", error) : {}),
           ...(this.linuxOwnership ? { ownershipState: "linux_supervisor", ...this.linuxOwnership.diagnostics } : {}),
         });
-        this.queue.fail(failure);
+        this.fail(failure);
         resolve(null);
       });
     });
@@ -303,7 +305,7 @@ class MachineSession {
       try {
         for (const message of this.decoder.feed(Buffer.from(chunk))) this.queue.push(message);
       } catch (error) {
-        this.queue.fail(protocolError(error));
+        this.fail(protocolError(error));
         void this.terminate().catch(() => undefined);
       }
     });
@@ -312,19 +314,25 @@ class MachineSession {
       this.stderrBytes += bytes.length;
       if (this.stderrBytes <= STDERR_LIMIT_BYTES) this.stderr.push(bytes);
       else {
-        this.queue.fail(new LocalCliError("cli_output_limit", "DocWen Machine Protocol stderr exceeded its limit."));
+        this.fail(new LocalCliError("cli_output_limit", "DocWen Machine Protocol stderr exceeded its limit."));
         void this.terminate().catch(() => undefined);
+      }
+      if (this.windowsOwned && !this.windowsOwnerReady && this.stderrBytes <= STDERR_LIMIT_BYTES
+        && Buffer.concat(this.stderr).toString("utf8").split(/\r?\n/u).includes(WINDOWS_MACHINE_OWNER_READY)) {
+        this.windowsOwnerReady = true;
+        this.ownershipQueue.push({ ready: true });
       }
     });
     this.child.once("close", (code) => {
+      this.ownershipQueue.fail(windowsOwnerEarlyExit(target.mode, code, Buffer.concat(this.stderr).toString("utf8")));
       try {
         this.decoder.finish();
       } catch (error) {
-        this.queue.fail(protocolError(error));
+        this.fail(protocolError(error));
         return;
       }
       if (!this.normalClose) {
-        this.queue.fail(this.windowsOwned
+        this.fail(this.windowsOwned
           ? windowsOwnerEarlyExit(target.mode, code, Buffer.concat(this.stderr).toString("utf8"))
           : new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
               exitCode: code,
@@ -334,6 +342,7 @@ class MachineSession {
   }
 
   async initialize(expectedProductVersion?: string): Promise<string> {
+    if (this.windowsOwned) await this.ownershipQueue.next();
     const result = await this.rpc("initialize", {
       protocol: { ...MACHINE_PROTOCOL },
       client: { name: CLIENT_NAME, version: CLIENT_VERSION },
@@ -371,11 +380,12 @@ class MachineSession {
         incompatibility: "server_identity",
       });
     }
-    if (!meetsMinimumStableVersion(productVersion, MINIMUM_DOCWEN_VERSION)) {
+    const minimumVersion = this.windowsOwned ? WINDOWS_MINIMUM_DOCWEN_VERSION : MINIMUM_DOCWEN_VERSION;
+    if (!meetsMinimumStableVersion(productVersion, minimumVersion)) {
       throw new LocalCliError("cli_incompatible_version", "This DocWen version is older than the supported minimum.", {
         ...identity,
         incompatibility: "product_version",
-        minimumProductVersion: MINIMUM_DOCWEN_VERSION,
+        minimumProductVersion: minimumVersion,
         actualProductVersion: productVersion,
       });
     }
@@ -448,6 +458,7 @@ class MachineSession {
 
   fail(error: Error): void {
     this.queue.fail(error);
+    this.ownershipQueue.fail(error);
   }
 
   throwIfFailed(): void {
@@ -478,7 +489,9 @@ class MachineSession {
     if (code !== 0) {
       throw new LocalCliError("cli_protocol_error", "DocWen Machine Protocol exited with an error.", {
         exitCode: code,
-        stderr: stderr.toString("utf8"),
+        stderr: this.windowsOwned
+          ? stderr.toString("utf8").replace(/^DOCWEN_PROCESS_OWNER_READY:1\r?\n/mu, "")
+          : stderr.toString("utf8"),
       });
     }
     if (containsMachineProtocolFrame(stderr)) {
@@ -559,7 +572,7 @@ class MachineSession {
       || !this.child.stdin.writable
     ) {
       const closedFailure = writeFailure ?? protocolError("DocWen stdin is closed");
-      this.queue.fail(closedFailure);
+      this.fail(closedFailure);
       void this.terminate().catch(() => undefined);
       throw closedFailure;
     }
@@ -580,7 +593,7 @@ class MachineSession {
   private handleStdinError(error: unknown, preferredFailure?: Error): Error {
     const failure = preferredFailure ?? this.preferredStdinFailure ?? stdinWriteError(error);
     if (preferredFailure || this.preferredStdinFailure === failure) this.preferredStdinFailure = null;
-    this.queue.fail(failure);
+    this.fail(failure);
     void this.terminate().catch(() => undefined);
     return failure;
   }
@@ -596,7 +609,6 @@ export class DocWenMachineClient {
     private readonly resolveBinaryPath: () => string | DocWenLaunchTarget,
     private readonly resolveLocale: () => string,
     private readonly expectedProductVersion?: string,
-    private readonly windowsOwnerStore: WindowsMachineOwnerStore = new WindowsMachineOwnerStore(),
     private readonly processCoordinator?: DocWenProcessCoordinator,
   ) {}
 
@@ -682,7 +694,6 @@ export class DocWenMachineClient {
       void session.terminate().catch(() => undefined);
     }
     this.activeSessions.clear();
-    this.windowsOwnerStore.dispose();
   }
 
   private async withSession<T>(
@@ -717,7 +728,6 @@ export class DocWenMachineClient {
     };
     const session = await MachineSession.create(
       this.resolveBinaryPath(),
-      this.windowsOwnerStore,
       assertStartAllowed,
     );
     this.activeSessions.add(session);
@@ -1262,6 +1272,11 @@ function windowsOwnerEarlyExit(
       "The Windows Machine lifetime owner failed before the operation completed.",
       { exitCode, mode, ...windowsMachineOwnerDetails("owner_runtime"), ...systemError },
     );
+  }
+  if (!stderr.split(/\r?\n/u).includes(WINDOWS_MACHINE_OWNER_READY)) {
+    return new LocalCliError("cli_incompatible_version", "Windows Machine operations require DocWen 0.23.0 or later with managed stdio support.", {
+      exitCode, mode, minimumProductVersion: WINDOWS_MINIMUM_DOCWEN_VERSION, incompatibility: "process_ownership",
+    });
   }
   return new LocalCliError("cli_protocol_error", "DocWen exited before the operation completed.", {
     exitCode,

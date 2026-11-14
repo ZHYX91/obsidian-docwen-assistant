@@ -27,7 +27,7 @@ describe("DocWen settings location picker", () => {
     showNotice.mockReset();
   });
 
-  it.each(["en", "zh-cn"])("shows safe helper recovery in %s without blaming the target installation", async (locale) => {
+  it.each(["en", "zh-cn"])("shows installed CLI recovery in %s without blaming the target installation", async (locale) => {
     initI18n(locale);
     const { getDocWenConnectionDisplay } = await import("../src/settings-docwen-location");
     const { getErrorMessage } = await import("../src/actions/action-errors");
@@ -36,7 +36,9 @@ describe("DocWen settings location picker", () => {
     const result = getDocWenConnectionDisplay("manual", "", {
       state: "error", mode: "manual", code: "cli_spawn_failed", details,
     }, "win32");
-    expect(result.message).toContain("windows-x64.exe");
+    expect(result.message).toContain("DocWenCLI");
+    expect(result.message).toContain("0.23.0");
+    expect(result.message).not.toContain("windows-x64.exe");
     expect(result.message).toContain(locale === "en" ? "Keep protection enabled" : "保持防护开启");
     expect(getErrorMessage(new LocalCliError("cli_spawn_failed", "private", details))).toBe(result.message);
     const target = getDocWenConnectionDisplay("automatic", "", {

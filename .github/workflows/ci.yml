@@ -126,7 +126,7 @@ jobs:
             dist/styles.css
           if-no-files-found: error
 
-  windows-owned-lifecycle:
+  windows-source:
     runs-on: windows-2025
     timeout-minutes: 15
 
@@ -163,54 +163,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Provision the exact recorded MSVC family
-        shell: pwsh
-        run: ./scripts/provision-recorded-msvc.ps1 -OutputParent $env:RUNNER_TEMP
-
-      - name: Rebuild and verify Windows owner
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $first = Join-Path $env:RUNNER_TEMP "windows-owner-first"
-          $second = Join-Path $env:RUNNER_TEMP "windows-owner-second"
-          New-Item -ItemType Directory -Force -Path $first, $second | Out-Null
-          node scripts/build-native-windows-owner.mjs $first
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node scripts/build-native-windows-owner.mjs $second
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-          function Assert-SameHash([string]$left, [string]$right, [string]$message) {
-            $leftHash = (Get-FileHash $left -Algorithm SHA256).Hash
-            $rightHash = (Get-FileHash $right -Algorithm SHA256).Hash
-            if ($leftHash -ne $rightHash) { throw $message }
-          }
-
-          Assert-SameHash (Join-Path $first "windows-x64.exe") (Join-Path $second "windows-x64.exe") "Independent Windows owner builds differ."
-          Assert-SameHash (Join-Path $first "WINDOWS-BUILD.json") (Join-Path $second "WINDOWS-BUILD.json") "Independent Windows owner build records differ."
-          Assert-SameHash (Join-Path $first "windows-machine-owner-x64.ts") (Join-Path $second "windows-machine-owner-x64.ts") "Independent embedded owner modules differ."
-          Assert-SameHash "native/WINDOWS-BUILD.json" (Join-Path $first "WINDOWS-BUILD.json") "Checked-in Windows owner build record is stale."
-          Assert-SameHash "src/docwen/windows-machine-owner-x64.ts" (Join-Path $first "windows-machine-owner-x64.ts") "Checked-in embedded Windows owner is stale."
-
-      - name: Retain MSVC provisioning diagnostics
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: recorded-msvc-provisioning
-          path: ${{ runner.temp }}/recorded-msvc-provisioning
-          if-no-files-found: warn
-          retention-days: 3
-
-      - name: Retain native rebuild identity for verification failures
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: windows-owner-rebuild-diagnostic
-          path: |
-            ${{ runner.temp }}/windows-owner-first/windows-x64.exe
-            ${{ runner.temp }}/windows-owner-first/WINDOWS-BUILD.json
-            ${{ runner.temp }}/windows-owner-first/windows-machine-owner-x64.ts
-          if-no-files-found: ignore
-          retention-days: 3
-
-      - name: Verify the complete Windows source and native lifecycle gate
+      - name: Verify Windows source, transport and production artifacts
         run: npm run check

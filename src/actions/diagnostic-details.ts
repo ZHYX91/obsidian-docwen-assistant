@@ -29,15 +29,12 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
     }
   }
   if (read("ownershipState") === "windows_job") details.ownershipState = "windows_job";
-  if (read("helperName") === "windows-x64.exe") details.helperName = "windows-x64.exe";
-  const helperExpectedSha256 = read("helperExpectedSha256");
-  if (typeof helperExpectedSha256 === "string" && /^[0-9a-f]{64}$/u.test(helperExpectedSha256)) details.helperExpectedSha256 = helperExpectedSha256;
-  const helperExpectedBytes = read("helperExpectedBytes");
-  if (typeof helperExpectedBytes === "number" && Number.isSafeInteger(helperExpectedBytes) && helperExpectedBytes > 0) details.helperExpectedBytes = helperExpectedBytes;
+  if (read("ownerComponent") === "DocWenCLI") details.ownerComponent = "DocWenCLI";
   if (
     incompatibility === "machine_protocol"
     || incompatibility === "artifact_bundle"
     || incompatibility === "product_version"
+    || incompatibility === "process_ownership"
     || incompatibility === "server_identity"
   ) {
     details.incompatibility = incompatibility;

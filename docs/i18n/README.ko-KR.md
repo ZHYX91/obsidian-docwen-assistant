@@ -2,7 +2,7 @@
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
-DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.17.0 이상 버전이 필요합니다.
+DocWen Assistant는 Obsidian을 로컬 [DocWen](https://github.com/ZHYX91/docwen)에 연결합니다. Windows 또는 Linux, Obsidian 1.12.7 이상, 안정적인 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 이상 버전이 필요합니다.
 
 > **DocWen 본체가 필요합니다.** [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환 버전을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 휴대용 ZIP을 완전히 압축 해제하세요.
 
@@ -37,7 +37,7 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 ## 요구 사항 및 호환성
 
 - Windows 또는 Linux와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
-- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.17.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
+- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 - 백그라운드 변환 연결이 호환되지 않아도 DocWen 데스크톱 앱은 별도로 열 수 있습니다.
 
@@ -49,7 +49,7 @@ Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 
 
 ### DocWen과 플러그인 설치
 
-1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.17.0 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
+1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
 2. Community Plugins에서 DocWen Assistant를 설치합니다. 수동 설치는 [플러그인 릴리스](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)에서 `docwen-assistant-x.y.z.zip`을 받은 뒤 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사합니다.
 3. Community Plugins를 다시 불러오고 DocWen Assistant를 활성화합니다.
 4. Windows Store 버전은 자동 감지를 사용할 수 있습니다. Windows 휴대용 버전과 Linux에서는 **설정 → DocWen Assistant → 일반**에서 수동 연결을 선택하고 압축을 푼 폴더나 실행 파일을 지정하세요.

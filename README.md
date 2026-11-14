@@ -4,7 +4,7 @@
 
 Use DocWen without leaving Obsidian. Export notes to Word, convert documents and spreadsheets, check text for problems, and number headings. The work is done by [DocWen](https://github.com/ZHYX91/docwen) installed on your computer; this plugin is the connection between the two.
 
-> **DocWen is required.** Install a compatible DocWen 0.17.0 or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
+> **DocWen is required.** Install a compatible DocWen 0.23.0 (Windows) / 0.17.0 (Linux) or later version from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or fully extract the portable package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases).
 
 The interface language changes Assistant’s own text and layout, including proofreading reports that are already open. Conversion language, templates and OCR are controlled by the task options and DocWen settings.
 
@@ -42,7 +42,7 @@ Choose the output format, review the options and select where to save the result
 ## Requirements and compatibility
 
 - Obsidian Desktop 1.12.7 or later on Windows or Linux. Mobile Obsidian is not supported.
-- On Windows, use a compatible DocWen 0.17.0 or later installation from Microsoft Store or a fully extracted portable package. On Linux, use a compatible fully extracted package and select it manually. Exporting on Linux requires x64 and a filesystem that can save new result folders without overwriting existing data. The plugin does not download DocWen automatically.
+- On Windows, use a compatible DocWen 0.23.0 (Windows) / 0.17.0 (Linux) or later installation from Microsoft Store or a fully extracted portable package. On Linux, use a compatible fully extracted package and select it manually. Exporting on Linux requires x64 and a filesystem that can save new result folders without overwriting existing data. The plugin does not download DocWen automatically.
 - Export, proofreading, and numbering require DocWen's Machine Protocol v2 and Artifact Bundle v3. If your DocWen version is incompatible, the plugin explains what needs updating rather than attempting an older protocol.
 - You can still try opening the DocWen desktop app if its background conversion connection is incompatible.
 
@@ -54,7 +54,7 @@ On Windows, the plugin can detect the Microsoft Store installation using the reg
 
 ### Install DocWen and the plugin
 
-1. On Windows, install compatible DocWen 0.17.0 or later from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or extract the Windows package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases). On Linux x64, extract the Linux package from the same Releases page.
+1. On Windows, install compatible DocWen 0.23.0 (Windows) / 0.17.0 (Linux) or later from [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), or extract the Windows package from [DocWen Releases](https://github.com/ZHYX91/docwen/releases). On Linux x64, extract the Linux package from the same Releases page.
 2. Install DocWen Assistant from Community Plugins. For manual installation, download `docwen-assistant-x.y.z.zip` from [plugin Releases](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) and copy `main.js`, `manifest.json` and `styles.css` to `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Reload Community plugins and enable DocWen Assistant.
 4. Windows Store installations can use automatic detection. For portable Windows or Linux, open **Settings → DocWen Assistant → General**, choose **Choose installation manually**, then select the extracted folder or executable.

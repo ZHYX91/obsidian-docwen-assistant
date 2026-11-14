@@ -19,7 +19,7 @@ GUI 打开请求从排队前开始计入 90 秒总预算，队列等待上限 15
 
 子进程在受限环境中继承平台资料目录变量，以及明确的 `DOCWEN_DATA_DIR`、`DOCWEN_CONFIG_DIR`、`DOCWEN_LOG_DIR` 和真值 `DOCWEN_LOG_TO_TEMP`。DATA 选择整份资料，CONFIG 与 LOG 分别覆盖各自组件。相对路径在启动子进程前按父进程工作目录解析；无关变量与凭据不传递。
 
-Windows 自动模式验证固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名。GUI 控制从安全的临时工作目录启动该别名；Machine 内容操作则由 Windows Job 控制器通过 `GetPackagesByPackageFamily` 和 `GetPackagePathByFullName` 查询当前用户唯一注册的 DocWen 包，并在所属 Job 内启动包中的 `DocWenCLI.exe`。注册缺失或存在歧义时失败关闭。插件不搜索任意 `WindowsApps` 目录，不通过 `PATH` 解析裸命令，也不在设置中持久化带版本的包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 DocWen 0.17.0 以上、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
+Windows 自动模式验证并从安全临时工作目录启动固定的 `%LOCALAPPDATA%\\Microsoft\\WindowsApps\\docwen.exe` 执行别名，由 Windows 解析已安装的包；插件不枚举包目录、不使用裸 PATH 命令、不持久化带版本的包路径。手动模式在 Windows 把用户选择的 DocWen 文件夹、`DocWen.exe` 或 `DocWenCLI.exe` 解析为同目录的精确 CLI，在 Linux 把文件夹、`DocWen` 或 `DocWenCLI` 解析为精确 CLI；Linux 不使用自动别名发现。转换、校对、编号、能力发现和连接检查等内容操作以 `shell: false` 启动 `serve --stdio`，使用规范 `Content-Length` framing 和 JSON-RPC 2.0，并验证 Windows 上 DocWen 0.23.0 以上（Linux 为 0.17.0 以上）、Machine Protocol 2.0、Artifact Bundle v3 与服务身份；产物版本绑定同一会话，候选验收可另外固定精确产品版本。应用状态和“启动/打开 DocWen”走独立的本机 `gui status --json` 与 `gui open --json` 控制命令并校验 CLI protocol 3 成功信封，不先协商 Machine，因此后台协议不兼容不会阻止打开桌面应用。
 
 ## 请求数据流
 
@@ -68,9 +68,9 @@ source-native Markdown 转 DOCX 包含一个首选 DOCX 和一个 primary entry�
 
 任务具有超时、协议帧与队列上限、stderr 上限和显式取消。Machine stdin Writable 的异步错误（包括对端关闭读取端后延迟出现的 `EPIPE`）进入同一会话失败队列，拒绝等待者并触发幂等、有界的进程树清理；`stdin.end()` 已发生后到达的取消不会再次写入已结束流。任务接收后取消会发送 `task/cancel`，必要时终止插件拥有的进程树。改变 DocWen 目标会取消活动工作，并按同一代际重置连接检查、能力投影、文件缓存和待完成预加载；失效请求不能恢复旧状态。运行时 disposer、操作协调器和设置保存队列在卸载时必须停止观察者、释放视图并等待或终止拥有的工作。
 
-Windows Machine 生命周期由随 `main.js` 内嵌并在运行时验证 SHA-256 与 PE 身份的 x64 控制器拥有。控制器以 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 创建 Job，并通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在 `CreateProcessW` 创建挂起的 DocWen 进程时原子加入；直接 DocWen 进程先正常退出时，独立 stdio 的后代仍归同一 owner，并在控制器退出前收口。异常清理只终止当前持有的控制器进程，由 Job 句柄关闭提供终止 authority；不按历史 PID、进程名或普通用户进程扫描清理，也不回退到裸 `spawn`/`taskkill`。owner 物化或身份校验失败会在启动 DocWen 前失败关闭。Linux x64 与 arm64 均使用原生 lifetime owner，其他架构在业务启动前失败关闭。
+Windows Machine 使用正式安装的 DocWenCLI 0.23.0 以上提供的 `serve --stdio --managed --parent-pid PID`。CLI 内部监督进程通过 `PROC_THREAD_ATTRIBUTE_JOB_LIST` 在挂起工作进程创建时原子绑定私有 Job，启用 `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` 并禁止脱离；父进程消失或工作进程退出时终止 Job，并确认活动进程为零。Assistant 在收到 `DOCWEN_PROCESS_OWNER_READY:1` 后才发送初始化；取消和卸载只终止当前持有的 CLI 监督进程。插件不再内嵌或生成 Windows 辅助 EXE，也不按历史 PID、进程名扫描或使用 taskkill 清理。Linux 原生 owner 保持原契约。
 
-Windows 辅助程序失败时，可分享诊断只保留固定的 `windows-x64.exe` 名称、内嵌构建预期的 SHA-256 和字节数，以及限定的阶段和系统代码。预期哈希仅标识构建，不代表已读取隔离文件的哈希、发布者认证或恶意软件判断。辅助程序启动与目标进程创建仍分别记录。恢复提示要求用户查看安全软件记录、核实版本来源并在解决原因后重启，不关闭防护，也不绕过 Job 所有权。无法确认清理时继续失败关闭，重启前须检查残留进程。
+Windows 启动失败的可分享诊断保留固定组件名 `DocWenCLI`、限定阶段和系统错误码，不记录私有路径或虚构辅助文件摘要。缺少受管启动能力时提示升级 Core；无法确认清理时继续失败关闭。错误码和成功重试不能单独证明安全软件误报，兼容性结论必须来自对应候选的实际观察。
 
 仅在尚未创建子进程时，对 Windows 短暂共享／锁定错误进行最多五秒的重试，仍受当前操作期限约束。确认空 Job 已关闭后，报告启动失败而不锁住会话队列；目标启动后清理未确认时，仍阻止后续启动。进程创建成功后绝不重放操作。
 

@@ -2,7 +2,7 @@
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja-JP.md) · [한국어](README.ko-KR.md) · [Deutsch](README.de-DE.md) · [Français](README.fr-FR.md) · [Español](README.es-ES.md) · [Português (Brasil)](README.pt-BR.md) · [Русский](README.ru-RU.md) · [Tiếng Việt](README.vi-VN.md) · [العربية](README.ar.md)
 
-DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows 或 Linux、Obsidian 1.12.7 以上及 DocWen 0.17.0 或更新的穩定版本。
+DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91/docwen)。需要 Windows 或 Linux、Obsidian 1.12.7 以上及 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更新的穩定版本。
 
 > **必須安裝 DocWen 本體。** 請從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容版本，或完整解壓縮 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 提供的 ZIP 可攜版。
 
@@ -41,7 +41,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 ## 使用要求與相容性
 
 - 需要 Windows 或 Linux 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.17.0 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 匯出需要 x64，以及能安全儲存新結果資料夾而不覆蓋既有資料的檔案系統；外掛不會自動下載 DocWen；
+- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 匯出需要 x64，以及能安全儲存新結果資料夾而不覆蓋既有資料的檔案系統；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 - 即使背景轉換介面不相容，仍可嘗試單獨開啟 DocWen 桌面應用。
 
@@ -53,7 +53,7 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 ### 安裝 DocWen 與外掛
 
-1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容的 DocWen 0.17.0 或更新版本，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版。Linux x64 請從同一頁面下載並解壓縮 Linux 套件。
+1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容的 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更新版本，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版。Linux x64 請從同一頁面下載並解壓縮 Linux 套件。
 2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，從[外掛發行頁](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)下載 `docwen-assistant-x.y.z.zip`，將 `main.js`、`manifest.json`、`styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`。
 3. 重新載入 Community Plugins 並啟用 DocWen Assistant。
 4. Windows 商店版可自動偵測。Windows 可攜版與 Linux 使用者請開啟 **設定 → DocWen Assistant → 一般**，選擇**手動選擇安裝位置**，再選取解壓縮後的資料夾或執行檔。

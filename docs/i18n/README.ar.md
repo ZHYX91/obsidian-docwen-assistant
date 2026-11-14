@@ -4,7 +4,7 @@
 
 أضف قدرات DocWen إلى Obsidian دون الخروج من ملاحظاتك. يمكنك تحويل الملفات إلى Word أو Excel أو Markdown، وتدقيق النص، وإضافة أرقام للعناوين. تُنفّذ العمليات محليًا عبر برنامج [DocWen](https://github.com/ZHYX91/docwen).
 
-> **يجب تثبيت DocWen أولًا.** استخدم الإصدار 0.17.0 أو أحدث المتوافق مع الإضافة. على Windows يمكنك تثبيته من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو تنزيل الحزمة المناسبة من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases) وفك ضغطها بالكامل.
+> **يجب تثبيت DocWen أولًا.** استخدم الإصدار 0.23.0 (Windows) / 0.17.0 (Linux) أو أحدث المتوافق مع الإضافة. على Windows يمكنك تثبيته من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو تنزيل الحزمة المناسبة من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases) وفك ضغطها بالكامل.
 
 تغيّر لغة الواجهة نصوص Assistant وتخطيطه فقط. تتحكم خيارات المهمة وإعدادات DocWen في لغة التحويل والقوالب والتعرف الضوئي.
 
@@ -41,7 +41,7 @@
 ## المتطلبات والتوافق
 
 - إصدار Obsidian لسطح المكتب 1.12.7 أو أحدث على Windows أو Linux. لا يدعم إصدار الهاتف.
-- برنامج DocWen متوافق، الإصدار 0.17.0 أو أحدث. البرنامج منفصل عن الإضافة ولا تُنزّله الإضافة تلقائيًا.
+- برنامج DocWen متوافق، الإصدار 0.23.0 (Windows) / 0.17.0 (Linux) أو أحدث. البرنامج منفصل عن الإضافة ولا تُنزّله الإضافة تلقائيًا.
 - يحتاج التصدير والتدقيق والترقيم إلى `docwen.machine.v2` و`docwen.artifact_bundle.v3`. تظهر رسالة واضحة إذا كان إصدار البرنامج غير متوافق.
 - على Linux يلزم اختيار التثبيت يدويًا. يتطلب التصدير إلى مجلد نتائج على Linux معمارية x64 ونظام ملفات يدعم الحفظ الآمن دون استبدال ملفات الآخرين.
 
@@ -53,7 +53,7 @@
 
 ### تثبيت DocWen والإضافة
 
-1. على Windows، ثبّت إصدارًا متوافقًا من DocWen 0.17.0 أو أحدث من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو فك ضغط حزمة Windows من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases). على Linux x64، فك ضغط حزمة Linux من الصفحة نفسها بالكامل.
+1. على Windows، ثبّت إصدارًا متوافقًا من DocWen 0.23.0 (Windows) / 0.17.0 (Linux) أو أحدث من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو فك ضغط حزمة Windows من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases). على Linux x64، فك ضغط حزمة Linux من الصفحة نفسها بالكامل.
 2. ثبّت DocWen Assistant من Community Plugins. للتثبيت اليدوي، نزّل `docwen-assistant-x.y.z.zip` من [إصدارات الإضافة](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) وانسخ `main.js` و`manifest.json` و`styles.css` إلى `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. أعد تحميل Community Plugins وفعّل DocWen Assistant.
 4. يمكن اكتشاف نسخة Windows من Store تلقائيًا. لنسخة Windows المحمولة أو Linux، افتح **الإعدادات ← DocWen Assistant ← عام**، واختر الاتصال اليدوي ثم المجلد المفكوك أو الملف التنفيذي.
