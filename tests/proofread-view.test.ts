@@ -125,6 +125,7 @@ describe("AssistantView", () => {
           } }, register: (callback: () => void) => { dispose = callback; }, registerEvent: () => {},
           } as never, { proofread: actions,
             capabilities: { peek: () => ({ inspection: { supportedActions: ["validate"] } }),
+              supportsAction: (_capability: unknown, action: string) => action === "validate",
               findConversionRoute: () => null },
           } as never);
           handler({ addItem: (build: (item: unknown) => void) => {
