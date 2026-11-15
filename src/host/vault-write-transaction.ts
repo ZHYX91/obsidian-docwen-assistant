@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
+import { TextDecoder } from "node:util";
 
 import type { App, TFile } from "obsidian";
 
@@ -231,7 +232,13 @@ async function withIsolatedMarkdown(
     await writeFile(inputPath, original, "utf8");
     warnings.push(...(await transform(inputPath, outputPath, originalSha256, signal) ?? []));
     throwIfAborted(signal);
-    output = await readFile(outputPath, "utf8");
+    const bytes = await readFile(outputPath);
+    try {
+      // Preserve a real BOM and U+FFFD while rejecting malformed byte sequences.
+      output = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch {
+      throw new VaultWriteError("vault_input_invalid", "Numbering output is not valid UTF-8 Markdown.");
+    }
   } catch (primaryError) {
     for (const warning of warnings) recordFailureWarning(primaryError, warning);
     try {

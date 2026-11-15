@@ -17,6 +17,7 @@ import {
 } from "node:fs/promises";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
+import { TextDecoder } from "node:util";
 
 import { LocalCliError } from "./errors";
 import { selectConversionCapability } from "./conversion-selection";
@@ -393,18 +394,27 @@ export class DocWenClient {
     if (operation === "add" && !scheme) {
       throw new LocalCliError("cli_invalid_envelope", "A numbering scheme is required when adding numbering.");
     }
-    return this.runDeliverableTask(
-      "transform.markdown.heading_numbering",
-      [{ ...sourceTaskInput(inputPath, "document", "text/markdown"), logicalPath }],
-      {
-        remove_numbering: true,
-        add_numbering: operation === "add",
-        numbering_scheme: operation === "add" ? scheme! : "gongwen_standard",
-      },
-      outputPath,
-      true,
-      signal,
-    );
+    return this.withTaskStaging(async (stagingRoot) => {
+      const result = await this.machine.runTask(await taskRequest(
+        "transform.markdown.heading_numbering",
+        [{ ...sourceTaskInput(inputPath, "document", "text/markdown"), logicalPath }],
+        stagingRoot,
+        {
+          remove_numbering: true,
+          add_numbering: operation === "add",
+          numbering_scheme: operation === "add" ? scheme! : "gongwen_standard",
+        },
+        signal,
+      ), signal);
+      await validateNumberingOutput(result.bundle, signal);
+      const committed = await atomicCommitBundle(result.bundle, outputPath, true, signal);
+      return {
+        output: committed.outputs[0],
+        ...committed,
+        bundleId: result.bundle.bundle_id,
+        diagnostics: result.diagnostics,
+      };
+    });
   }
 
   private async listResources(kind: string, target: string | undefined, signal?: AbortSignal): Promise<JsonObject[]> {
@@ -417,30 +427,6 @@ export class DocWenClient {
       throw invalidResponse("resource/list.kind");
     }
     return objectArray(result.resources, "resource/list.resources");
-  }
-
-  private async runDeliverableTask(
-    capabilityId: string,
-    inputs: readonly TaskInput[],
-    options: JsonObject,
-    outputPath: string,
-    overwrite: boolean,
-    signal?: AbortSignal,
-    publish?: <T>(commit: () => Promise<T>) => Promise<T>,
-  ): Promise<ConversionOutcome> {
-    return this.withTaskStaging(async (stagingRoot) => {
-      const result = await this.machine.runTask(
-        await taskRequest(capabilityId, inputs, stagingRoot, options, signal),
-        signal,
-      );
-      const committed = await atomicCommitBundle(result.bundle, outputPath, overwrite, signal, publish);
-      return {
-        output: committed.outputs[0],
-        ...committed,
-        bundleId: result.bundle.bundle_id,
-        diagnostics: result.diagnostics,
-      };
-    });
   }
 
   private async withTaskStaging<T extends { warnings: OperationWarning[] }>(
@@ -464,6 +450,38 @@ export class DocWenClient {
     return result;
   }
 
+}
+
+async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?: AbortSignal): Promise<void> {
+  const artifact = bundle.artifacts[0];
+  const entry = bundle.entries[0];
+  if (bundle.layout_schema !== "docwen.artifact_layout.v1"
+    || bundle.artifacts.length !== 1 || bundle.entries.length !== 1 || bundle.relations.length !== 0
+    || artifact?.kind !== "document" || artifact.media_type !== "text/markdown"
+    || entry?.artifact_id !== artifact.artifact_id || entry.role !== "primary" || !entry.preferred) {
+    throw new LocalCliError("cli_integrity_error", "Numbering requires one preferred primary Markdown document.");
+  }
+  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let bytesRead = 0;
+  for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer>) {
+    throwIfAborted(signal);
+    bytesRead += chunk.length;
+    if (bytesRead > artifact.size_bytes) {
+      throw new LocalCliError("cli_integrity_error", "Numbering output grew while it was being read.");
+    }
+    try {
+      decoder.decode(chunk, { stream: true });
+    } catch {
+      throw new LocalCliError("cli_integrity_error", "Numbering returned invalid UTF-8.");
+    }
+  }
+  try {
+    decoder.decode();
+  } catch {
+    throw new LocalCliError("cli_integrity_error", "Numbering returned incomplete UTF-8.");
+  }
+  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
 }
 
 function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {

@@ -26,7 +26,7 @@ import { ProofreadActions } from "./actions/proofread-actions";
 import { registerCommands } from "./app/register-commands";
 import { registerFileMenu } from "./app/register-file-menu";
 import { showNotice } from "./host/notices";
-import { createAssistantSidebarOpener, AssistantSidebarClosedError, type OpenAssistantSidebar } from "./host/assistant-sidebar";
+import { createAssistantSidebarOpener, createAssistantExportActions, AssistantSidebarClosedError, type OpenAssistantSidebar } from "./host/assistant-sidebar";
 import { openPluginSettings } from "./host/settings-navigation";
 import {
   getDocWenLanguage,
@@ -359,6 +359,7 @@ export default class DocWenPlugin extends Plugin {
           openGui: () => this.guiActions.open(),
           openCurrentFile: () => this.openCurrentFileInDocWen(),
           proofreadCurrentFile: (view) => this.proofreadActions.runActive(view),
+          ...createAssistantExportActions(this.app, this.capabilities, this.exportActions, this.actionRunner),
         },
       ),
     );

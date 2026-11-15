@@ -39,6 +39,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "打开 DocWen Assistant 侧栏",
     commandOpenSidebar: "打开 DocWen Assistant 侧栏",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "校对",
+    sidebarActionsTab: "操作",
+    sidebarExportTitle: "导出",
+    sidebarNoExports: "当前文件没有可用的导出格式。",
+    sidebarRefreshExports: "刷新可用导出格式",
+    sidebarExportDocx: "导出为 Word",
+    sidebarExportXlsx: "导出为 Excel",
+    sidebarExportMarkdown: "导出为 Markdown",
     sidebarOpenGui: "打开 DocWen",
     sidebarCurrentFile: "当前文件：{filename}",
     sidebarNoFile: "请先打开一个本地文件，再使用文件操作。",
@@ -117,7 +125,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>点击左侧栏的文档图标，打开或聚焦 DocWen Assistant 侧栏。</li>
-        <li>在助手侧栏中分别选择打开 DocWen、在 DocWen 中打开当前文件、校对当前 Markdown 文件。</li>
+        <li>在“校对”页签中校对当前 Markdown 并查看报告；在“操作”页签中导出当前文件、打开 DocWen 或在 DocWen 中打开当前文件。</li>
         <li>在文件列表中右键文件选择 <b>DocWen</b>，或在命令面板 (Ctrl/Cmd + P) 搜索 <b>DocWen</b> 使用更多操作。</li>
         <li>只有执行需要文件的操作时，才会传递相应文件路径。</li>
       </ul>
@@ -300,6 +308,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "開啟 DocWen Assistant 側欄",
     commandOpenSidebar: "開啟 DocWen Assistant 側欄",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "校對",
+    sidebarActionsTab: "操作",
+    sidebarExportTitle: "匯出",
+    sidebarNoExports: "目前檔案沒有可用的匯出格式。",
+    sidebarRefreshExports: "重新整理可用匯出格式",
+    sidebarExportDocx: "匯出為 Word",
+    sidebarExportXlsx: "匯出為 Excel",
+    sidebarExportMarkdown: "匯出為 Markdown",
     sidebarOpenGui: "開啟 DocWen",
     sidebarCurrentFile: "目前檔案：{filename}",
     sidebarNoFile: "請先開啟一個本機檔案，再使用檔案操作。",
@@ -378,7 +394,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>點擊左側欄的文件圖示，開啟或聚焦 DocWen Assistant 側欄。</li>
-        <li>在助手側欄中分別選擇開啟 DocWen、在 DocWen 中開啟目前檔案、校對目前的 Markdown 檔案。</li>
+        <li>在「校對」頁籤中校對目前的 Markdown 並查看報告；在「操作」頁籤中匯出目前檔案、開啟 DocWen 或在 DocWen 中開啟目前檔案。</li>
         <li>在檔案清單中右鍵選擇 <b>DocWen</b>，或在命令面板 (Ctrl/Cmd + P) 搜尋 <b>DocWen</b> 使用更多操作。</li>
         <li>只有執行需要檔案的操作時，才會傳遞相應檔案路徑。</li>
       </ul>
@@ -561,6 +577,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Open DocWen Assistant sidebar",
     commandOpenSidebar: "Open DocWen Assistant sidebar",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Proofreading",
+    sidebarActionsTab: "Actions",
+    sidebarExportTitle: "Export",
+    sidebarNoExports: "No export formats are available for this file.",
+    sidebarRefreshExports: "Refresh available export formats",
+    sidebarExportDocx: "Export to Word",
+    sidebarExportXlsx: "Export to Excel",
+    sidebarExportMarkdown: "Export to Markdown",
     sidebarOpenGui: "Open DocWen",
     sidebarCurrentFile: "Current file: {filename}",
     sidebarNoFile: "Open a local file to use the file actions.",
@@ -639,7 +663,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Click the document icon in the left ribbon to open or focus the DocWen Assistant sidebar.</li>
-        <li>In the sidebar, choose Open DocWen, Open current file in DocWen, or Proofread current Markdown file.</li>
+        <li>Use Proofreading to check the current Markdown note and read its report. Use Actions to export the current file, open DocWen, or open the current file in DocWen.</li>
         <li>Right-click a file and choose <b>DocWen</b>, or search for <b>DocWen</b> in the command palette (Ctrl/Cmd + P) for more actions.</li>
         <li>A file path is sent only when you run an action that uses that file.</li>
       </ul>
@@ -825,6 +849,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "DocWen Assistant-Seitenleiste öffnen",
     commandOpenSidebar: "DocWen Assistant-Seitenleiste öffnen",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Korrekturlesen",
+    sidebarActionsTab: "Aktionen",
+    sidebarExportTitle: "Export",
+    sidebarNoExports: "Für diese Datei sind keine Exportformate verfügbar.",
+    sidebarRefreshExports: "Verfügbare Exportformate aktualisieren",
+    sidebarExportDocx: "Als Word exportieren",
+    sidebarExportXlsx: "Als Excel exportieren",
+    sidebarExportMarkdown: "Als Markdown exportieren",
     sidebarOpenGui: "DocWen öffnen",
     sidebarCurrentFile: "Aktuelle Datei: {filename}",
     sidebarNoFile: "Öffnen Sie eine lokale Datei, um die Dateiaktionen zu verwenden.",
@@ -903,7 +935,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Klicken Sie auf das Dokumentsymbol in der linken Symbolleiste, um die DocWen Assistant-Seitenleiste zu öffnen oder zu fokussieren.</li>
-        <li>Wählen Sie in der Seitenleiste DocWen öffnen, Aktuelle Datei in DocWen öffnen oder Aktuelle Markdown-Datei korrekturlesen.</li>
+        <li>Prüfen Sie unter Korrekturlesen die aktuelle Markdown-Notiz und lesen Sie den Bericht. Unter Aktionen können Sie die aktuelle Datei exportieren, DocWen öffnen oder die aktuelle Datei in DocWen öffnen.</li>
         <li>Klicken Sie mit der rechten Maustaste auf eine Datei und wählen Sie <b>DocWen</b>, oder suchen Sie in der Befehlspalette (Strg/Cmd + P) nach <b>DocWen</b>, um weitere Aktionen aufzurufen.</li>
         <li>Ein Dateipfad wird nur übermittelt, wenn Sie eine Aktion für diese Datei ausführen.</li>
       </ul>
@@ -1086,6 +1118,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Ouvrir le panneau latéral DocWen Assistant",
     commandOpenSidebar: "Ouvrir le panneau latéral DocWen Assistant",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Relecture",
+    sidebarActionsTab: "Actions",
+    sidebarExportTitle: "Exporter",
+    sidebarNoExports: "Aucun format d’export n’est disponible pour ce fichier.",
+    sidebarRefreshExports: "Actualiser les formats d’export disponibles",
+    sidebarExportDocx: "Exporter vers Word",
+    sidebarExportXlsx: "Exporter vers Excel",
+    sidebarExportMarkdown: "Exporter vers Markdown",
     sidebarOpenGui: "Ouvrir DocWen",
     sidebarCurrentFile: "Fichier actuel : {filename}",
     sidebarNoFile: "Ouvrez un fichier local pour utiliser les actions sur les fichiers.",
@@ -1164,7 +1204,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Cliquez sur l’icône de document dans la barre de gauche pour ouvrir ou activer le panneau latéral DocWen Assistant.</li>
-        <li>Dans ce panneau, choisissez Ouvrir DocWen, Ouvrir le fichier actuel dans DocWen ou Relire le fichier Markdown actuel.</li>
+        <li>Utilisez Relecture pour vérifier la note Markdown actuelle et lire le rapport. Dans Actions, exportez le fichier actuel, ouvrez DocWen ou ouvrez le fichier actuel dans DocWen.</li>
         <li>Faites un clic droit sur un fichier et choisissez <b>DocWen</b>, ou recherchez <b>DocWen</b> dans la palette de commandes (Ctrl/Cmd + P) pour accéder aux autres actions.</li>
         <li>Le chemin d’un fichier n’est transmis que lorsque vous lancez une action qui utilise ce fichier.</li>
       </ul>
@@ -1347,6 +1387,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Открыть боковую панель DocWen Assistant",
     commandOpenSidebar: "Открыть боковую панель DocWen Assistant",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Корректура",
+    sidebarActionsTab: "Действия",
+    sidebarExportTitle: "Экспорт",
+    sidebarNoExports: "Для этого файла нет доступных форматов экспорта.",
+    sidebarRefreshExports: "Обновить доступные форматы экспорта",
+    sidebarExportDocx: "Экспорт в Word",
+    sidebarExportXlsx: "Экспорт в Excel",
+    sidebarExportMarkdown: "Экспорт в Markdown",
     sidebarOpenGui: "Открыть DocWen",
     sidebarCurrentFile: "Текущий файл: {filename}",
     sidebarNoFile: "Откройте локальный файл, чтобы использовать действия с файлами.",
@@ -1425,7 +1473,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Нажмите значок документа на левой панели, чтобы открыть боковую панель DocWen Assistant или перейти к ней.</li>
-        <li>На панели выберите «Открыть DocWen», «Открыть текущий файл в DocWen» или «Проверить текущий файл Markdown».</li>
+        <li>На вкладке «Корректура» проверяйте текущую заметку Markdown и читайте отчёт. На вкладке «Действия» экспортируйте текущий файл, открывайте DocWen или текущий файл в DocWen.</li>
         <li>Нажмите правой кнопкой мыши на файл и выберите <b>DocWen</b> или найдите <b>DocWen</b> в палитре команд (Ctrl/Cmd + P), чтобы вызвать другие действия.</li>
         <li>Путь к файлу передаётся только при выполнении действия, использующего этот файл.</li>
       </ul>
@@ -1608,6 +1656,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Abrir a barra lateral do DocWen Assistant",
     commandOpenSidebar: "Abrir a barra lateral do DocWen Assistant",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Revisão",
+    sidebarActionsTab: "Ações",
+    sidebarExportTitle: "Exportar",
+    sidebarNoExports: "Não há formatos de exportação disponíveis para este arquivo.",
+    sidebarRefreshExports: "Atualizar formatos de exportação disponíveis",
+    sidebarExportDocx: "Exportar para Word",
+    sidebarExportXlsx: "Exportar para Excel",
+    sidebarExportMarkdown: "Exportar para Markdown",
     sidebarOpenGui: "Abrir DocWen",
     sidebarCurrentFile: "Arquivo atual: {filename}",
     sidebarNoFile: "Abra um arquivo local para usar as ações de arquivo.",
@@ -1686,7 +1742,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Clique no ícone de documento na barra esquerda para abrir ou focar a barra lateral do DocWen Assistant.</li>
-        <li>Na barra lateral, escolha Abrir DocWen, Abrir arquivo atual no DocWen ou Revisar arquivo Markdown atual.</li>
+        <li>Use Revisão para verificar a nota Markdown atual e ler o relatório. Em Ações, exporte o arquivo atual, abra o DocWen ou abra o arquivo atual no DocWen.</li>
         <li>Clique com o botão direito em um arquivo e escolha <b>DocWen</b>, ou pesquise <b>DocWen</b> na paleta de comandos (Ctrl/Cmd + P) para acessar mais ações.</li>
         <li>O caminho de um arquivo só é enviado quando você executa uma ação que usa esse arquivo.</li>
       </ul>
@@ -1869,6 +1925,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "DocWen Assistant サイドバーを開く",
     commandOpenSidebar: "DocWen Assistant サイドバーを開く",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "校正",
+    sidebarActionsTab: "操作",
+    sidebarExportTitle: "エクスポート",
+    sidebarNoExports: "このファイルで利用できるエクスポート形式はありません。",
+    sidebarRefreshExports: "利用可能なエクスポート形式を更新",
+    sidebarExportDocx: "Word にエクスポート",
+    sidebarExportXlsx: "Excel にエクスポート",
+    sidebarExportMarkdown: "Markdown にエクスポート",
     sidebarOpenGui: "DocWen を開く",
     sidebarCurrentFile: "現在のファイル: {filename}",
     sidebarNoFile: "ファイル操作を使うには、ローカルファイルを開いてください。",
@@ -1947,7 +2011,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>左のリボンにある文書アイコンをクリックすると、DocWen Assistant サイドバーが開くか、既存のサイドバーにフォーカスします。</li>
-        <li>サイドバーで「DocWen を開く」「現在のファイルを DocWen で開く」「現在の Markdown ファイルを校正」を選択できます。</li>
+        <li>「校正」で現在の Markdown ノートを校正して結果を確認できます。「操作」では現在のファイルのエクスポート、DocWen の起動、現在のファイルを DocWen で開く操作ができます。</li>
         <li>ファイルを右クリックして <b>DocWen</b> を選ぶか、コマンドパレット (Ctrl/Cmd + P) で <b>DocWen</b> を検索すると、その他の操作を利用できます。</li>
         <li>ファイルのパスは、そのファイルを使う操作を実行したときにのみ送信されます。</li>
       </ul>
@@ -2129,6 +2193,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "DocWen Assistant 사이드바 열기",
     commandOpenSidebar: "DocWen Assistant 사이드바 열기",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "교정",
+    sidebarActionsTab: "작업",
+    sidebarExportTitle: "내보내기",
+    sidebarNoExports: "이 파일에 사용할 수 있는 내보내기 형식이 없습니다.",
+    sidebarRefreshExports: "사용 가능한 내보내기 형식 새로 고침",
+    sidebarExportDocx: "Word로 내보내기",
+    sidebarExportXlsx: "Excel로 내보내기",
+    sidebarExportMarkdown: "Markdown으로 내보내기",
     sidebarOpenGui: "DocWen 열기",
     sidebarCurrentFile: "현재 파일: {filename}",
     sidebarNoFile: "파일 작업을 사용하려면 로컬 파일을 여세요.",
@@ -2207,7 +2279,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>왼쪽 리본의 문서 아이콘을 클릭하면 DocWen Assistant 사이드바가 열리거나 기존 사이드바로 포커스가 이동합니다.</li>
-        <li>사이드바에서 DocWen 열기, 현재 파일을 DocWen에서 열기, 현재 Markdown 파일 교정을 선택할 수 있습니다.</li>
+        <li>교정 탭에서 현재 Markdown 노트를 검사하고 보고서를 확인하세요. 작업 탭에서 현재 파일을 내보내거나 DocWen을 열거나 현재 파일을 DocWen에서 열 수 있습니다.</li>
         <li>파일을 오른쪽 클릭하여 <b>DocWen</b>을 선택하거나 명령 팔레트 (Ctrl/Cmd + P)에서 <b>DocWen</b>을 검색하면 더 많은 작업을 사용할 수 있습니다.</li>
         <li>파일 경로는 해당 파일을 사용하는 작업을 실행할 때만 전달됩니다.</li>
       </ul>
@@ -2389,6 +2461,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Abrir la barra lateral de DocWen Assistant",
     commandOpenSidebar: "Abrir la barra lateral de DocWen Assistant",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Corrección",
+    sidebarActionsTab: "Acciones",
+    sidebarExportTitle: "Exportar",
+    sidebarNoExports: "No hay formatos de exportación disponibles para este archivo.",
+    sidebarRefreshExports: "Actualizar formatos de exportación disponibles",
+    sidebarExportDocx: "Exportar a Word",
+    sidebarExportXlsx: "Exportar a Excel",
+    sidebarExportMarkdown: "Exportar a Markdown",
     sidebarOpenGui: "Abrir DocWen",
     sidebarCurrentFile: "Archivo actual: {filename}",
     sidebarNoFile: "Abre un archivo local para usar las acciones de archivo.",
@@ -2467,7 +2547,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Haz clic en el icono de documento de la barra izquierda para abrir o enfocar la barra lateral de DocWen Assistant.</li>
-        <li>En la barra lateral, elige Abrir DocWen, Abrir el archivo actual en DocWen o Corregir archivo Markdown actual.</li>
+        <li>Usa Corrección para revisar la nota Markdown actual y leer el informe. En Acciones, exporta el archivo actual, abre DocWen o abre el archivo actual en DocWen.</li>
         <li>Haz clic derecho en un archivo y elige <b>DocWen</b>, o busca <b>DocWen</b> en la paleta de comandos (Ctrl/Cmd + P) para acceder a más acciones.</li>
         <li>La ruta de un archivo solo se envía cuando ejecutas una acción que utiliza ese archivo.</li>
       </ul>
@@ -2649,6 +2729,14 @@ export const translations: Record<string, Translations> = {
     ribbonTooltip: "Mở thanh bên DocWen Assistant",
     commandOpenSidebar: "Mở thanh bên DocWen Assistant",
     sidebarTitle: "DocWen Assistant",
+    sidebarProofreadTab: "Hiệu đính",
+    sidebarActionsTab: "Thao tác",
+    sidebarExportTitle: "Xuất",
+    sidebarNoExports: "Không có định dạng xuất khả dụng cho tệp này.",
+    sidebarRefreshExports: "Làm mới các định dạng xuất khả dụng",
+    sidebarExportDocx: "Xuất sang Word",
+    sidebarExportXlsx: "Xuất sang Excel",
+    sidebarExportMarkdown: "Xuất sang Markdown",
     sidebarOpenGui: "Mở DocWen",
     sidebarCurrentFile: "Tệp hiện tại: {filename}",
     sidebarNoFile: "Hãy mở một tệp cục bộ để sử dụng các thao tác với tệp.",
@@ -2727,7 +2815,7 @@ export const translations: Record<string, Translations> = {
     settingsUsageList: `
       <ul>
         <li>Nhấp vào biểu tượng tài liệu trên dải công cụ bên trái để mở hoặc đưa tiêu điểm đến thanh bên DocWen Assistant.</li>
-        <li>Trong thanh bên, chọn Mở DocWen, Mở tệp hiện tại trong DocWen hoặc Hiệu đính tệp Markdown hiện tại.</li>
+        <li>Dùng Hiệu đính để kiểm tra ghi chú Markdown hiện tại và đọc báo cáo. Trong Thao tác, xuất tệp hiện tại, mở DocWen hoặc mở tệp hiện tại trong DocWen.</li>
         <li>Nhấp chuột phải vào tệp và chọn <b>DocWen</b>, hoặc tìm <b>DocWen</b> trong bảng lệnh (Ctrl/Cmd + P) để dùng thêm các thao tác.</li>
         <li>Đường dẫn tệp chỉ được gửi khi bạn chạy một thao tác sử dụng tệp đó.</li>
       </ul>

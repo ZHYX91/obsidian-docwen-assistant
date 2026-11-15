@@ -9,7 +9,7 @@ translation_status: source
 
 ## 分层
 
-`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v1：无版本数据只规范化一次并形成拥有所有权的快照；显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 负责源捕获与发布检查。Assistant 不生成 resolved-document 或 Number Suite interop 快照。
+`src/main.ts` 只负责插件组合与生命周期。`src/actions/` 编排用户操作，`src/docwen/` 拥有路径、Machine 协议与 Artifact Bundle 边界，`src/host/` 封装 Obsidian、Electron 与文件系统，`src/runtime/` 管理并发与释放。顶部页签设置界面使用一个共享页面模型，且不依赖兄弟仓库。设置持久化使用 schema v2：无版本及 v1 数据规范化为拥有所有权的 v2 快照；已规范化的 v2 快照不再迁移。显式 schema 无效或高于当前版本时只读打开，绝不回写。本地化使用一个共享模型。`linux-native-owner.ts` 选择绑定架构的静态原生 lifetime owner，Linux 不再回退到 JavaScript 进程组／procfs 清理；`declared-markdown-snapshot.ts` 负责声明式图片与导航输入，`vault-read-snapshot.ts` 负责源捕获与发布检查。Assistant 不生成 resolved-document 或 Number Suite interop 快照。
 
 `src/host/assistant-sidebar.ts` 是打开或聚焦侧栏的唯一宿主入口，合并尚未完成的打开请求，使用 Obsidian 的正式 deferred-leaf 恢复接口，并在视图关闭或插件卸载后拒绝旧请求。迟到的清理只作用于本次运行时创建且生命周期仍有效的视图，不能关闭重载后替换的视图。`src/assistant-view.ts` 负责通用动作区及既有校对报告；视图类型保持 `docwen-proofread-view`，工作区恢复继续使用同一契约。打开侧栏不分配任务 lease，不清空报告，也不调用 DocWen。`ProofreadActions` 复用该入口后才开始显式校对，GUI 按钮继续委托 `GuiActions`。文件动作每次从 `workspace.getActiveFile()` 获取身份，侧栏不维护第二份当前文件缓存；文件事件只刷新按钮和上下文。
 
@@ -23,9 +23,13 @@ Windows 自动模式验证并从安全临时工作目录启动固定的 `%LOCALA
 
 ## 请求数据流
 
+标题编号只接受平铺 Artifact Bundle 中唯一、首选且角色为 primary 的 `document`，媒体类型必须是 `text/markdown`，不得附带其他产物或关系。客户端在发布前核验输出契约并严格解码 UTF-8 流。宿主在任何编辑器事务或 Vault 写入前再次拒绝非法 UTF-8，保留真实 BOM、换行和有效 Unicode。既有身份、内容冲突与写后核验继续生效；通用 Bundle 完整性检查成功并不足以授权替换笔记。
+
+引用图片的缓存覆盖还要核对当前定义目标。即使图片标记和偏移未变，修改或删除定义也不能复用旧资源。转义、字符实体与 URI 编码在各自边界只处理一次，缓存编码有歧义时拒绝继续。字符实体通过离线的宿主 DOM 解析器解码，输入限定为经过校验的单个实体，不增加运行依赖，也不向页面插入内容。
+
 健康检查投影正式的 `status` 与可为空的 `reason` 字段；仅 `all_ok` 决定总连接健康。受限传输队列只合并同一任务连续、有效且严格递增的进度通知，因此合法 stdout 分块不改变任务结果。控制与终态消息保留，畸形或非单调进度不会被合并掩盖。
 
-固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。宿主 cache 支持的活动引用式图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
+固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。活动行内图片、完整式／折叠式／快捷式引用图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
 
 Assistant 界面语言只控制自身文案与方向。资源查询可以请求本地化显示名称，但转换请求使用稳定资源 ID，不把展示偏好复制成任务 `locale`；未指定的任务语言遵循 Core 输出设置。模板、显式 OCR 选择和校对规则各自拥有独立配置。同一固定任务不会因切换 Assistant 界面语言而改变选项。
 

@@ -4,9 +4,16 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
-- Show file-menu proofreading and numbering only when both file inspection and the applicable Machine capability support the action, preventing an unusable DOCX proofreading command.
+## [3.6.1] - 2026-11-15
 
-## [3.6.1] - 2026-11-14
+- Reject numbering results with the wrong artifact shape, media type or UTF-8 encoding before replacing an open or closed note. Preserve valid BOM, line endings and Unicode.
+- Require exact cache coverage for full, collapsed and shortcut reference images, preventing silent omission when Obsidian image metadata is incomplete.
+- Document schema v2 settings migration and the numbering output contract.
+
+- Split the Assistant sidebar into Proofreading and Actions tabs, using the equal-width theme-accent navigation and native controls shared by sibling plugins. Keep reports and running proofreading when switching tabs, and remember the selected tab.
+- Add capability-filtered current-file exports to Actions alongside the independent DocWen launch and open-file controls. Retain context-menu and Command Palette actions, and expose export-discovery failures with retry and details.
+- Update sidebar labels, usage help and guides in all twelve interface languages.
+- Show file-menu proofreading and numbering only when both file inspection and the applicable Machine capability support the action, preventing an unusable DOCX proofreading command.
 
 - Move Windows Machine lifetime management into installed DocWenCLI 0.23.0 or later. Stop generating a temporary helper EXE, wait for managed readiness, and preserve bounded cancellation and descendant cleanup.
 - Retry brief Windows executable sharing contention within the existing operation deadline, and keep confirmed pre-creation failures separate from unconfirmed process cleanup so a failed start does not unnecessarily block later operations.

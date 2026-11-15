@@ -1,9 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { Window } from "happy-dom";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   findUncoveredImageEmbeds,
   scanAuthoredImageEmbeds,
 } from "../src/host/markdown-image-embed-coverage";
+
+let host: Window;
+beforeAll(() => {
+  host = new Window();
+  vi.stubGlobal("DOMParser", host.DOMParser);
+});
+afterAll(async () => {
+  await host.happyDOM.close();
+  vi.unstubAllGlobals();
+});
 
 describe("Markdown image embed cache coverage", () => {
   it.each([
@@ -13,6 +24,124 @@ describe("Markdown image embed cache coverage", () => {
   ])("requires exact cache coverage for %s", (source, link) => {
     const missing = findUncoveredImageEmbeds(source, []);
     expect(missing).toEqual([{ start: 0, end: source.length, token: source, link }]);
+  });
+
+  it.each([
+    ["![ref][image]", "[image]: active.png", "active.png"],
+    ["![image][]", "[image]: active.png", "active.png"],
+    ["![image]", "[image]: active.png", "active.png"],
+    ["![ref][  IMAGE\t label  ]", "[image label]: active.png", "active.png"],
+    ["![Straße]", "[STRASSE]: active.png", "active.png"],
+    ["![ref][image]", "[image]:\n  <media/my photo.png>\n  \"image title\"", "media/my photo.png"],
+    ["![ref][image]", "[image]: media/photo\\(1\\).png 'escaped \\' title'", "media/photo(1).png"],
+    ["![ref][image]", "> [image]: active.png", "active.png"],
+    ["![ref][image]", "- [image]: active.png", "active.png"],
+    ["![ref][IMAGE   NAME]", "[image\nname]: active.png", "active.png"],
+    ["![ref][image]", "[image]: active.png \"a title\ncontinued here\"", "active.png"],
+  ])("requires cache coverage for resolved reference image %s", (token, definition, link) => {
+    const source = "😀 " + token + "\n\n" + definition + "\n";
+    const start = source.indexOf(token);
+    const expected = { start, end: start + token.length, token, link };
+    expect(findUncoveredImageEmbeds(source, [])).toEqual([expected]);
+    expect(findUncoveredImageEmbeds(source, [{
+      original: token, link,
+      position: { start: { offset: start }, end: { offset: start + token.length } },
+    }])).toEqual([]);
+  });
+
+  it("uses the first definition and does not borrow a later image destination", () => {
+    expect(scanAuthoredImageEmbeds("![image]\n\n[image]: first.png\n[IMAGE]: second.png\n"))
+      .toMatchObject([{ token: "![image]", link: "first.png" }]);
+    expect(scanAuthoredImageEmbeds("![image]\n\n[image]: https://example.test/remote.png\n[IMAGE]: local.png\n"))
+      .toEqual([]);
+  });
+
+  it.each([
+    "![undefined]",
+    "![alt][missing]\n\n[alt]: active.png",
+    "![image]()\n\n[image]: active.png",
+    "![image](<>)\n\n[image]: active.png",
+    "![image]\n\nParagraph\n[image]: active.png",
+    "![image]\n\n[image]: active.png invalid trailing text",
+    "![image]\n\n```\n[image]: hidden.png\n```",
+    "![image]\n\n<pre>\n[image]: hidden.png\n</pre>",
+    "![image]\n\n%% [image]: hidden.png %%",
+    "---\n[image]: hidden.png\n---\n\n![image]",
+    "`![image]`\n\n[image]: hidden.png",
+    "<pre>\n![image]\n</pre>\n\n[image]: hidden.png",
+    "![image]\n\n[image]: //example.test/remote.png",
+    "![image]\n\n[image]: &#104;ttps://example.test/remote.png",
+    "![image]\n\n[image]: https%3A%2F%2Fexample.test%2Fremote.png",
+  ])("does not invent an active local reference image in %j", (source) => {
+    expect(scanAuthoredImageEmbeds(source)).toEqual([]);
+  });
+
+  it("resolves multiline labels inside blockquotes without changing source ranges", () => {
+    const source = "> ![im\n> age]\n>\n> [im\n> age]: active.png\n";
+    const token = "![im\n> age]";
+    const start = source.indexOf(token);
+    expect(scanAuthoredImageEmbeds(source)).toEqual([
+      { start, end: start + token.length, token, link: "active.png" },
+    ]);
+  });
+
+  it.each([
+    ["media/photo\\(1\\).png", "media/photo(1).png"],
+    ["<media/a&amp;b&#46;png>", "media/a&b.png"],
+    ["image&period;png", "image.png"],
+    ["image&#x2e;png", "image.png"],
+    ["name\\&period;.png", "name&period;.png"],
+    ["name&amp;period;.png", "name&period;.png"],
+    ["media/my%20photo%2epng", "media/my photo.png"],
+    ["media/my%20photo%2epng", "media/my%20photo%2epng"],
+    ["media/photo%23tag.png", "media/photo%23tag.png"],
+    ["media/photo%3ftag.png", "media/photo%3Ftag.png"],
+    ["media/my\\%20photo.png", "media/my%2520photo.png"],
+    ["media/photo\\#tag.png", "media/photo%23tag.png"],
+    ["media/photo\\?tag.png", "media/photo%3Ftag.png"],
+    ["media/my&#37;20photo.png", "media/my photo.png"],
+    ["<media/my&#32;photo.png>", "media/my photo.png"],
+  ])("compares the current reference target %s with its semantic cache link", (destination, link) => {
+    const token = "![ref][image]";
+    const source = token + "\n\n[image]: " + destination + "\n";
+    const cache = [{ original: token, link, position: { start: { offset: 0 }, end: { offset: token.length } } }];
+    expect(scanAuthoredImageEmbeds(source)).toHaveLength(1);
+    expect(findUncoveredImageEmbeds(source, cache)).toEqual([]);
+  });
+
+  it.each([
+    ["[image]: new.png", "old.png"],
+    ["[image]: https://example.test/image.png", "old.png"],
+    ["", "old.png"],
+    ["[image]: media/my%2520photo.png", "media/my photo.png"],
+    ["[image]: media/my%2520photo.png", "media/my%20photo.png"],
+    ["[image]: malformed%GG.png", "malformed%GG.png"],
+    ["[image]: media/photo%23tag.png", "media/photo#tag.png"],
+    ["[image]: media/photo%3ftag.png", "media/photo?tag.png"],
+    ["[image]: media/photo%2523tag.png", "media/photo%23tag.png"],
+    ["[image]: media/photo%2Ftag.png", "media/photo/tag.png"],
+    ["[image]: media/my\\%20photo.png", "media/my photo.png"],
+    ["[image]: media/my\\%20photo.png", "media/my%20photo.png"],
+    ["[image]: media/photo\\#tag.png", "media/photo#tag.png"],
+    ["[image]: media/photo\\?tag.png", "media/photo?tag.png"],
+  ])("rejects a stale or ambiguous reference cache target: %s / %s", (definition, link) => {
+    const token = "![ref][image]";
+    const source = token + "\n\n" + definition + "\n";
+    const cache = [{ original: token, link, position: { start: { offset: 0 }, end: { offset: token.length } } }];
+    expect(findUncoveredImageEmbeds(source, cache)).toHaveLength(1);
+  });
+
+  it("rejects conflicting reference cache records and preserves Wiki host resolution", () => {
+    const token = "![ref][image]";
+    const position = { start: { offset: 0 }, end: { offset: token.length } };
+    expect(findUncoveredImageEmbeds(token + "\n\n[image]: current.png\n", [
+      { original: token, link: "current.png", position },
+      { original: token, link: "old.png", position },
+    ])).toHaveLength(1);
+    const wiki = "![[active.png]]";
+    expect(findUncoveredImageEmbeds(wiki, [{ original: wiki, link: "assets/active.png",
+      position: { start: { offset: 0 }, end: { offset: wiki.length } },
+    }])).toEqual([]);
   });
 
   it("matches whole backtick delimiters and treats escaped openers as text", () => {

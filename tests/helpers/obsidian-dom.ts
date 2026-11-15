@@ -89,5 +89,8 @@ export function createAssistantViewActions(): AssistantViewActions {
     openGui: vi.fn().mockResolvedValue(undefined),
     openCurrentFile: vi.fn().mockResolvedValue(undefined),
     proofreadCurrentFile: vi.fn().mockResolvedValue(undefined),
+    getExportTargets: vi.fn().mockResolvedValue([]),
+    exportFile: vi.fn().mockResolvedValue(undefined),
+    showExportFailure: vi.fn(),
   };
 }

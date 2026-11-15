@@ -1,12 +1,38 @@
 import type { App, WorkspaceLeaf } from "obsidian";
 
 import { AssistantView, ASSISTANT_VIEW_TYPE } from "../assistant-view";
+import type { AssistantExportActions } from "../assistant-exports";
+import type { ActionRunner } from "../actions/action-runner";
+import type { ExportActions } from "../actions/export-actions";
+import type { DocWenCapabilityService } from "../docwen";
 import type { OperationCoordinator } from "../runtime/operation-coordinator";
+import { resolveAbsoluteFilePath } from "./vault-files";
 
 /** Closing the requested sidebar or unloading the plugin is a controlled cancellation. */
 export class AssistantSidebarClosedError extends Error {}
 
 export type OpenAssistantSidebar = () => Promise<AssistantView>;
+
+/** Connect sidebar export discovery and execution to the existing file-action boundaries. */
+export function createAssistantExportActions(
+  app: App, capabilities: DocWenCapabilityService, exports: ExportActions, runner: ActionRunner,
+): AssistantExportActions {
+  return {
+    getExportTargets: async (file, signal) => {
+      const path = resolveAbsoluteFilePath(app.vault, file);
+      if (!path) return [];
+      const capability = await capabilities.forFile(path, signal);
+      return (["docx", "xlsx", "md"] as const).filter((target) =>
+        capabilities.findConversionRoute(capability, target) !== null);
+    },
+    exportFile: (file, target) => {
+      if (target === "docx") return exports.toDocx(file);
+      if (target === "xlsx") return exports.toXlsx(file);
+      return exports.toMarkdown(file);
+    },
+    showExportFailure: (error) => runner.presentFailure("noticeCapabilityFailed", error),
+  };
+}
 
 /** A single host entry for opening/revealing the sidebar, without starting a user operation. */
 export function createAssistantSidebarOpener(

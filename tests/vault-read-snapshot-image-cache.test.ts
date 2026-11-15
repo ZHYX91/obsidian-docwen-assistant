@@ -36,6 +36,9 @@ describe("VaultReadSnapshot image cache coverage", () => {
   it.each([
     "![photo](<media/my photo.png>)",
     "![photo](media/photo(1).png)",
+    "![photo][image]\n\n[image]: active.png",
+    "![image][]\n\n[image]: active.png",
+    "![image]\n\n[image]: active.png",
   ])("rejects uncovered Markdown image destinations: %s", async (image) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const source = "# Current\n\n" + image + "\n";
@@ -53,6 +56,35 @@ describe("VaultReadSnapshot image cache coverage", () => {
       new AbortController().signal,
       async (snapshot) => snapshot.getDeclaredMarkdownInputs(),
     )).rejects.toMatchObject({ code: "vault_input_invalid" });
+  });
+
+  it.each([
+    "[image]: current.png",
+    "[image]: https://example.test/current.png",
+    "",
+  ])("rejects cached resources after a reference definition changes to %j", async (definition) => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const token = "![ref][image]";
+    const source = token + "\n\n" + definition + "\n";
+    const file = { path: "notes/current.md", extension: "md" };
+    const getFirstLinkpathDest = vi.fn();
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null,
+        readBinary: async () => new TextEncoder().encode(source).buffer },
+      metadataCache: {
+        getFileCache: () => ({ embeds: [{ original: token, link: "previous.png",
+          position: { start: { offset: 0 }, end: { offset: token.length } },
+        }] }),
+        getFirstLinkpathDest,
+      },
+    };
+    await expect(new VaultReadSnapshot(app as never).run(
+      file as never,
+      new AbortController().signal,
+      async (snapshot) => snapshot.getDeclaredMarkdownInputs(),
+    )).rejects.toMatchObject({ code: "vault_input_invalid" });
+    expect(getFirstLinkpathDest).not.toHaveBeenCalled();
   });
 
   it("does not treat an ordinary Markdown note embed as a missing image declaration", async () => {
