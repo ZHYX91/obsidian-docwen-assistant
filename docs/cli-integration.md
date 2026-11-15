@@ -20,9 +20,9 @@ DocWen Assistant requires DocWen 0.23.0 or later on Windows and 0.17.0 or later 
 
 Heading-numbering replies must use `docwen.artifact_layout.v1` with exactly one preferred primary Markdown document and no other artifacts or relations. Both the client and final host write boundary reject invalid UTF-8 before replacing note content. Generic Bundle validity does not imply that a result satisfies this operation contract.
 
-Declared local reference images use the same cache-coverage and resource-binding requirements as inline images, including full, collapsed and shortcut reference forms. Missing cache coverage is a typed input failure rather than permission to silently omit an image.
+Full, collapsed and shortcut local reference images are declared by the current CommonMark syntax tree. If Obsidian omits their embed records, Assistant resolves each explicit definition destination through the host's `getFirstLinkpathDest` API and applies the same resource-binding and byte checks. Existing records with nonmatching overlapping ranges, displaced identical tokens or conflicting definition targets still fail closed. Inline images, Wiki images and ordinary Wiki navigation retain their exact cache requirements; a missing required declaration is never silently omitted.
 
-Coverage validates the current reference target as well as the image occurrence, so a changed definition cannot authorize an older cache target. Escaped percent signs and URI delimiters retain their literal meaning; ambiguous cache representations are rejected instead of being decoded repeatedly or selecting a different resource.
+Coverage validates the current reference target as well as the image occurrence, so a changed definition cannot authorize an older cache target. For an uncached reference, URI query and fragment delimiters are separated before its path segments are decoded once for the host resolver. An encoded separator, delimiter or percent sign has no unambiguous host linkpath representation and still requires exact cache metadata; Assistant never tries alternate raw and decoded paths. Escaped percent signs and URI delimiters retain their literal meaning; ambiguous cache representations are rejected instead of being decoded repeatedly or selecting a different resource.
 
 ## Methods used
 

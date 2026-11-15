@@ -7,7 +7,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 ## [3.6.1] - 2026-11-15
 
 - Reject numbering results with the wrong artifact shape, media type or UTF-8 encoding before replacing an open or closed note. Preserve valid BOM, line endings and Unicode.
-- Require exact cache coverage for full, collapsed and shortcut reference images, preventing silent omission when Obsidian image metadata is incomplete.
+- Support full, collapsed and shortcut reference images when Obsidian omits their embed metadata. Resolve current local definitions through Obsidian while preserving exact inline/Wiki coverage and rejecting stale or conflicting reference records before conversion.
 - Document schema v2 settings migration and the numbering output contract.
 
 - Split the Assistant sidebar into Proofreading and Actions tabs, using the equal-width theme-accent navigation and native controls shared by sibling plugins. Keep reports and running proofreading when switching tabs, and remember the selected tab.

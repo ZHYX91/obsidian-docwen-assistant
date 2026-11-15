@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   findUncoveredImageEmbeds,
+  includeUncachedReferenceImages,
   scanAuthoredImageEmbeds,
 } from "../src/host/markdown-image-embed-coverage";
 
@@ -17,6 +18,15 @@ afterAll(async () => {
 });
 
 describe("Markdown image embed cache coverage", () => {
+  it("checks raw reference cache opposition even when an active-cache filter omitted that record", () => {
+    const source = "![image]\n\n[image]: active.png\n";
+    const raw = [{ original: "![stale]", link: "old.png", position: {
+      start: { offset: 0 }, end: { offset: "![image]".length },
+    } }];
+    expect(includeUncachedReferenceImages(source, [], raw)).toEqual([]);
+    expect(findUncoveredImageEmbeds(source, includeUncachedReferenceImages(source, [], raw))).toHaveLength(1);
+  });
+
   it.each([
     ["![photo](<media/my photo.png>)", "media/my photo.png"],
     ["![photo](media/photo(1).png)", "media/photo(1).png"],

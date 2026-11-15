@@ -17,6 +17,11 @@ export interface ScannedImageEmbed {
   readonly link: string;
 }
 
+export interface DeclaredImageEmbed extends CachedEmbedLike {
+  /** Only uncached references need a parsed URI path for the host resolver. */
+  readonly linkpath?: string;
+}
+
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico"]);
 
 interface ImageOccurrence {
@@ -27,6 +32,54 @@ interface ImageOccurrence {
 
 function embedKey(start: number, end: number, token: string): string {
   return [start, end, token].join(":");
+}
+
+/** Host versions may omit reference images; only current, unopposed declarations fill that gap. */
+export function includeUncachedReferenceImages(
+  source: string,
+  cachedEmbeds: readonly CachedEmbedLike[],
+  rawCachedEmbeds: readonly CachedEmbedLike[] = cachedEmbeds,
+): readonly DeclaredImageEmbed[] {
+  const references = scanImageOccurrences(source)
+    .filter(({ reference, requiresCache }) => reference && requiresCache)
+    .map(({ image }) => image);
+  const referenceKeys = new Set(references.map(image => embedKey(image.start, image.end, image.token)));
+  // Host records are untrusted data: an extra field cannot supply our private
+  // resolver locator or override the target whose coverage is checked below.
+  const output: DeclaredImageEmbed[] = cachedEmbeds.map(({ link, original, position }) => ({ link, original, position }));
+  for (const image of references) {
+    // An exact record stays subject to target coverage below. An overlapping or
+    // displaced record must not become permission to ignore stale metadata.
+    const opposed = rawCachedEmbeds.some(embed => {
+      const start = embed.position.start.offset;
+      const end = embed.position.end.offset;
+      if (start < image.end && end > image.start) return true;
+      return embed.original === image.token && !referenceKeys.has(embedKey(start, end, embed.original));
+    });
+    if (opposed) continue;
+    const linkpath = uncachedReferenceLinkpath(image.link);
+    if (linkpath === null) continue;
+    output.push({
+      original: image.token, link: image.link, linkpath,
+      position: { start: { offset: image.start }, end: { offset: image.end } },
+    });
+  }
+  return output.sort((left, right) => left.position.start.offset - right.position.start.offset);
+}
+
+function uncachedReferenceLinkpath(link: string): string | null {
+  if (referenceTargetKey(link) === null) return null;
+  const pathname = link.split(/[?#]/u, 1)[0] ?? "";
+  try {
+    const segments = pathname.split("/").map(segment => decodeURIComponent(segment));
+    // The public host resolver takes a linkpath, not a URI. Encoded separators,
+    // delimiters or another percent escape have no unambiguous representation
+    // here. Keep requiring exact host metadata instead of trying multiple paths.
+    if (segments.some(segment => /[/\\?#%]/u.test(segment))) return null;
+    return segments.join("/");
+  } catch {
+    return null;
+  }
 }
 
 export function findUncoveredImageEmbeds(

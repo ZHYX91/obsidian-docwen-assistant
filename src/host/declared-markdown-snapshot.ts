@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
 import { parseLinktext, TFile, type App } from "obsidian";
 import { normalizeLogicalPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
-import { findUncoveredImageEmbeds } from "./markdown-image-embed-coverage";
+import { findUncoveredImageEmbeds, includeUncachedReferenceImages } from "./markdown-image-embed-coverage";
 import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
 import { isActiveCachedReference, maskProtectedSource } from "./markdown-source-ownership";
 import { VaultWriteError } from "./vault-write-transaction";
@@ -44,10 +44,12 @@ app: App,
   let totalResourceBytes = 0;
   const imageSource = maskProtectedSource(authoredMarkdown, { preserveImageDestinations: true });
   const navigationSource = maskProtectedSource(authoredMarkdown);
-  const embeds = [...(fileCache?.embeds ?? [])].filter((item) => isActiveCachedReference(
+  const rawEmbeds = fileCache?.embeds ?? [];
+  const activeEmbeds = [...rawEmbeds].filter((item) => isActiveCachedReference(
     authoredMarkdown, imageSource, item.original, item.position.start.offset, item.position.end.offset,
   ))
     .sort((left, right) => left.position.start.offset - right.position.start.offset);
+  const embeds = includeUncachedReferenceImages(authoredMarkdown, activeEmbeds, rawEmbeds);
   const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
   if (missingImage !== undefined) {
     throw new VaultWriteError(
@@ -92,8 +94,9 @@ app: App,
 
   for (const embed of embeds) {
     throwIfAborted(signal);
-    const linked = metadataCache.getFirstLinkpathDest(embed.link, file.path);
-    const requestedExtension = extensionForLink(embed.link);
+    const linkpath = embed.linkpath ?? embed.link;
+    const linked = metadataCache.getFirstLinkpathDest(linkpath, file.path);
+    const requestedExtension = extensionForLink(linkpath);
     if (!(linked instanceof TFile)) {
       if (IMAGE_LIKE_EXTENSIONS.has(requestedExtension)) {
         throw new VaultWriteError(
