@@ -25,11 +25,11 @@ Windows 自动模式验证并从安全临时工作目录启动固定的 `%LOCALA
 
 标题编号只接受平铺 Artifact Bundle 中唯一、首选且角色为 primary 的 `document`，媒体类型必须是 `text/markdown`，不得附带其他产物或关系。客户端在发布前核验输出契约并严格解码 UTF-8 流。宿主在任何编辑器事务或 Vault 写入前再次拒绝非法 UTF-8，保留真实 BOM、换行和有效 Unicode。既有身份、内容冲突与写后核验继续生效；通用 Bundle 完整性检查成功并不足以授权替换笔记。
 
-引用图片的缓存覆盖还要核对当前定义目标。即使图片标记和偏移未变，修改或删除定义也不能复用旧资源。转义、字符实体与 URI 编码在各自边界只处理一次，缓存编码有歧义时拒绝继续。字符实体通过离线的宿主 DOM 解析器解码，输入限定为经过校验的单个实体，不增加运行依赖，也不向页面插入内容。
+引用图片的缓存覆盖还要核对当前定义目标。即使图片标记和偏移未变，修改或删除定义也不能复用旧资源。转义、字符实体与 URI 编码在各自边界只处理一次，缓存编码有歧义时拒绝继续。无缓存引用目标先分离 URI 查询和片段，再对各路径段解码一次后交给宿主解析；编码后的分隔符、定界符或百分号仍要求精确 cache，不猜查其他路径。字符实体通过离线的宿主 DOM 解析器解码，输入限定为经过校验的单个实体，不增加运行依赖，也不向页面插入内容。
 
 健康检查投影正式的 `status` 与可为空的 `reason` 字段；仅 `all_ok` 决定总连接健康。受限传输队列只合并同一任务连续、有效且严格递增的进度通知，因此合法 stdout 分块不改变任务结果。控制与终态消息保留，畸形或非单调进度不会被合并掩盖。
 
-固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。活动行内图片、完整式／折叠式／快捷式引用图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
+固定版本的 CommonMark 语法树负责代码、raw HTML、注释、目的地址与标题的所有权；Obsidian Wiki 扩展使每个 Wiki 目标保持原子性。Frontmatter 与 Obsidian 注释保留各自源范围。资源扫描器与 cache 过滤共用这些所有权，不改写源字节或 UTF-16 位置。活动行内图片、完整式／折叠式／快捷式引用图片及标签中含代码的图片继续参与声明；字面的 Markdown 外观文本不贡献绑定。活动行内图片、Wiki 图片与普通 Wiki 标记仍须在 cache 中有精确覆盖。宿主未记录合法本地引用图片时，可使用当前语法树解析的定义；补齐前先检查原始 cache，重叠范围或错位的同一标记不能冒充缺失记录。关闭文件发布时，同步 stat/修订与 Vault modify 事件守卫跨越目标检查的异步等待；内容哈希、路径、TFile 与打开编辑器身份校验继续保留。这只观察宿主可见的修订，不承诺与尚未派发宿主事件的任意外部文件系统写入形成原子事务。
 
 Assistant 界面语言只控制自身文案与方向。资源查询可以请求本地化显示名称，但转换请求使用稳定资源 ID，不把展示偏好复制成任务 `locale`；未指定的任务语言遵循 Core 输出设置。模板、显式 OCR 选择和校对规则各自拥有独立配置。同一固定任务不会因切换 Assistant 界面语言而改变选项。
 
@@ -42,7 +42,7 @@ Assistant 界面语言只控制自身文案与方向。资源查询可以请求�
 
 格式不匹配要求确认时，“继续”把检测出的媒体类型与所选能力的 source kind 绑定到当前快照及所选 source slot。随后由 `VaultReadSnapshot` 在自有临时工作区内创建同字节、使用检测格式规范后缀的副本。Core 必须重新检查该副本并返回 `allow`，且格式、媒体类型、大小和 SHA-256 均匹配，才进入复核或转换。原始隔离源、公开逻辑路径、声明资源绑定及 Vault/编辑器发布身份保持原样。“取消”不创建规范副本、不启动转换；来源检查和输入形状校验仍然执行。消费者不发送 Core 私有确认元数据，也不自造 Machine 选项。
 
-Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian metadata cache 解析，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。普通本地 WikiLink 同样使用 Obsidian cache 的精确 UTF-16 源范围和解析结果；当前正文中的活动 WikiLink 若没有对应 cache 记录会失败关闭。已解析导航不会复制目标笔记，也不会暴露 Vault 绝对路径，而是绑定为 `obsidian://open` URI。短 Wiki 名称、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索目标。capability 声明的 `markdown_resource_bindings` 选项将完整源 SHA-256、原始图片标记及可选普通 WikiLink 导航标记分别绑定到已声明资源逻辑路径或导航 URI；未声明此选项的旧 capability 无法接收这些映射。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。Markdown 笔记嵌入展开仍不属于普通导航合同。
+Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian 宿主解析器选择目标，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。普通本地 WikiLink 同样使用 Obsidian cache 的精确 UTF-16 源范围和解析结果；当前正文中的活动 WikiLink 若没有对应 cache 记录会失败关闭。已解析导航不会复制目标笔记，也不会暴露 Vault 绝对路径，而是绑定为 `obsidian://open` URI。短 Wiki 名称、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索目标。capability 声明的 `markdown_resource_bindings` 选项将完整源 SHA-256、原始图片标记及可选普通 WikiLink 导航标记分别绑定到已声明资源逻辑路径或导航 URI；未声明此选项的旧 capability 无法接收这些映射。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。Markdown 笔记嵌入展开仍不属于普通导航合同。
 
 本次导出的编号由转换请求拥有，而不是由任何已安装的编辑插件拥有。Assistant 会随请求发送清理/保持选择、可选的编号方案 ID、标题序号渲染模式；Markdown 扩展开关使用 DocWen 的有效配置。DocWen 的 source-native consumer 直接从作者 Markdown 解释 Number Suite 题注/引用方言，并应用本次选择的 DocWen 编号策略。因此安装、停用或配置 Number Suite 都不能改变其他输入完全相同的 Assistant Word 导出结果。
 

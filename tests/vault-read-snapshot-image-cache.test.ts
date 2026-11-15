@@ -36,9 +36,6 @@ describe("VaultReadSnapshot image cache coverage", () => {
   it.each([
     "![photo](<media/my photo.png>)",
     "![photo](media/photo(1).png)",
-    "![photo][image]\n\n[image]: active.png",
-    "![image][]\n\n[image]: active.png",
-    "![image]\n\n[image]: active.png",
   ])("rejects uncovered Markdown image destinations: %s", async (image) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const source = "# Current\n\n" + image + "\n";
