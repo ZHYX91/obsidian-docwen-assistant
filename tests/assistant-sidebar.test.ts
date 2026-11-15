@@ -251,11 +251,165 @@ describe("Assistant sidebar file controls", () => {
     const buttons = root(view).querySelectorAll<HTMLButtonElement>(".docwen-assistant-action");
     expect(buttons).toHaveLength(3);
     expect(Array.from(buttons, (item) => item.textContent)).toEqual([
-      t("sidebarOpenGui"), t("commandLaunchWithFile"), t("commandProofread"),
+      t("commandProofread"), t("sidebarOpenGui"), t("commandLaunchWithFile"),
     ]);
     expect(root(view).dir).toBe(locale === "ar" ? "rtl" : "ltr");
     expect(view.getViewType()).toBe(ASSISTANT_VIEW_TYPE);
     button(view, "open-gui").focus();
     expect(root(view).ownerDocument.activeElement).toBe(button(view, "open-gui"));
+  });
+});
+
+describe("Assistant sidebar tabs and exports", () => {
+  it("switches accessible tabs without replacing the report or cancelling proofreading", async () => {
+    const fixture = createFixture();
+    fixture.current.file = file("Source.md");
+    const view = await fixture.open();
+    const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(lease);
+    const proofread = root(view).querySelector<HTMLElement>('[role="tabpanel"]')!;
+    const report = root(view).querySelector(".docwen-proofread-status");
+    proofread.scrollTop = 90;
+    button(view, "tab-actions").click();
+    expect(button(view, "tab-actions").getAttribute("aria-selected")).toBe("true");
+    expect(button(view, "tab-proofread").tabIndex).toBe(-1);
+    expect(proofread.hidden).toBe(true);
+    expect(lease.signal.aborted).toBe(false);
+    expect(view.getState()).toEqual({ activeTab: "actions" });
+    button(view, "tab-proofread").click();
+    expect(root(view).querySelector(".docwen-proofread-status")).toBe(report);
+    expect(proofread.scrollTop).toBe(90);
+    expect(proofread.hidden).toBe(false);
+    expect(lease.signal.aborted).toBe(false);
+    lease.finish();
+  });
+
+  it.each(["en", "ar"])("supports keyboard tab navigation and unique panel associations in %s", async (locale) => {
+    initI18n(locale);
+    const fixture = createFixture();
+    const view = await fixture.open();
+    const press = (key: string) => {
+      const selected = root(view).querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
+      selected.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true }));
+    };
+    press("ArrowRight");
+    expect(root(view).ownerDocument.activeElement).toBe(button(view, "tab-actions"));
+    press("ArrowLeft");
+    expect(view.getState().activeTab).toBe("proofread");
+    press("End");
+    expect(view.getState().activeTab).toBe("actions");
+    press("Home");
+    expect(view.getState().activeTab).toBe("proofread");
+    for (const tab of root(view).querySelectorAll('[role="tab"]')) {
+      const panel = root(view).ownerDocument.getElementById(tab.getAttribute("aria-controls")!);
+      expect(panel?.getAttribute("aria-labelledby")).toBe(tab.id);
+    }
+    const second = new AssistantView({} as never, async () => {}, fixture.operations, fixture.actions);
+    await second.onOpen();
+    expect(button(second, "tab-actions").id).not.toBe(button(view, "tab-actions").id);
+    await second.onClose();
+  });
+
+  it("restores the selected tab and keeps it when results arrive or the language changes", async () => {
+    const fixture = createFixture();
+    const view = await fixture.open();
+    await view.setState({ activeTab: "actions" });
+    view.updateResults([], "Source.md", "Notes/Source.md", "a".repeat(64));
+    initI18n("zh-CN");
+    view.refreshLocale();
+    expect(view.getState().activeTab).toBe("actions");
+    expect(button(view, "tab-actions").textContent).toBe("操作");
+    expect(root(view).querySelector<HTMLElement>('[role="tabpanel"]')!.hidden).toBe(true);
+    const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(lease);
+    expect(view.getState().activeTab).toBe("proofread");
+    lease.finish();
+  });
+
+  it("discovers only on Actions and exports the checked file through the existing action", async () => {
+    const fixture = createFixture();
+    fixture.current.file = file("Source.md");
+    vi.mocked(fixture.actions.getExportTargets).mockResolvedValue(["docx"]);
+    const view = await fixture.open();
+    expect(fixture.actions.getExportTargets).not.toHaveBeenCalled();
+    button(view, "tab-actions").click();
+    await vi.waitFor(() => expect(button(view, "export-docx")).not.toBeNull());
+    expect(button(view, "export-xlsx")).toBeNull();
+    button(view, "export-docx").click();
+    expect(fixture.actions.exportFile).toHaveBeenCalledWith(fixture.current.file, "docx");
+    const previous = button(view, "export-docx");
+    fixture.current.file = file("Different.pdf");
+    previous.click();
+    expect(fixture.actions.exportFile).toHaveBeenCalledTimes(1);
+    expect(root(view).querySelectorAll(".docwen-assistant-filename")[1].textContent).toContain("Different.pdf");
+    await vi.waitFor(() => expect(fixture.actions.getExportTargets).toHaveBeenCalledTimes(2));
+  });
+
+  it("ignores late discovery after a file switch, hide or close and cancels its signal", async () => {
+    const fixture = createFixture();
+    fixture.current.file = file("First.md");
+    let complete!: (targets: readonly ["docx"]) => void;
+    vi.mocked(fixture.actions.getExportTargets).mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
+    const view = await fixture.open();
+    button(view, "tab-actions").click();
+    const firstSignal = vi.mocked(fixture.actions.getExportTargets).mock.calls[0][1];
+    fixture.current.file = file("Second.pdf");
+    view.refreshActiveFile();
+    complete(["docx"]);
+    await vi.waitFor(() => expect(root(view).textContent).toContain(t("sidebarNoExports")));
+    expect(firstSignal.aborted).toBe(true);
+    expect(button(view, "export-docx")).toBeNull();
+    vi.mocked(fixture.actions.getExportTargets).mockImplementation(() => new Promise((resolve) => { complete = resolve; }));
+    button(view, "refresh-exports").click();
+    const hiddenSignal = vi.mocked(fixture.actions.getExportTargets).mock.calls.at(-1)![1];
+    button(view, "tab-proofread").click();
+    expect(hiddenSignal.aborted).toBe(true);
+    complete(["docx"]);
+    button(view, "tab-actions").click();
+    const closedSignal = vi.mocked(fixture.actions.getExportTargets).mock.calls.at(-1)![1];
+    await view.onClose();
+    expect(closedSignal.aborted).toBe(true);
+    complete(["docx"]);
+    await Promise.resolve();
+    expect(button(view, "export-docx")).toBeNull();
+  });
+
+  it("shows query failures with retry and details while GUI actions remain available", async () => {
+    const fixture = createFixture();
+    fixture.current.file = file("Source.md");
+    const error = new Error("private backend details");
+    vi.mocked(fixture.actions.getExportTargets).mockRejectedValueOnce(error).mockResolvedValue(["md", "xlsx"]);
+    const view = await fixture.open();
+    button(view, "tab-actions").click();
+    await vi.waitFor(() => expect(button(view, "export-retry")).not.toBeNull());
+    expect(root(view).textContent).toContain(t("contextMenuCapabilityUnavailable"));
+    expect(root(view).textContent).not.toContain(t("sidebarNoExports"));
+    expect(root(view).textContent).not.toContain(error.message);
+    button(view, "export-details").click();
+    expect(fixture.actions.showExportFailure).toHaveBeenCalledWith(error);
+    button(view, "open-gui").click();
+    expect(fixture.actions.openGui).toHaveBeenCalledOnce();
+    button(view, "export-retry").click();
+    await vi.waitFor(() => expect(button(view, "export-md")).not.toBeNull());
+    button(view, "export-xlsx").click();
+    expect(fixture.actions.exportFile).toHaveBeenCalledWith(fixture.current.file, "xlsx");
+  });
+
+  it("discards a rejected query when the host file changes before its event arrives", async () => {
+    const fixture = createFixture();
+    fixture.current.file = file("First.md");
+    let reject!: (error: Error) => void;
+    vi.mocked(fixture.actions.getExportTargets)
+      .mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }))
+      .mockResolvedValue(["xlsx"]);
+    const view = await fixture.open();
+    button(view, "tab-actions").click();
+    fixture.current.file = file("Second.csv");
+    reject(new Error("first file failed"));
+    await vi.waitFor(() => expect(button(view, "export-xlsx")).not.toBeNull());
+    expect(button(view, "export-retry")).toBeNull();
+    expect(root(view).querySelectorAll(".docwen-assistant-filename")[1].textContent).toContain("Second.csv");
+    button(view, "export-xlsx").click();
+    expect(fixture.actions.exportFile).toHaveBeenCalledWith(fixture.current.file, "xlsx");
   });
 });

@@ -31,6 +31,14 @@ export interface Translations {
   ribbonTooltip: string;
   commandOpenSidebar: string;
   sidebarTitle: string;
+  sidebarProofreadTab: string;
+  sidebarActionsTab: string;
+  sidebarExportTitle: string;
+  sidebarNoExports: string;
+  sidebarRefreshExports: string;
+  sidebarExportDocx: string;
+  sidebarExportXlsx: string;
+  sidebarExportMarkdown: string;
   sidebarOpenGui: string;
   sidebarCurrentFile: string;
   sidebarNoFile: string;

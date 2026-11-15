@@ -36,6 +36,14 @@ export const AR_TRANSLATIONS: Translations = {
   ribbonTooltip: "فتح الشريط الجانبي لـ DocWen Assistant",
   commandOpenSidebar: "فتح الشريط الجانبي لـ DocWen Assistant",
   sidebarTitle: "DocWen Assistant",
+  sidebarProofreadTab: "التدقيق",
+  sidebarActionsTab: "الإجراءات",
+  sidebarExportTitle: "تصدير",
+  sidebarNoExports: "لا توجد تنسيقات تصدير متاحة لهذا الملف.",
+  sidebarRefreshExports: "تحديث تنسيقات التصدير المتاحة",
+  sidebarExportDocx: "تصدير إلى Word",
+  sidebarExportXlsx: "تصدير إلى Excel",
+  sidebarExportMarkdown: "تصدير إلى Markdown",
   sidebarOpenGui: "فتح DocWen",
   sidebarCurrentFile: "الملف الحالي: {filename}",
   sidebarNoFile: "افتح ملفًا محليًا لاستخدام إجراءات الملفات.",
@@ -112,7 +120,7 @@ export const AR_TRANSLATIONS: Translations = {
   settingsUsageList: `
     <ul>
       <li>اضغط أيقونة المستند في الشريط الأيسر لفتح الشريط الجانبي لـ DocWen Assistant أو التركيز عليه.</li>
-      <li>في الشريط الجانبي، اختر فتح DocWen أو فتح الملف الحالي في DocWen أو تدقيق ملف Markdown الحالي.</li>
+      <li>استخدم التدقيق لفحص ملاحظة Markdown الحالية وقراءة التقرير. في الإجراءات، صدّر الملف الحالي أو افتح DocWen أو افتح الملف الحالي فيه.</li>
       <li>اضغط بزر الفأرة الأيمن على ملف واختر <b>DocWen</b>، أو ابحث عن <b>DocWen</b> في لوحة الأوامر (Ctrl/Cmd + P) للوصول إلى إجراءات أخرى.</li>
       <li>لا يُرسل مسار الملف إلا عند تشغيل إجراء يستخدم ذلك الملف.</li>
     </ul>

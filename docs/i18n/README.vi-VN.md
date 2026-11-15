@@ -64,11 +64,12 @@ Khi cập nhật thủ công, chỉ thay `main.js`, `manifest.json` và `styles.
 
 Bấm biểu tượng hoặc chạy **Mở thanh bên DocWen Assistant** để mở hoặc đưa tiêu điểm đến thanh bên. Bạn vẫn mở được thanh bên khi chưa mở tệp hoặc chưa cấu hình DocWen. Mở lại sẽ giữ báo cáo hiện tại.
 
-Thanh bên có ba nút riêng biệt:
+Thanh bên có hai thẻ:
 
-- **Mở DocWen** mở hoặc kích hoạt ứng dụng máy tính.
-- **Mở tệp hiện tại trong DocWen** mở tệp Obsidian đang chọn; nút bị vô hiệu hóa khi không có tệp cục bộ.
-- **Hiệu đính tệp Markdown hiện tại** kiểm tra ghi chú Markdown hiện tại; nút bị vô hiệu hóa với loại tệp khác hoặc khi thanh bên này đang chạy tác vụ hiệu đính của nó.
+- **Hiệu đính** hiển thị ghi chú Markdown hiện tại, bắt đầu kiểm tra và hiển thị báo cáo với làm mới, sắp xếp, tiến độ và hủy. Nút bắt đầu bị vô hiệu hóa với loại tệp khác hoặc khi thanh bên này đang chạy tác vụ hiệu đính của nó.
+- **Thao tác** hiển thị tên và đường dẫn tệp, các định dạng xuất mà tệp và DocWen hỗ trợ, rồi **Mở DocWen** và **Mở tệp hiện tại trong DocWen**. Khi không có tệp cục bộ, thao tác với tệp bị vô hiệu hóa nhưng vẫn mở được DocWen.
+
+Thanh bên mới mở ở Hiệu đính và nhớ thẻ đã chọn. Chuyển thẻ giữ báo cáo và vị trí cuộn, không hủy hiệu đính. Mở Thao tác hoặc làm mới danh sách xuất sẽ kiểm tra các định dạng khả dụng mà không bắt đầu chuyển đổi. Nếu kiểm tra thất bại, có nút thử lại và xem chi tiết. Hiệu đính từ menu chuột phải hoặc bảng lệnh sẽ chọn Hiệu đính; khi hoàn tất sẽ không chuyển bạn khỏi Thao tác.
 
 Thao tác với tệp lấy tệp hiện tại của Obsidian ngay khi bấm, kể cả khi thanh bên đang có tiêu điểm. Chuyển tệp sẽ cập nhật các nút và giữ báo cáo. Nút làm mới báo cáo vẫn kiểm tra ghi chú nguồn ban đầu. Đóng thanh bên chỉ hủy tác vụ hiệu đính thuộc thanh bên đó; điều khiển ứng dụng máy tính hoạt động độc lập.
 

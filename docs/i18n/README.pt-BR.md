@@ -64,11 +64,12 @@ Na atualização manual, substitua apenas `main.js`, `manifest.json` e `styles.c
 
 Clique no ícone ou execute **Abrir a barra lateral do DocWen Assistant** para abrir ou focar a barra. Ela abre mesmo sem um arquivo aberto ou sem o DocWen configurado. Abrir novamente preserva o relatório atual.
 
-A barra oferece três ações separadas:
+A barra tem duas abas:
 
-- **Abrir DocWen** abre ou ativa o aplicativo de desktop.
-- **Abrir arquivo atual no DocWen** abre o arquivo selecionado pelo Obsidian; fica desativado quando não há um arquivo local.
-- **Revisar arquivo Markdown atual** revisa a nota Markdown atual; fica desativado para outros arquivos ou enquanto esta barra executa sua própria revisão.
+- **Revisão** mostra a nota Markdown atual, inicia a revisão e exibe o relatório com atualização, ordenação, progresso e cancelamento. O início fica desativado para outros tipos de arquivo ou durante uma revisão pertencente a esta barra.
+- **Ações** mostra o nome e o caminho do arquivo, os formatos de exportação aceitos pelo arquivo e pelo DocWen, e depois **Abrir DocWen** e **Abrir arquivo atual no DocWen**. Sem arquivo local, as ações de arquivo ficam desativadas; abrir o DocWen continua disponível.
+
+Uma nova barra começa em Revisão e lembra a aba selecionada. Trocar de aba preserva o relatório e a posição de rolagem sem cancelar a revisão. Abrir Ações ou atualizar a lista consulta os formatos disponíveis sem iniciar uma conversão. Em caso de falha, há opções para tentar novamente e ver detalhes. Uma revisão iniciada pelo menu de contexto ou pela paleta seleciona Revisão; ao terminar, ela não tira você de Ações.
 
 As ações consultam o arquivo atual do Obsidian ao clicar, inclusive quando a barra está em foco. Trocar de arquivo atualiza os botões e preserva o relatório. O botão de atualização do relatório continua revisando a nota de origem. Fechar a barra cancela apenas a revisão que pertence a ela; o controle do aplicativo de desktop é independente.
 

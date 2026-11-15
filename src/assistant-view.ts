@@ -7,6 +7,7 @@ import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian"
 import { createHash } from "node:crypto";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
+import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
 import { resolveAbsoluteFilePath } from "./host/vault-files";
@@ -21,13 +22,15 @@ import {
 // Stable workspace identity for this sidebar and its report.
 export const ASSISTANT_VIEW_TYPE = "docwen-proofread-view";
 
-export interface AssistantViewActions {
+export interface AssistantViewActions extends AssistantExportActions {
   openGui(): Promise<void>;
   openCurrentFile(): Promise<void>;
   proofreadCurrentFile(view: AssistantView): Promise<void>;
 }
 
 type SortMode = "line" | "rule";
+type AssistantTab = "proofread" | "actions";
+let nextViewId = 0;
 const ISSUE_BATCH_SIZE = 200;
 
 const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
@@ -56,9 +59,15 @@ export class AssistantView extends ItemView {
   private lifecycle = 0;
   private ownedGeneration: number | null = null;
   private renderedLocale: string | null = null;
-  private fileContext: HTMLElement | null = null;
   private openFileButton: HTMLButtonElement | null = null;
   private proofreadButton: HTMLButtonElement | null = null;
+  private readonly viewId = ++nextViewId;
+  private activeTab: AssistantTab = "proofread";
+  private readonly tabs = new Map<AssistantTab, HTMLButtonElement>();
+  private readonly panels = new Map<AssistantTab, HTMLElement>();
+  private readonly fileContexts: HTMLElement[] = [];
+  private readonly exports: AssistantExports;
+  private readonly panelScroll = new Map<AssistantTab, { top: number; left: number; listTop: number }>();
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -67,6 +76,54 @@ export class AssistantView extends ItemView {
     private readonly actions: AssistantViewActions,
   ) {
     super(leaf);
+    this.exports = new AssistantExports(actions, () => this.currentLocalFile(), () => this.refreshActiveFile());
+  }
+
+  getState(): { activeTab: AssistantTab } {
+    return { activeTab: this.activeTab };
+  }
+
+  async setState(state: unknown): Promise<void> {
+    const tab = state && typeof state === "object" && "activeTab" in state ? state.activeTab : null;
+    this.selectTab(tab === "actions" ? "actions" : "proofread");
+  }
+
+  selectTab(tab: AssistantTab, focus = false): void {
+    const changed = this.activeTab !== tab;
+    if (changed) this.savePanelScroll();
+    this.activeTab = tab;
+    for (const [id, button] of this.tabs) {
+      const selected = id === tab;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      const panel = this.panels.get(id);
+      if (panel) panel.hidden = !selected;
+    }
+    if (changed) {
+      const panel = this.panels.get(tab);
+      const scroll = this.panelScroll.get(tab);
+      if (panel && scroll) {
+        panel.scrollTop = scroll.top;
+        panel.scrollLeft = scroll.left;
+        const list = panel.querySelector<HTMLElement>(".docwen-proofread-list");
+        if (list) list.scrollTop = scroll.listTop;
+      }
+    }
+    this.refreshActiveFile();
+    if (focus) {
+      const button = this.tabs.get(tab);
+      button?.focus({ preventScroll: true });
+      button?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+    }
+    if (changed) this.app.workspace.requestSaveLayout?.();
+  }
+
+  private savePanelScroll(): void {
+    const panel = this.panels.get(this.activeTab);
+    if (panel && !panel.hidden) this.panelScroll.set(this.activeTab, {
+      top: panel.scrollTop, left: panel.scrollLeft,
+      listTop: panel.querySelector<HTMLElement>(".docwen-proofread-list")?.scrollTop ?? 0,
+    });
   }
 
   getViewType(): string {
@@ -101,9 +158,12 @@ export class AssistantView extends ItemView {
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
     this.activeOperation = null;
-    this.fileContext = null;
     this.openFileButton = null;
     this.proofreadButton = null;
+    this.exports.dispose();
+    this.tabs.clear();
+    this.panels.clear();
+    this.fileContexts.length = 0;
     (this.containerEl.children[1] as HTMLElement).removeClass("docwen-proofread-root");
     if (generation !== null) this.operations.cancelGeneration(generation);
   }
@@ -115,6 +175,7 @@ export class AssistantView extends ItemView {
       this.operations.cancelGeneration(lease.generation);
       return () => false;
     }
+    this.selectTab("proofread", this.activeTab !== "proofread");
     this.ownedGeneration = lease.generation;
     this.updateOperation(this.operations.getSnapshot());
     return () => isOpen() && this.ownedGeneration === lease.generation && lease.isCurrent();
@@ -140,16 +201,22 @@ export class AssistantView extends ItemView {
     if (!this.sidebarOpen) return;
     // Public host contract: non-FileView focus retains the most recently active file.
     // Read it afresh; file changes and closure must never reuse a cached TFile.
-    const file = this.app.workspace.getActiveFile();
-    const localFile = file && resolveAbsoluteFilePath(this.app.vault, file) ? file : null;
+    const localFile = this.currentLocalFile();
     const isMarkdown = localFile?.extension.toLowerCase() === "md";
     if (this.openFileButton) this.openFileButton.disabled = !localFile;
     if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
-    if (this.fileContext) {
-      this.fileContext.setText(localFile
-        ? `${t("sidebarCurrentFile", { filename: localFile.name })}${isMarkdown ? "" : `\n${t("noticeProofreadNoMdFile")}`}`
-        : t("sidebarNoFile"));
+    for (const context of this.fileContexts) {
+      const name = context.querySelector<HTMLElement>(".docwen-assistant-filename");
+      const path = context.querySelector<HTMLElement>(".docwen-assistant-filepath");
+      if (name) name.setText(localFile ? t("sidebarCurrentFile", { filename: localFile.name }) : t("sidebarNoFile"));
+      if (path) path.setText(localFile?.path ?? "");
     }
+    this.exports.refresh(localFile, this.activeTab === "actions");
+  }
+
+  private currentLocalFile(): TFile | null {
+    const file = this.app.workspace.getActiveFile();
+    return file && resolveAbsoluteFilePath(this.app.vault, file) ? file : null;
   }
 
   updateResults(issues: ProofreadIssue[], fileName: string, vaultPath: string, sourceSha256: string): void {
@@ -199,6 +266,7 @@ export class AssistantView extends ItemView {
 
   private render(): void {
     const container = this.containerEl.children[1] as HTMLElement;
+    this.savePanelScroll();
     preserveViewState(container, () => this.renderContent(container), "data-docwen-view-key", "data-docwen-scroll-key");
   }
 
@@ -209,8 +277,50 @@ export class AssistantView extends ItemView {
     container.setAttribute("dir", this.renderedLocale === "ar" ? "rtl" : "ltr");
     container.empty();
 
-    this.renderActions(container);
-    container.createEl("h3", { cls: "docwen-assistant-report-heading", text: t("proofreadViewTitle") });
+    this.tabs.clear();
+    this.panels.clear();
+    this.fileContexts.length = 0;
+    const tabList = container.createDiv({
+      cls: "docwen-assistant-tabs",
+      attr: { role: "tablist", "aria-label": t("sidebarTitle"), "aria-orientation": "horizontal" },
+    });
+    const isOpen = this.captureLifetime();
+    for (const id of ["proofread", "actions"] as const) {
+      const tabId = `docwen-assistant-${this.viewId}-tab-${id}`;
+      const panelId = `docwen-assistant-${this.viewId}-panel-${id}`;
+      const button = tabList.createEl("button", {
+        cls: "docwen-assistant-tab", text: t(id === "proofread" ? "sidebarProofreadTab" : "sidebarActionsTab"),
+        attr: { type: "button", role: "tab", id: tabId, "aria-controls": panelId, "data-docwen-view-key": `tab-${id}` },
+      });
+      const panel = container.createDiv({
+        cls: "docwen-assistant-panel",
+        attr: { role: "tabpanel", id: panelId, "aria-labelledby": tabId, "data-docwen-scroll-key": `panel-${id}` },
+      });
+      this.tabs.set(id, button);
+      this.panels.set(id, panel);
+      const select = (target: AssistantTab): void => {
+        if (isOpen() && button.isConnected) this.selectTab(target, true);
+      };
+      button.addEventListener("click", () => select(id));
+      button.addEventListener("keydown", (event) => {
+        let target: AssistantTab;
+        if (event.key === "Home") target = "proofread";
+        else if (event.key === "End") target = "actions";
+        else if (event.key === "ArrowLeft" || event.key === "ArrowRight") target = id === "proofread" ? "actions" : "proofread";
+        else return;
+        event.preventDefault();
+        select(target);
+      });
+    }
+    const proofread = this.panels.get("proofread")!;
+    this.renderFileContext(proofread);
+    this.proofreadButton = this.actionButton(proofread, "commandProofread", "proofread-current-file", () => this.actions.proofreadCurrentFile(this));
+    this.renderReport(proofread);
+    this.renderActions(this.panels.get("actions")!);
+    this.selectTab(this.activeTab);
+  }
+
+  private renderReport(container: HTMLElement): void {
 
     // Report toolbar
     const toolbar = container.createDiv({ cls: "docwen-proofread-toolbar" });
@@ -244,7 +354,7 @@ export class AssistantView extends ItemView {
       toolbar.createSpan({
         cls: "docwen-proofread-filename",
         text: this.fileName,
-        attr: { title: this.fileName },
+        attr: { title: this.vaultPath },
       });
     }
 
@@ -330,34 +440,47 @@ export class AssistantView extends ItemView {
   }
 
   private renderActions(container: HTMLElement): void {
+    this.renderFileContext(container);
+    const header = container.createDiv({ cls: "docwen-assistant-section-header" });
+    header.createEl("h3", { cls: "docwen-assistant-section-title", text: t("sidebarExportTitle") });
+    const refresh = header.createEl("button", {
+      cls: "docwen-proofread-btn",
+      attr: { type: "button", "aria-label": t("sidebarRefreshExports"), title: t("sidebarRefreshExports"), "data-docwen-view-key": "refresh-exports" },
+    });
+    setIcon(refresh, "refresh-cw");
+    const isOpen = this.captureLifetime();
+    refresh.addEventListener("click", () => {
+      if (isOpen() && refresh.isConnected && this.activeTab === "actions") this.exports.reload();
+    });
+    this.exports.mount(container.createDiv({ cls: "docwen-assistant-actions" }));
+    container.createEl("h3", { cls: "docwen-assistant-section-title", text: t("contextMenuSubmenuTitle") });
     const group = container.createDiv({
       cls: "docwen-assistant-actions",
       attr: { role: "group", "aria-label": t("sidebarTitle") },
     });
+    this.actionButton(group, "sidebarOpenGui", "open-gui", () => this.actions.openGui());
+    this.openFileButton = this.actionButton(group, "commandLaunchWithFile", "open-current-file", () => this.actions.openCurrentFile());
+  }
+
+  private renderFileContext(container: HTMLElement): void {
+    const context = container.createDiv({ cls: "docwen-assistant-file-context", attr: { role: "status", "aria-live": "polite" } });
+    context.createDiv({ cls: "docwen-assistant-filename" });
+    context.createDiv({ cls: "docwen-assistant-filepath" });
+    this.fileContexts.push(context);
+  }
+
+  private actionButton(container: HTMLElement, key: keyof Translations, identity: string, action: () => Promise<void>): HTMLButtonElement {
     const isOpen = this.captureLifetime();
-    const button = (key: keyof Translations, icon: string, identity: string, action: () => Promise<void>): HTMLButtonElement => {
-      const element = group.createEl("button", {
-        cls: "docwen-assistant-action",
-        attr: { type: "button", "data-docwen-view-key": identity },
-      });
-      const image = element.createSpan({ attr: { "aria-hidden": "true" } });
-      setIcon(image, icon);
-      element.createSpan({ text: t(key) });
-      element.addEventListener("click", () => {
-        if (!isOpen() || !element.isConnected) return;
-        this.refreshActiveFile();
-        if (!element.disabled) void action();
-      });
-      return element;
-    };
-    button("sidebarOpenGui", "external-link", "open-gui", () => this.actions.openGui());
-    this.openFileButton = button("commandLaunchWithFile", "file-input", "open-current-file", () => this.actions.openCurrentFile());
-    this.proofreadButton = button("commandProofread", "check-circle", "proofread-current-file", () => this.actions.proofreadCurrentFile(this));
-    this.fileContext = container.createDiv({
-      cls: "docwen-assistant-file-context",
-      attr: { role: "status", "aria-live": "polite" },
+    const element = container.createEl("button", {
+      cls: "docwen-assistant-action", text: t(key),
+      attr: { type: "button", "data-docwen-view-key": identity },
     });
-    this.refreshActiveFile();
+    element.addEventListener("click", () => {
+      if (!isOpen() || !element.isConnected) return;
+      this.refreshActiveFile();
+      if (!element.disabled) void action();
+    });
+    return element;
   }
 
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {

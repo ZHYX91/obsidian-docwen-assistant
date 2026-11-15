@@ -319,7 +319,8 @@ describe("AssistantView", () => {
   it("keeps controls reachable in short sidebars while long issue content scrolls and wraps", () => {
     const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 
-    expect(css).toMatch(/\.docwen-proofread-root\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*0;[^}]*overflow:\s*auto;/s);
+    expect(css).toMatch(/\.docwen-proofread-root\s*\{[^}]*display:\s*flex;[^}]*min-height:\s*0;[^}]*overflow:\s*hidden;/s);
+    expect(css).toMatch(/\.docwen-assistant-panel\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);

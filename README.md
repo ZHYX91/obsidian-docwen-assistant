@@ -69,11 +69,12 @@ When updating manually, replace only `main.js`, `manifest.json` and `styles.css`
 
 Click the ribbon icon or run **Open DocWen Assistant sidebar** to open or focus the Assistant sidebar. The sidebar opens even when no file is open or DocWen is not configured, and reopening it keeps the current report.
 
-The sidebar has three separate actions:
+The sidebar has two tabs:
 
-- **Open DocWen** opens or activates the desktop app.
-- **Open current file in DocWen** opens the file currently selected by Obsidian; it is disabled when no local file is available.
-- **Proofread current Markdown file** starts proofreading for the current Markdown note; it is disabled for other files or while this sidebar owns a proofreading task.
+- **Proofreading** shows the current Markdown note, starts proofreading, and displays the report with refresh, sorting, progress and cancellation controls. Proofreading is disabled for other file types or while this sidebar owns a proofreading task.
+- **Actions** shows the current file name and path, the export formats supported by that file and DocWen, then **Open DocWen** and **Open current file in DocWen**. File actions are disabled when no local file is available; opening DocWen remains available.
+
+A new sidebar starts on Proofreading and remembers the selected tab. Switching tabs preserves the report and scrolling and does not cancel proofreading. Opening Actions or refreshing its export list checks the available formats without starting conversion. Failed checks show retry and details controls. Proofreading started from the context menu or Command Palette selects Proofreading; completion does not switch you away from Actions.
 
 File actions use Obsidian’s current file when clicked, including when the sidebar has focus. Switching files updates the controls without replacing the displayed report. The report’s refresh control still checks its original source note. Closing the sidebar cancels only its own proofreading task; GUI control is independent.
 

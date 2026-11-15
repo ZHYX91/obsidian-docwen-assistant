@@ -31,16 +31,20 @@ afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 
-async function makeBundle(source: string): Promise<ValidatedArtifactBundle> {
+async function makeBundle(
+  source: string,
+  layout: ValidatedArtifactBundle["layout_schema"] = "docwen.document_node.v1",
+): Promise<ValidatedArtifactBundle> {
   const bytes = Buffer.from("# New result\n");
   const absolutePath = path.join(source, "produced.md");
   await writeFile(absolutePath, bytes);
   return {
-    schema: "docwen.artifact_bundle.v3", layout_schema: "docwen.document_node.v1",
+    schema: "docwen.artifact_bundle.v3", layout_schema: layout,
     bundle_id: "bundle.lifecycle", task_id: "task.lifecycle",
     producer: { name: "DocWen", product_version: "0.12.0", machine_protocol: "docwen.machine.v2" },
     artifacts: [{
-      artifact_id: "main", kind: "document", locator: "produced.md", logical_path: "result/result.md",
+      artifact_id: "main", kind: "document", locator: "produced.md",
+      logical_path: layout === "docwen.artifact_layout.v1" ? "result.md" : "result/result.md",
       suggested_name: "result.md", media_type: "text/markdown", size_bytes: bytes.length,
       sha256: createHash("sha256").update(bytes).digest("hex"), absolutePath: await realpath(absolutePath),
     }],
@@ -181,7 +185,7 @@ describe("publication and cleanup boundaries", () => {
     const client = new DocWenClient({
       runTask: async (request: { output: { staging_root: { path: string } } }) => {
         roots.push(request.output.staging_root.path);
-        return { bundle: await makeBundle(request.output.staging_root.path) };
+        return { bundle: await makeBundle(request.output.staging_root.path, "docwen.artifact_layout.v1") };
       },
     } as never);
     faults.remove = /docwen-assistant-machine-/u;

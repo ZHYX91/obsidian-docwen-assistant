@@ -64,11 +64,12 @@ Ersetzen Sie bei manuellen Updates nur `main.js`, `manifest.json` und `styles.cs
 
 Klicken Sie auf das Symbol oder führen Sie **DocWen Assistant-Seitenleiste öffnen** aus, um die Seitenleiste zu öffnen oder zu fokussieren. Sie lässt sich auch ohne geöffnete Datei oder eingerichtetes DocWen öffnen. Erneutes Öffnen erhält den aktuellen Bericht.
 
-Die Seitenleiste bietet drei getrennte Aktionen:
+Die Seitenleiste hat zwei Registerkarten:
 
-- **DocWen öffnen** öffnet oder aktiviert die Desktop-Anwendung.
-- **Aktuelle Datei in DocWen öffnen** öffnet die von Obsidian aktuell ausgewählte Datei und ist ohne lokale Datei deaktiviert.
-- **Aktuelle Markdown-Datei korrekturlesen** prüft die aktuelle Markdown-Notiz und ist für andere Dateien oder während einer Korrekturprüfung dieser Seitenleiste deaktiviert.
+- **Korrekturlesen** zeigt die aktuelle Markdown-Notiz, startet die Prüfung und zeigt den Bericht mit Aktualisierung, Sortierung, Fortschritt und Abbruch. Bei anderen Dateitypen oder während einer eigenen Prüfung ist der Start deaktiviert.
+- **Aktionen** zeigt Dateiname und Pfad, die von Datei und DocWen unterstützten Exportformate sowie **DocWen öffnen** und **Aktuelle Datei in DocWen öffnen**. Ohne lokale Datei sind Dateiaktionen deaktiviert; DocWen lässt sich weiterhin öffnen.
+
+Eine neue Seitenleiste startet mit Korrekturlesen und merkt sich die gewählte Registerkarte. Ein Wechsel erhält Bericht und Scrollposition und bricht die Prüfung nicht ab. Beim Öffnen von Aktionen oder Aktualisieren der Exportliste werden verfügbare Formate geprüft, ohne eine Konvertierung zu starten. Bei Fehlern sind Wiederholen und Details verfügbar. Eine Prüfung aus Kontextmenü oder Befehlspalette wählt Korrekturlesen; ihr Abschluss wechselt nicht von Aktionen weg.
 
 Dateiaktionen ermitteln die aktuelle Obsidian-Datei beim Klicken, auch wenn die Seitenleiste den Fokus hat. Ein Dateiwechsel aktualisiert die Schaltflächen und erhält den Bericht. Dessen Aktualisierung prüft weiterhin die ursprüngliche Notiz. Das Schließen der Seitenleiste bricht nur ihre eigene Korrekturprüfung ab; die Steuerung der Desktop-Anwendung läuft unabhängig.
 

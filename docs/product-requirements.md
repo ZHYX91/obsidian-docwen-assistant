@@ -19,7 +19,8 @@ The plugin requires Windows or Linux desktop, Obsidian 1.12.7 or later, and DocW
 ## Core capabilities
 
 - Open or focus the general Assistant sidebar from the ribbon or independent command, even without a file or configured DocWen installation; repeated opens preserve the report.
-- Separately open DocWen, open the current file in DocWen, or proofread current Markdown from the sidebar; acquire the current file from the host when clicked.
+- Split the sidebar into equal-width Proofreading and Actions tabs with the same theme and keyboard behavior as sibling plugins; remember the selected tab and retain the report and running proofreading when switching.
+- Check current Markdown in Proofreading; export the current file, open DocWen or open the current file in DocWen from Actions. Acquire the current file from the host when clicked, and retain context-menu and Command Palette entries.
 - Offer Word, Excel, and Markdown export according to file inspection and Machine capabilities.
 - Add or remove heading numbering within one Markdown file.
 - Show Markdown proofreading results in a read-only sidebar.

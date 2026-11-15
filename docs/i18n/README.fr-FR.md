@@ -64,11 +64,12 @@ Lors d’une mise à jour manuelle, remplacez seulement `main.js`, `manifest.jso
 
 Cliquez sur l’icône ou lancez **Ouvrir le panneau latéral DocWen Assistant** pour ouvrir ou sélectionner le panneau. Il s’ouvre même sans fichier ouvert ou sans configuration de DocWen. Une nouvelle ouverture conserve le rapport actuel.
 
-Le panneau propose trois actions distinctes :
+La barre latérale comporte deux onglets :
 
-- **Ouvrir DocWen** ouvre ou active l’application de bureau.
-- **Ouvrir le fichier actuel dans DocWen** ouvre le fichier actuellement sélectionné par Obsidian ; le bouton est désactivé sans fichier local.
-- **Relire le fichier Markdown actuel** vérifie la note Markdown actuelle ; le bouton est désactivé pour les autres fichiers ou pendant une relecture appartenant à ce panneau.
+- **Relecture** affiche la note Markdown actuelle, lance la vérification et présente le rapport avec actualisation, tri, progression et annulation. Le lancement est désactivé pour les autres types de fichiers ou pendant une vérification appartenant à cette barre.
+- **Actions** affiche le nom et le chemin du fichier, les formats d’export pris en charge par le fichier et DocWen, puis **Ouvrir DocWen** et **Ouvrir le fichier actuel dans DocWen**. Sans fichier local, les actions sur le fichier sont désactivées ; DocWen peut toujours être ouvert.
+
+Une nouvelle barre s’ouvre sur Relecture et mémorise l’onglet choisi. Changer d’onglet conserve le rapport et le défilement sans annuler la relecture. Ouvrir Actions ou actualiser la liste vérifie les formats disponibles sans lancer de conversion. En cas d’échec, des commandes pour réessayer et afficher les détails sont proposées. Une relecture lancée depuis le menu contextuel ou la palette sélectionne Relecture ; sa fin ne vous fait pas quitter Actions.
 
 Les actions déterminent le fichier actuel d’Obsidian au clic, même quand le panneau a le focus. Changer de fichier actualise les boutons et conserve le rapport. Le bouton d’actualisation du rapport vérifie toujours sa note d’origine. Fermer le panneau annule uniquement sa propre relecture ; le contrôle de l’application de bureau reste indépendant.
 

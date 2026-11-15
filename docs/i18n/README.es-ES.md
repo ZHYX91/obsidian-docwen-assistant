@@ -64,11 +64,12 @@ Al actualizar manualmente, sustituye solo `main.js`, `manifest.json` y `styles.c
 
 Pulsa el icono o ejecuta **Abrir la barra lateral de DocWen Assistant** para abrir o enfocar la barra. Se abre aunque no haya ningún archivo abierto o DocWen no esté configurado. Al abrirla de nuevo, se conserva el informe actual.
 
-La barra ofrece tres acciones independientes:
+La barra tiene dos pestañas:
 
-- **Abrir DocWen** abre o activa la aplicación de escritorio.
-- **Abrir el archivo actual en DocWen** abre el archivo seleccionado actualmente por Obsidian; se desactiva si no hay un archivo local.
-- **Corregir archivo Markdown actual** revisa la nota Markdown actual; se desactiva para otros archivos o mientras esta barra ejecuta una revisión propia.
+- **Corrección** muestra la nota Markdown actual, inicia la revisión y presenta el informe con actualización, ordenación, progreso y cancelación. El inicio se desactiva para otros tipos de archivo o durante una revisión propia de esta barra.
+- **Acciones** muestra el nombre y la ruta del archivo, los formatos de exportación que admiten el archivo y DocWen, y después **Abrir DocWen** y **Abrir el archivo actual en DocWen**. Sin archivo local, las acciones de archivo se desactivan; DocWen se puede seguir abriendo.
+
+Una barra nueva comienza en Corrección y recuerda la pestaña elegida. Cambiar de pestaña conserva el informe y la posición de desplazamiento sin cancelar la revisión. Abrir Acciones o actualizar la lista comprueba los formatos disponibles sin iniciar una conversión. Si falla, se ofrecen opciones para reintentar y ver detalles. Una revisión iniciada desde el menú contextual o la paleta selecciona Corrección; al terminar no te saca de Acciones.
 
 Las acciones consultan el archivo actual de Obsidian al pulsar el botón, incluso si la barra tiene el foco. Cambiar de archivo actualiza los botones y conserva el informe. El botón de actualización del informe sigue revisando la nota de origen. Cerrar la barra cancela solo su propia revisión; el control de la aplicación de escritorio es independiente.
 
