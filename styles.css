@@ -608,6 +608,7 @@ button.docwen-proofread-item {
 }
 
 .docwen-settings-help-disclosure {
+  container-type: inline-size;
   background: transparent;
   border: 0;
   color: var(--text-muted);
@@ -674,12 +675,25 @@ button.docwen-proofread-item {
   .docwen-settings-help-disclosure > summary:focus-visible { outline-color: Highlight; }
 }
 
-.docwen-settings-help-disclosure > .docwen-settings-help-body {
-  color: var(--text-normal);
+.docwen-settings-help-disclosure[open] > .docwen-settings-help-body {
+  box-sizing: border-box;
+  border-inline-start: 2px solid var(--background-modifier-border);
   margin-block: 6px 0;
-  margin-inline: 18px 0;
-  max-inline-size: 68ch;
+  margin-inline-start: 6px;
+  padding-inline-start: 10px;
+  color: var(--text-normal);
   overflow-wrap: anywhere;
+  max-inline-size: 68ch;
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  .docwen-settings-help-disclosure[open] > .docwen-settings-help-body {
+    border-inline-start-color: color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border));
+  }
+}
+
+@container (max-width: 24rem) {
+  .docwen-settings-help-disclosure[open] > .docwen-settings-help-body { margin-inline-start: 0; }
 }
 
 .docwen-settings-help-brief.setting-item {
