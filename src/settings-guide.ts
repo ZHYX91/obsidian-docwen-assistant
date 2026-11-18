@@ -24,9 +24,9 @@ export function renderSettingsSupport(setting: Setting): void {
  */
 export function renderSettingsGuide(
   setting: Setting, title: string, body: string,
-  wordGuide = false, opened: Set<string> = new Set(),
+  kind: "brief" | "word", opened: Set<string>,
 ): void {
-  if (!wordGuide) {
+  if (kind === "brief") {
     setting.setClass("docwen-settings-help-brief");
     setting.setName(title);
     setting.setDesc(body);

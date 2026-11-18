@@ -1,39 +1,41 @@
-// @vitest-environment happy-dom
+import type { Setting } from "obsidian";
 import { describe, expect, it } from "vitest";
 import { renderSettingsGuide } from "../src/settings-guide";
+import { useObsidianDom } from "./helpers/obsidian-dom";
 
-describe("DocWen settings help hierarchy", () => {
-  it("keeps short scope advice visible; Word tutorial closes by default", () => {
-    // Keep Obsidian DOM helpers local to this fixture; do not patch the global prototype.
-    const element = (): HTMLElement => {
-      const el = document.createElement("div");
-      Object.defineProperties(el, {
-        empty: { configurable: true, value() { el.replaceChildren(); } },
-        createEl: { configurable: true, value(tag: string, options?: { cls?: string; text?: string }) {
-          const child = document.createElement(tag);
-          if (options?.cls) child.className = options.cls;
-          if (options?.text) child.textContent = options.text;
-          el.append(child);
-          return child;
-        } },
-      });
-      return el;
-    };
-    const short = { settingEl: element(), setClass() { return this; },
-      setName(name: string) { this.settingEl.textContent = name; return this; },
-      setDesc(value: string) { this.settingEl.append(value); return this; } };
-    renderSettingsGuide(short as never, "Scope", "Does not write notes.");
-    expect(short.settingEl.textContent).toContain("Does not write notes.");
-    const word = { ...short, settingEl: document.createElement("div") };
+useObsidianDom();
+
+function createSetting() {
+  const settingEl = document.createElement("div");
+  return {
+    settingEl,
+    setClass(name: string) { settingEl.classList.add(name); return this; },
+    setName(value: string) { settingEl.createSpan({ text: value }); return this; },
+    setDesc(value: string) { settingEl.createDiv({ text: value }); return this; },
+  };
+}
+
+describe("DocWen settings guidance", () => {
+  it("keeps brief advice visible and restores the Word tutorial on redraw", () => {
+    const setting = createSetting();
     const state = new Set<string>();
-    renderSettingsGuide(word as never, "Word details", "Advanced explanation", true, state);
-    const details = word.settingEl.querySelector("details")!;
+    const render = (kind: "brief" | "word") =>
+      renderSettingsGuide(setting as unknown as Setting, "Guide", "Help text", kind, state);
+
+    render("brief");
+    expect(setting.settingEl.textContent).toContain("Help text");
+    expect(setting.settingEl.querySelector("details")).toBeNull();
+
+    render("word");
+    const details = setting.settingEl.querySelector("details")!;
     expect(details.open).toBe(false);
+    expect(details.querySelector("summary")?.textContent).toBe("Guide");
     details.open = true;
-    details.dispatchEvent(new Event("toggle"));
-    expect(state.has("word")).toBe(true);
+    details.dispatchEvent(new window.Event("toggle"));
+    render("word");
+    expect(setting.settingEl.querySelector("details")?.open).toBe(true);
     state.clear();
-    renderSettingsGuide(word as never, "Word details", "Advanced explanation", true, state);
-    expect(word.settingEl.querySelector("details")?.open).toBe(false);
+    render("word");
+    expect(setting.settingEl.querySelector("details")?.open).toBe(false);
   });
 });

@@ -22,7 +22,7 @@ export interface SettingsPageContext {
   readonly renderPersistenceStatus: (setting: Setting) => void;
   readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
-  readonly renderGuide: (setting: Setting, title: string, body: string) => void;
+  readonly renderGuide: (setting: Setting, title: string, body: string, kind: "brief" | "word") => void;
   readonly renderSupport: (setting: Setting) => void;
 }
 
@@ -111,7 +111,7 @@ export function getSettingsPages(
       id: "word",
       name: t("settingsExportDocTitle"),
       items: [
-        guide(context, t("settingsWordGuideTitle"), t("settingsWordGuideDesc")),
+        guide(context, t("settingsWordGuideTitle"), t("settingsWordGuideDesc"), "word"),
         dropdown("headingMergeMode", t("settingsHeadingMergeMode"), t("settingsHeadingMergeModeDesc"), {
           punct_required: t("settingsHeadingMergeModePunctRequired"),
           always: t("settingsHeadingMergeModeAlways"),
@@ -179,10 +179,11 @@ function guide(
   context: SettingsPageContext,
   title: string,
   body: string,
+  kind: "brief" | "word" = "brief",
 ): SettingDefinition<SettingsControlKey> {
   return {
     name: title,
-    render: (setting) => context.renderGuide(setting, title, body),
+    render: (setting) => context.renderGuide(setting, title, body, kind),
   };
 }
 
