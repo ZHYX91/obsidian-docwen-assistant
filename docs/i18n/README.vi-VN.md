@@ -37,7 +37,7 @@ Plugin mở tệp trong DocWen, xuất Word/Excel/Markdown vào thư mục đíc
 ## Yêu cầu và khả năng tương thích
 
 - Windows hoặc Linux và Obsidian 1.12.7 trở lên; plugin chỉ dành cho máy tính để bàn.
-- Trên Windows, dùng DocWen 0.23.0 (Windows) / 0.17.0 (Linux) trở lên tương thích từ Store hoặc gói portable đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mới mà không ghi đè dữ liệu hiện có; plugin không tự động tải DocWen.
+- Trên Windows, dùng DocWen 0.23.0 trở lên tương thích từ Store hoặc gói portable đã giải nén hoàn toàn; trên Linux, dùng gói đã giải nén hoàn toàn và chọn thủ công. Xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mới mà không ghi đè dữ liệu hiện có; plugin không tự động tải DocWen.
 - Plugin yêu cầu `docwen.machine.v2` và `docwen.artifact_bundle.v3`; phiên bản DocWen không tương thích sẽ bị từ chối thay vì dùng giao thức khác.
 - Ngay cả khi kết nối chuyển đổi nền không tương thích, bạn vẫn có thể thử mở riêng ứng dụng DocWen.
 
@@ -49,7 +49,7 @@ Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe
 
 ### Cài DocWen và plugin
 
-1. Trên Windows, cài DocWen 0.23.0 (Windows) / 0.17.0 (Linux) trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
+1. Trên Windows, cài DocWen 0.23.0 trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
 2. Cài DocWen Assistant từ Community Plugins. Nếu cài thủ công, tải `docwen-assistant-x.y.z.zip` từ [trang phát hành plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) rồi sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Tải lại Community Plugins rồi bật DocWen Assistant.
 4. Bản Windows từ Store có thể được nhận diện tự động. Với Windows portable hoặc Linux, mở **Cài đặt → DocWen Assistant → Chung**, chọn kết nối thủ công rồi chọn thư mục đã giải nén hoặc tệp thực thi.
@@ -73,7 +73,7 @@ Thanh bên mới mở ở Hiệu đính và nhớ thẻ đã chọn. Chuyển th
 
 Thao tác với tệp lấy tệp hiện tại của Obsidian ngay khi bấm, kể cả khi thanh bên đang có tiêu điểm. Chuyển tệp sẽ cập nhật các nút và giữ báo cáo. Nút làm mới báo cáo vẫn kiểm tra ghi chú nguồn ban đầu. Đóng thanh bên chỉ hủy tác vụ hiệu đính thuộc thanh bên đó; điều khiển ứng dụng máy tính hoạt động độc lập.
 
-Menu con **DocWen** và bảng lệnh cũng cung cấp thao tác mở ứng dụng, xuất Word/Excel/Markdown, đánh số tiêu đề, hiệu đính và **Kiểm tra kết nối DocWen**.
+Nhấp chuột phải vào tệp rồi mở **DocWen** để xem các thao tác xuất, soát lỗi và đánh số tiêu đề có thể dùng cho tệp đó. Trong bảng lệnh, chọn **Kiểm tra kết nối DocWen**. Bạn cũng có thể mở DocWen từ đây mà không mở tệp.
 
 Chọn mẫu hoặc thiết lập chuyển đổi nếu được cung cấp, rồi chọn thư mục đầu ra. Kiểm tra tệp nguồn, định dạng, nơi lưu và các tùy chọn trước khi bấm **Xuất**. Cửa sổ dùng thiết lập đã lấy cho tác vụ này; hủy sẽ không bắt đầu chuyển đổi. Một DOCX hoặc XLSX được lưu trực tiếp vào thư mục đã chọn khi DocWen trả về một tệp. Markdown và các đầu ra theo nhóm giữ thư mục riêng chứa ảnh và tệp đính kèm. Sau khi hoàn tất, chọn **Mở thư mục kết quả** trong thông báo. Thao tác này mở thư mục chứa đầu ra. Tệp và thư mục có sẵn không bị ghi đè.
 
@@ -90,23 +90,11 @@ Trước khi xuất Word, bật **phần mở rộng đầu vào** cần thiết
 
 Xuất Word đọc cú pháp Number Suite ngay cả khi không cài plugin này. Số trong kết quả theo tùy chọn DocWen, không theo số chỉ hiển thị của Number Suite. Lệnh thêm hoặc xóa số thứ tự tiêu đề riêng sẽ sửa ghi chú nguồn; xuất tệp thì không.
 
-**Mỗi dự án thay đổi những gì**
-
-| Dự án và hướng dẫn | Hiển thị, sửa nguồn và đầu ra |
-| --- | --- |
-| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.vi-VN.md) | Tạo các tệp đã chuyển đổi. Phần mở rộng đầu vào diễn giải cú pháp nguồn; cài đặt xuất quyết định đầu ra và cách đánh số. |
-| [DocWen Assistant](../product-requirements.md) | Xuất lưu kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
-| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.vi-VN.md) | Lịch và danh sách tác vụ đọc chỉ mục. Đổi trạng thái hoàn thành hoặc ngày của tác vụ sẽ cập nhật Markdown nguồn; thao tác tạo sẽ thêm ghi chú. |
-| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.vi-VN.md) | Cài đặt gợi ý thay đổi menu. Sắp xếp hoặc di chuyển giá trị sửa các danh sách YAML liên quan và có thể chuyển giá trị không phải văn bản thành chuỗi. |
-| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.vi.md) | Quy tắc lọc kết quả phân tích hoặc quyết định những kết nối đồ thị được tính. Chúng không viết lại liên kết trong ghi chú. |
-| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.vi.md) | Các chế độ xem hiển thị cấu trúc nút. Tạo, di chuyển, đổi tên, gộp và xóa sẽ thay đổi ghi chú, thư mục hoặc thuộc tính cấu trúc. |
-| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.vi.md) | Số ảo thay đổi cách hiển thị. Cài đặt riêng cho ghi chú lưu các thuộc tính; ghi, xóa hoặc đánh số lại sẽ sửa văn bản tiêu đề. |
-| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.vi.md) | Xem bảng và mẫu giao diện không sửa ghi chú. Chỉnh sửa bảng ghi vào Markdown; chuyển sang Base tạo các tệp bản ghi. |
-
 Cài đặt được chia thành bốn thẻ: Chung, Xuất sang Markdown, Xuất sang Word và Hiệu đính. Mỗi thẻ có hướng dẫn cho các tùy chọn liên quan. Ngôn ngữ mặc định theo Obsidian và có thể đổi trong phần Chung. Bạn có thể dùng phím mũi tên hoặc Home/End để chuyển thẻ.
 
 ## Giới hạn
 
+- Khi xuất Markdown sang Word, hãy dùng ảnh PNG, JPEG, GIF, BMP hoặc WebP. Ảnh SVG hoặc ICO nhúng trong ghi chú sẽ làm dừng quá trình xuất. Tổng dung lượng ảnh tối đa là 6 MB (6.000.000 byte). Một ảnh dùng nhiều lần chỉ được tính một lần.
 - Hỗ trợ máy tính để bàn Windows hoặc Linux có bản DocWen cục bộ tương thích; xuất trên Linux yêu cầu x64 và hệ thống tệp có thể lưu kết quả mà không ghi đè dữ liệu hiện có.
 - Không tìm kiếm đệ quy bên ngoài thư mục hoặc chương trình DocWen đã chọn.
 - Nếu ghi chú thay đổi trong khi xử lý hoặc không thể lưu kết quả an toàn, thao tác sẽ dừng và yêu cầu bạn kiểm tra.
@@ -118,6 +106,19 @@ Chuyển sang Word rồi chuyển lại không thay thế bản sao lưu Markdow
 Tài liệu ở lại trên máy tính của bạn. Plugin gửi bản sao tạm của tệp đã chọn cho DocWen cục bộ, gồm cả nội dung chưa lưu nếu chỉ có một trình soạn thảo tương ứng. Chỉ ảnh được ghi chú tham chiếu rõ ràng mới được đưa vào; plugin không tìm tệp không liên quan trong toàn bộ Vault hay tải tài liệu lên mạng.
 
 Xuất ghi kết quả vào thư mục bạn chọn; soát lỗi không sửa ghi chú. Số thứ tự tiêu đề chỉ được ghi khi ghi chú gốc vẫn ở cùng đường dẫn và nội dung chưa thay đổi. Nếu đổi tên hoặc thay tệp trong lúc xử lý, hãy chạy lại trên ghi chú hiện tại. Đường dẫn cài đặt Store không được lưu trong thiết lập plugin. Xem [đặc tả tích hợp](../cli-integration.md) để biết chi tiết kỹ thuật.
+
+## Dùng cùng các plugin khác
+
+| Dự án và hướng dẫn | Hiển thị, sửa nguồn và đầu ra |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.vi-VN.md) | Tạo các tệp đã chuyển đổi. Phần mở rộng đầu vào diễn giải cú pháp nguồn; cài đặt xuất quyết định đầu ra và cách đánh số. |
+| [DocWen Assistant](../product-requirements.md) | Xuất lưu kết quả riêng; soát lỗi chỉ đọc. Các thao tác đánh số tiêu đề được chọn rõ ràng sẽ sửa Markdown nguồn. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.vi-VN.md) | Lịch và danh sách tác vụ đọc chỉ mục. Đổi trạng thái hoàn thành hoặc ngày của tác vụ sẽ cập nhật Markdown nguồn; thao tác tạo sẽ thêm ghi chú. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.vi-VN.md) | Cài đặt gợi ý thay đổi menu. Sắp xếp hoặc di chuyển giá trị sửa các danh sách YAML liên quan và có thể chuyển giá trị không phải văn bản thành chuỗi. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.vi.md) | Quy tắc lọc kết quả phân tích hoặc quyết định những kết nối đồ thị được tính. Chúng không viết lại liên kết trong ghi chú. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.vi.md) | Các chế độ xem hiển thị cấu trúc nút. Tạo, di chuyển, đổi tên, gộp và xóa sẽ thay đổi ghi chú, thư mục hoặc thuộc tính cấu trúc. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.vi.md) | Số ảo thay đổi cách hiển thị. Cài đặt riêng cho ghi chú lưu các thuộc tính; ghi, xóa hoặc đánh số lại sẽ sửa văn bản tiêu đề. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.vi.md) | Xem bảng và mẫu giao diện không sửa ghi chú. Chỉnh sửa bảng ghi vào Markdown; chuyển sang Base tạo các tệp bản ghi. |
 
 ## Phát triển
 

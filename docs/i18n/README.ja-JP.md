@@ -37,7 +37,7 @@ DocWen でのファイル表示、出力先を明示した Word／Excel／Markdo
 ## 要件と互換性
 
 - Windows または Linux と Obsidian 1.12.7 以降。プラグインはデスクトップ専用です。
-- Windows では Store 版または完全に展開したポータブル版の DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux でのエクスポートには x64 と、既存のデータを上書きせずに結果を保存できるファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
+- Windows では Store 版または完全に展開したポータブル版の DocWen 0.23.0 以降、Linux では手動選択した完全展開済みパッケージを使用します。Linux でのエクスポートには x64 と、既存のデータを上書きせずに結果を保存できるファイルシステムが必要です。プラグインは DocWen を自動ダウンロードしません。
 - プラグインには `docwen.machine.v2` と `docwen.artifact_bundle.v3` が必要です。互換性のない DocWen は、別のプロトコルへ切り替えずに拒否されます。
 - バックグラウンド変換の接続に互換性がない場合でも、DocWen デスクトップアプリは別に開くことができます。
 
@@ -49,7 +49,7 @@ Store のインストールがこれらの要件を満たさない場合は、�
 
 ### DocWen とプラグインをインストール
 
-1. Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換性のある DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 以降をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) の Windows パッケージを完全に展開します。Linux x64 では同じページの Linux パッケージを展開します。
+1. Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換性のある DocWen 0.23.0 以降をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) の Windows パッケージを完全に展開します。Linux x64 では同じページの Linux パッケージを展開します。
 2. Community Plugins から DocWen Assistant をインストールします。手動の場合は[プラグインのリリース](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)から `docwen-assistant-x.y.z.zip` を取得し、`main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。
 3. Community Plugins を再読み込みし、DocWen Assistant を有効にします。
 4. Windows の Store 版は自動検出できます。Windows ポータブル版と Linux では **設定 → DocWen Assistant → 一般**で手動接続を選び、展開したフォルダーまたは実行ファイルを指定します。
@@ -73,7 +73,7 @@ Store のインストールがこれらの要件を満たさない場合は、�
 
 ファイル操作はクリック時に Obsidian の現在のファイルを取得するため、サイドバーにフォーカスがあっても利用できます。ファイルを切り替えるとボタンが更新され、レポートは保持されます。レポートの更新ボタンは引き続き元のノートを校正します。サイドバーを閉じると、そのサイドバー自身の校正だけがキャンセルされます。デスクトップアプリの操作は独立しています。
 
-**DocWen** サブメニューとコマンドパレットからも、アプリの起動、Word／Excel／Markdown の出力、見出し番号の変更、校正、**DocWen 接続を確認**を実行できます。
+ファイルを右クリックし、**DocWen** を開くと、そのファイルで使えるエクスポート、校正、見出し番号の操作が表示されます。接続を確認するには、コマンドパレットで「**DocWen 接続を確認**」を選びます。ファイルを開かずに DocWen を起動することもできます。
 
 テンプレートや変換プリセットが表示されたら選択し、出力先フォルダーを指定します。元ファイル、形式、保存先、今回の設定を確認して**エクスポート**を押します。確認画面はそのタスクで取得した設定を使い、キャンセルすると変換は始まりません。DocWen が単一の DOCX または XLSX を返す場合は、選択したフォルダーに直接保存します。Markdown と複数の出力は、画像や添付ファイルを含む独立した結果フォルダーに保存します。完了通知の**結果フォルダーを開く**から確認できます。出力先のフォルダーが開きます。既存のファイルやフォルダーは上書きしません。
 
@@ -90,23 +90,11 @@ Word に出力する前に、**DocWen → 設定 → Markdown を解析**で必�
 
 Number Suite が未インストールでも、Word 出力は Markdown 内の対応構文を読み取れます。出力の番号は DocWen の設定に従い、Number Suite の表示だけの番号はコピーしません。見出し番号の追加・削除コマンドは元のノートを変更しますが、エクスポートは変更しません。
 
-**各プロジェクトが変更するもの**
-
-| プロジェクトと使い方 | 表示・元のノートの編集・出力 |
-| --- | --- |
-| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ja-JP.md) | 変換後のファイルを生成します。入力拡張が元の構文を解釈し、エクスポート設定が出力内容と番号を決めます。 |
-| [DocWen Assistant](../product-requirements.md) | エクスポートは別の出力を保存し、校正は読み取りのみです。見出し番号の操作を実行すると、元の Markdown を編集します。 |
-| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ja-JP.md) | カレンダーとタスクの表示はインデックスを参照します。完了状態や日付の変更は元の Markdown に書き込み、作成操作はノートを追加します。 |
-| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ja-JP.md) | 候補の設定はメニューを変えます。値の並べ替えや移動は対象の YAML リストを編集し、文字列以外の値を文字列に変える場合があります。 |
-| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ja.md) | ルールは分析結果を絞り込み、分析に含めるグラフの接続を変えます。ノート内のリンクは書き換えません。 |
-| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ja.md) | ビューはノード構造を表示します。作成・移動・名前変更・結合・削除は、ノート、フォルダー、構造を表すプロパティを変更します。 |
-| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ja.md) | 仮想番号は表示に反映されます。ノートごとの設定はプロパティを保存し、番号の書き込み・削除・振り直しは見出しのテキストを変更します。 |
-| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ja.md) | 表の閲覧と外観のサンプルはノートを編集しません。表の編集は Markdown に書き込み、Base への変換はレコードファイルを作成します。 |
-
 設定は「一般」「Markdown へ」「Word へ」「校正」の 4 つのタブに分かれています。各タブに関連する説明が表示されます。表示言語は既定で Obsidian に従い、「一般」から変更できます。矢印キーや Home/End キーでもタブを切り替えられます。
 
 ## 制限
 
+- Markdown を Word に書き出す際は PNG、JPEG、GIF、BMP、WebP の画像を使用できます。SVG や ICO を埋め込むと書き出しが停止します。画像の合計は 6 MB（6,000,000 バイト）までです。同じ画像を何度使っても一度だけ数えます。
 - 対応するローカル DocWen がある Windows または Linux デスクトップ向けです。Linux でのエクスポートには x64 と、既存のデータを上書きせずに結果を保存できるファイルシステムが必要です。
 - 選択した DocWen フォルダーまたは実行ファイル以外を再帰検索しません。
 - 処理中にノートが変更された場合や、結果を安全に保存できない場合は、操作を停止して確認を求めます。
@@ -118,6 +106,19 @@ Word への変換と再変換は、元の Markdown の完全なバックアッ�
 文書は自分のコンピューターで処理されます。プラグインは選択したファイルの一時コピーをローカルの DocWen に渡します。対応するエディターが一つなら未保存の編集内容も使います。ノートが明示的に参照する画像だけを含め、Vault 全体から無関係なファイルを探したり、文書をアップロードしたりしません。
 
 エクスポート先は自分で選びます。校正はノートを変更しません。見出し番号は元のノートの場所と本文が変わっていない場合だけ書き戻します。処理中に名前を変えたりファイルを置き換えたりした場合は、現在のノートでもう一度実行してください。Store のインストール先はプラグイン設定に保存しません。開発者向けの詳細は[連携仕様](../cli-integration.md)を参照してください。
+
+## ほかのプラグインとの連携
+
+| プロジェクトと使い方 | 表示・元のノートの編集・出力 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ja-JP.md) | 変換後のファイルを生成します。入力拡張が元の構文を解釈し、エクスポート設定が出力内容と番号を決めます。 |
+| [DocWen Assistant](../product-requirements.md) | エクスポートは別の出力を保存し、校正は読み取りのみです。見出し番号の操作を実行すると、元の Markdown を編集します。 |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ja-JP.md) | カレンダーとタスクの表示はインデックスを参照します。完了状態や日付の変更は元の Markdown に書き込み、作成操作はノートを追加します。 |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ja-JP.md) | 候補の設定はメニューを変えます。値の並べ替えや移動は対象の YAML リストを編集し、文字列以外の値を文字列に変える場合があります。 |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ja.md) | ルールは分析結果を絞り込み、分析に含めるグラフの接続を変えます。ノート内のリンクは書き換えません。 |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ja.md) | ビューはノード構造を表示します。作成・移動・名前変更・結合・削除は、ノート、フォルダー、構造を表すプロパティを変更します。 |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ja.md) | 仮想番号は表示に反映されます。ノートごとの設定はプロパティを保存し、番号の書き込み・削除・振り直しは見出しのテキストを変更します。 |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ja.md) | 表の閲覧と外観のサンプルはノートを編集しません。表の編集は Markdown に書き込み、Base への変換はレコードファイルを作成します。 |
 
 ## 開発
 
