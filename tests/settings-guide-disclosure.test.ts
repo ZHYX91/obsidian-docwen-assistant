@@ -26,15 +26,18 @@ describe("DocWen settings guidance", () => {
     expect(setting.settingEl.textContent).toContain("Help text");
     expect(setting.settingEl.querySelector("details")).toBeNull();
 
-    render("word");
+    const remember = render("word");
     const details = setting.settingEl.querySelector("details")!;
     expect(details.open).toBe(false);
     expect(details.querySelector("summary")?.textContent).toBe("Guide");
     details.open = true;
-    details.dispatchEvent(new window.Event("toggle"));
-    render("word");
+    // Leave the page before the native toggle event is delivered.
+    remember?.();
+    const rememberRedraw = render("word");
     expect(setting.settingEl.querySelector("details")?.open).toBe(true);
+    rememberRedraw?.();
     state.clear();
+    details.dispatchEvent(new window.Event("toggle"));
     render("word");
     expect(setting.settingEl.querySelector("details")?.open).toBe(false);
   });

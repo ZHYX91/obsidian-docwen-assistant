@@ -109,10 +109,10 @@ export class SettingTab extends PluginSettingTab {
   }
 
   override hide(): void {
-    this.expandedHelp.clear();
     super.hide();
     this.activePageId = this.tabs?.activePageId ?? this.activePageId;
     this.destroyPageSurface();
+    this.expandedHelp.clear();
     this.tabs = null;
   }
 

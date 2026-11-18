@@ -22,7 +22,7 @@ export interface SettingsPageContext {
   readonly renderPersistenceStatus: (setting: Setting) => void;
   readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
-  readonly renderGuide: (setting: Setting, title: string, body: string, kind: "brief" | "word") => void;
+  readonly renderGuide: (setting: Setting, title: string, body: string, kind: "brief" | "word") => void | (() => void);
   readonly renderSupport: (setting: Setting) => void;
 }
 

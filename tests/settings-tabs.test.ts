@@ -205,8 +205,8 @@ describe("settings top tabs", () => {
     expect(css).toMatch(/button\.docwen-settings-tab\[aria-selected="true"\]\s*\{[^}]*font-weight:\s*var\(--font-semibold\)\s*!important;/su);
     expect(css).toMatch(/\.docwen-settings-panel\s*\{[^}]*margin-block-start:\s*var\(--size-4-5\);/su);
     expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?min-block-size:\s*44px;/u);
-    expect(css).toMatch(/\.docwen-settings-help\.setting-item\s*\{[^}]*border:\s*1px solid var\(--background-modifier-border\);/su);
-    expect(css).toMatch(/\.docwen-settings-help-disclosure > summary\s*\{[^}]*font-weight:\s*var\(--font-medium\);/su);
+    expect(css).toMatch(/\.docwen-settings-help\.setting-item\s*\{[^}]*border:\s*0;/su);
+    expect(css).toMatch(/\.docwen-settings-help-disclosure > summary\s*\{[^}]*min-block-size:\s*32px;/su);
     expect(css).toMatch(/\.docwen-settings-help-disclosure > summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--interactive-accent\);/su);
     expect(css).not.toMatch(/\.docwen-settings-tab\s*\{[^}]*\n\s*height:/su);
   });

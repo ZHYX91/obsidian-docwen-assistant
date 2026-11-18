@@ -25,7 +25,7 @@ export function renderSettingsSupport(setting: Setting): void {
 export function renderSettingsGuide(
   setting: Setting, title: string, body: string,
   kind: "brief" | "word", opened: Set<string>,
-): void {
+): void | (() => void) {
   if (kind === "brief") {
     setting.setClass("docwen-settings-help-brief");
     setting.setName(title);
@@ -38,7 +38,7 @@ export function renderSettingsGuide(
   details.open = opened.has("word");
   details.createEl("summary", { text: title });
   details.createEl("p", { cls: "docwen-settings-help-body", text: body });
-  details.addEventListener("toggle", () => {
+  return () => {
     if (details.open) opened.add("word"); else opened.delete("word");
-  });
+  };
 }
