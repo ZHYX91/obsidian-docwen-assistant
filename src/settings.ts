@@ -36,6 +36,7 @@ export class SettingTab extends PluginSettingTab {
   private pageCleanups: (() => void)[] = [];
   private activePageId: SettingsPageId = "general";
   private tabs: SettingsTabs | null = null;
+  private readonly expandedHelp = new Set<string>();
   private surfaceGeneration = 0;
 
   constructor(app: App, plugin: DocWenPlugin) {
@@ -80,7 +81,9 @@ export class SettingTab extends PluginSettingTab {
       renderPersistenceStatus: (setting) => this.configurePersistenceStatus(setting),
       isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
-      renderGuide: renderSettingsGuide,
+      renderGuide: (setting, title, body) => renderSettingsGuide(
+        setting, title, body, title === t("settingsWordGuideTitle"), this.expandedHelp,
+      ),
       renderSupport: renderSettingsSupport,
     });
   }
@@ -106,6 +109,7 @@ export class SettingTab extends PluginSettingTab {
   }
 
   override hide(): void {
+    this.expandedHelp.clear();
     super.hide();
     this.activePageId = this.tabs?.activePageId ?? this.activePageId;
     this.destroyPageSurface();

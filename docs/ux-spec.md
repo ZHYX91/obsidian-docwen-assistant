@@ -63,3 +63,7 @@ The Assistant sidebar follows Number Suite and Link Integrity's equal-width two-
 ## Safety feedback
 
 The UI makes the destination visible before a write and refuses to commit if source or target identity changes. Logs, errors, and public support material must not expose private text, Vault paths, CLI paths, or credentials.
+
+## Instruction versus operation state
+
+General scope, Markdown source-format and proofread report boundaries remain short always-visible Setting descriptions. The Word format/preset/numbering guidance is a low-emphasis native details tutorial, collapsed by default, expanded only for the current settings-window session, and reset on hide. Actual template choices, CLI location/status, connection diagnostics, check actions, save failures and unsupported-format warnings remain visible; they are operational controls, not tutorial content. No persisted setting or process protocol changes.

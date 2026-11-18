@@ -1,4 +1,4 @@
-import { setIcon, type Setting } from "obsidian";
+import type { Setting } from "obsidian";
 import { getCurrentLocale, t } from "./i18n";
 
 const guideLocales: Readonly<Record<string, string>> = {
@@ -18,17 +18,27 @@ export function renderSettingsSupport(setting: Setting): void {
   }
 }
 
-export function renderSettingsGuide(setting: Setting, title: string, body: string): void {
+/**
+ * General/Markdown/Proofread guidance is a short visible description, not a
+ * giant help card. The Word tutorial is the only collapsible guide here.
+ */
+export function renderSettingsGuide(
+  setting: Setting, title: string, body: string,
+  wordGuide = false, opened: Set<string> = new Set(),
+): void {
+  if (!wordGuide) {
+    setting.setClass("docwen-settings-help-brief");
+    setting.setName(title);
+    setting.setDesc(body);
+    return;
+  }
   setting.setClass("docwen-settings-help");
-  setting.settingEl.setAttribute("role", "note");
-  setting.settingEl.setAttribute("aria-label", title);
   setting.settingEl.empty();
-  const heading = setting.settingEl.createDiv({ cls: "docwen-settings-help-heading" });
-  const icon = heading.createSpan({
-    cls: "docwen-settings-help-icon",
-    attr: { "aria-hidden": "true" },
+  const details = setting.settingEl.createEl("details", { cls: "docwen-settings-help-disclosure" });
+  details.open = opened.has("word");
+  details.createEl("summary", { text: title });
+  details.createEl("p", { cls: "docwen-settings-help-body", text: body });
+  details.addEventListener("toggle", () => {
+    if (details.open) opened.add("word"); else opened.delete("word");
   });
-  setIcon(icon, "info");
-  heading.createEl("strong", { text: title });
-  setting.settingEl.createDiv({ cls: "docwen-settings-help-body", text: body });
 }

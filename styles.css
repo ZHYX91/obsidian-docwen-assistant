@@ -168,8 +168,7 @@
 
 .docwen-settings-help.setting-item {
   background: var(--background-secondary);
-  border: 0;
-  border-inline-start: 3px solid var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
   box-shadow: none;
   color: var(--text-muted);
@@ -640,3 +639,26 @@ button.docwen-proofread-item {
 
 .docwen-export-summary dt { font-weight: var(--font-semibold); }
 .docwen-export-summary dd { margin: 0; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+
+/* Lightweight tutorial disclosure, without suppressing connection or save errors. */
+.docwen-settings-help.setting-item { padding: 0; }
+.docwen-settings-help-disclosure { width: 100%; }
+.docwen-settings-help-disclosure > summary {
+  cursor: pointer; color: var(--text-normal); display: list-item;
+  font-size: var(--font-ui-small); font-weight: var(--font-medium);
+  padding: var(--size-4-2) var(--size-4-3); list-style: disclosure-closed inside;
+}
+.docwen-settings-help-disclosure[open] > summary { list-style: disclosure-open inside; }
+.docwen-settings-help-disclosure > summary:focus-visible {
+  outline: 2px solid var(--interactive-accent); outline-offset: -2px;
+}
+.docwen-settings-help-disclosure > .docwen-settings-help-body {
+  color: var(--text-muted); font-size: var(--font-ui-small);
+  margin: 0; padding: 0 var(--size-4-3) var(--size-4-3);
+}
+.docwen-settings-help-brief.setting-item {
+  padding-block: var(--size-4-2); background: transparent; border: 0;
+}
+.docwen-settings-help-brief .setting-item-name {
+  font-size: var(--font-ui-small); font-weight: var(--font-medium);
+}
