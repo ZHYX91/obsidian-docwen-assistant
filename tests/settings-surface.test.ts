@@ -282,11 +282,12 @@ describe("settings surface lifecycle", () => {
     tabButtons[3].dispatch("click");
 
     const guide = settings.find((setting) =>
-      setting.settingEl.attributes.get("aria-label") === "Choose what to check")!;
-    expect(guide.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
-    expect(guide.settingEl.attributes.get("role")).toBe("note");
-    expect(guide.settingEl.children[0].children[1].textContent).toBe("Choose what to check");
-    expect(guide.settingEl.children[1].textContent).toContain("toggled independently");
+      setting.nameEl.textContent === "Choose what to check");
+    expect(guide).toBeDefined();
+    expect(guide!.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help-brief");
+    expect(guide!.descEl.textContent).toContain("toggled independently");
+    // Short requirements stay visible as ordinary settings, not hidden help.
+    expect(guide!.settingEl.attributes.get("role")).toBeUndefined();
   });
 
   it("renders and validates the fixed-layout DPI override", async () => {
