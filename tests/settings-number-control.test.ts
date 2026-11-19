@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
 import type { Setting, SettingNumberControl } from "obsidian";
 import { configureNumberSetting } from "../src/settings-number-control";
