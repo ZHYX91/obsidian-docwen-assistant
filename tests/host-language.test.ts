@@ -105,10 +105,10 @@ describe("plugin language", () => {
 
   it("keeps Windows process recovery guidance localized in every catalog", () => {
     for (const [locale, catalog] of Object.entries(translations)) {
-      expect(catalog.errorWindowsOwnerRecovery, locale)
-        .not.toContain("process management is unavailable");
-      expect(catalog.errorWindowsOwnerCleanup, locale)
-        .not.toContain("Windows process cleanup could not be confirmed");
+      expect(catalog.errorWindowsOwnerRecovery.includes("process management is unavailable"), locale)
+        .toBe(locale === "en");
+      expect(catalog.errorWindowsOwnerCleanup.includes("Windows process cleanup could not be confirmed"), locale)
+        .toBe(locale === "en");
     }
   });
 

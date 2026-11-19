@@ -4,6 +4,15 @@ import type { Setting, SettingNumberControl } from "obsidian";
 import { configureNumberSetting } from "../src/settings-number-control";
 
 describe("number settings", () => {
+  const control: SettingNumberControl<"renderDpi"> = {
+    type: "number",
+    key: "renderDpi",
+    min: 72,
+    max: 600,
+    step: 1,
+    defaultValue: 200,
+  };
+
   it("marks an out-of-range draft and restores the last saved value on blur", () => {
     const inputEl = document.createElement("input");
     let onChange: (value: string) => void = () => undefined;
@@ -16,13 +25,6 @@ describe("number settings", () => {
     const setting = {
       addText(callback: (control: typeof textControl) => void) { callback(textControl); },
     } as unknown as Setting;
-    const control = {
-      key: "renderDpi",
-      min: 72,
-      max: 600,
-      step: 1,
-      defaultValue: 200,
-    } as SettingNumberControl<"renderDpi">;
     const save = vi.fn();
 
     configureNumberSetting(setting, control, 200, false, save);
@@ -50,8 +52,6 @@ describe("number settings", () => {
     const setting = {
       addText(callback: (control: typeof textControl) => void) { callback(textControl); },
     } as unknown as Setting;
-    const control = { key: "renderDpi", min: 72, max: 600, defaultValue: 200 }
-      as SettingNumberControl<"renderDpi">;
     const save = vi.fn();
 
     configureNumberSetting(setting, control, 200, false, save);
