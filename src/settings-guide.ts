@@ -28,8 +28,8 @@ export function renderSettingsGuide(
 ): void | (() => void) {
   if (kind === "brief") {
     setting.setClass("docwen-settings-help-brief");
-    setting.setName(title);
-    setting.setDesc(body);
+    setting.settingEl.empty();
+    setting.settingEl.createEl("p", { cls: "setting-item-description", text: body });
     return;
   }
   setting.setClass("docwen-settings-help");

@@ -23,7 +23,8 @@ describe("DocWen settings guidance", () => {
       renderSettingsGuide(setting as unknown as Setting, "Guide", "Help text", kind, state);
 
     render("brief");
-    expect(setting.settingEl.textContent).toContain("Help text");
+    expect(setting.settingEl.textContent).toBe("Help text");
+    expect(setting.settingEl.querySelector("p.setting-item-description")?.textContent).toBe("Help text");
     expect(setting.settingEl.querySelector("details")).toBeNull();
 
     const remember = render("word");

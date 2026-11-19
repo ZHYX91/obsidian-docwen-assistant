@@ -271,7 +271,7 @@ describe("settings surface lifecycle", () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it("renders contextual help cards instead of a Usage tab", async () => {
+  it("shows the proofreading result inline beside its controls", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
@@ -282,11 +282,11 @@ describe("settings surface lifecycle", () => {
     tabButtons[3].dispatch("click");
 
     const guide = settings.find((setting) =>
-      setting.nameEl.textContent === "Choose what to check");
+      setting.settingEl.children.some((child) => child.textContent ===
+        "Proofreading lists the issues it finds and leaves the note unchanged."));
     expect(guide).toBeDefined();
     expect(guide!.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help-brief");
-    expect(guide!.descEl.textContent).toContain("toggled independently");
-    // Short requirements stay visible as ordinary settings, not hidden help.
+    expect(guide!.settingEl.children).toHaveLength(1);
     expect(guide!.settingEl.attributes.get("role")).toBeUndefined();
   });
 

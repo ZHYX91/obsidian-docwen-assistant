@@ -699,6 +699,6 @@ button.docwen-proofread-item {
 .docwen-settings-help-brief.setting-item {
   padding-block: var(--size-4-2); background: transparent; border: 0;
 }
-.docwen-settings-help-brief .setting-item-name {
-  font-size: var(--font-ui-small); font-weight: var(--font-medium);
+.docwen-settings-help-brief > p {
+  margin: 0;
 }
