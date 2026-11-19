@@ -345,6 +345,28 @@ describe("DocWenCapabilityService", () => {
     expect(sharedSignal?.aborted).toBe(false);
   });
 
+  it("reuses successful navigation inspections until invalidated, and retries failures", async () => {
+    const inspect = vi.fn().mockRejectedValueOnce(new Error("temporary")).mockResolvedValue(inspection());
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    await service.preload("A.md", "if-needed");
+    expect(service.peek("A.md")).toBeInstanceOf(Error);
+    for (let index = 0; index < 20; index++) {
+      await service.preload(index % 2 === 0 ? "A.md" : "B.md", "if-needed");
+    }
+    expect(inspect).toHaveBeenCalledTimes(3);
+    await service.preload("A.md");
+    expect(inspect).toHaveBeenCalledTimes(4);
+    service.invalidate("A.md");
+    await service.preload("A.md", "if-needed");
+    await service.preload("B.md", "if-needed");
+    expect(inspect).toHaveBeenCalledTimes(5);
+    service.reset();
+    await service.preload("B.md", "if-needed");
+    expect(inspect).toHaveBeenCalledTimes(6);
+  });
+
   it("de-duplicates a pending preload for the same path", async () => {
     const pendingInspection = deferred<ReturnType<typeof inspection>>();
     const client = {

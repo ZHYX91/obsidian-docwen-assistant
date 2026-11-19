@@ -251,7 +251,7 @@ export default class DocWenPlugin extends Plugin {
     const preloadCapabilities = (file: TFile | null): void => {
       if (!file) return;
       const filePath = resolveAbsoluteFilePath(this.app.vault, file);
-      if (filePath) void this.capabilities.preload(filePath);
+      if (filePath) void this.capabilities.preload(filePath, "if-needed");
     };
     this.registerEvent(this.app.workspace.on("file-open", (file) => {
       cancelModifiedPreload();
