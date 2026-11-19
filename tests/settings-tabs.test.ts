@@ -118,7 +118,8 @@ describe("settings top tabs", () => {
     expect(tabList.children.map((tab) => tab.tabIndex)).toEqual([0, -1, -1, -1]);
     expect(panel.attributes.get("role")).toBe("tabpanel");
     expect(panel.attributes.get("aria-labelledby")).toBe(tabList.children[0].id);
-    expect(tabList.children[0].attributes.get("aria-controls")).toBe(panel.id);
+    expect(tabList.children.every((tab) => tab.attributes.get("aria-controls") === panel.id)).toBe(true);
+    expect(root.attributes.get("lang")).toBe("en");
     expect(root.children.some((child) => /^h[1-6]$/iu.test(child.tagName))).toBe(false);
     expect(renderPage).toHaveBeenCalledOnce();
     expect(renderPage.mock.calls[0][1].id).toBe("general");
@@ -136,6 +137,7 @@ describe("settings top tabs", () => {
         renderPage: vi.fn(),
       });
       expect(container.children[0].attributes.get("dir")).toBe("rtl");
+      expect(container.children[0].attributes.get("lang")).toBe("ar");
     } finally {
       initI18n("en");
     }
@@ -155,6 +157,7 @@ describe("settings top tabs", () => {
         renderPage: vi.fn(),
       });
       expect(container.children[0].attributes.get("dir")).toBe("ltr");
+      expect(container.children[0].attributes.get("lang")).toBe(locale.toLowerCase());
     } finally {
       initI18n("en");
     }
@@ -171,10 +174,15 @@ describe("settings top tabs", () => {
       renderPage: vi.fn(),
     });
     const tabButtons = container.children[0].children[0].children;
+    const panel = container.children[0].children[1];
+    const originalPanelId = panel.id;
+    expect(tabButtons.every((tab) => tab.attributes.get("aria-controls") === originalPanelId)).toBe(true);
 
     expect(tabButtons[0].dispatch("keydown", "ArrowLeft").defaultPrevented).toBe(true);
     expect(tabs.activePageId).toBe("proofread");
     expect(tabButtons[3].focused).toBe(true);
+    expect(panel.id).toBe(originalPanelId);
+    expect(panel.attributes.get("aria-labelledby")).toBe(tabButtons[3].id);
 
     tabButtons[3].dispatch("keydown", "Home");
     expect(tabs.activePageId).toBe("general");
@@ -194,6 +202,9 @@ describe("settings top tabs", () => {
     expect(tabs.activePageId).toBe("markdown");
     expect(tabButtons[1].dispatch("keydown", "Escape").defaultPrevented).toBe(false);
     expect(tabButtons.map((tab) => tab.tabIndex)).toEqual([-1, 0, -1, -1]);
+    expect(panel.id).toBe(originalPanelId);
+    expect(panel.attributes.get("aria-labelledby")).toBe(tabButtons[1].id);
+    expect(tabButtons.every((tab) => tab.attributes.get("aria-controls") === panel.id)).toBe(true);
   });
 
   it("keeps the family tab styling resilient and responsive", () => {
