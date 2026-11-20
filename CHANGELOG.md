@@ -6,6 +6,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [3.6.2] - 2026-11-20
 
+- Add and clear Markdown heading numbers with the single-document output returned by DocWen 0.23.0.
 - Update the heading numbering format control immediately when the Word export numbering scheme changes, while keeping keyboard focus on the selected scheme.
 - Keep short settings guidance visible and place the longer Word export tutorial in a keyboard-accessible disclosure. Separate the Word guide into template, input-extension and numbering steps, with a decorative book icon after its title. The settings tabs and their panels expose the active language and matching accessibility relationships.
 - Restore the last valid numeric setting when an invalid edit loses focus. Recognize Hong Kong and Macao Traditional Chinese when following the host language.

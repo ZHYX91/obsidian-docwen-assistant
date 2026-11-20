@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { lstat, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import * as path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
@@ -37,9 +37,75 @@ function noteHost(open: boolean) {
   return { app, file, editor, view, original, content: () => content };
 }
 
-const invalidCases = ["docx", "document-node", "resource", "fragment", "supplementary", "not-preferred", "extra-resource", "extra-document", "invalid-utf8", "truncated-utf8"] as const;
+const invalidCases = ["docx", "node-without-root", "node-with-related-resource", "resource", "fragment", "supplementary", "not-preferred", "extra-resource", "extra-document", "invalid-utf8", "truncated-utf8"] as const;
+
+const nodeRoot = "合成笔记_20260620_101523_fromMd";
+const nodeFile = `${nodeRoot}.md`;
+const nodePath = `${nodeRoot}/${nodeFile}`;
+
+async function coreNumberingResult(request: MachineTaskRequest, text: string, overrides: {
+  locator?: string; logicalPath?: string; suggestedName?: string; ordinal?: number;
+} = {}) {
+  const stagingRoot = request.output.staging_root.path;
+  const locator = overrides.locator ?? nodePath;
+  const file = path.join(stagingRoot, locator);
+  await mkdir(path.dirname(file), { recursive: true });
+  const bytes = Buffer.from(text);
+  await writeFile(file, bytes);
+  const bundle = await validateArtifactBundle({
+    schema: "docwen.artifact_bundle.v3", bundle_id: "bundle.numbering", task_id: "task.numbering",
+    producer: { name: "DocWen", product_version: "0.23.0", machine_protocol: "docwen.machine.v2" },
+    layout_schema: "docwen.document_node.v1",
+    artifacts: [{ artifact_id: "artifact.1", kind: "document", media_type: "text/markdown",
+      locator, logical_path: overrides.logicalPath ?? locator, suggested_name: overrides.suggestedName ?? nodeFile,
+      size_bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") }],
+    entries: [{ artifact_id: "artifact.1", ordinal: overrides.ordinal ?? 0, role: "primary", preferred: true }],
+    relations: [],
+  }, stagingRoot, "task.numbering", "0.23.0");
+  return { taskId: "task.numbering", bundle, plan: {}, diagnostics: [], metrics: {} };
+}
 
 describe("numbering output contract", () => {
+  it.each([true, false])("adds then clears numbering with Core's Markdown node (open=%s)", async (open) => {
+    const host = noteHost(open);
+    const numbered = "# 1 Original note\n";
+    const machine = {
+      runTask: async (request: MachineTaskRequest) => {
+        const adding = request.options.add_numbering === true;
+        expect(await readFile(request.inputs[0].locator.path, "utf8")).toBe(adding ? host.original : numbered);
+        return coreNumberingResult(request, adding ? numbered : host.original);
+      },
+    };
+    const client = new DocWenClient(machine as unknown as DocWenMachineClient);
+    const transaction = new VaultWriteTransaction(host.app as never);
+    for (const operation of ["add", "remove"] as const) {
+      await transaction.run(host.file as never, async (input, output, _sha256, signal) =>
+        (await client.numberMarkdown(input, output, operation, "hierarchical_standard", signal)).warnings,
+      new AbortController().signal);
+      expect(host.content()).toBe(operation === "add" ? numbered : host.original);
+    }
+    expect(open ? host.editor.transaction : host.app.vault.process).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    { name: "nested child", locator: `child/${nodePath}` },
+    { name: "mismatched node name", locator: `other/${nodeFile}` },
+    { name: "non-Markdown extension", locator: `${nodeRoot}/${nodeRoot}.txt`, suggestedName: `${nodeRoot}.txt` },
+    { name: "mismatched suggested name", suggestedName: "result.md" },
+    { name: "mismatched staging locator", locator: "other.md", logicalPath: nodePath },
+    { name: "nonzero primary ordinal", ordinal: 1 },
+  ])("preserves the note for a document node with $name", async (overrides) => {
+    const host = noteHost(true);
+    const machine = { runTask: (request: MachineTaskRequest) => coreNumberingResult(request, "# 1 Original note\n", overrides) };
+    const client = new DocWenClient(machine as unknown as DocWenMachineClient);
+    await expect(new VaultWriteTransaction(host.app as never).run(host.file as never,
+      async (input, output, _sha256, signal) =>
+        (await client.numberMarkdown(input, output, "remove", undefined, signal)).warnings,
+      new AbortController().signal)).rejects.toMatchObject({ code: "cli_integrity_error" });
+    expect(host.content()).toBe(host.original);
+    expect(host.editor.transaction).not.toHaveBeenCalled();
+  });
+
   it.each(["", "\ufeff# 中文 😀\r\n", "a".repeat(65_535) + "中文 😀\n"])(
     "publishes valid Markdown without changing its UTF-8 bytes (%#)", async (text) => {
       const host = noteHost(true);
@@ -85,29 +151,36 @@ describe("numbering output contract", () => {
         runTask: async (request: MachineTaskRequest) => {
           stagingRoot = request.output.staging_root.path;
           const filename = fixture === "docx" ? "result.docx" : "result.md";
-          await writeFile(path.join(stagingRoot, filename), bytes);
+          const relatedResource = fixture === "node-with-related-resource";
+          const locator = relatedResource ? nodePath : filename;
+          if (relatedResource) await mkdir(path.join(stagingRoot, nodeRoot));
+          await writeFile(path.join(stagingRoot, locator), bytes);
           const artifact = {
             artifact_id: "artifact.1",
             kind: fixture === "resource" ? "resource" : fixture === "fragment" ? "fragment" : "document",
-            locator: filename, logical_path: filename, suggested_name: filename,
+            locator, logical_path: locator, suggested_name: path.posix.basename(locator),
             media_type: fixture === "docx" ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "text/markdown",
             size_bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex"),
           };
           const artifacts = [artifact];
           const entries = [{ artifact_id: artifact.artifact_id, ordinal: 0,
             role: fixture === "supplementary" ? "supplementary" : "primary", preferred: fixture !== "not-preferred" }];
-          if (fixture === "extra-resource" || fixture === "extra-document") {
-            await writeFile(path.join(stagingRoot, "extra.md"), bytes);
-            artifacts.push({ ...artifact, artifact_id: "artifact.2", locator: "extra.md", logical_path: "extra.md",
-              suggested_name: "extra.md", kind: fixture === "extra-resource" ? "resource" : "document" });
-            entries.push({ artifact_id: "artifact.2", ordinal: 1, preferred: false,
-              role: fixture === "extra-resource" ? "supplementary" : "primary" });
+          if (fixture === "extra-resource" || fixture === "extra-document" || relatedResource) {
+            const extra = relatedResource ? `${nodeRoot}/extra.md` : "extra.md";
+            await writeFile(path.join(stagingRoot, extra), bytes);
+            artifacts.push({ ...artifact, artifact_id: "artifact.2", locator: extra, logical_path: extra,
+              suggested_name: "extra.md", kind: fixture === "extra-document" ? "document" : "resource" });
+            if (!relatedResource) {
+              entries.push({ artifact_id: "artifact.2", ordinal: 1, preferred: false,
+                role: fixture === "extra-document" ? "primary" : "supplementary" });
+            }
           }
           const bundle = await validateArtifactBundle({
             schema: "docwen.artifact_bundle.v3", bundle_id: "bundle.numbering", task_id: "task.numbering",
             producer: { name: "DocWen", product_version: "0.23.0", machine_protocol: "docwen.machine.v2" },
-            layout_schema: fixture === "document-node" ? "docwen.document_node.v1" : "docwen.artifact_layout.v1",
-            artifacts, entries, relations: [],
+            layout_schema: fixture === "node-without-root" || relatedResource ? "docwen.document_node.v1" : "docwen.artifact_layout.v1",
+            artifacts, entries, relations: relatedResource ? [{ type: "resource_of", role: "original",
+              source_artifact_id: "artifact.2", target_artifact_id: "artifact.1" }] : [],
           }, stagingRoot, "task.numbering", "0.23.0");
           validated += 1;
           return { taskId: "task.numbering", bundle, plan: {}, diagnostics: [], metrics: {} };

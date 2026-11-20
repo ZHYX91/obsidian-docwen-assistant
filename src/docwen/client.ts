@@ -23,7 +23,7 @@ import { LocalCliError } from "./errors";
 import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
-import { atomicCommitConversion, captureOutputDirectory, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
+import { atomicCommitConversion, captureOutputDirectory, matchesPrimaryMarkdownNodePath, preflightOutputDirectory, type DirectoryPublication } from "./output-directory";
 import {
   DocWenMachineClient,
   type JsonObject,
@@ -455,10 +455,12 @@ export class DocWenClient {
 async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?: AbortSignal): Promise<void> {
   const artifact = bundle.artifacts[0];
   const entry = bundle.entries[0];
-  if (bundle.layout_schema !== "docwen.artifact_layout.v1"
+  const documentNode = bundle.layout_schema === "docwen.document_node.v1";
+  if ((!documentNode && bundle.layout_schema !== "docwen.artifact_layout.v1")
     || bundle.artifacts.length !== 1 || bundle.entries.length !== 1 || bundle.relations.length !== 0
     || artifact?.kind !== "document" || artifact.media_type !== "text/markdown"
-    || entry?.artifact_id !== artifact.artifact_id || entry.role !== "primary" || !entry.preferred) {
+    || entry?.artifact_id !== artifact.artifact_id || entry.role !== "primary" || !entry.preferred
+    || (documentNode && (entry.ordinal !== 0 || !matchesPrimaryMarkdownNodePath(artifact)))) {
     throw new LocalCliError("cli_integrity_error", "Numbering requires one preferred primary Markdown document.");
   }
   await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);

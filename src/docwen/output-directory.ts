@@ -5,7 +5,7 @@ import { copyFile, lstat, mkdir, mkdtemp, open, realpath, rm } from "node:fs/pro
 import * as path from "node:path";
 import { LocalCliError } from "./errors";
 import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning, type PublicationCommit, type PublicationGuard } from "./operation-outcome";
-import type { ValidatedArtifactBundle } from "./machine-client";
+import type { ValidatedArtifactBundle, ValidatedBundleArtifact } from "./machine-client";
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
 import { atomicCommitBundle } from "./output-files";
@@ -110,6 +110,12 @@ function logicalParts(value: string, minimumParts = 2): string[] {
     throw new LocalCliError("cli_integrity_error", "Artifact logical paths must use portable result-directory names.");
   }
   return parts;
+}
+
+export function matchesPrimaryMarkdownNodePath(artifact: ValidatedBundleArtifact): boolean {
+  const parts = logicalParts(artifact.logical_path);
+  return parts.length === 2 && parts[1] === `${parts[0]}.md`
+    && parts[1] === artifact.suggested_name && artifact.locator === artifact.logical_path;
 }
 
 /** Flat conversions admit exactly one business file; all grouped outputs retain their layout. */
