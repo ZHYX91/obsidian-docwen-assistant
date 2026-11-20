@@ -41,7 +41,7 @@ DocWen Assistant 將 Obsidian 連接到本機 [DocWen](https://github.com/ZHYX91
 ## 使用要求與相容性
 
 - 需要 Windows 或 Linux 和 Obsidian 1.12.7 或以上版本；外掛僅支援桌面端；
-- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 匯出需要 x64，以及能安全儲存新結果資料夾而不覆蓋既有資料的檔案系統；外掛不會自動下載 DocWen；
+- Windows 可使用 Microsoft Store 安裝版或完整解壓縮的可攜版 DocWen 0.23.0 或更新版本；Linux 使用手動選取的完整解壓縮套件。Linux 匯出需要 x64，以及能安全儲存新結果資料夾而不覆蓋既有資料的檔案系統；外掛不會自動下載 DocWen；
 - 外掛需要 `docwen.machine.v2` 與 `docwen.artifact_bundle.v3`；DocWen 版本不相容時會停止並提示，不會改用其他協定。
 - 即使背景轉換介面不相容，仍可嘗試單獨開啟 DocWen 桌面應用。
 
@@ -53,7 +53,7 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 ### 安裝 DocWen 與外掛
 
-1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容的 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 或更新版本，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版。Linux x64 請從同一頁面下載並解壓縮 Linux 套件。
+1. Windows 可從 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) 安裝相容的 DocWen 0.23.0 或更新版本，或從 [DocWen Releases](https://github.com/ZHYX91/docwen/releases) 下載並完整解壓縮 Windows 可攜版。Linux x64 請從同一頁面下載並解壓縮 Linux 套件。
 2. 從 Community Plugins 安裝 DocWen Assistant。手動安裝時，從[外掛發行頁](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)下載 `docwen-assistant-x.y.z.zip`，將 `main.js`、`manifest.json`、`styles.css` 複製到 `<Vault>/.obsidian/plugins/docwen-assistant/`。
 3. 重新載入 Community Plugins 並啟用 DocWen Assistant。
 4. Windows 商店版可自動偵測。Windows 可攜版與 Linux 使用者請開啟 **設定 → DocWen Assistant → 一般**，選擇**手動選擇安裝位置**，再選取解壓縮後的資料夾或執行檔。
@@ -77,7 +77,7 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 檔案操作會在點擊時重新取得 Obsidian 的目前檔案，側欄取得焦點也不影響此行為。切換檔案會更新按鈕並保留已顯示的報告；報告的重新整理按鈕仍校對原來的來源筆記。關閉側欄只取消該側欄擁有的校對工作，GUI 控制獨立執行。
 
-檔案清單的 **DocWen** 子選單及命令面板也提供程式開啟、Word／Excel／Markdown 匯出、標題編號、校對及連線檢查。
+在檔案上按右鍵，開啟 **DocWen** 子選單，即可查看這個檔案可用的匯出、校對和標題編號功能。若要檢查連線，請在命令面板選「檢查 DocWen 連線」。也可以從這裡單獨啟動 DocWen。
 
 若出現範本或轉換預設選項，先完成選擇，再指定輸出目錄。確認來源檔案、格式、儲存位置和本次選項後，按下**匯出**。確認視窗使用本次工作已取得的設定，取消不會開始轉換。DocWen 傳回單一 DOCX 或 XLSX 時，直接儲存在所選目錄；Markdown 和組合輸出仍使用獨立結果資料夾，保留圖片與附件。完成後可在通知中選擇**開啟結果資料夾**，既有檔案與資料夾不會被覆寫；此操作會開啟輸出所在的資料夾。
 
@@ -94,23 +94,11 @@ Windows 商店安裝版不符合以上要求時，請使用相容的可攜包並
 
 即使未安裝 Number Suite，Word 匯出也能讀取 Markdown 中的相關語法。輸出編號由 DocWen 選項決定，不直接複製 Number Suite 的純顯示編號。獨立的「新增／移除標題編號」命令會修改來源筆記，匯出不會。
 
-**各專案會改動什麼**
-
-| 專案與用法 | 顯示、原文修改與輸出 |
-| --- | --- |
-| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.zh-TW.md) | 產生轉換後的檔案。輸入擴充解讀原文語法，匯出設定控制輸出及其編號。 |
-| [DocWen Assistant](../product-requirements.zh-CN.md) | 匯出會儲存獨立輸出，校對僅讀取內容；明確執行標題編號操作時會修改原始 Markdown。 |
-| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.zh-TW.md) | 日曆與任務檢視讀取索引。勾選任務或調整日期會更新原始 Markdown，建立操作會新增筆記。 |
-| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.zh-TW.md) | 候選設定改變選單。重排或移動值會修改相關 YAML 清單，也可能把非文字值轉成字串。 |
-| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.zh-TW.md) | 規則篩選分析結果，或改變參與分析的圖連線；不會重寫筆記中的連結。 |
-| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.zh-TW.md) | 檢視顯示節點結構。建立、移動、重新命名、合併和刪除操作會改動筆記、資料夾或結構屬性。 |
-| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.zh-TW.md) | 虛擬編號改變顯示。單篇筆記的設定會儲存屬性；寫入、移除或重新編號會修改標題文字。 |
-| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.zh-TW.md) | 查看表格和外觀範例不修改筆記。編輯表格會寫入 Markdown，轉換為 Base 會建立記錄檔案。 |
-
 設定分為四頁：一般、轉為 Markdown、轉為 Word、校對。每頁都有相關說明，分頁也可水平捲動。介面語言預設「跟隨 Obsidian」，也可以在「一般」頁手動選擇。Windows 的 Microsoft Store 版可自動偵測；Linux 與 Windows 可攜版需要手動選擇安裝位置。可用方向鍵及 Home/End 切換分頁。
 
 ## 限制
 
+- 將 Markdown 匯出為 Word 時，可使用 PNG、JPEG、GIF、BMP 和 WebP 圖片。嵌入 SVG 或 ICO 會中止匯出。圖片合計上限為 6 MB（6,000,000 位元組），重複引用同一張圖片只計算一次。
 - 支援 Windows 與 Linux 桌面端，且本機必須安裝相容的 DocWen；Linux 匯出需要 x64；如果檔案系統無法安全儲存結果，外掛會停止並提示你選擇其他目錄；
 - Windows 自動模式使用系統註冊的 Microsoft Store 安裝版；手動模式在 Windows 接受 DocWen 資料夾、`DocWen.exe` 或 `DocWenCLI.exe`，在 Linux 接受資料夾、`DocWen` 或 `DocWenCLI`；兩種模式都不會搜尋任意目錄；
 - 筆記在處理中發生變化，或結果無法安全儲存時，操作會停止並提示你檢查。
@@ -122,6 +110,19 @@ Word 往返轉換有保真範圍：可轉回受支援的可見內容，但不能
 文件留在你的電腦上。外掛將所選檔案的暫存副本交給本機 DocWen；若筆記有唯一對應的編輯器，也會包含尚未儲存的文字。只處理筆記明確引用的圖片，不會掃描 Vault 尋找無關檔案，也不會上傳文件。
 
 匯出寫入你選擇的目錄，校對不修改筆記。標題編號只有在原筆記仍位於原路徑且正文未變時才寫回；處理期間若重新命名或替換了筆記，請對目前筆記重新執行。外掛設定不儲存商店套件安裝路徑。開發者可參閱[整合說明](../cli-integration.md)。
+
+## 搭配其他外掛
+
+| 專案與用法 | 顯示、原文修改與輸出 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.zh-TW.md) | 產生轉換後的檔案。輸入擴充解讀原文語法，匯出設定控制輸出及其編號。 |
+| [DocWen Assistant](../product-requirements.zh-CN.md) | 匯出會儲存獨立輸出，校對僅讀取內容；明確執行標題編號操作時會修改原始 Markdown。 |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.zh-TW.md) | 日曆與任務檢視讀取索引。勾選任務或調整日期會更新原始 Markdown，建立操作會新增筆記。 |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.zh-TW.md) | 候選設定改變選單。重排或移動值會修改相關 YAML 清單，也可能把非文字值轉成字串。 |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.zh-TW.md) | 規則篩選分析結果，或改變參與分析的圖連線；不會重寫筆記中的連結。 |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.zh-TW.md) | 檢視顯示節點結構。建立、移動、重新命名、合併和刪除操作會改動筆記、資料夾或結構屬性。 |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.zh-TW.md) | 虛擬編號改變顯示。單篇筆記的設定會儲存屬性；寫入、移除或重新編號會修改標題文字。 |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.zh-TW.md) | 查看表格和外觀範例不修改筆記。編輯表格會寫入 Markdown，轉換為 Base 會建立記錄檔案。 |
 
 ## 開發
 

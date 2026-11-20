@@ -37,7 +37,7 @@ DocWen에서 파일 열기, 출력 폴더를 선택하는 Word/Excel/Markdown �
 ## 요구 사항 및 호환성
 
 - Windows 또는 Linux와 Obsidian 1.12.7 이상. 플러그인은 데스크톱 전용입니다.
-- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
+- Windows에서는 Store 버전 또는 완전히 압축 해제한 휴대용 DocWen 0.23.0 이상을 사용하고, Linux에서는 완전히 압축 해제한 패키지를 수동으로 선택합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다. 플러그인은 DocWen을 자동으로 다운로드하지 않습니다.
 - 플러그인은 `docwen.machine.v2`과 `docwen.artifact_bundle.v3`이 필요합니다. 호환되지 않는 DocWen은 다른 프로토콜로 전환하지 않고 거부됩니다.
 - 백그라운드 변환 연결이 호환되지 않아도 DocWen 데스크톱 앱은 별도로 열 수 있습니다.
 
@@ -49,7 +49,7 @@ Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 
 
 ### DocWen과 플러그인 설치
 
-1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.23.0 (Windows) / 0.17.0 (Linux) 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
+1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.23.0 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
 2. Community Plugins에서 DocWen Assistant를 설치합니다. 수동 설치는 [플러그인 릴리스](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)에서 `docwen-assistant-x.y.z.zip`을 받은 뒤 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사합니다.
 3. Community Plugins를 다시 불러오고 DocWen Assistant를 활성화합니다.
 4. Windows Store 버전은 자동 감지를 사용할 수 있습니다. Windows 휴대용 버전과 Linux에서는 **설정 → DocWen Assistant → 일반**에서 수동 연결을 선택하고 압축을 푼 폴더나 실행 파일을 지정하세요.
@@ -73,7 +73,7 @@ Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 
 
 파일 작업은 클릭할 때 Obsidian의 현재 파일을 다시 확인하므로 사이드바에 포커스가 있어도 사용할 수 있습니다. 파일을 바꾸면 버튼이 갱신되고 보고서는 유지됩니다. 보고서의 새로 고침 버튼은 계속 원래 노트를 교정합니다. 사이드바를 닫으면 이 사이드바에 속한 교정만 취소됩니다. 데스크톱 앱 제어는 독립적으로 실행됩니다.
 
-**DocWen** 하위 메뉴와 명령 팔레트에서도 앱 열기, Word/Excel/Markdown 내보내기, 제목 번호 변경, 교정과 **DocWen 연결 확인**을 실행할 수 있습니다.
+파일을 마우스 오른쪽 버튼으로 클릭한 뒤 **DocWen**을 열면 그 파일에서 사용할 수 있는 내보내기, 교정, 제목 번호 매기기 작업이 표시됩니다. 연결을 확인하려면 명령 팔레트에서 **DocWen 연결 확인**을 선택하세요. 여기서 파일 없이 DocWen을 실행할 수도 있습니다.
 
 템플릿이나 변환 사전 설정이 표시되면 선택한 뒤 출력 폴더를 지정합니다. 원본, 형식, 저장 위치와 이번 작업의 옵션을 확인하고 **내보내기**를 누르세요. 확인 창은 해당 작업에서 가져온 설정을 사용하며, 취소하면 변환을 시작하지 않습니다. DocWen이 단일 DOCX 또는 XLSX를 반환하면 선택한 폴더에 바로 저장합니다. Markdown과 여러 출력은 이미지 및 첨부 파일을 포함하는 별도 결과 폴더에 저장합니다. 완료 알림의 **결과 폴더 열기**로 확인할 수 있습니다. 출력이 있는 폴더가 열립니다. 기존 파일과 폴더는 덮어쓰지 않습니다.
 
@@ -90,23 +90,11 @@ Word로 내보내기 전에 **DocWen → 설정 → Markdown 해석**에서 필�
 
 Number Suite가 설치되지 않아도 Word 내보내기는 Markdown의 해당 문법을 읽습니다. 출력 번호는 DocWen 설정을 따르며 Number Suite의 표시 전용 번호를 복사하지 않습니다. 별도의 제목 번호 추가·제거 명령은 원본 노트를 수정하지만 내보내기는 수정하지 않습니다.
 
-**각 프로젝트가 변경하는 내용**
-
-| 프로젝트와 사용 안내 | 표시, 원본 편집, 출력 |
-| --- | --- |
-| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ko-KR.md) | 변환된 파일을 만듭니다. 입력 확장은 원본 구문을 해석하고, 내보내기 설정은 출력과 번호를 결정합니다. |
-| [DocWen Assistant](../product-requirements.md) | 내보내기는 별도의 출력을 저장하고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
-| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ko-KR.md) | 달력과 작업 화면은 색인을 읽습니다. 완료 상태나 날짜를 바꾸면 원본 Markdown을 수정하고, 만들기 작업은 새 노트를 생성합니다. |
-| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ko-KR.md) | 후보 설정은 메뉴를 바꿉니다. 값을 정렬하거나 옮기면 해당 YAML 목록을 편집하며, 텍스트가 아닌 값이 문자열로 바뀔 수 있습니다. |
-| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ko.md) | 규칙은 분석 결과를 필터링하거나 분석에 포함할 그래프 연결을 바꿉니다. 노트의 링크는 다시 쓰지 않습니다. |
-| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ko.md) | 화면은 노드 구조를 보여 줍니다. 만들기, 이동, 이름 변경, 병합, 삭제는 노트, 폴더 또는 구조 속성을 변경합니다. |
-| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ko.md) | 가상 번호는 표시에 반영됩니다. 노트별 설정은 속성에 저장되며, 번호 쓰기·제거·다시 매기기는 제목 텍스트를 변경합니다. |
-| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ko.md) | 표 보기와 모양 예시는 노트를 편집하지 않습니다. 표 편집은 Markdown을 수정하고, Base 변환은 레코드 파일을 만듭니다. |
-
 설정은 일반, Markdown으로, Word로, 교정의 네 탭으로 나뉩니다. 각 탭에서 관련 설명을 확인할 수 있습니다. 언어는 기본적으로 Obsidian을 따르며 일반 설정에서 바꿀 수 있습니다. 화살표 키나 Home/End 키로 탭을 전환할 수 있습니다.
 
 ## 제한 사항
 
+- Markdown을 Word로 내보낼 때는 PNG, JPEG, GIF, BMP, WebP 이미지를 사용할 수 있습니다. SVG 또는 ICO 이미지를 삽입하면 내보내기가 중단됩니다. 이미지의 총 크기는 6 MB(6,000,000바이트)까지이며 같은 이미지는 여러 번 사용해도 한 번만 계산합니다.
 - 호환되는 로컬 DocWen이 설치된 Windows 또는 Linux 데스크톱을 지원합니다. Linux 내보내기에는 x64와 기존 데이터를 덮어쓰지 않고 결과를 저장할 수 있는 파일 시스템이 필요합니다.
 - 선택한 DocWen 폴더 또는 실행 파일 밖을 재귀적으로 검색하지 않습니다.
 - 처리 중 노트가 바뀌거나 결과를 안전하게 저장할 수 없으면 작업을 멈추고 확인을 요청합니다.
@@ -118,6 +106,19 @@ Word로 내보낸 뒤 다시 변환해도 원본 Markdown이 그대로 복원되
 문서는 컴퓨터 안에서 처리됩니다. 플러그인은 선택한 파일의 임시 복사본을 로컬 DocWen에 전달합니다. 해당 파일에 대응하는 편집기가 하나라면 저장하지 않은 내용도 포함합니다. 노트가 명시적으로 참조하는 이미지만 함께 처리하며, Vault 전체에서 무관한 파일을 찾거나 문서를 업로드하지 않습니다.
 
 내보내기는 선택한 폴더에 저장하고, 교정은 노트를 수정하지 않습니다. 제목 번호는 원본 노트의 위치와 본문이 바뀌지 않았을 때만 반영합니다. 처리 중 이름을 바꾸거나 파일을 교체했다면 현재 노트에서 다시 실행하세요. Store 설치 경로는 플러그인 설정에 저장하지 않습니다. 개발자용 세부 사항은 [연동 명세](../cli-integration.md)를 참고하세요.
+
+## 다른 플러그인과 함께 사용하기
+
+| 프로젝트와 사용 안내 | 표시, 원본 편집, 출력 |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.ko-KR.md) | 변환된 파일을 만듭니다. 입력 확장은 원본 구문을 해석하고, 내보내기 설정은 출력과 번호를 결정합니다. |
+| [DocWen Assistant](../product-requirements.md) | 내보내기는 별도의 출력을 저장하고, 교정은 읽기만 합니다. 제목 번호 작업을 명시적으로 실행하면 원본 Markdown을 편집합니다. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.ko-KR.md) | 달력과 작업 화면은 색인을 읽습니다. 완료 상태나 날짜를 바꾸면 원본 Markdown을 수정하고, 만들기 작업은 새 노트를 생성합니다. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.ko-KR.md) | 후보 설정은 메뉴를 바꿉니다. 값을 정렬하거나 옮기면 해당 YAML 목록을 편집하며, 텍스트가 아닌 값이 문자열로 바뀔 수 있습니다. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.ko.md) | 규칙은 분석 결과를 필터링하거나 분석에 포함할 그래프 연결을 바꿉니다. 노트의 링크는 다시 쓰지 않습니다. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.ko.md) | 화면은 노드 구조를 보여 줍니다. 만들기, 이동, 이름 변경, 병합, 삭제는 노트, 폴더 또는 구조 속성을 변경합니다. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.ko.md) | 가상 번호는 표시에 반영됩니다. 노트별 설정은 속성에 저장되며, 번호 쓰기·제거·다시 매기기는 제목 텍스트를 변경합니다. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.ko.md) | 표 보기와 모양 예시는 노트를 편집하지 않습니다. 표 편집은 Markdown을 수정하고, Base 변환은 레코드 파일을 만듭니다. |
 
 ## 개발
 

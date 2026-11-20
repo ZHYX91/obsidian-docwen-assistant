@@ -37,7 +37,7 @@ Le plugin ouvre les fichiers dans DocWen, exporte vers Word/Excel/Markdown avec 
 ## Configuration requise et compatibilité
 
 - Windows ou Linux et Obsidian 1.12.7 ou ultérieur ; le plugin fonctionne uniquement sur ordinateur.
-- Sous Windows, utilisez une version DocWen 0.23.0 (Windows) / 0.17.0 (Linux) ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export sous Linux nécessite x64 et un système de fichiers capable de créer un dossier de résultat sans écraser les données existantes ; le plugin ne télécharge pas DocWen automatiquement.
+- Sous Windows, utilisez une version DocWen 0.23.0 ou ultérieure compatible du Store ou un paquet portable entièrement extrait ; sous Linux, utilisez un paquet entièrement extrait sélectionné manuellement. L’export sous Linux nécessite x64 et un système de fichiers capable de créer un dossier de résultat sans écraser les données existantes ; le plugin ne télécharge pas DocWen automatiquement.
 - Le plugin exige `docwen.machine.v2` et `docwen.artifact_bundle.v3` ; une version incompatible de DocWen est refusée au lieu d'utiliser un autre protocole.
 - Même si la connexion pour la conversion en arrière-plan est incompatible, vous pouvez essayer d’ouvrir l’application DocWen séparément.
 
@@ -49,7 +49,7 @@ La détection automatique est réservée à Windows, utilise l’alias enregistr
 
 ### Installer DocWen et le plugin
 
-1. Sous Windows, installez une version compatible de DocWen 0.23.0 (Windows) / 0.17.0 (Linux) ou ultérieure depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez le paquet Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez entièrement le paquet Linux de la même page.
+1. Sous Windows, installez une version compatible de DocWen 0.23.0 ou ultérieure depuis [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extrayez le paquet Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Sous Linux x64, extrayez entièrement le paquet Linux de la même page.
 2. Installez DocWen Assistant depuis Community Plugins. Pour l’installation manuelle, téléchargez `docwen-assistant-x.y.z.zip` depuis les [versions du plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) et copiez `main.js`, `manifest.json` et `styles.css` dans `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Rechargez Community Plugins et activez DocWen Assistant.
 4. La version Windows du Store peut être détectée automatiquement. Pour Windows portable ou Linux, ouvrez **Paramètres → DocWen Assistant → Général**, choisissez la connexion manuelle, puis le dossier extrait ou l’exécutable.
@@ -73,7 +73,7 @@ Une nouvelle barre s’ouvre sur Relecture et mémorise l’onglet choisi. Chang
 
 Les actions déterminent le fichier actuel d’Obsidian au clic, même quand le panneau a le focus. Changer de fichier actualise les boutons et conserve le rapport. Le bouton d’actualisation du rapport vérifie toujours sa note d’origine. Fermer le panneau annule uniquement sa propre relecture ; le contrôle de l’application de bureau reste indépendant.
 
-Le sous-menu **DocWen** et la palette de commandes proposent aussi l’ouverture de l’application, l’export Word/Excel/Markdown, la numérotation des titres, la relecture et la commande **Vérifier la connexion à DocWen**.
+Faites un clic droit sur un fichier, puis ouvrez **DocWen** pour voir les actions disponibles : export, relecture et numérotation des titres. Dans la palette de commandes, choisissez **Vérifier la connexion à DocWen**. Vous pouvez aussi y lancer DocWen sans ouvrir de fichier.
 
 Choisissez un modèle ou un préréglage de conversion si proposé, puis un dossier de sortie. Vérifiez la source, le format, la destination et les options, puis cliquez sur **Exporter**. La fenêtre reprend les réglages capturés pour cette tâche ; l’annulation ne lance aucune conversion. Un DOCX ou XLSX unique est enregistré directement dans le dossier choisi lorsque DocWen renvoie un seul fichier. Markdown et les sorties groupées conservent leur propre dossier avec les images et pièces jointes. Après l’export, cliquez sur **Ouvrir le dossier du résultat** dans la notification. Cette action ouvre le dossier contenant la sortie. Les fichiers et dossiers existants ne sont pas remplacés.
 
@@ -90,23 +90,11 @@ Avant l’export Word, activez les **extensions d’entrée** nécessaires dans 
 
 L’export Word lit la syntaxe Number Suite même si ce plugin n’est pas installé. Les numéros exportés suivent les options DocWen, pas les numéros affichés uniquement par Number Suite. Les commandes séparées d’ajout ou de retrait des numéros de titres modifient la note source ; l’export ne la modifie pas.
 
-**Ce que chaque projet modifie**
-
-| Projet et guide | Affichage, source et sortie |
-| --- | --- |
-| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.fr-FR.md) | Crée les fichiers convertis. Les extensions d’entrée interprètent la syntaxe source ; les réglages d’export déterminent la sortie et sa numérotation. |
-| [DocWen Assistant](../product-requirements.md) | L’export enregistre une sortie distincte ; la relecture est en lecture seule. Les actions explicites de numérotation des titres modifient le Markdown source. |
-| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.fr-FR.md) | Les vues du calendrier et des tâches lisent l’index. Modifier l’état ou la date d’une tâche écrit dans son Markdown source ; les actions de création ajoutent des notes. |
-| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.fr-FR.md) | Les réglages de suggestions changent les menus. Réordonner ou déplacer des valeurs modifie les listes YAML concernées et peut convertir des valeurs non textuelles en chaînes. |
-| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.fr.md) | Les règles filtrent les résultats d’analyse ou déterminent les connexions du graphe prises en compte. Elles ne réécrivent pas les liens des notes. |
-| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.fr.md) | Les vues montrent la structure des nœuds. Créer, déplacer, renommer, fusionner et supprimer modifie les notes, les dossiers ou les propriétés structurelles. |
-| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.fr.md) | Les numéros virtuels changent l’affichage. Les réglages par note enregistrent des propriétés ; écrire, supprimer ou renuméroter les numéros modifie le texte des titres. |
-| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.fr.md) | La lecture des tableaux et l’exemple d’apparence ne modifient pas les notes. Éditer un tableau écrit du Markdown ; la conversion en Base crée des fichiers d’enregistrement. |
-
 Les paramètres sont répartis entre quatre onglets : Général, Exporter en Markdown, Exporter vers Word et Relecture. Chaque onglet contient les explications utiles. La langue suit Obsidian par défaut et peut être choisie dans les paramètres généraux. Utilisez les flèches ou les touches Début/Fin pour changer d’onglet.
 
 ## Limitations
 
+- Pour exporter du Markdown vers Word, utilisez des images PNG, JPEG, GIF, BMP ou WebP. Une image SVG ou ICO intégrée bloque l’export. La taille cumulée des images est limitée à 6 Mo (6 000 000 octets). Une image réutilisée ne compte qu’une fois.
 - Sur ordinateur Windows ou Linux avec une installation locale compatible de DocWen ; l’export sous Linux nécessite x64 et un système de fichiers permettant de sauvegarder les résultats sans écraser les données existantes.
 - Aucune recherche récursive en dehors du dossier ou du programme DocWen sélectionné.
 - Si la note change pendant le traitement ou si le résultat ne peut pas être enregistré en toute sécurité, l’opération s’arrête et vous demande de vérifier.
@@ -118,6 +106,19 @@ Un aller-retour par Word ne remplace pas une sauvegarde du Markdown original. Le
 Vos documents restent sur votre ordinateur. Le plugin transmet au DocWen local une copie temporaire du fichier choisi, avec les modifications non enregistrées si un seul éditeur correspond à cette note. Il inclut les images explicitement référencées, sans chercher de fichiers sans rapport dans le Vault ni envoyer vos documents en ligne.
 
 L’export écrit dans le dossier choisi. La relecture ne modifie pas la note. La numérotation n’est appliquée que si la note d’origine reste au même emplacement et son texte est inchangé. Si la note est renommée ou remplacée pendant le traitement, relancez l’action sur la note actuelle. Le chemin d’installation du Store n’est pas enregistré dans les réglages du plugin. Voir la [spécification d’intégration](../cli-integration.md) pour les détails techniques.
+
+## Utiliser les autres extensions
+
+| Projet et guide | Affichage, source et sortie |
+| --- | --- |
+| [DocWen (Core)](https://github.com/ZHYX91/docwen/blob/main/docs/user-guides/README.fr-FR.md) | Crée les fichiers convertis. Les extensions d’entrée interprètent la syntaxe source ; les réglages d’export déterminent la sortie et sa numérotation. |
+| [DocWen Assistant](../product-requirements.md) | L’export enregistre une sortie distincte ; la relecture est en lecture seule. Les actions explicites de numérotation des titres modifient le Markdown source. |
+| [Chrono Notes](https://github.com/ZHYX91/obsidian-chrono-notes/blob/main/docs/i18n/README.fr-FR.md) | Les vues du calendrier et des tâches lisent l’index. Modifier l’état ou la date d’une tâche écrit dans son Markdown source ; les actions de création ajoutent des notes. |
+| [Property Order](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/i18n/README.fr-FR.md) | Les réglages de suggestions changent les menus. Réordonner ou déplacer des valeurs modifie les listes YAML concernées et peut convertir des valeurs non textuelles en chaînes. |
+| [Link Integrity](https://github.com/ZHYX91/obsidian-link-integrity/blob/main/docs/i18n/README.fr.md) | Les règles filtrent les résultats d’analyse ou déterminent les connexions du graphe prises en compte. Elles ne réécrivent pas les liens des notes. |
+| [Folder Nodes](https://github.com/ZHYX91/obsidian-folder-nodes/blob/main/docs/i18n/README.fr.md) | Les vues montrent la structure des nœuds. Créer, déplacer, renommer, fusionner et supprimer modifie les notes, les dossiers ou les propriétés structurelles. |
+| [Number Suite](https://github.com/ZHYX91/obsidian-number-suite/blob/main/docs/i18n/README.fr.md) | Les numéros virtuels changent l’affichage. Les réglages par note enregistrent des propriétés ; écrire, supprimer ou renuméroter les numéros modifie le texte des titres. |
+| [Structural Tables](https://github.com/ZHYX91/obsidian-structural-tables/blob/main/docs/i18n/README.fr.md) | La lecture des tableaux et l’exemple d’apparence ne modifient pas les notes. Éditer un tableau écrit du Markdown ; la conversion en Base crée des fichiers d’enregistrement. |
 
 ## Développement
 
