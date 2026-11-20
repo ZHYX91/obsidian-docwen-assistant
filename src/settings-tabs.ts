@@ -17,6 +17,7 @@ export class SettingsTabs {
   private activeIndex: number;
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly instanceId = ++settingsTabsInstance;
+  private readonly panelElementId = `docwen-settings-panel-${this.instanceId}`;
   private readonly panelEl: HTMLElement;
   private readonly tabListEl: HTMLElement;
 
@@ -26,7 +27,9 @@ export class SettingsTabs {
 
     const rootEl = options.containerEl.createDiv({ cls: "docwen-settings-root" });
     // The plugin language may differ from Obsidian's in either direction.
-    rootEl.setAttribute("dir", getCurrentLocale() === "ar" ? "rtl" : "ltr");
+    const locale = getCurrentLocale();
+    rootEl.setAttribute("lang", locale);
+    rootEl.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
     this.tabListEl = rootEl.createDiv({
       cls: "docwen-settings-tabs",
       attr: {
@@ -37,7 +40,7 @@ export class SettingsTabs {
     });
     this.panelEl = rootEl.createDiv({
       cls: "docwen-settings-panel",
-      attr: { role: "tabpanel", tabindex: "0" },
+      attr: { id: this.panelElementId, role: "tabpanel", tabindex: "0" },
     });
 
     options.pages.forEach((page, index) => this.createTab(page, index));
@@ -53,7 +56,6 @@ export class SettingsTabs {
     if (!page) return;
     preserveSettingsView(this.panelEl, () => {
       this.panelEl.empty();
-      this.panelEl.id = this.panelId(page.id);
       this.panelEl.setAttribute("aria-labelledby", this.buttons[this.activeIndex].id);
       this.options.renderPage(this.panelEl, page);
     });
@@ -65,7 +67,7 @@ export class SettingsTabs {
       cls: "docwen-settings-tab",
       text: page.name,
       attr: {
-        "aria-controls": this.panelId(page.id),
+        "aria-controls": this.panelElementId,
         "aria-selected": "false",
         id: tabId,
         role: "tab",
@@ -123,7 +125,4 @@ export class SettingsTabs {
     this.activate(targetIndex, true);
   }
 
-  private panelId(pageId: SettingsPageId): string {
-    return `docwen-settings-panel-${this.instanceId}-${pageId}`;
-  }
 }

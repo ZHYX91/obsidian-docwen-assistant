@@ -95,4 +95,21 @@ describe("plugin language", () => {
     }
   });
 
+  it("resolves Hong Kong and Macao Chinese tags consistently in host and direct i18n paths", () => {
+    for (const locale of ["zh-HK", "zh-MO"]) {
+      initI18n(locale);
+      expect(t("settingsTitle"), locale).toBe(translations["zh-tw"].settingsTitle);
+      expect(resolveObsidianLanguage(locale)).toBe("zh-TW");
+    }
+  });
+
+  it("keeps Windows process recovery guidance localized in every catalog", () => {
+    for (const [locale, catalog] of Object.entries(translations)) {
+      expect(catalog.errorWindowsOwnerRecovery.includes("process management is unavailable"), locale)
+        .toBe(locale === "en");
+      expect(catalog.errorWindowsOwnerCleanup.includes("Windows process cleanup could not be confirmed"), locale)
+        .toBe(locale === "en");
+    }
+  });
+
 });

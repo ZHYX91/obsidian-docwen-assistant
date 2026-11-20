@@ -271,7 +271,7 @@ describe("settings surface lifecycle", () => {
     expect(save).not.toHaveBeenCalled();
   });
 
-  it("renders contextual help cards instead of a Usage tab", async () => {
+  it("shows the proofreading result inline beside its controls", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
@@ -282,11 +282,12 @@ describe("settings surface lifecycle", () => {
     tabButtons[3].dispatch("click");
 
     const guide = settings.find((setting) =>
-      setting.settingEl.attributes.get("aria-label") === "Choose what to check")!;
-    expect(guide.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help");
-    expect(guide.settingEl.attributes.get("role")).toBe("note");
-    expect(guide.settingEl.children[0].children[1].textContent).toBe("Choose what to check");
-    expect(guide.settingEl.children[1].textContent).toContain("toggled independently");
+      setting.settingEl.children.some((child) => child.textContent ===
+        "Proofreading lists the issues it finds and leaves the note unchanged."));
+    expect(guide).toBeDefined();
+    expect(guide!.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-help-brief");
+    expect(guide!.settingEl.children).toHaveLength(1);
+    expect(guide!.settingEl.attributes.get("role")).toBeUndefined();
   });
 
   it("renders and validates the fixed-layout DPI override", async () => {

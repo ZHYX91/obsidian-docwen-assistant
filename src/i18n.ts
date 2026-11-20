@@ -7,6 +7,8 @@ const languageAliases: Record<string, string> = {
   "zh": "zh-cn",
   "zh-hans": "zh-cn",
   "zh-hant": "zh-tw",
+  "zh-hk": "zh-tw",
+  "zh-mo": "zh-tw",
   "en-us": "en",
   "en-gb": "en",
   "de-de": "de",
