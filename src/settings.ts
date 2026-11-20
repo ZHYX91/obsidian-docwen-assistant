@@ -81,8 +81,8 @@ export class SettingTab extends PluginSettingTab {
       renderPersistenceStatus: (setting) => this.configurePersistenceStatus(setting),
       isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
-      renderGuide: (setting, title, body, kind) => renderSettingsGuide(
-        setting, title, body, kind, this.expandedHelp,
+      renderGuide: (setting, title, content) => renderSettingsGuide(
+        setting, title, content, this.expandedHelp,
       ),
       renderSupport: renderSettingsSupport,
     });

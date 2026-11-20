@@ -6,7 +6,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [3.6.2] - 2026-11-20
 
-- Keep short settings guidance visible and place the longer Word export tutorial in a keyboard-accessible disclosure. The settings tabs and their panels now expose the active language and matching accessibility relationships.
+- Keep short settings guidance visible and place the longer Word export tutorial in a keyboard-accessible disclosure. Separate the Word guide into template, input-extension and numbering steps, with a decorative book icon after its title. The settings tabs and their panels expose the active language and matching accessibility relationships.
 - Restore the last valid numeric setting when an invalid edit loses focus. Recognize Hong Kong and Macao Traditional Chinese when following the host language.
 - Reuse successful file inspections when navigating between notes. Editing or renaming the file invalidates its cached result, and starting an export still checks the input again.
 - Clarify file-menu actions, connection checks and Word export limits in all twelve user guides.

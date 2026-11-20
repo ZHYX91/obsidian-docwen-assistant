@@ -1,5 +1,6 @@
-import type { Setting } from "obsidian";
+import { setIcon, type Setting } from "obsidian";
 import { getCurrentLocale, t } from "./i18n";
+import type { SettingsGuideContent } from "./settings-definitions";
 
 const guideLocales: Readonly<Record<string, string>> = {
   "zh-cn": "zh-CN", "zh-tw": "zh-TW", ja: "ja-JP", ko: "ko-KR",
@@ -23,21 +24,28 @@ export function renderSettingsSupport(setting: Setting): void {
  * giant help card. The Word tutorial is the only collapsible guide here.
  */
 export function renderSettingsGuide(
-  setting: Setting, title: string, body: string,
-  kind: "brief" | "word", opened: Set<string>,
+  setting: Setting, title: string, content: SettingsGuideContent, opened: Set<string>,
 ): void | (() => void) {
-  if (kind === "brief") {
+  if (typeof content === "string") {
     setting.setClass("docwen-settings-help-brief");
     setting.settingEl.empty();
-    setting.settingEl.createEl("p", { cls: "setting-item-description", text: body });
+    setting.settingEl.createEl("p", { cls: "setting-item-description", text: content });
     return;
   }
   setting.setClass("docwen-settings-help");
   setting.settingEl.empty();
   const details = setting.settingEl.createEl("details", { cls: "docwen-settings-help-disclosure" });
   details.open = opened.has("word");
-  details.createEl("summary", { text: title });
-  details.createEl("p", { cls: "docwen-settings-help-body", text: body });
+  const summary = details.createEl("summary");
+  const label = summary.createSpan({ cls: "docwen-settings-help-label" });
+  label.createSpan({ text: title });
+  const icon = label.createSpan({ cls: "docwen-settings-help-icon", attr: { "aria-hidden": "true" } });
+  setIcon(icon, "book-open");
+  const steps = details.createEl("dl", { cls: "docwen-settings-help-body" });
+  for (const step of content) {
+    steps.createEl("dt", { text: step.title });
+    steps.createEl("dd", { text: step.text });
+  }
   return () => {
     if (details.open) opened.add("word"); else opened.delete("word");
   };
