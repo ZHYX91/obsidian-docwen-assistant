@@ -6,6 +6,7 @@ export type { SettingsControlKey } from "./settings-model";
 type NumberingAddKey = "docToMdAddNumbering" | "mdToDocAddNumbering";
 
 export type SettingsPageId = "general" | "markdown" | "word" | "proofread";
+export type SettingsGuideContent = string | readonly { title: string; text: string }[];
 
 /** Shared page model consumed by the current top-tab settings surface. */
 export interface SettingsPageDefinition {
@@ -22,7 +23,7 @@ export interface SettingsPageContext {
   readonly renderPersistenceStatus: (setting: Setting) => void;
   readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
-  readonly renderGuide: (setting: Setting, title: string, body: string, kind: "brief" | "word") => void | (() => void);
+  readonly renderGuide: (setting: Setting, title: string, content: SettingsGuideContent) => void | (() => void);
   readonly renderSupport: (setting: Setting) => void;
 }
 
@@ -111,7 +112,11 @@ export function getSettingsPages(
       id: "word",
       name: t("settingsExportDocTitle"),
       items: [
-        guide(context, t("settingsWordGuideTitle"), t("settingsWordGuideDesc"), "word"),
+        guide(context, t("settingsWordGuideTitle"), [
+          { title: t("settingsWordGuideTemplateTitle"), text: t("settingsWordGuideTemplateText") },
+          { title: t("settingsWordGuideExtensionsTitle"), text: t("settingsWordGuideExtensionsText") },
+          { title: t("settingsWordGuideNumberingTitle"), text: t("settingsWordGuideNumberingText") },
+        ]),
         dropdown("headingMergeMode", t("settingsHeadingMergeMode"), t("settingsHeadingMergeModeDesc"), {
           punct_required: t("settingsHeadingMergeModePunctRequired"),
           always: t("settingsHeadingMergeModeAlways"),
@@ -178,12 +183,11 @@ function number(
 function guide(
   context: SettingsPageContext,
   title: string,
-  body: string,
-  kind: "brief" | "word" = "brief",
+  content: SettingsGuideContent,
 ): SettingDefinition<SettingsControlKey> {
   return {
     name: title,
-    render: (setting) => context.renderGuide(setting, title, body, kind),
+    render: (setting) => context.renderGuide(setting, title, content),
   };
 }
 

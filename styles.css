@@ -638,6 +638,17 @@ button.docwen-proofread-item {
 
 .docwen-settings-help-disclosure > summary::-webkit-details-marker { display: none; }
 
+.docwen-settings-help-label {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-inline-size: 0;
+  gap: 0.4em;
+}
+
+.docwen-settings-help-icon { display: inline-flex; flex: none; }
+.docwen-settings-help-icon svg { inline-size: 1em; block-size: 1em; }
+
 .docwen-settings-help-disclosure > summary::before {
   content: "";
   display: block;
@@ -686,6 +697,10 @@ button.docwen-proofread-item {
   overflow-wrap: anywhere;
   max-inline-size: 68ch;
 }
+
+.docwen-settings-help-body dt { font-weight: var(--font-semibold); }
+.docwen-settings-help-body dd { margin: 0; }
+.docwen-settings-help-body dd + dt { margin-block-start: 0.65em; }
 
 @supports (color: color-mix(in srgb, red, blue)) {
   .docwen-settings-help-disclosure[open] > .docwen-settings-help-body {

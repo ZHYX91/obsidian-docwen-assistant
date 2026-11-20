@@ -200,7 +200,12 @@ export interface Translations {
   settingsMarkdownGuideDesc: string;
   settingsExportDocTitle: string;
   settingsWordGuideTitle: string;
-  settingsWordGuideDesc: string;
+  settingsWordGuideTemplateTitle: string;
+  settingsWordGuideTemplateText: string;
+  settingsWordGuideExtensionsTitle: string;
+  settingsWordGuideExtensionsText: string;
+  settingsWordGuideNumberingTitle: string;
+  settingsWordGuideNumberingText: string;
   settingsHeadingMergeMode: string;
   settingsHeadingMergeModeDesc: string;
   settingsHeadingMergeModePunctRequired: string;
