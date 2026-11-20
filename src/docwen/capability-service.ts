@@ -207,9 +207,13 @@ export class DocWenCapabilityService {
     return this.fileCache.get(filePath) ?? null;
   }
 
-  preload(filePath: string): Promise<void> {
+  preload(filePath: string, mode: "refresh" | "if-needed" = "refresh"): Promise<void> {
     const existing = this.preloadRequests.get(filePath);
     if (existing && this.isCurrentPreload(filePath, existing)) return existing.promise;
+    if (mode === "if-needed") {
+      const cached = this.peek(filePath);
+      if (cached && !(cached instanceof Error)) return Promise.resolve();
+    }
 
     const controller = new AbortController();
     const generation = this.generation;
