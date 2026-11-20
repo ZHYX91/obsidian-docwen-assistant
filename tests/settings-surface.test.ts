@@ -16,6 +16,7 @@ const dropdowns: FakeDropdown[] = [];
 const settings: FakeSetting[] = [];
 const texts: FakeText[] = [];
 const toggles: FakeToggle[] = [];
+const focusState = { activeElement: null as FakeElement | null };
 
 class FakeElement {
   readonly children: FakeElement[] = [];
@@ -69,7 +70,7 @@ class FakeElement {
     for (const listener of this.listeners.get(type) ?? []) listener(event);
     return event;
   }
-  focus(): void {}
+  focus(): void { focusState.activeElement = this; }
   scrollIntoView(): void {}
   getBoundingClientRect(): DOMRect { return { left: 0, width: 0 } as DOMRect; }
   querySelector(): null { return null; }
@@ -209,6 +210,7 @@ describe("settings surface lifecycle", () => {
     settings.length = 0;
     texts.length = 0;
     toggles.length = 0;
+    focusState.activeElement = null;
     hostState.dialog = null;
     hostState.files.clear();
   });
@@ -430,6 +432,50 @@ describe("settings surface lifecycle", () => {
 
     expect(plugin.settings.extractImages).toBe(false);
     expect(dropdowns.some((dropdown) => dropdown.disabled)).toBe(true);
+  });
+
+  it("updates the Word heading format immediately while keeping the numbering selector focused", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    let finishSave!: () => void;
+    const pendingSave = new Promise<void>((resolve) => { finishSave = resolve; });
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    const saved: unknown[][] = [];
+    plugin.saveSettings = vi.fn(() => {
+      saved.push([plugin.settings.mdToDocAddNumbering, plugin.settings.headingNumberingRenderMode]);
+      return pendingSave;
+    });
+    plugin.fetchNumberingSchemes = vi.fn().mockResolvedValue([{ id: "legal", name: "Legal" }]);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const [tabList, panel] = (tab.containerEl as unknown as FakeElement).children[0].children;
+    tabList.children[2].dispatch("click");
+    const format = dropdowns.find((control) => control.options.has("word_native"))!;
+    const scheme = dropdowns.find((control) => control.options.has("none"))!;
+    await vi.waitFor(() => expect(scheme.options.has("legal")).toBe(true));
+    const rows = [...panel.children];
+    expect(format.disabled).toBe(true);
+    scheme.selectEl.focus();
+
+    const firstChange = scheme.choose("legal");
+    expect(format.disabled).toBe(false);
+    expect(focusState.activeElement).toBe(scheme.selectEl);
+    expect(scheme.disabled).toBe(false);
+    expect(panel.children).toHaveLength(rows.length);
+    rows.forEach((row, index) => expect(panel.children[index]).toBe(row));
+    await format.choose("word_native");
+    finishSave();
+    await firstChange;
+    for (const value of ["default", "legal", "none"]) {
+      await scheme.choose(value);
+      expect(format.disabled).toBe(value !== "legal");
+      expect(format.value).toBe("word_native");
+    }
+    expect(saved).toEqual([
+      ["legal", "default"], ["legal", "word_native"], ["default", "word_native"],
+      ["legal", "word_native"], ["none", "word_native"],
+    ]);
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledOnce();
   });
 
   it("rebuilds translated tab labels after a language change", async () => {

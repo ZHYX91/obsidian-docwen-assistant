@@ -34,6 +34,7 @@ export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
   private pathStatusElements = new Set<HTMLElement>();
   private pageCleanups: (() => void)[] = [];
+  private updateHeadingNumberingFormat?: () => void;
   private activePageId: SettingsPageId = "general";
   private tabs: SettingsTabs | null = null;
   private readonly expandedHelp = new Set<string>();
@@ -98,6 +99,7 @@ export class SettingTab extends PluginSettingTab {
     assertSettingsWritable(this.plugin.getSettingsCompatibility());
     const settingKey = key as SettingsControlKey;
     setSettingValue(this.plugin.settings, settingKey, value);
+    if (settingKey === "mdToDocAddNumbering") this.updateHeadingNumberingFormat?.();
     if (settingKey === "docwenConnectionMode") this.plugin.resetDocWenRuntime();
     const generation = this.surfaceGeneration;
     try {
@@ -149,26 +151,30 @@ export class SettingTab extends PluginSettingTab {
     }
     if ("control" in item && item.control) {
       const { control } = item;
-      const disabled = isSettingsReadOnly(this.plugin.getSettingsCompatibility())
+      const isDisabled = () => isSettingsReadOnly(this.plugin.getSettingsCompatibility())
         || evaluate(control.disabled, false);
       const value = this.getControlValue(control.key) ?? control.defaultValue;
       if (control.type === "toggle") {
         setting.addToggle((toggle) => toggle
           .setValue(Boolean(value))
-          .setDisabled(disabled)
+          .setDisabled(isDisabled())
           .onChange((nextValue) => void this.changeControlValue(control.key, nextValue)));
         return;
       }
       if (control.type === "dropdown") {
-        setting.addDropdown((dropdown) => dropdown
-          .addOptions(control.options)
-          .setValue(typeof value === "string" ? value : "")
-          .setDisabled(disabled)
-          .onChange((nextValue) => void this.changeControlValue(control.key, nextValue)));
+        setting.addDropdown((dropdown) => {
+          dropdown.addOptions(control.options)
+            .setValue(typeof value === "string" ? value : "")
+            .setDisabled(isDisabled())
+            .onChange((nextValue) => void this.changeControlValue(control.key, nextValue));
+          if (control.key === "headingNumberingRenderMode") {
+            this.updateHeadingNumberingFormat = () => { dropdown.setDisabled(isDisabled()); };
+          }
+        });
         return;
       }
       if (control.type === "number") {
-        configureNumberSetting(setting, control, value, disabled, (nextValue) => {
+        configureNumberSetting(setting, control, value, isDisabled(), (nextValue) => {
           void this.changeControlValue(control.key, nextValue);
         });
         return;
@@ -209,6 +215,7 @@ export class SettingTab extends PluginSettingTab {
 
   private destroyPageSurface(): void {
     ++this.surfaceGeneration;
+    this.updateHeadingNumberingFormat = undefined;
     for (const cleanup of this.pageCleanups.splice(0)) cleanup();
     this.pathStatusElements.clear();
   }
@@ -291,10 +298,7 @@ export class SettingTab extends PluginSettingTab {
     this.display();
   }
 
-  private configureNumberingScheme(
-    setting: Setting,
-    key: "docToMdAddNumbering" | "mdToDocAddNumbering",
-  ): () => void {
+  private configureNumberingScheme(setting: Setting, key: "docToMdAddNumbering" | "mdToDocAddNumbering"): () => void {
     const generation = this.surfaceGeneration;
     return configureNumberingSchemeSetting(setting, {
       getValue: () => this.plugin.settings[key],
@@ -337,7 +341,6 @@ export class SettingTab extends PluginSettingTab {
     return this.surfaceGeneration === generation
       && (this.containerEl.isConnected || hostSetting?.activeTab === this);
   }
-
 }
 
 function evaluate(value: boolean | (() => boolean) | undefined, fallback: boolean): boolean {
