@@ -660,7 +660,7 @@ button.docwen-proofread-item {
   outline-offset: -2px;
 }
 
-@media (hover: hover) {
+@media (hover: hover) and (pointer: fine) {
   .docwen-settings-help-disclosure > summary:hover {
     background: var(--background-modifier-hover);
     color: var(--text-normal);
@@ -677,6 +677,7 @@ button.docwen-proofread-item {
 
 .docwen-settings-help-disclosure[open] > .docwen-settings-help-body {
   box-sizing: border-box;
+  min-inline-size: 0;
   border-inline-start: 2px solid var(--background-modifier-border);
   margin-block: 6px 0;
   margin-inline-start: 6px;

@@ -4,6 +4,13 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.2] - 2026-11-20
+
+- Keep short settings guidance visible and place the longer Word export tutorial in a keyboard-accessible disclosure. The settings tabs and their panels now expose the active language and matching accessibility relationships.
+- Restore the last valid numeric setting when an invalid edit loses focus. Recognize Hong Kong and Macao Traditional Chinese when following the host language.
+- Reuse successful file inspections when navigating between notes. Editing or renaming the file invalidates its cached result, and starting an export still checks the input again.
+- Clarify file-menu actions, connection checks and Word export limits in all twelve user guides.
+
 ## [3.6.1] - 2026-11-15
 
 - Reject numbering results with the wrong artifact shape, media type or UTF-8 encoding before replacing an open or closed note. Preserve valid BOM, line endings and Unicode.
