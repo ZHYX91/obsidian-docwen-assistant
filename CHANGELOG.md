@@ -3,6 +3,9 @@
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
 ## [Unreleased]
+[pr-74]: https://github.com/ZHYX91/obsidian-docwen-assistant/pull/74
+
+- Keep Markdown image and link bindings when a file with another extension is accepted as Markdown for Word export. [#74][pr-74]
 
 ## [3.6.3] - 2026-11-21
 

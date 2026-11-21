@@ -116,6 +116,63 @@ describe("accepted detected-format exports", () => {
     ui.review.mockResolvedValue(true);
   });
 
+  it("declares image resources after accepting Markdown stored under a document suffix", async () => {
+    const { TFile } = await import("obsidian");
+    const file = Object.assign(new TFile(), { path: "Notes/Disguised.docx", name: "Disguised.docx", extension: "docx" });
+    const image = Object.assign(new TFile(), { path: "Notes/assets/p.png", extension: "png" });
+    const token = "![chart](assets/p.png)";
+    const source = "# Heading\n\n" + token + "\n";
+    const start = source.indexOf(token);
+    const png = Uint8Array.from([1, 2, 3]);
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async (target: typeof file | typeof image) =>
+          target === file ? new TextEncoder().encode(source).buffer : png.buffer,
+      },
+      metadataCache: {
+        getFileCache: () => ({ embeds: [{ original: token, link: "assets/p.png",
+          position: { start: { offset: start }, end: { offset: start + token.length } } }] }),
+        getFirstLinkpathDest: () => image,
+      },
+    };
+    const mediaType = "text/markdown";
+    const capability = machineCapability(mediaType, "document");
+    capability.capability_id = "convert.markdown_source.to_docx";
+    capability.output_media_types = [DOCX];
+    capability.options_schema = { type: "object", properties: { markdown_resource_bindings: { type: "object" } } };
+    capability.input_shape.slots.push({ role: "linked_resource", kind: "resource", media_types: ["image/png"], min_items: 0 });
+    const inspect = async (input: TaskInput) => {
+      const bytes = await readFile(input.path);
+      const canonical = extname(input.path) === ".markdown";
+      return {
+        filePath: input.path, contentSha256: digest(bytes), sizeBytes: bytes.length,
+        decision: canonical ? "allow" : "require_explicit_acceptance", declaredFormat: canonical ? "markdown" : "docx",
+        detectedFormat: "markdown", workflowCategory: "markdown", mediaType, supportedActions: ["convert"],
+      };
+    };
+    const convert = vi.fn(async (request: ConvertRequest) => {
+      expect(request.inputs[0]).toBe(request.sourceInput);
+      expect(request.sourceInput).toMatchObject({ logicalPath: file.path, mediaType });
+      expect(await readFile(request.inputs[0].path, "utf8")).toBe(source);
+      expect(request.markdownResourceBindings?.images).toEqual([{ authored_token: token, logical_path: image.path }]);
+      expect(await readFile(request.inputs[1].path)).toEqual(Buffer.from(png));
+      return { output: "/output/result.docx", warnings: [] };
+    });
+    const client = { inspect, convert, runtimeCapabilities: async () => ({ capabilities: [capability] }) };
+    const runner = {
+      run: async (_key: unknown, _notice: unknown, action: (lease: unknown) => Promise<void>) =>
+        action({ signal: new AbortController().signal, isCurrent: () => true }),
+      presentWarnings: vi.fn(), presentCompletion: vi.fn(),
+    };
+    const actions = new ExportActions(app as never, client as never, new DocWenCapabilityService(client as never),
+      () => ({ ...DEFAULT_SETTINGS, proofreadOnConvert: false }), runner as never);
+    await actions.toDocx(file);
+    expect(ui.confirm).toHaveBeenCalledOnce();
+    expect(convert).toHaveBeenCalledOnce();
+  });
+
   it("accepts a detected format when the temporary directory has a real filesystem alias", async () => {
     const actualOs = await vi.importActual<typeof import("node:os")>("node:os");
     const root = await realpath(await mkdtemp(join(actualOs.tmpdir(), "docwen-snapshot-alias-")));
