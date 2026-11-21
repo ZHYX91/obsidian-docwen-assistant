@@ -4,8 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.3] - 2026-11-21
+
 - Keep local images and note links after an opening horizontal rule when exporting to Word. Treat math expressions as literal content when identifying linked resources.
 - Show the proofreading and heading-numbering commands for inspected files when the connected DocWen runtime offers the corresponding action.
+- Recognize exact YAML delimiters when finding resources for Word export, including the alternate closing delimiter and files with Windows line endings.
+- Make the Word export guide easier to recognize as expandable with a theme-accented arrow and a subtle border.
 
 ## [3.6.2] - 2026-11-20
 
@@ -312,7 +316,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Established the first locally tagged source baseline for DocWen Assistant.
 
-[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.6.0...HEAD
+[Unreleased]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.6.3...HEAD
+[3.6.3]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.6.2...3.6.3
 [3.6.0]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.2...3.6.0
 [3.5.2]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.1...3.5.2
 [3.5.1]: https://github.com/ZHYX91/obsidian-docwen-assistant/compare/3.5.0...3.5.1
