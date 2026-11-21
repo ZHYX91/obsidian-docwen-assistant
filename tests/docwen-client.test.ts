@@ -11,6 +11,7 @@ import { DocWenClient } from "../src/docwen";
 import {
   INPUT_HANDLE_LIMITS,
   mediaTypeForPath,
+  sourceKindForPath,
   PROOFREAD_REPORT_LIMIT_BYTES,
 } from "../src/docwen/client";
 import type {
@@ -493,7 +494,10 @@ describe("DocWenClient Machine semantics", () => {
       mediaType: "application/vnd.ms-powerpoint",
     });
     expect(query.mock.calls[0]![1].input.media_type).toBe("application/msword");
-    expect(mediaTypeForPath("notes.unknown")).toBe("application/octet-stream");
+    for (const file of ["notes.unknown", "notes.constructor", "notes.__proto__"]) {
+      expect(mediaTypeForPath(file)).toBe("application/octet-stream");
+      expect(sourceKindForPath(file)).toBe("resource");
+    }
   });
 
   it("honors cancellation before hashing a local input handle", async () => {

@@ -1,4 +1,5 @@
-import { buildConversionMachineOptions, type ConvertRequest, type ProofreadCheck, type TemplateItem } from "../docwen/client";
+import type { ConvertRequest, ProofreadCheck, TemplateItem } from "../docwen";
+import { buildConversionMachineOptions } from "../docwen/task-options";
 import { t, type Translations } from "../i18n";
 
 export interface ExportSummaryRow {

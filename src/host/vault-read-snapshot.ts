@@ -12,7 +12,8 @@ import * as path from "node:path";
 
 import type { App, TFile } from "obsidian";
 
-import { mediaTypeForPath, sourceKindForPath, type TaskInput } from "../docwen";
+import type { TaskInput } from "../docwen";
+import { sourceFormatForPath, sourceFormatForExtension } from "../docwen/formats";
 import { bindAcceptedDetectedSource } from "../docwen/capability-service";
 import type { FileInspection, RuntimeRoute } from "../docwen/client";
 import {
@@ -142,19 +143,19 @@ export class VaultReadSnapshot {
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
-        kind: sourceKindForPath(originalPath),
+        ...sourceFormatForPath(originalPath),
         role: "source",
         logicalPath: logicalPathFor(originalPath),
-        mediaType: mediaTypeForPath(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
         const bound = bindAcceptedDetectedSource(sourceInput, contentSha256, inspection, route);
         const format = inspection.detectedFormat;
+        const canonical = sourceFormatForExtension(format);
         if (
           !/^[a-z0-9]{1,16}$/u.test(format)
-          || inspection.mediaType === "application/octet-stream"
-          || mediaTypeForPath(`source.${format}`) !== inspection.mediaType
-          || sourceKindForPath(`source.${format}`) !== bound.kind
+          || !canonical
+          || canonical.mediaType !== inspection.mediaType
+          || canonical.kind !== bound.kind
         ) {
           throw new VaultWriteError("vault_input_invalid", "The accepted format has no matching canonical snapshot extension.");
         }

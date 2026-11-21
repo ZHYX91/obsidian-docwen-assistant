@@ -20,6 +20,12 @@ import { tmpdir } from "node:os";
 import { TextDecoder } from "node:util";
 
 import { LocalCliError } from "./errors";
+import {
+  admittedSourceFormat, CONVERSION_MEDIA_TYPES, mediaTypeForPath, sourceFormatForExtension, UNKNOWN_SOURCE_FORMAT,
+  type ConvertTarget, type FileInspection, type SourceFormat,
+} from "./formats";
+import { buildConversionMachineOptions, proofreadOptions } from "./task-options";
+import { isJsonObject } from "./machine-framing";
 import { selectConversionCapability } from "./conversion-selection";
 import { atomicCommitBundle } from "./output-files";
 import { operationWarning, recordFailureWarning, type OperationWarning } from "./operation-outcome";
@@ -34,6 +40,9 @@ import {
   type ValidatedBundleArtifact,
 } from "./machine-client";
 
+export { buildConversionMachineOptions } from "./task-options";
+export { mediaTypeForPath, sourceKindForPath, type ConvertTarget, type FileInspection } from "./formats";
+
 export const INPUT_HANDLE_LIMITS = Object.freeze({
   count: 256,
   fileBytes: 512 * 1024 * 1024,
@@ -41,10 +50,7 @@ export const INPUT_HANDLE_LIMITS = Object.freeze({
 });
 export const PROOFREAD_REPORT_LIMIT_BYTES = 16 * 1024 * 1024;
 
-const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
 export type ProofreadCheck = "typo" | "symbol" | "punct" | "sensitive" | "all" | "none";
-export type ConvertTarget = "md" | "docx" | "xlsx";
 
 export interface MarkdownResourceBindings {
   readonly authored_sha256: string;
@@ -93,7 +99,7 @@ export interface ConvertRequest extends ConvertOptions {
 /** A caller-selected input. Core receives only its isolated local copy. */
 export interface TaskInput {
   readonly path: string;
-  readonly kind: "document" | "resource";
+  readonly kind: SourceFormat["kind"];
   readonly role:
     | "source"
     | "linked_resource"
@@ -167,20 +173,6 @@ export interface ValidateReport {
   file: string;
   issues: ProofreadIssue[];
   warnings: OperationWarning[];
-}
-
-export interface FileInspection {
-  filePath: string;
-  contentSha256: string;
-  sizeBytes: number;
-  decision: string;
-  supportedActions: string[];
-  declaredFormat: string;
-  detectedFormat: string;
-  warningCode: string;
-  reasonCode: string;
-  workflowCategory: string;
-  mediaType: string;
 }
 
 export interface RuntimeRoute {
@@ -321,7 +313,7 @@ export class DocWenClient {
         capabilityId = prepared.capability_id = selected.capability_id;
         prepared.options = buildConversionMachineOptions({
           ...request, selectedCapability: selected, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
-        }, admittedSourceFormat(inspection, source).mediaType);
+        }, admittedSourceFormat(inspection, source.mediaType).mediaType);
         return prepared;
       }, signal);
       if (
@@ -344,7 +336,7 @@ export class DocWenClient {
   ): Promise<ValidateReport> {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const inspection = await this.inspect(source, signal);
-    if (admittedSourceFormat(inspection, source).mediaType !== "text/markdown") {
+    if (admittedSourceFormat(inspection, source.mediaType).mediaType !== CONVERSION_MEDIA_TYPES.md) {
       throw new LocalCliError("cli_invalid_envelope", "Machine v2 proofreading currently accepts Markdown input.");
     }
     return this.withTaskStaging(async (stagingRoot) => {
@@ -397,7 +389,7 @@ export class DocWenClient {
     return this.withTaskStaging(async (stagingRoot) => {
       const result = await this.machine.runTask(await taskRequest(
         "transform.markdown.heading_numbering",
-        [{ ...sourceTaskInput(inputPath, "document", "text/markdown"), logicalPath }],
+        [{ ...sourceTaskInput(inputPath, "document", CONVERSION_MEDIA_TYPES.md), logicalPath }],
         stagingRoot,
         {
           remove_numbering: true,
@@ -458,7 +450,7 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
   const documentNode = bundle.layout_schema === "docwen.document_node.v1";
   if ((!documentNode && bundle.layout_schema !== "docwen.artifact_layout.v1")
     || bundle.artifacts.length !== 1 || bundle.entries.length !== 1 || bundle.relations.length !== 0
-    || artifact?.kind !== "document" || artifact.media_type !== "text/markdown"
+    || artifact?.kind !== "document" || artifact.media_type !== CONVERSION_MEDIA_TYPES.md
     || entry?.artifact_id !== artifact.artifact_id || entry.role !== "primary" || !entry.preferred
     || (documentNode && (entry.ordinal !== 0 || !matchesPrimaryMarkdownNodePath(artifact)))) {
     throw new LocalCliError("cli_integrity_error", "Numbering requires one preferred primary Markdown document.");
@@ -486,32 +478,8 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
   await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
 }
 
-/** Project Core's admission onto the Machine input without losing the original inspection. */
-export function admittedSourceFormat(inspection: FileInspection, source?: TaskInput): {
-  mediaType: string;
-  useDetectedFormat: boolean;
-} {
-  const mediaType = inspection.mediaType;
-  if (inspection.decision !== "allow_with_warning") {
-    return { mediaType, useDetectedFormat: inspection.decision === "require_explicit_acceptance" };
-  }
-  const declared = mediaTypeForFormat(inspection.declaredFormat);
-  if (source?.mediaType !== undefined && source.mediaType !== declared) return { mediaType, useDetectedFormat: false };
-  if (inspection.warningCode === "FILE_FORMAT_COMPATIBLE_TEXT") {
-    // Plain paragraphs are valid Markdown. Core's source-native route accepts
-    // the original Markdown handle even when its content detector returns txt.
-    if (declared === "text/markdown" && mediaType === "text/plain") {
-      return { mediaType: declared, useDetectedFormat: false };
-    }
-    return { mediaType, useDetectedFormat: declared === "text/plain" && mediaType === "text/markdown" };
-  }
-  return {
-    mediaType,
-    useDetectedFormat: inspection.warningCode === "FILE_FORMAT_SAME_FAMILY_MISMATCH",
-  };
-}
-
 function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {
+  const detectedFormat = requiredStringValue(result.detected_format, "file/inspect.detected_format");
   return {
     filePath: stringValue(result.file_path) || sourcePath,
     contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
@@ -519,11 +487,11 @@ function normalizeFileInspection(result: JsonObject, sourcePath: string): FileIn
     decision: requiredStringValue(result.decision, "file/inspect.decision"),
     supportedActions: stringArray(result.supported_actions),
     declaredFormat: requiredStringValue(result.declared_format, "file/inspect.declared_format"),
-    detectedFormat: requiredStringValue(result.detected_format, "file/inspect.detected_format"),
+    detectedFormat,
     warningCode: stringValue(result.warning_code),
     reasonCode: stringValue(result.reason_code),
     workflowCategory: requiredStringValue(result.workflow_category, "file/inspect.workflow_category"),
-    mediaType: mediaTypeForFormat(requiredStringValue(result.detected_format, "file/inspect.detected_format")),
+    mediaType: sourceFormatForExtension(detectedFormat)?.mediaType ?? UNKNOWN_SOURCE_FORMAT.mediaType,
   };
 }
 
@@ -730,80 +698,6 @@ export function normalizeLogicalPath(value: string): string {
   return value;
 }
 
-export function buildConversionMachineOptions(request: ConvertRequest, inputMediaType: string): JsonObject {
-  const options: JsonObject = {};
-  const supported = request.supportedOptions ? new Set(request.supportedOptions) : null;
-  const accepts = (name: string) => supported === null || supported.has(name);
-  const setOption = (name: string, value: unknown) => {
-    if (value !== undefined && accepts(name)) options[name] = value;
-  };
-
-  if (request.checks !== undefined) {
-    const capability = request.selectedCapability;
-    const advertised = capability?.options_schema.properties;
-    const candidate = isObject(advertised) ? advertised.proofread : undefined;
-    const schema = isObject(candidate) ? candidate : {};
-    const properties = isObject(schema.properties) ? schema.properties : {};
-    const proofread = proofreadOptions(request.checks);
-    if (
-      request.target !== "docx" || inputMediaType !== "text/markdown"
-      || capability?.capability_id !== "convert.markdown_source.to_docx"
-      || !accepts("proofread") || schema.type !== "object" || schema.additionalProperties !== false
-      || Object.keys(proofread).length !== 4
-      || Object.keys(proofread).some((key) => !isObject(properties[key]) || properties[key].type !== "boolean")
-    ) {
-      throw new LocalCliError("cli_document_proofread_unavailable", "This DocWen capability does not support document proofreading.");
-    }
-    options.proofread = proofread;
-  }
-
-  setOption("template_name", request.template);
-  setOption("markdown_extensions", request.markdownExtensions);
-  if (request.markdownResourceBindings !== undefined) {
-    if (!accepts("markdown_resource_bindings")) {
-      throw new LocalCliError("cli_input_invalid", "This DocWen capability cannot bind authored Markdown resources.");
-    }
-    setOption("markdown_resource_bindings", request.markdownResourceBindings);
-  }
-  if (request.target === "md") {
-    const resourceOption = preferredSupportedOption(
-      supported,
-      ["preserve_resources", "to_md_keep_images"],
-      inputMediaType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ? "to_md_keep_images"
-        : "preserve_resources",
-    );
-    const ocrOption = preferredSupportedOption(
-      supported,
-      ["recognize_text", "to_md_enable_ocr"],
-      inputMediaType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ? "to_md_enable_ocr"
-        : "recognize_text",
-    );
-    if (resourceOption) setOption(resourceOption, request.extractImages);
-    if (ocrOption) setOption(ocrOption, request.enableOcr);
-    setOption("ocr_language", request.ocrLanguage);
-    const isFixedLayout = [
-      "application/pdf",
-      "application/vnd.ofd",
-      "application/vnd.ms-xpsdocument",
-    ].includes(inputMediaType);
-    if (!isFixedLayout || request.imageMode === "file") setOption("image_mode", request.imageMode);
-    setOption("image_link_style", request.imageLinkStyle);
-    setOption("ocr_placement", request.ocrPlacement);
-    setOption("table_merge_strategy", request.tableMergeStrategy === "replicate" ? "fill" : request.tableMergeStrategy);
-    setOption("render_dpi", request.renderDpi);
-  }
-  if (request.cleanNumbering) setOption("remove_numbering", request.cleanNumbering === "remove");
-  if (request.addNumbering) {
-    setOption("add_numbering", request.addNumbering !== "none");
-    if (request.addNumbering !== "none") setOption("numbering_scheme", request.addNumbering);
-  }
-  setOption("heading_merge_mode", request.headingMergeMode);
-  setOption("heading_numbering_render_mode", request.headingNumberingRenderMode);
-  return options;
-}
-
 function requiredTemplateOrigin(value: unknown): "builtin" | "custom" {
   if (value === "builtin" || value === "custom") return value;
   throw invalidResponse("template.origin");
@@ -824,42 +718,13 @@ function requiredBoolean(value: unknown, field: string): boolean {
   throw invalidResponse(field);
 }
 
-function preferredSupportedOption(
-  supported: ReadonlySet<string> | null,
-  candidates: readonly string[],
-  fallback: string,
-): string | null {
-  if (supported === null) return fallback;
-  return candidates.find((candidate) => supported.has(candidate)) ?? null;
-}
-
-function proofreadOptions(checks: readonly ProofreadCheck[]): JsonObject {
-  if (checks.length === 0) return {};
-  if (checks.includes("none")) {
-    return {
-      enable_symbol_pairing: false,
-      enable_symbol_correction: false,
-      enable_typos_rule: false,
-      enable_sensitive_word: false,
-    };
-  }
-  const enabled = new Set(checks);
-  if (enabled.has("all")) for (const check of ["punct", "typo", "symbol", "sensitive"] as const) enabled.add(check);
-  return {
-    enable_symbol_pairing: enabled.has("punct"),
-    enable_symbol_correction: enabled.has("symbol"),
-    enable_typos_rule: enabled.has("typo"),
-    enable_sensitive_word: enabled.has("sensitive"),
-  };
-}
-
 function requireSingleDocx(bundle: ValidatedArtifactBundle): void {
   const preferred = preferredArtifact(bundle);
   const entry = bundle.entries[0];
   if (
     bundle.entries.length !== 1
     || preferred.kind !== "document"
-    || preferred.media_type !== DOCX_MEDIA_TYPE
+    || preferred.media_type !== CONVERSION_MEDIA_TYPES.docx
     || !hasExactKeys(entry, ["artifact_id", "role", "ordinal", "preferred"])
     || entry.artifact_id !== preferred.artifact_id
     || entry.role !== "primary"
@@ -876,7 +741,7 @@ function hasExactKeys(value: JsonObject, expected: readonly string[]): boolean {
 }
 
 function parseReport(value: unknown, expectedSourceSha256: string): ValidateReport {
-  if (!isObject(value)) throw invalidResponse("proofread report");
+  if (!isJsonObject(value)) throw invalidResponse("proofread report");
   const expectedRootKeys = new Set([
     "schema",
     "file",
@@ -1069,68 +934,6 @@ function normalizeCapability(item: JsonObject): MachineCapability {
   };
 }
 
-export function mediaTypeForPath(filePath: string): string {
-  return mediaTypeForFormat(path.extname(filePath).slice(1));
-}
-
-const DOCUMENT_SOURCE_FORMATS = new Set([
-  "md",
-  "markdown",
-  "txt",
-  "docx",
-  "doc",
-  "odt",
-  "rtf",
-  "wps",
-]);
-
-export function sourceKindForPath(filePath: string): TaskInput["kind"] {
-  const format = path.extname(filePath).slice(1).toLowerCase();
-  return DOCUMENT_SOURCE_FORMATS.has(format) ? "document" : "resource";
-}
-
-function mediaTypeForFormat(format: string): string {
-  const normalized = format.toLowerCase();
-  const mapping: Record<string, string> = {
-    md: "text/markdown",
-    markdown: "text/markdown",
-    txt: "text/plain",
-    csv: "text/csv",
-    tsv: "text/tab-separated-values",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    doc: "application/msword",
-    odt: "application/vnd.oasis.opendocument.text",
-    rtf: "application/rtf",
-    wps: "application/vnd.ms-works",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    xls: "application/vnd.ms-excel",
-    et: "application/vnd.ms-excel",
-    ods: "application/vnd.oasis.opendocument.spreadsheet",
-    pdf: "application/pdf",
-    ofd: "application/vnd.ofd",
-    xps: "application/vnd.ms-xpsdocument",
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    gif: "image/gif",
-    bmp: "image/bmp",
-    webp: "image/webp",
-    tif: "image/tiff",
-    tiff: "image/tiff",
-    heic: "image/heic",
-    heif: "image/heif",
-    html: "text/html",
-    htm: "text/html",
-    mhtml: "multipart/related",
-    mht: "multipart/related",
-    epub: "application/epub+zip",
-    enex: "application/x-evernote",
-    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    ppt: "application/vnd.ms-powerpoint",
-  };
-  return mapping[normalized] || "application/octet-stream";
-}
-
 async function readValidatedArtifactText(
   artifact: ValidatedBundleArtifact,
   limitBytes: number,
@@ -1166,17 +969,13 @@ async function readValidatedArtifactText(
 }
 
 function objectArray(value: unknown, field: string): JsonObject[] {
-  if (!Array.isArray(value) || value.some((item) => !isObject(item))) throw invalidResponse(field);
+  if (!Array.isArray(value) || value.some((item) => !isJsonObject(item))) throw invalidResponse(field);
   return value as JsonObject[];
 }
 
 function asObject(value: unknown): JsonObject {
-  if (!isObject(value)) throw invalidResponse("object");
+  if (!isJsonObject(value)) throw invalidResponse("object");
   return value;
-}
-
-function isObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function stringArray(value: unknown): string[] {
