@@ -3,6 +3,7 @@
  * source-bound proofreading report. Opening the view never starts an action.
  */
 
+import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "./docwen/formats";
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
 import { createHash } from "node:crypto";
 import { getCurrentLocale, t } from "./i18n";
@@ -10,6 +11,7 @@ import { preserveViewState } from "./settings-view-state";
 import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
+import { showNotice } from "./host/notices";
 import { resolveAbsoluteFilePath } from "./host/vault-files";
 import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
@@ -202,7 +204,7 @@ export class AssistantView extends ItemView {
     // Public host contract: non-FileView focus retains the most recently active file.
     // Read it afresh; file changes and closure must never reuse a cached TFile.
     const localFile = this.currentLocalFile();
-    const isMarkdown = localFile?.extension.toLowerCase() === "md";
+    const isMarkdown = localFile !== null && mediaTypeForPath(localFile.path) === CONVERSION_MEDIA_TYPES.md;
     if (this.openFileButton) this.openFileButton.disabled = !localFile;
     if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
     for (const context of this.fileContexts) {
@@ -567,9 +569,15 @@ export class AssistantView extends ItemView {
         invalidate();
         return;
       }
+      const nativeNote = vaultPath.toLowerCase().endsWith(".md");
+      if (!nativeNote && target.kind === "closed") {
+        showNotice(t("proofreadLocationNeedsEditor"));
+        return;
+      }
       const leaf = target.kind === "open" ? target.target.leaf : this.app.workspace.getLeaf(false);
       if (!leaf) return;
-      await leaf.openFile(file);
+      if (nativeNote) await leaf.openFile(file);
+      else await this.app.workspace.revealLeaf(leaf);
       if (!isCurrent()) return;
       const view = leaf.view;
       if (!(view instanceof MarkdownView) || view.file !== file || file.path !== vaultPath

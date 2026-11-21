@@ -26,6 +26,7 @@ export interface Translations {
   dialogDeclaredFormat: string;
   dialogActualFormat: string;
   dialogReadDetectedFormat: string;
+  dialogNumberDetectedFile: string;
   dialogFormatUnknown: string;
   // Ribbon & Commands
   ribbonTooltip: string;
@@ -262,6 +263,7 @@ export interface Translations {
   proofreadSortByRule: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
+  proofreadLocationNeedsEditor: string;
   operationProofread: string;
   operationExport: string;
   operationNumbering: string;

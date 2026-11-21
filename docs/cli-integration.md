@@ -87,6 +87,8 @@ success. Core checks the generated Word document and embeds Word comments before
 returning the result. Spreadsheet exports never request proofreading. Export success
 alone does not claim that comments were generated; the document may have no issues.
 
+Proofreading and in-place heading numbering use the same detected-format admission as exports. Numbering checks closed notes as strict UTF-8 and inspects a snapshot with the original file extension before writing. If explicit format acceptance is required, the numbering confirmation identifies the file that will change. Proofreading reports for attachments remain readable when there is no open Markdown editor. Clicking an issue only reveals an attachment in an existing Markdown editor.
+
 Direct Markdown proofreading always selects the `validate.markdown` capability, reads the preferred `docwen.proofread_report.v2` JSON resource, and never commits that report. It does not invoke Markdown→DOCX conversion or DocWen's conversion post-processing pipeline. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
 
 ## Source ownership

@@ -85,7 +85,7 @@ describe("AssistantView", () => {
       const openSidebar = createAssistantSidebarOpener(app as never, operations, () => true);
       const actions = new ProofreadActions({
         ...app,
-      } as never, { validate } as never, { requireAction: async () => ({}) } as never,
+      } as never, { validate } as never, { requireAction: async () => ({ admittedFormat: { binding: "original" } }) } as never,
       () => ({} as never), runner as never, openSidebar);
       let pending: Promise<void> | undefined;
       const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
@@ -411,6 +411,27 @@ describe("AssistantView", () => {
     expect(f.editor.setSelection).not.toHaveBeenCalled();
   });
 
+  it.each(["txt", "docx", "markdown"])("keeps a .%s report readable when no Markdown editor is open", async extension => {
+    const f = await navigationFixture("Source." + extension);
+    f.leaves.length = 0;
+    f.clickIssue();
+    expect(f.openFile).not.toHaveBeenCalled();
+    expect(findByClass(f.root, "docwen-proofread-item")).toBeDefined();
+    expect((await import("../src/host/notices")).showNotice).toHaveBeenCalledWith(
+      "Open this file in a Markdown editor to locate this issue.",
+    );
+  });
+
+  it("locates a compatible note in its existing Markdown editor", async () => {
+    const f = await navigationFixture("Source.txt");
+    const revealLeaf = vi.fn().mockResolvedValue(undefined);
+    Object.assign(f.view.app.workspace, { revealLeaf });
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
+    expect(revealLeaf).toHaveBeenCalledWith(f.leaf);
+    expect(f.openFile).not.toHaveBeenCalled();
+  });
+
   it("contains file-open failure and asks to refresh instead of using another editor", async () => {
     const f = await navigationFixture();
     f.openFile.mockRejectedValueOnce(new Error("host file open failed"));
@@ -434,13 +455,13 @@ function digest(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-async function navigationFixture() {
+async function navigationFixture(path = "Proofread.md") {
   const { AssistantView } = await import("../src/assistant-view");
   const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
   const operations = new OperationCoordinator();
   const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
   const content = { value: "A😀bad" };
-  const currentFile = { value: Object.assign(new TFile(), { path: "Proofread.md" }) };
+  const currentFile = { value: Object.assign(new TFile(), { path }) };
   const editor = {
     getValue: () => content.value,
     getLine: () => content.value,
@@ -457,7 +478,7 @@ async function navigationFixture() {
     range: { start: { offset: 2, line: 0, column: 2 }, end: { offset: 5, line: 0, column: 5 } },
     matched_text: "bad", error_text: "bad", rule_key: "typo", suggestion: "good",
     error_type: "typo", source: "fixture",
-  }], "Proofread.md", "Proofread.md", digest(content.value));
+  }], path, path, digest(content.value));
   publishCurrent();
   const root = view.containerEl.children[1] as HTMLElement;
   const clickIssue = () => {

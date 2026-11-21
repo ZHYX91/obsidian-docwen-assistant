@@ -27,7 +27,7 @@ function noteHost(open: boolean) {
     workspace: { getLeavesOfType: () => open ? [leaf] : [] },
     vault: {
       getFileByPath: () => file,
-      read: vi.fn(async () => content),
+      readBinary: vi.fn(async () => new TextEncoder().encode(content).buffer),
       process: vi.fn(async (_file: unknown, update: (value: string) => string) => {
         content = update(content);
         return content;

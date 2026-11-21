@@ -6,15 +6,15 @@ import {
 export type { DeclaredMarkdownSnapshot } from "./declared-markdown-snapshot";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
 import type { App, TFile } from "obsidian";
 
 import type { TaskInput } from "../docwen";
-import { sourceFormatForPath, sourceFormatForExtension } from "../docwen/formats";
-import { bindAcceptedDetectedSource } from "../docwen/capability-service";
+import { sourceFormatForPath } from "../docwen/formats";
+import { materializeDetectedSource } from "./detected-source";
 import type { FileInspection, RuntimeRoute } from "../docwen/client";
 import {
   isSameOpenMarkdownTarget,
@@ -148,37 +148,7 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
-        const bound = bindAcceptedDetectedSource(sourceInput, contentSha256, inspection, route);
-        const format = inspection.detectedFormat;
-        const canonical = sourceFormatForExtension(format);
-        if (
-          !/^[a-z0-9]{1,16}$/u.test(format)
-          || !canonical
-          || canonical.mediaType !== inspection.mediaType
-          || canonical.kind !== bound.kind
-        ) {
-          throw new VaultWriteError("vault_input_invalid", "The accepted format has no matching canonical snapshot extension.");
-        }
-        await assertCurrent();
-        const acceptedPath = path.join(workspace, `accepted-source.${format}`);
-        await writeFile(acceptedPath, typeof original === "string" ? original : Buffer.from(original), { flag: "wx" });
-        if (sha256(await readFile(acceptedPath)) !== contentSha256) {
-          throw new VaultWriteError("vault_input_invalid", "The accepted snapshot bytes changed.");
-        }
-        const accepted = { ...bound, path: acceptedPath };
-        const verified = await inspect(accepted);
-        if (
-          verified.decision !== "allow"
-          || verified.filePath !== accepted.path
-          || verified.contentSha256 !== contentSha256
-          || verified.sizeBytes !== inspection.sizeBytes
-          || verified.detectedFormat !== format
-          || verified.mediaType !== bound.mediaType
-        ) {
-          throw new VaultWriteError("vault_input_invalid", "The canonical snapshot does not match the accepted inspection.");
-        }
-        await assertCurrent();
-        return accepted;
+        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent);
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {

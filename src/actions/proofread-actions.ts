@@ -1,6 +1,8 @@
 import { type App, type TFile } from "obsidian";
 
 import { type DocWenClient, type DocWenCapabilityService } from "../docwen";
+import { admittedActionInput } from "./admitted-input";
+import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "../docwen/formats";
 import { showNotice } from "../host/notices";
 import { VaultReadSnapshot } from "../host/vault-read-snapshot";
 import { t } from "../i18n";
@@ -26,7 +28,7 @@ export class ProofreadActions {
 
   async runActive(view: AssistantView): Promise<void> {
     const activeFile = this.app.workspace.getActiveFile();
-    if (!activeFile || activeFile.extension.toLowerCase() !== "md") {
+    if (!activeFile || mediaTypeForPath(activeFile.path) !== CONVERSION_MEDIA_TYPES.md) {
       showNotice(t("noticeProofreadNoMdFile"));
       return;
     }
@@ -56,9 +58,13 @@ export class ProofreadActions {
         const canPublish = view.ownOperation(lease);
         if (!canPublish()) return null;
         const completed = await this.snapshots.run(file, lease.signal, async (snapshot) => {
-          await this.capabilities.requireAction(snapshot.inputs[0], "validate", lease.signal);
+          const source = snapshot.inputs[0];
+          const capability = await this.capabilities.requireAction(source, "validate", lease.signal);
+          const admitted = await admittedActionInput(this.app, source, capability, "validate", lease.signal, route =>
+            snapshot.getAcceptedDetectedSource(capability.inspection, route, input => this.docwen.inspect(input, lease.signal)));
+          if (!admitted || !canPublish()) return null;
           const report = await this.docwen.validate(
-            snapshot.inputs[0],
+            admitted,
             buildProofreadChecks(this.getSettings()),
             lease.signal,
           );

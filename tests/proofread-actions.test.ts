@@ -5,7 +5,7 @@ const state = vi.hoisted(() => ({
   updateResults: vi.fn(),
 }));
 
-vi.mock("obsidian", () => ({ TFile: class TFile {} }));
+vi.mock("obsidian", () => ({ TFile: class TFile {}, Modal: class {} }));
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { count?: string }) =>
     values?.count ? `${key}:${values.count}` : key,
@@ -92,10 +92,10 @@ describe("ProofreadActions", () => {
     expect(run).toHaveBeenCalledWith(file, {});
   });
 
-  it("resolves the current Markdown file for each explicit sidebar request", async () => {
+  it.each(["MD", "Markdown"])("resolves a current .%s note for each explicit sidebar request", async extension => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
     const first = { path: "First.md", extension: "md" };
-    const second = { path: "Second.MD", extension: "MD" };
+    const second = { path: "Second." + extension, extension };
     const getActiveFile = vi.fn().mockReturnValue(first);
     const actions = new ProofreadActions(
       { workspace: { getActiveFile } } as never,
@@ -131,7 +131,7 @@ describe("ProofreadActions", () => {
         getLeavesOfType: vi.fn().mockReturnValue([{ view: { updateResults: state.updateResults } }]),
       },
     };
-    const capabilities = { requireAction: vi.fn().mockResolvedValue({}) };
+    const capabilities = { requireAction: vi.fn().mockResolvedValue({ admittedFormat: { binding: "original" } }) };
     const issues = [{ rule_key: "spacing" }];
     const docwen = {
       validate: vi.fn().mockResolvedValue({
