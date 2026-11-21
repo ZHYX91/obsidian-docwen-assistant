@@ -609,8 +609,10 @@ button.docwen-proofread-item {
 
 .docwen-settings-help-disclosure {
   container-type: inline-size;
-  background: transparent;
-  border: 0;
+  background-color: var(--background-primary);
+  background-color: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-primary));
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   line-height: 1.5;
@@ -626,7 +628,7 @@ button.docwen-proofread-item {
   box-sizing: border-box;
   min-block-size: 32px;
   align-content: center;
-  padding-block: 4px;
+  padding: 4px 8px;
   color: inherit;
   font-weight: var(--font-normal, 400);
   text-align: start;
@@ -638,17 +640,6 @@ button.docwen-proofread-item {
 
 .docwen-settings-help-disclosure > summary::-webkit-details-marker { display: none; }
 
-.docwen-settings-help-label {
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  min-inline-size: 0;
-  gap: 0.4em;
-}
-
-.docwen-settings-help-icon { display: inline-flex; flex: none; }
-.docwen-settings-help-icon svg { inline-size: 1em; block-size: 1em; }
-
 .docwen-settings-help-disclosure > summary::before {
   content: "";
   display: block;
@@ -656,11 +647,16 @@ button.docwen-proofread-item {
   inline-size: 8px;
   block-size: 8px;
   box-sizing: border-box;
+  color: var(--interactive-accent);
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   align-self: start;
   margin-block-start: calc(0.75em - 4px);
   transform: rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .docwen-settings-help-disclosure > summary::before { transition: transform 120ms ease; }
 }
 
 .docwen-settings-help-disclosure:dir(rtl) > summary::before { transform: rotate(135deg); }
@@ -689,9 +685,9 @@ button.docwen-proofread-item {
 .docwen-settings-help-disclosure[open] > .docwen-settings-help-body {
   box-sizing: border-box;
   min-inline-size: 0;
-  border-inline-start: 2px solid var(--background-modifier-border);
-  margin-block: 6px 0;
-  margin-inline-start: 6px;
+  border-inline-start: 2px solid var(--interactive-accent);
+  margin-block: 4px 8px;
+  margin-inline: 14px 8px;
   padding-inline-start: 10px;
   color: var(--text-normal);
   overflow-wrap: anywhere;
@@ -702,14 +698,8 @@ button.docwen-proofread-item {
 .docwen-settings-help-body dd { margin: 0; }
 .docwen-settings-help-body dd + dt { margin-block-start: 0.65em; }
 
-@supports (color: color-mix(in srgb, red, blue)) {
-  .docwen-settings-help-disclosure[open] > .docwen-settings-help-body {
-    border-inline-start-color: color-mix(in srgb, var(--interactive-accent) 30%, var(--background-modifier-border));
-  }
-}
-
 @container (max-width: 24rem) {
-  .docwen-settings-help-disclosure[open] > .docwen-settings-help-body { margin-inline-start: 0; }
+  .docwen-settings-help-disclosure[open] > .docwen-settings-help-body { margin-inline-start: 8px; }
 }
 
 .docwen-settings-help-brief.setting-item {

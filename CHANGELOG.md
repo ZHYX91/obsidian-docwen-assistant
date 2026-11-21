@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Give the Word export guide a subtle card background and a chevron that matches the expanded guide’s accent line. Remove the decorative book after the title.
+
 ## [3.6.2] - 2026-11-20
 
 - Add and clear Markdown heading numbers with the single-document output returned by DocWen 0.23.0.
