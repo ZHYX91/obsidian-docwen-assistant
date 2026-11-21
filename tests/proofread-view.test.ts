@@ -285,7 +285,7 @@ describe("AssistantView", () => {
     const issue = findByClass(content, "docwen-proofread-item");
     expect(issue?.tagName.toLowerCase()).toBe("button");
     expect(issue?.getAttribute("type")).toBe("button");
-    expect(issue?.getAttribute("aria-label")).toBe("L1 Typo check: bad → good");
+    expect(issue?.getAttribute("aria-label")).toBe("Line 1 Typo check: bad → good");
     const filename = findByClass(content, "docwen-proofread-filename");
     expect(filename?.textContent).toBe("Proofread.md");
     expect(filename?.getAttribute("title")).toBe("Proofread.md");
@@ -341,7 +341,7 @@ describe("AssistantView", () => {
       const content = view.containerEl.children[1] as HTMLElement;
       expect(findByClass(content, "docwen-proofread-rule")?.textContent).toBe("符号缺少配对");
       expect(findByClass(content, "docwen-proofread-item")?.getAttribute("aria-label"))
-        .toBe("L1 符号缺少配对: （");
+        .toBe("第 1 行 符号缺少配对: （");
       expect(findByClass(content, "docwen-proofread-suggestion")).toBeUndefined();
     } finally {
       initI18n("en");
@@ -363,6 +363,27 @@ describe("AssistantView", () => {
       { line: 0, ch: 3 }, { line: 0, ch: 6 },
     ));
     expect(f.editor.scrollIntoView).toHaveBeenCalledOnce();
+  });
+
+  it.each(["resolves", "rejects"])("keeps the latest issue selected when an earlier file open %s late", async (outcome) => {
+    const f = await navigationFixture();
+    const reports = [0, 1].map((column) => ({
+      range: { start: { offset: column, line: 0, column }, end: { offset: column + 1, line: 0, column: column + 1 } },
+      matched_text: column === 0 ? "A" : "😀", error_text: "issue", rule_key: "typo", suggestion: "", error_type: "typo", source: "fixture",
+    }));
+    f.view.updateResults(reports, "Proofread.md", "Proofread.md", digest(f.content.value));
+    const [first, second] = f.root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item");
+    let finish!: () => void;
+    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
+      finish = outcome === "resolves" ? resolve : () => reject(new Error("obsolete open"));
+    }));
+    first.click();
+    second.click();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledWith({ line: 0, ch: 1 }, { line: 0, ch: 3 }));
+    finish();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(f.editor.setSelection).toHaveBeenCalledTimes(1);
+    expect(f.root.querySelectorAll(".docwen-proofread-item")).toHaveLength(2);
   });
 
   it("rejects edited content even when the reported substring is unchanged", async () => {

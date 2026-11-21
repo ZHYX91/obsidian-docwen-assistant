@@ -1,7 +1,6 @@
 import { t, type Translations } from "./i18n";
 import {
   OperationCoordinator,
-  type OperationItem,
   type OperationKind,
   type OperationSnapshot,
 } from "./runtime/operation-coordinator";
@@ -18,17 +17,22 @@ const OPERATION_LABELS: Record<OperationKind, keyof Translations> = {
 /** Renders safe operation categories only; internal keys and Vault paths never enter the DOM. */
 export class OperationStatus {
   private readonly unsubscribe: () => void;
+  private readonly label: HTMLElement;
+  private button: HTMLButtonElement | null = null;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly operations: OperationCoordinator,
   ) {
     root.addClass("docwen-operation-status");
+    // Mount before work starts so assistive technology can observe text changes.
+    this.label = root.createSpan({ cls: "docwen-operation-status-label", attr: { role: "status", "aria-atomic": "true" } });
     this.unsubscribe = operations.subscribe((snapshot) => this.render(snapshot));
   }
 
   dispose(): void {
     this.unsubscribe();
+    this.button = null;
     this.root.empty();
   }
 
@@ -36,56 +40,33 @@ export class OperationStatus {
     this.render(this.operations.getSnapshot());
   }
 
-  private render(snapshot: OperationSnapshot): void {
-    this.root.empty();
-    const active = snapshot.operations;
-    if (active.length === 0) return;
-    if (active.length === 1) {
-      this.renderSingle(active[0]);
+  private render({ operations }: OperationSnapshot): void {
+    if (operations.length === 0) {
+      this.button?.remove();
+      this.button = null;
+      this.label.textContent = "";
       return;
     }
-
-    this.root.createSpan({
-      cls: "docwen-operation-status-label",
-      text: t("operationMultiple", { count: String(active.length) }),
-      attr: { role: "status", "aria-live": "polite", "aria-busy": "true" },
-    });
-    const allCancelling = active.every(({ state }) => state === "cancelling");
-    const button = this.root.createEl("button", {
-      cls: "docwen-operation-cancel",
-      text: allCancelling ? t("operationCancelling") : t("operationCancelAll"),
-      attr: {
-        type: "button",
-        "aria-label": allCancelling ? t("operationCancelling") : t("operationCancelAll"),
-        ...(allCancelling ? { disabled: "" } : {}),
-      },
-    });
-    if (!allCancelling) button.addEventListener("click", () => this.operations.cancelAll());
-  }
-
-  private renderSingle(operation: OperationItem): void {
-    const label = t(OPERATION_LABELS[operation.kind]);
-    this.root.createSpan({
-      cls: "docwen-operation-status-label",
-      text: operation.state === "cancelling"
-        ? t("operationCancelling")
-        : t("operationRunning", { operation: label }),
-      attr: { role: "status", "aria-live": "polite", "aria-busy": "true" },
-    });
-    const cancelling = operation.state === "cancelling";
-    const button = this.root.createEl("button", {
-      cls: "docwen-operation-cancel",
-      text: cancelling ? t("operationCancelling") : t("operationCancel"),
-      attr: {
-        type: "button",
-        "aria-label": cancelling
-          ? t("operationCancelling")
-          : `${t("operationCancel")}: ${label}`,
-        ...(cancelling ? { disabled: "" } : {}),
-      },
-    });
-    if (!cancelling) {
-      button.addEventListener("click", () => this.operations.cancelGeneration(operation.generation));
+    const only = operations.length === 1 ? operations[0] : null;
+    const category = only ? t(OPERATION_LABELS[only.kind]) : null;
+    const cancelling = operations.every(({ state }) => state === "cancelling");
+    let status = t("operationCancelling");
+    if (category === null && !cancelling) status = t("operationMultiple", { count: String(operations.length) });
+    if (category !== null && !cancelling) status = t("operationRunning", { operation: category });
+    if (this.label.textContent !== status) this.label.textContent = status;
+    if (!this.button) {
+      const button = this.root.createEl("button", { cls: "docwen-operation-cancel", attr: { type: "button" } });
+      this.button = button;
+      button.addEventListener("click", () => {
+        if (this.button !== button || button.disabled) return;
+        const active = this.operations.getSnapshot().operations;
+        if (active.length === 1) this.operations.cancelGeneration(active[0].generation);
+        else this.operations.cancelAll();
+      });
     }
+    const action = cancelling ? t("operationCancelling") : only ? t("operationCancel") : t("operationCancelAll");
+    if (this.button.textContent !== action) this.button.textContent = action;
+    this.button.setAttribute("aria-label", !cancelling && category ? `${action}: ${category}` : action);
+    this.button.disabled = cancelling;
   }
 }

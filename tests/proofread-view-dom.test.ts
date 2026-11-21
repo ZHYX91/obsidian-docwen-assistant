@@ -175,13 +175,13 @@ describe("proofreading view DOM integration", () => {
     view.ownOperation(lease);
     const cancel = root.querySelector<HTMLButtonElement>(".docwen-proofread-cancel")!;
     expect(cancel.disabled).toBe(false);
-    expect(root.querySelector('[aria-busy="true"]')?.textContent).toBe(
+    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toBe(
       t("operationRunning", { operation: t("operationProofread") }),
     );
     cancel.click();
     expect(lease.signal.aborted).toBe(true);
     expect(root.querySelector<HTMLButtonElement>(".docwen-proofread-cancel")?.disabled).toBe(true);
-    expect(root.querySelector('[aria-busy="true"]')?.textContent).toBe(t("operationCancelling"));
+    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toBe(t("operationCancelling"));
     lease.finish();
     expect(root.querySelector(".docwen-proofread-cancel")).toBeNull();
     expect(root.querySelector(".docwen-proofread-status")?.textContent).toBe(t("proofreadCancelled"));

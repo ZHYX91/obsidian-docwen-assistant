@@ -49,6 +49,7 @@ export class AssistantView extends ItemView {
   private vaultPath = "";
   private sourceSha256 = "";
   private resultsRevision = 0;
+  private navigationSequence = 0;
   private visibleIssueCount = ISSUE_BATCH_SIZE;
   private stale = false;
   private activeOperation: OperationItem | null = null;
@@ -387,7 +388,6 @@ export class AssistantView extends ItemView {
         attr: {
           role: "status",
           "aria-live": "polite",
-          "aria-busy": "true",
         },
       });
       return;
@@ -421,7 +421,7 @@ export class AssistantView extends ItemView {
     }
 
     if (this.issues.length === 0) {
-      container.createDiv({ cls: "docwen-proofread-status", text: t("proofreadNoIssues") });
+      container.createDiv({ cls: "docwen-proofread-status", text: t("proofreadNoIssues"), attr: { role: "status" } });
       return;
     }
 
@@ -486,7 +486,7 @@ export class AssistantView extends ItemView {
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {
     let first: HTMLButtonElement | undefined;
     for (const issue of sorted.slice(from, to)) {
-      const displayLine = issue.range.start.line + 1;
+      const lineLabel = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
         : t(RULE_LABELS[issue.rule_key] ?? "proofreadViewTitle");
@@ -497,7 +497,7 @@ export class AssistantView extends ItemView {
         attr: {
           type: "button",
           "data-docwen-view-key": `issue:${revision}:${this.issueIndices.get(issue)}`,
-          "aria-label": `L${displayLine} ${ruleLabel}: ${issue.error_text}${correction}`,
+          "aria-label": `${lineLabel} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
       first ??= item;
@@ -506,7 +506,7 @@ export class AssistantView extends ItemView {
       });
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
-      header.createSpan({ cls: "docwen-proofread-line", text: `L${displayLine}` });
+      header.createSpan({ cls: "docwen-proofread-line", text: lineLabel });
       header.createSpan({ cls: "docwen-proofread-rule", text: ruleLabel });
 
       const body = item.createDiv({ cls: "docwen-proofread-item-body" });
@@ -546,15 +546,16 @@ export class AssistantView extends ItemView {
   }
 
   private async navigateToIssue(issue: ProofreadIssue, revision: number): Promise<void> {
+    if (revision !== this.resultsRevision || this.activeOperation || this.stale) return;
+    const sequence = ++this.navigationSequence;
     const sourceSha256 = this.sourceSha256;
     const vaultPath = this.vaultPath;
-    const isCurrent = (): boolean => revision === this.resultsRevision && !this.activeOperation;
+    const isCurrent = (): boolean => sequence === this.navigationSequence && revision === this.resultsRevision && !this.activeOperation;
     const invalidate = (): void => {
       if (!isCurrent()) return;
       this.stale = true;
       this.render();
     };
-    if (!isCurrent() || this.stale) return;
     try {
       const file = this.app.vault.getAbstractFileByPath(vaultPath);
       if (!(file instanceof TFile) || !/^[a-f0-9]{64}$/u.test(sourceSha256)) {
@@ -605,5 +606,10 @@ function matchesSource(content: string, sourceSha256: string): boolean {
 }
 
 export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {
-  return Array.from(line).slice(0, unicodeColumn).join("").length;
+  let offset = 0;
+  for (const codePoint of line) {
+    if (unicodeColumn-- <= 0) break;
+    offset += codePoint.length;
+  }
+  return offset;
 }
