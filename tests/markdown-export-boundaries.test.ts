@@ -21,6 +21,16 @@ describe("Word export source boundaries", () => {
   });
 
   it.each([
+    "---\n---foo: plain\nlink: [[Property]]\n---\n",
+    "---\r\n---foo: plain\r\nlink: [[Property]]\r\n...\r\n",
+    "--- \nheading: [[Property]]\n--- \n",
+  ])("keeps YAML frontmatter opaque and resumes body scanning after %j", (prefix) => {
+    const source = prefix + outside;
+    expect(scanAuthoredWikiNavigations(source).map(item => item.token)).toEqual(["[[Target]]"]);
+    expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+  });
+
+  it.each([
     "$" + formula + "$",
     "Text $$ " + formula + " $$",
     "$$\n" + formula + "\n\n# still math\n$$",
