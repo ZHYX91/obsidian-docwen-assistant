@@ -99,6 +99,15 @@ describe("Markdown edit and proofreading sources", () => {
     expect(state.inspect.mock.calls.map(([input]) => extname(typeof input === "string" ? input : input.path))).toEqual([".docx", ".markdown"]);
     expect(state.current().toString()).toBe(cleaned);
   });
+  it("binds a closed note's report to editor line positions across mixed line endings", async () => {
+    const bytes = Buffer.from("first\r\nsecond\rA😀bad\n");
+    const state = fixture("md", bytes);
+    await state.proofread();
+    expect(state.view.updateResults).toHaveBeenCalledWith([], "Source.md", "Notes/Source.md",
+      hash(Buffer.from("first\nsecond\nA😀bad\n")));
+    expect(state.current()).toEqual(bytes);
+  });
+
   it("preserves valid replacement characters and a UTF-8 BOM", async () => {
     const state = fixture("md", Buffer.from("\uFEFF" + text + "\uFFFD"));
     await state.number();

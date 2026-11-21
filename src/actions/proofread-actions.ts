@@ -71,7 +71,7 @@ export class ProofreadActions {
           if (!canPublish()) return null;
           return snapshot.publish(async () => {
             if (!canPublish()) return null;
-            view.updateResults(report.issues, file.name, file.path, snapshot.contentSha256);
+            view.updateResults(report.issues, file.name, file.path, snapshot.proofreadSourceDigest());
             return report;
           });
         });

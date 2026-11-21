@@ -17,7 +17,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
   VaultReadSnapshot: class {
     async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
       return { value: await work({
-        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64),
+        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64), proofreadSourceDigest: () => "a".repeat(64),
         publish: async (commit: () => Promise<unknown>) => commit(),
       }), warnings: [] };
     }
@@ -439,6 +439,19 @@ describe("AssistantView", () => {
     await vi.waitFor(() => expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
       .toBe("The note or editor has changed. Refresh proofreading before locating an issue."));
     expect(f.editor.setSelection).not.toHaveBeenCalled();
+  });
+
+  it.each(["\n", "\r\n", "\r"])("selects the reported line when an editor uses %j", async (eol) => {
+    const f = await navigationFixture();
+    f.content.value = ["heading", "A😀bad"].join(eol);
+    f.editor.getLine = () => "A😀bad";
+    f.view.updateResults([{
+      range: { start: { offset: 10, line: 1, column: 2 }, end: { offset: 13, line: 1, column: 5 } },
+      matched_text: "bad", error_text: "bad", rule_key: "typo", suggestion: "good",
+      error_type: "typo", source: "fixture",
+    }], "Proofread.md", "Proofread.md", digest("heading\nA😀bad"));
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledWith({ line: 1, ch: 3 }, { line: 1, ch: 6 }));
   });
 
   it("ignores a detached issue button after a newer report replaces it", async () => {

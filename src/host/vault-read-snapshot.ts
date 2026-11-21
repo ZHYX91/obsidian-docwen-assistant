@@ -22,9 +22,12 @@ import {
 } from "./open-markdown-target";
 import { VaultWriteError } from "./vault-write-transaction";
 
+import { proofreadSourceDigest } from "./proofread-source";
+
 export interface IsolatedSnapshot {
   readonly inputPath: string;
   readonly contentSha256: string;
+  readonly proofreadSourceDigest: () => string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
   /** Materialize an explicitly accepted format only inside this snapshot's ownership. */
@@ -164,6 +167,7 @@ export class VaultReadSnapshot {
       result = await work({
         inputPath,
         contentSha256,
+        proofreadSourceDigest: () => proofreadSourceDigest(original),
         publish,
         sourceInput,
         inputs: [sourceInput],

@@ -5,7 +5,7 @@
 
 import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "./docwen/formats";
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
-import { createHash } from "node:crypto";
+import { proofreadSourceDigest } from "./host/proofread-source";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
 import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
@@ -609,7 +609,7 @@ export class AssistantView extends ItemView {
 }
 
 function matchesSource(content: string, sourceSha256: string): boolean {
-  return createHash("sha256").update(content, "utf8").digest("hex") === sourceSha256;
+  return proofreadSourceDigest(content) === sourceSha256;
 }
 
 export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {

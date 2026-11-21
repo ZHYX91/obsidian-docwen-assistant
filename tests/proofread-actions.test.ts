@@ -21,10 +21,11 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
       work: (snapshot: {
         inputs: Array<{ path: string }>;
         contentSha256: string;
+        proofreadSourceDigest: () => string;
         publish: <U>(commit: () => Promise<U>) => Promise<U>;
       }) => Promise<T>,
     ): Promise<{ value: T; warnings: [] }> {
-      return { value: await work({ inputs: [{ path: "D:\\Temp\\source.md" }], contentSha256: "a".repeat(64), publish: async (commit) => commit() }), warnings: [] };
+      return { value: await work({ inputs: [{ path: "D:\\Temp\\source.md" }], contentSha256: "a".repeat(64), proofreadSourceDigest: () => "a".repeat(64), publish: async (commit) => commit() }), warnings: [] };
     }
   },
 }));
