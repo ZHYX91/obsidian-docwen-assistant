@@ -114,6 +114,7 @@ export const AR_TRANSLATIONS: Translations = {
   settingsConnectionBundleMismatch: "تنسيق نتائج DocWen غير متوافق. تتطلب الإضافة {expected} لكن DocWen أعاد {actual}.",
   settingsConnectionHealthFailed: "تم الاتصال بـ DocWen، لكن فحصه الذاتي فشل. افتح التفاصيل لمعرفة السبب.",
   settingsConnectionFailed: "عُثر على DocWen لكن تعذّر الاتصال به. حاول مرة أخرى أو افتح تفاصيل الخطأ.",
+  errorLinuxProcessListUnavailable: "لا تتيح بيئة Linux هذه قراءة قائمة العمليات الفرعية. يحتاج DocWen إلى هذه القائمة لإنهاء العمليات عند اكتمال المهمة.",
   settingsPlatformUnsupported: "هذا النظام غير مدعوم. استخدم إصدار Obsidian لسطح المكتب على Windows أو Linux.",
   settingsPathValid: "✓ المسار صالح",
   settingsPathInvalid: "✗ تعذّر العثور على DocWenCLI بجوار البرنامج المحدد",

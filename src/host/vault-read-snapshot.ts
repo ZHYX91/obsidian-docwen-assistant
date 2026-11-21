@@ -32,7 +32,7 @@ export interface IsolatedSnapshot {
     route: RuntimeRoute,
     inspect: (input: TaskInput) => Promise<FileInspection>,
   ) => Promise<TaskInput>;
-  readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
+  readonly getDeclaredMarkdownInputs: (mediaType?: string) => Promise<DeclaredMarkdownSnapshot | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
   readonly publish: <T>(commit: (assertIdentity: () => void) => Promise<T>) => Promise<T>;
 }
@@ -96,9 +96,6 @@ export class VaultReadSnapshot {
     const editor = target?.editor ?? null;
     const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
     assertSourceIdentity();
-    const authoredMarkdown = ["md", "markdown"].includes(file.extension.toLowerCase())
-      ? decodeMarkdown(original)
-      : null;
     const contentSha256 = sha256(original);
     let published = false;
     const assertPublicationIdentity = (): void => {
@@ -183,10 +180,12 @@ export class VaultReadSnapshot {
         return accepted;
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
-      const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {
-        if (authoredMarkdown === null) return undefined;
+      const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {
+        if (mediaType !== "text/markdown") return undefined;
         await assertCurrent();
-        declaredMarkdownInputs ??= buildDeclaredMarkdownInputs(this.app, file, authoredMarkdown, workspace, signal, sourceInput, contentSha256);
+        // Inspection may identify binary content despite a Markdown filename.
+        // Decode only when the conversion actually consumes Markdown resources.
+        declaredMarkdownInputs ??= buildDeclaredMarkdownInputs(this.app, file, decodeMarkdown(original), workspace, signal, sourceInput, contentSha256);
         const declared = await declaredMarkdownInputs;
         await assertCurrent();
         return declared;

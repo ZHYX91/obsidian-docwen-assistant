@@ -161,6 +161,7 @@ export default class DocWenPlugin extends Plugin {
     this.connectionMonitor.reset();
     this.guiConnectionMonitor?.reset();
     this.capabilities.reset();
+    if (!this.unloaded) this.refreshSidebarFiles(true);
   }
 
   public async checkDocWenConnectionSilently(): Promise<void> {
@@ -473,9 +474,9 @@ export default class DocWenPlugin extends Plugin {
     return this.settingsSaves.retry();
   }
 
-  private refreshSidebarFiles(): void {
+  private refreshSidebarFiles(connectionChanged = false): void {
     for (const leaf of this.app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)) {
-      if (leaf.view instanceof AssistantView) leaf.view.refreshActiveFile();
+      if (leaf.view instanceof AssistantView) leaf.view.refreshActiveFile(connectionChanged);
     }
   }
 

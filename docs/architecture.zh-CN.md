@@ -40,7 +40,7 @@ Assistant 界面语言只控制自身文案与方向。资源查询可以请求�
 
 动作先从按路径唯一匹配的已打开 Markdown 编辑器（包括后台分栏）取得隔离快照；不存在该编辑器时才读取 Vault 文件，同一路径同时打开多个编辑器则失败关闭。随后生成具备类型、媒体类型、规范逻辑路径、大小与 SHA-256 的输入 handle。检查和 capability 决定是否支持动作；plan 与 execute 使用同一能力和输入事实，不能从扩展名或 route id 推断支持。
 
-格式不匹配要求确认时，“继续”把检测出的媒体类型与所选能力的 source kind 绑定到当前快照及所选 source slot。随后由 `VaultReadSnapshot` 在自有临时工作区内创建同字节、使用检测格式规范后缀的副本。Core 必须重新检查该副本并返回 `allow`，且格式、媒体类型、大小和 SHA-256 均匹配，才进入复核或转换。原始隔离源、公开逻辑路径、声明资源绑定及 Vault/编辑器发布身份保持原样。“取消”不创建规范副本、不启动转换；来源检查和输入形状校验仍然执行。消费者不发送 Core 私有确认元数据，也不自造 Machine 选项。
+格式不匹配要求确认时，“继续”把检测出的媒体类型与所选能力的 source kind 绑定到当前快照及所选 source slot。随后由 `VaultReadSnapshot` 在自有临时工作区内创建同字节、使用检测格式规范后缀的副本。Core 必须重新检查该副本并返回 `allow`，且格式、媒体类型、大小和 SHA-256 均匹配，才进入复核或转换。若接受的格式为 Markdown，导出 Word 时将按原笔记在 Vault 中的位置收集图片和链接绑定。原始隔离源、公开逻辑路径、声明资源绑定及 Vault/编辑器发布身份保持原样。“取消”不创建规范副本、不启动转换；来源检查和输入形状校验仍然执行。消费者不发送 Core 私有确认元数据，也不自造 Machine 选项。
 
 Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.to_docx` Machine capability 发送精确的隔离 Markdown 快照。笔记中明确写出的图片嵌入由 Obsidian 宿主解析器选择目标，并作为具有规范逻辑路径、媒体类型和已认证字节的 `linked_resource` 类型化输入复制到隔离工作区。普通本地 WikiLink 同样使用 Obsidian cache 的精确 UTF-16 源范围和解析结果；当前正文中的活动 WikiLink 若没有对应 cache 记录会失败关闭。已解析导航不会复制目标笔记，也不会暴露 Vault 绝对路径，而是绑定为 `obsidian://open` URI。短 Wiki 名称、跨目录链接和带空格文件名均遵循 Obsidian 自己的解析结果；Assistant 不枚举 Vault，也不要求 DocWen 按文件名搜索目标。capability 声明的 `markdown_resource_bindings` 选项将完整源 SHA-256、原始图片标记及可选普通 WikiLink 导航标记分别绑定到已声明资源逻辑路径或导航 URI；未声明此选项的旧 capability 无法接收这些映射。Wiki 图片与 Markdown 图片仍分别遵循各自的处理策略。Markdown 笔记嵌入展开仍不属于普通导航合同。
 
@@ -82,7 +82,7 @@ Windows 启动失败的可分享诊断保留固定组件名 `DocWenCLI`、限定
 
 宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
 
-Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。未知 Linux 架构在 owner image 写入或业务 spawn 前失败，不存在 legacy 回退。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
+Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。启动器在创建进程管理程序的临时文件前检查架构，并读取回收后代进程所需的 procfs 子进程列表。该接口不可用时，操作会在启动 DocWen 之前结束。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
 
 ## 信任边界
 

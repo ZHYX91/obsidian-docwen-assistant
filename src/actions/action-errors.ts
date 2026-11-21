@@ -21,6 +21,7 @@ export function getErrorMessage(error: unknown): string {
     if (error.category === "conflict") return t("errorContentConflict");
   }
   if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
+  if (code === "cli_platform_unsupported") return getUnsupportedPlatformMessage(details);
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
   if (code === "cli_document_proofread_unavailable") return t("errorDocumentProofreadUnavailable");
   if (code === "cli_capability_unavailable") return t("errorCapabilityUnavailable");
@@ -70,4 +71,9 @@ export function getWindowsOwnerRecoveryMessage(code: string, value: unknown): st
   if (!["cli_spawn_failed", "cli_integrity_error"].includes(code)) return null;
   if (!["owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(String(details.phase))) return null;
   return t("errorWindowsOwnerRecovery");
+}
+
+export function getUnsupportedPlatformMessage(details: unknown): string {
+  return diagnosticDetails(details).requirement === "procfs_task_children"
+    ? t("errorLinuxProcessListUnavailable") : t("settingsPlatformUnsupported");
 }

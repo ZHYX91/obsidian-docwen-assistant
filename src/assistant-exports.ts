@@ -46,9 +46,9 @@ export class AssistantExports {
     this.enabled = false;
   }
 
-  refresh(file: TFile | null, enabled: boolean): void {
+  refresh(file: TFile | null, enabled: boolean, connectionChanged = false): void {
     const signature = fileSignature(file);
-    const changed = file !== this.file || signature !== this.signature;
+    const changed = connectionChanged || file !== this.file || signature !== this.signature;
     this.enabled = enabled;
     if (changed || !enabled) {
       this.request?.abort();
