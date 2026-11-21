@@ -97,7 +97,7 @@ describe("publication and cleanup boundaries", () => {
     });
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { read: async () => "# Heading\n", getFileByPath: () => file, process },
+      vault: { readBinary: async () => new TextEncoder().encode("# Heading\n").buffer, getFileByPath: () => file, process },
     };
     await expect(new VaultWriteTransaction(app as never).run(file as never, async (_input, output) => {
       await writeFile(output, "# 1. Heading\n");

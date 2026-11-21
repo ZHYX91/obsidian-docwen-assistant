@@ -7,6 +7,7 @@ export interface DetectedFormatDetails {
   sourceName: string;
   declaredFormat: string;
   detectedFormat: string;
+  changesHeadings?: boolean;
 }
 
 export function confirmDetectedFormat(
@@ -56,6 +57,7 @@ class ConfirmationModal extends Modal {
     this.contentEl.createEl("p", {
       text: t("dialogReadDetectedFormat", { format: this.details.detectedFormat.toUpperCase() }),
     });
+    if (this.details.changesHeadings) this.contentEl.createEl("p", { text: t("dialogNumberDetectedFile") });
     const controls = this.contentEl.createDiv({ cls: "modal-button-container" });
     controls.createEl("button", { text: t("operationCancel"), attr: { type: "button" } })
       .addEventListener("click", () => this.finish(false));

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportActions } from "../src/actions/export-actions";
@@ -15,7 +15,7 @@ vi.mock("node:os", async (importOriginal) => {
 });
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+  return { ...actual, copyFile: vi.fn(actual.copyFile) };
 });
 vi.mock("obsidian", () => ({ TFile: class TFile {}, MarkdownView: class MarkdownView {}, Modal: class Modal {}, SuggestModal: class SuggestModal {} }));
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
@@ -232,7 +232,7 @@ describe("accepted detected-format exports", () => {
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
-    expect(vi.mocked(writeFile).mock.calls.filter(([target]) => String(target).includes("accepted-source."))).toHaveLength(0);
+    expect(vi.mocked(copyFile).mock.calls.filter(([, target]) => String(target).includes("accepted-source."))).toHaveLength(0);
   });
 
   it.each([

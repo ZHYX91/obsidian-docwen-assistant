@@ -11,7 +11,7 @@ import {
   type TemplateItem,
   LocalCliError,
 } from "../docwen";
-import { confirmDetectedFormat } from "../host/confirm";
+import { admittedActionInput } from "./admitted-input";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
 import { openResultFolder } from "../host/result-folder";
@@ -128,24 +128,13 @@ export class ExportActions {
     const destination = await captureExportTarget(this.app, outputDirectory, signal);
     const completed = await this.snapshots.run(file, signal, async (snapshot) => {
       const capturedSource = snapshot.sourceInput ?? snapshot.inputs[0];
-      let sourceInput = capturedSource;
-      const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
+      const capability = await this.capabilities.requireAction(capturedSource, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const { mediaType, binding } = capability.admittedFormat;
       const useDetectedFormat = binding !== "original";
-      if (binding === "confirm-detected") {
-        const accepted = await confirmDetectedFormat(this.app, signal, {
-          sourceName: capturedSource.logicalPath ?? file.path,
-          declaredFormat: capability.inspection.declaredFormat,
-          detectedFormat: capability.inspection.detectedFormat,
-        });
-        if (!accepted || signal.aborted) return;
-      }
-      if (useDetectedFormat) {
-        sourceInput = await snapshot.getAcceptedDetectedSource(
-          capability.inspection, route, (input) => this.docwen.inspect(input, signal),
-        );
-      }
+      const sourceInput = await admittedActionInput(this.app, capturedSource, capability, route, signal, selectedRoute =>
+        snapshot.getAcceptedDetectedSource(capability.inspection, selectedRoute, input => this.docwen.inspect(input, signal)));
+      if (!sourceInput) return;
 
       const settings = { ...this.getSettings() };
       const markdownToWord = target === "docx" && capability.source.category === "markdown";
