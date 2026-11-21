@@ -98,7 +98,7 @@ const LITERAL_NODES = new Set([MATH_NODE, "FencedCode", "CodeBlock", "InlineCode
 /** Parse ownership without changing any UTF-16 source positions or original bytes. */
 export function parseAuthoredMarkdown(source: string) {
   const characters = source.split("");
-  const frontmatter = /^(?:\uFEFF)?---\r?\n(?:[\s\S]*?\n)?---[^\r\n]*/u.exec(source);
+  const frontmatter = /^(?:\uFEFF)?---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?=\r?\n|$)/u.exec(source);
   if (frontmatter) mask(characters, 0, frontmatter[0].length);
 
   // Obsidian comments can span Markdown blocks. Only an opener outside an
