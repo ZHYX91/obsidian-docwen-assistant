@@ -270,6 +270,18 @@ describe("ActionRunner", () => {
     expect(details.cause).toBe(secret);
   });
 
+  it("shows an image name locally while keeping the copyable diagnostics redacted", async () => {
+    const { VaultWriteError } = await import("../src/host/vault-write-transaction");
+    const { getErrorDiagnostics, getErrorMessage } = await import("../src/actions/action-errors");
+    const error = new VaultWriteError("vault_input_invalid", "Internal path: private/marker.png", {
+      imageIssue: "missing", imageName: "marker.png",
+    });
+    expect(getErrorMessage(error, true)).toContain("marker.png");
+    expect(getErrorMessage(error, true)).not.toContain("private");
+    expect(JSON.stringify(getErrorDiagnostics(error))).not.toContain("marker.png");
+    expect(getErrorDiagnostics(error)).toMatchObject({ message: expect.stringContaining("Check the path") });
+  });
+
   it("offers diagnostics for ordinary failures from the existing notice", async () => {
     const { LocalCliError } = await import("../src/docwen");
     const { ActionRunner } = await import("../src/actions/action-runner");

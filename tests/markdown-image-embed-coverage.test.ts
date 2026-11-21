@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   findUncoveredImageEmbeds,
-  includeUncachedReferenceImages,
+  includeUncachedImages,
   scanAuthoredImageEmbeds,
 } from "../src/host/markdown-image-embed-coverage";
 
@@ -23,8 +23,8 @@ describe("Markdown image embed cache coverage", () => {
     const raw = [{ original: "![stale]", link: "old.png", position: {
       start: { offset: 0 }, end: { offset: "![image]".length },
     } }];
-    expect(includeUncachedReferenceImages(source, [], raw)).toEqual([]);
-    expect(findUncoveredImageEmbeds(source, includeUncachedReferenceImages(source, [], raw))).toHaveLength(1);
+    expect(includeUncachedImages(source, [], raw)).toEqual([]);
+    expect(findUncoveredImageEmbeds(source, includeUncachedImages(source, [], raw))).toHaveLength(1);
   });
 
   it.each([

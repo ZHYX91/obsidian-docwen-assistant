@@ -4,11 +4,19 @@ import { VaultWriteError } from "../host/vault-write-transaction";
 import { t } from "../i18n";
 import { diagnosticCode, diagnosticDetails } from "./diagnostic-details";
 
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown, showImageName = false): string {
   const code = getLocalErrorCode(error);
   const details = getErrorDetails(error);
   if (typeof details === "object" && details !== null && "outputState" in details && details.outputState === "unconfirmed") {
     return t("errorOutputUnconfirmed");
+  }
+  if (error instanceof VaultWriteError && code === "vault_input_invalid") {
+    const { imageIssue, imageName } = error.details;
+    if (imageIssue === "metadata" || imageIssue === "missing") {
+      const message = t(imageIssue === "missing" ? "errorImageMissing" : "errorImageMetadata");
+      return showImageName && typeof imageName === "string" && imageName
+        ? message + " (" + imageName + ")" : message;
+    }
   }
   const recovery = getWindowsOwnerRecoveryMessage(code, details);
   if (recovery) return recovery;
