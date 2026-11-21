@@ -49,7 +49,7 @@ describe("DocWen settings guidance", () => {
     expect(setting.settingEl.querySelector("details")?.open).toBe(false);
   });
 
-  it.each(getSupportedLocales())("renders the Word tab's three tutorial steps with a decorative book in %s", (locale) => {
+  it.each(getSupportedLocales())("renders the Word tab's three tutorial steps with a text-only summary in %s", (locale) => {
     initI18n(locale);
     const setting = createSetting();
     const pages = getSettingsPages({
@@ -62,10 +62,7 @@ describe("DocWen settings guidance", () => {
     const details = setting.settingEl.querySelector("details")!;
     const summary = details.querySelector("summary")!;
     expect(summary.textContent).toBe(locale === "zh-cn" ? "如何导出 Word" : t("settingsWordGuideTitle"));
-    const icon = summary.querySelector('[data-icon="book-open"]')!;
-    expect(icon.getAttribute("aria-hidden")).toBe("true");
-    expect(icon.previousSibling?.textContent).toBe(t("settingsWordGuideTitle"));
-    expect(summary.querySelector("button, a, [tabindex]")).toBeNull();
+    expect(summary.querySelector("svg, [data-icon], button, a, [tabindex]")).toBeNull();
     expect([...details.querySelectorAll("dt")].map((element) => element.textContent)).toEqual([
       t("settingsWordGuideTemplateTitle"), t("settingsWordGuideExtensionsTitle"), t("settingsWordGuideNumberingTitle"),
     ]);

@@ -1,4 +1,4 @@
-import { setIcon, type Setting } from "obsidian";
+import type { Setting } from "obsidian";
 import { getCurrentLocale, t } from "./i18n";
 import type { SettingsGuideContent } from "./settings-definitions";
 
@@ -36,11 +36,7 @@ export function renderSettingsGuide(
   setting.settingEl.empty();
   const details = setting.settingEl.createEl("details", { cls: "docwen-settings-help-disclosure" });
   details.open = opened.has("word");
-  const summary = details.createEl("summary");
-  const label = summary.createSpan({ cls: "docwen-settings-help-label" });
-  label.createSpan({ text: title });
-  const icon = label.createSpan({ cls: "docwen-settings-help-icon", attr: { "aria-hidden": "true" } });
-  setIcon(icon, "book-open");
+  details.createEl("summary", { text: title });
   const steps = details.createEl("dl", { cls: "docwen-settings-help-body" });
   for (const step of content) {
     steps.createEl("dt", { text: step.title });
