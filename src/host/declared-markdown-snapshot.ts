@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
 import { parseLinktext, TFile, type App } from "obsidian";
 import { normalizeLogicalPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
-import { findUncoveredImageEmbeds, includeUncachedReferenceImages } from "./markdown-image-embed-coverage";
+import { findUncoveredImageEmbeds, includeUncachedImages } from "./markdown-image-embed-coverage";
 import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
 import { isActiveCachedReference, maskProtectedSource } from "./markdown-source-ownership";
 import { VaultWriteError } from "./vault-write-transaction";
@@ -26,7 +26,7 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
 const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
 
 export async function buildDeclaredMarkdownInputs(
-app: App,
+  app: App,
   file: TFile,
   authoredMarkdown: string,
   workspace: string,
@@ -49,13 +49,10 @@ app: App,
     authoredMarkdown, imageSource, item.original, item.position.start.offset, item.position.end.offset,
   ))
     .sort((left, right) => left.position.start.offset - right.position.start.offset);
-  const embeds = includeUncachedReferenceImages(authoredMarkdown, activeEmbeds, rawEmbeds);
+  const embeds = includeUncachedImages(authoredMarkdown, activeEmbeds, rawEmbeds);
   const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
   if (missingImage !== undefined) {
-    throw new VaultWriteError(
-      "vault_input_invalid",
-      "Obsidian image metadata is incomplete for the current Markdown snapshot: " + missingImage.link,
-    );
+    throw imageInputError("metadata", missingImage.link);
   }
 
   const links = [...(fileCache?.links ?? [])].filter((item) => isActiveCachedReference(
@@ -95,14 +92,15 @@ app: App,
   for (const embed of embeds) {
     throwIfAborted(signal);
     const linkpath = embed.linkpath ?? embed.link;
-    const linked = metadataCache.getFirstLinkpathDest(linkpath, file.path);
-    const requestedExtension = extensionForLink(linkpath);
+    const expectedPath = embed.sourceRelativePath === undefined
+      ? null : path.posix.join(path.posix.dirname(file.path), embed.sourceRelativePath);
+    const linked = expectedPath === null
+      ? metadataCache.getFirstLinkpathDest(linkpath, file.path) : app.vault.getFileByPath(expectedPath);
+    if (expectedPath !== null && linked?.path !== expectedPath) throw imageInputError("missing", embed.link);
+    const requestedExtension = extensionForLink(embed.sourceRelativePath ?? linkpath);
     if (!(linked instanceof TFile)) {
       if (IMAGE_LIKE_EXTENSIONS.has(requestedExtension)) {
-        throw new VaultWriteError(
-          "vault_input_invalid",
-          `Obsidian could not resolve the embedded image: ${embed.link}`,
-        );
+        throw imageInputError("missing", embed.link);
       }
       continue;
     }
@@ -122,10 +120,7 @@ app: App,
       embed.position.end.offset,
     );
     if (!authoredToken || authoredToken !== embed.original) {
-      throw new VaultWriteError(
-        "vault_input_invalid",
-        `The Obsidian embed cache is stale for: ${embed.link}`,
-      );
+      throw imageInputError("metadata", embed.link);
     }
     const logicalPath = logicalPathFor(linked.path);
     const previous = imageBindings.get(authoredToken);
@@ -158,6 +153,14 @@ app: App,
       }),
     },
   };
+}
+
+function imageInputError(issue: "metadata" | "missing", link: string): VaultWriteError {
+  const filename = link.split(/[?#]/u, 1)[0]?.split(/[/\\]/u).pop();
+  const imageName = filename?.replace(/[\p{Cc}\p{Bidi_Control}]/gu, "").slice(0, 120);
+  const message = issue === "metadata" ? "Obsidian image metadata is incomplete or stale"
+    : "Obsidian could not resolve the embedded image";
+  return new VaultWriteError("vault_input_invalid", message + ": " + link, { imageIssue: issue, imageName });
 }
 
 /** Bound unique image reads by the remaining budget; cached sizes never replace byte checks. */

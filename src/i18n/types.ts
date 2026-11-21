@@ -123,6 +123,8 @@ export interface Translations {
   dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
+  errorImageMetadata: string;
+  errorImageMissing: string;
   errorDocWenInternal: string;
   errorDocumentProofreadUnavailable: string;
   errorCapabilityUnavailable: string;
