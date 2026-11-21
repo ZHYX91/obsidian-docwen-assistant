@@ -254,6 +254,7 @@ export interface Translations {
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
   proofreadIssueCount: string;
+  proofreadLineNumber: string;
   proofreadLoadMore: string;
   proofreadCancelled: string;
   proofreadOpenMdFile: string;

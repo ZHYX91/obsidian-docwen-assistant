@@ -1,62 +1,61 @@
 import { describe, expect, it } from "vitest";
-
 import { OperationStatus } from "../src/operation-status";
 import { OperationCoordinator } from "../src/runtime/operation-coordinator";
 import { translations } from "../src/i18n/catalogs";
+import { useObsidianDom } from "./helpers/obsidian-dom";
 
-class FakeElement {
-  readonly children: Array<{ tag: string; element: FakeElement; options: Record<string, unknown> }> = [];
-  readonly listeners = new Map<string, () => void>();
-  readonly attributes = new Map<string, string>();
+useObsidianDom();
 
-  empty(): void { this.children.length = 0; }
-  createEl(tag: string, options: Record<string, unknown> = {}): FakeElement {
-    const element = new FakeElement();
-    this.children.push({ tag, element, options });
-    return element;
-  }
-  createSpan(options: Record<string, unknown> = {}): FakeElement { return this.createEl("span", options); }
-  addEventListener(name: string, listener: () => void): void { this.listeners.set(name, listener); }
-  setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
-  removeAttribute(name: string): void { this.attributes.delete(name); }
-  addClass(): void {}
+function fixture() {
+  const root = document.body.appendChild(document.createElement("div"));
+  const operations = new OperationCoordinator();
+  const status = new OperationStatus(root, operations);
+  return { root, operations, status };
 }
 
 describe("OperationStatus", () => {
-  it("shows one safe operation and cancels its exact generation", () => {
-    const root = new FakeElement();
-    const operations = new OperationCoordinator();
-    const status = new OperationStatus(root as never, operations);
-    const lease = operations.begin({ key: "export:D:\\Vault\\private.md", kind: "export" });
-
-    expect(allText(root)).toContain("Export");
-    expect(allText(root)).not.toContain("private.md");
-    const button = findTag(root, "button");
-    button?.element.listeners.get("click")?.();
-
+  it("announces safe operation categories and preserves keyboard focus as work changes", () => {
+    const { root, operations, status } = fixture();
+    const label = root.querySelector('[role="status"]')!;
+    expect(label.textContent).toBe("");
+    const lease = operations.begin({ key: "export:private.md", kind: "export" });
+    const cancel = root.querySelector("button")!;
+    expect(label.textContent).toContain("Export");
+    expect(label.getAttribute("aria-busy")).not.toBe("true");
+    expect(root.textContent).not.toContain("private.md");
+    cancel.focus();
+    const doctor = operations.begin({ key: "doctor", kind: "doctor" });
+    expect(document.activeElement).toBe(cancel);
+    expect(root.querySelector('[role="status"]')).toBe(label);
+    expect(label.textContent).toContain("2");
+    expect(cancel.textContent).toBe("Cancel all");
+    doctor.finish();
+    status.refresh();
+    expect(document.activeElement).toBe(cancel);
+    cancel.click();
     expect(lease.signal.aborted).toBe(true);
-    expect(allText(root)).toContain("Cancelling");
+    expect(label.textContent).toContain("Cancelling");
+    expect(cancel.disabled).toBe(true);
+    lease.finish();
+    expect(root.querySelector("button")).toBeNull();
     status.dispose();
   });
 
-  it("offers cancel all for multiple operations and remains visible while cancelling", () => {
-    const root = new FakeElement();
-    const operations = new OperationCoordinator();
-    const status = new OperationStatus(root as never, operations);
-    const proofread = operations.begin({ key: "proofread", kind: "proofread" });
-    const doctor = operations.begin({ key: "doctor", kind: "doctor" });
-
-    expect(allText(root)).toContain("2");
-    expect(allText(root)).toContain("Cancel all");
-    findTag(root, "button")?.element.listeners.get("click")?.();
-    expect(proofread.signal.aborted).toBe(true);
-    expect(doctor.signal.aborted).toBe(true);
-    expect(root.children.length).toBeGreaterThan(0);
-
-    proofread.finish();
-    doctor.finish();
-    expect(root.children).toHaveLength(0);
-    status.dispose();
+  it("cancels the operations represented at activation and leaves subsequent work running", () => {
+    const { root, operations } = fixture();
+    const first = operations.begin({ key: "first", kind: "proofread" });
+    const second = operations.begin({ key: "second", kind: "export" });
+    const cancel = root.querySelector("button")!;
+    let later: ReturnType<OperationCoordinator["begin"]> | undefined;
+    first.signal.addEventListener("abort", () => { later = operations.begin({ key: "later", kind: "doctor" }); });
+    cancel.click();
+    expect(first.signal.aborted).toBe(true);
+    expect(second.signal.aborted).toBe(true);
+    expect(later?.signal.aborted).toBe(false);
+    first.finish(); second.finish(); later?.finish();
+    const next = operations.begin({ key: "another", kind: "numbering" });
+    cancel.click();
+    expect(next.signal.aborted).toBe(false);
   });
 
   it("ships complete cancellation labels in all twelve locales", () => {
@@ -75,21 +74,3 @@ describe("OperationStatus", () => {
     }
   });
 });
-
-function allText(root: FakeElement): string {
-  return root.children
-    .map(({ element, options }) => `${String(options.text ?? "")} ${allText(element)}`)
-    .join(" ");
-}
-
-function findTag(
-  root: FakeElement,
-  tag: string,
-): { tag: string; element: FakeElement; options: Record<string, unknown> } | undefined {
-  for (const child of root.children) {
-    if (child.tag === tag) return child;
-    const nested = findTag(child.element, tag);
-    if (nested) return nested;
-  }
-  return undefined;
-}
