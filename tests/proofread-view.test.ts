@@ -323,6 +323,7 @@ describe("AssistantView", () => {
     expect(css).toMatch(/\.docwen-assistant-panel\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
+    expect(css).toMatch(/@media \(pointer:\s*coarse\)\s*\{\s*\.docwen-proofread-btn\s*\{[^}]*min-inline-size:\s*44px;[^}]*min-block-size:\s*44px;/s);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
   });
 

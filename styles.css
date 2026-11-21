@@ -439,6 +439,12 @@
 }
 
 @media (pointer: coarse) {
+  .docwen-proofread-btn {
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    justify-content: center;
+  }
+
   .docwen-settings-tabs > button.docwen-settings-tab {
     min-block-size: 44px;
   }

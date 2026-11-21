@@ -377,53 +377,18 @@ export class AssistantView extends ItemView {
       }
     }
 
-    // Content
+    const showStatus = (text: string): void => {
+      container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
+    };
     if (this.activeOperation) {
-      const cancelling = this.activeOperation.state === "cancelling";
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: cancelling
-          ? t("operationCancelling")
-          : t("operationRunning", { operation: t("operationProofread") }),
-        attr: {
-          role: "status",
-          "aria-live": "polite",
-        },
-      });
-      return;
+      return showStatus(this.activeOperation.state === "cancelling"
+        ? t("operationCancelling")
+        : t("operationRunning", { operation: t("operationProofread") }));
     }
-
-    if (this.cancelled) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadCancelled"),
-        attr: { role: "status", "aria-live": "polite" },
-      });
-      return;
-    }
-
-    if (!this.fileName) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadOpenMdFile"),
-        attr: { role: "status" },
-      });
-      return;
-    }
-
-    if (this.stale) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadSourceChanged"),
-        attr: { role: "status", "aria-live": "polite" },
-      });
-      return;
-    }
-
-    if (this.issues.length === 0) {
-      container.createDiv({ cls: "docwen-proofread-status", text: t("proofreadNoIssues"), attr: { role: "status" } });
-      return;
-    }
+    if (this.cancelled) return showStatus(t("proofreadCancelled"));
+    if (!this.fileName) return showStatus(t("proofreadOpenMdFile"));
+    if (this.stale) return showStatus(t("proofreadSourceChanged"));
+    if (this.issues.length === 0) return showStatus(t("proofreadNoIssues"));
 
     // Issue list
     const shown = Math.min(this.visibleIssueCount, this.issues.length);
