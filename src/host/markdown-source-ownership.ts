@@ -74,7 +74,7 @@ import { authoredMath, MATH_NODE } from "./markdown-math";
 
 // Wiki targets are Obsidian atoms. In particular, a backtick in one target
 // cannot pair with a backtick in another target to create a CommonMark code span.
-const authoredParser = parser.configure([authoredMath(), {
+const wikiParser = parser.configure({
   defineNodes: ["AuthoredWiki", "AuthoredWikiImage"],
   parseInline: [{
     name: "AuthoredWiki",
@@ -90,7 +90,19 @@ const authoredParser = parser.configure([authoredMath(), {
       return context.addElement(context.elt(image ? "AuthoredWikiImage" : "AuthoredWiki", position, end));
     },
   }],
-}]);
+});
+
+function parseWithMath(source: string) {
+  const unmatchedOpeners = new Set<number>();
+  const authoredParser = wikiParser.configure(authoredMath(source, unmatchedOpeners));
+  let previousCount: number;
+  let tree;
+  do {
+    previousCount = unmatchedOpeners.size;
+    tree = authoredParser.parse(source);
+  } while (unmatchedOpeners.size !== previousCount);
+  return tree;
+}
 
 const LITERAL_NODES = new Set([MATH_NODE, "FencedCode", "CodeBlock", "InlineCode", "HTMLBlock", "HTMLTag", "CommentBlock",
   "Comment", "ProcessingInstruction", "ProcessingInstructionBlock"]);
@@ -106,7 +118,8 @@ export function parseAuthoredMarkdown(source: string) {
   // a destination, or a Wiki target cannot hide later document resources.
   const preliminary = characters.join("");
   const protectedCharacters = preliminary.split("");
-  authoredParser.parse(preliminary).iterate({ enter(node) {
+  const preliminaryTree = parseWithMath(preliminary);
+  preliminaryTree.iterate({ enter(node) {
     if (LITERAL_NODES.has(node.name)
       || ["URL", "LinkTitle", "Image", "AuthoredWiki", "AuthoredWikiImage"].includes(node.name)) {
       mask(protectedCharacters, node.from, node.to);
@@ -122,7 +135,8 @@ export function parseAuthoredMarkdown(source: string) {
     position = end - 1;
   }
   const parsedSource = characters.join("");
-  return { tree: authoredParser.parse(parsedSource), parsedSource };
+  const tree = parsedSource === preliminary ? preliminaryTree : parseWithMath(parsedSource);
+  return { tree, parsedSource };
 }
 
 export function maskProtectedSource(

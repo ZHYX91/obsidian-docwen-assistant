@@ -32,11 +32,13 @@ describe("Word export source boundaries", () => {
 
   it.each([
     "$" + formula + "$",
+    "Text $$" + formula + "$$",
     "Text $$ " + formula + " $$",
+    "$$ " + formula + " $$",
     "$$\n" + formula + "\n\n# still math\n$$",
     "> $$\n> " + formula + "\n> $$",
-    "> $$\n> first line\n" + formula,
-    "- $$\n  first line\n" + formula,
+    "> $$\n> first line\n# " + formula + "\n$$",
+    "- $$\n  first line\n" + formula + "\n$$",
     "- $$\n  " + formula + "\n  $$",
     "$$\r\n" + formula + "\r\n$$",
     "$x\\$ " + formula + "$",
@@ -46,6 +48,28 @@ describe("Word export source boundaries", () => {
     expect(scanAuthoredWikiNavigations(source)).toHaveLength(1);
     expect(link.start).toBe(source.indexOf("[[Target]]"));
     expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+  });
+
+  it.each([
+    ["$$ price marker\n", "\n$$"],
+    ["$$\n", ""],
+    ["> $$\n> ", ""],
+    ["- $$\n  ", ""],
+    ["$$\n", "\nIndented $$\n"],
+    ["$$\n", "\n $$"],
+    ["$$\n$$\n", ""],
+    ["- $$\n  ", "\n\n# Outside list\n$$"],
+    ["Text $$\n", "\n$$"],
+  ])("keeps active resources after %j without a matching display close (%j)", (prefix, suffix) => {
+    const source = prefix + "![Photo](photo.png) [[Target]]" + suffix;
+    expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![Photo](photo.png)"]);
+    expect(scanAuthoredWikiNavigations(source).map(item => item.start)).toEqual([source.indexOf("[[Target]]")]);
+  });
+
+  it("keeps a valid quoted formula after an unclosed top-level delimiter", () => {
+    const source = "$$\n> $$\n> " + formula + "\n> $$\n\n" + outside;
+    expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+    expect(scanAuthoredWikiNavigations(source).map(item => item.token)).toEqual(["[[Target]]"]);
   });
 
   it.each(["\\$[[x]]$", "$ [[x]] $", "$[[x]]$5", "$[[x]]", "Price $5 [[x]] and $10"])(
