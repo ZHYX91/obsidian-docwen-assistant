@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DocWenCapabilityService as RealCapabilityService } from "../src/docwen/capability-service";
 import { createSettingsSnapshot, normalizeSettings } from "../src/settings-model";
 
 const state = vi.hoisted(() => ({
   activeFile: null as null | { path: string },
-  cachedCapability: null as null | Error | { inspection: { supportedActions: string[] } },
+  cachedCapability: null as null | Error | {
+    inspection: { supportedActions: string[] };
+    source: { routes: { available: boolean; action: string }[] };
+  },
   cleanup: [] as string[],
   commands: [] as Array<Record<string, unknown>>,
   guiPaths: [] as Array<string | undefined>,
@@ -136,6 +140,7 @@ vi.mock("../src/docwen", () => ({
     }
   },
   DocWenCapabilityService: class DocWenCapabilityService {
+    supportsAction = RealCapabilityService.prototype.supportsAction;
     preload(filePath: string): void { state.capabilityPreloads.push(filePath); }
     invalidate(filePath?: string): void { state.capabilityInvalidations.push(filePath); }
     peek(): typeof state.cachedCapability {
@@ -523,7 +528,10 @@ describe("DocWenPlugin lifecycle", () => {
 
   it("uses completed Core capabilities for command availability", async () => {
     state.activeFile = { path: "note.md" };
-    state.cachedCapability = { inspection: { supportedActions: ["validate"] } };
+    state.cachedCapability = {
+      inspection: { supportedActions: ["validate", "number markdown"] },
+      source: { routes: [{ available: true, action: "validate" }] },
+    };
     const { default: DocWenPlugin } = await import("../src/main");
     const plugin = new DocWenPlugin({} as never, {} as never);
 
@@ -535,6 +543,9 @@ describe("DocWenPlugin lifecycle", () => {
     expect(check("export-xlsx-background")(true)).toBe(false);
     expect(check("proofread-md")(true)).toBe(true);
     expect(check("add-numbering")(true)).toBe(false);
+    expect(check("remove-numbering")(true)).toBe(false);
+    state.cachedCapability.source.routes = [];
+    expect(check("proofread-md")(true)).toBe(false);
     plugin.onunload();
   });
 

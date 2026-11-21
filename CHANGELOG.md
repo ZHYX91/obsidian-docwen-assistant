@@ -4,6 +4,9 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Keep local images and note links after an opening horizontal rule when exporting to Word. Treat math expressions as literal content when identifying linked resources.
+- Show the proofreading and heading-numbering commands for inspected files when the connected DocWen runtime offers the corresponding action.
+
 ## [3.6.2] - 2026-11-20
 
 - Add and clear Markdown heading numbers with the single-document output returned by DocWen 0.23.0.

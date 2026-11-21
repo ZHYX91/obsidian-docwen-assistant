@@ -100,7 +100,7 @@ export function registerCommands(actions: CommandActions): void {
     checkCallback: (checking: boolean) => {
       const activeFile = actions.app.workspace.getActiveFile();
       if (activeFile && actions.activeFileSupports((capability) =>
-        capability.inspection.supportedActions.includes("number markdown"))) {
+        actions.capabilities.supportsAction(capability, "number markdown"))) {
         if (!checking) {
           void actions.numberingActions.add(activeFile);
         }
@@ -115,7 +115,7 @@ export function registerCommands(actions: CommandActions): void {
     checkCallback: (checking: boolean) => {
       const activeFile = actions.app.workspace.getActiveFile();
       if (activeFile && actions.activeFileSupports((capability) =>
-        capability.inspection.supportedActions.includes("number markdown"))) {
+        actions.capabilities.supportsAction(capability, "number markdown"))) {
         if (!checking) {
           void actions.numberingActions.remove(activeFile);
         }
@@ -137,7 +137,7 @@ export function registerCommands(actions: CommandActions): void {
     checkCallback: (checking: boolean) => {
       const activeFile = actions.app.workspace.getActiveFile();
       if (activeFile && actions.activeFileSupports((capability) =>
-        capability.inspection.supportedActions.includes("validate"))) {
+        actions.capabilities.supportsAction(capability, "validate"))) {
         if (!checking) {
           void actions.proofreadActions.activateAndRun(activeFile);
         }
