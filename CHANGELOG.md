@@ -4,6 +4,8 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+- Export explicitly relative inline images to Word when Obsidian omits the embed record. Check cached image ranges in one pass through notes with many repeated images.
+
 ## [3.6.3] - 2026-11-21
 
 - Keep local images and note links after an opening horizontal rule when exporting to Word. Treat matched math expressions as literal content when identifying linked resources and keep resources after an unmatched delimiter.

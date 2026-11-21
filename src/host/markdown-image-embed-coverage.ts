@@ -51,16 +51,26 @@ export function includeUncachedImages(
   // Host records are untrusted data: an extra field cannot supply our private
   // resolver locator or override the target whose coverage is checked below.
   const output: DeclaredImageEmbed[] = cachedEmbeds.map(({ link, original, position }) => ({ link, original, position }));
+  const displacedTokens = new Set<string>();
+  const ranges: { start: number; end: number }[] = [];
+  for (const { original, position } of rawCachedEmbeds) {
+    const start = position.start.offset;
+    const end = position.end.offset;
+    if (!declarationKeys.has(embedKey(start, end, original))) displacedTokens.add(original);
+    if (start < source.length && end > 0) ranges.push({ start, end });
+  }
+  ranges.sort((left, right) => left.start - right.start);
+  let nextRange = 0;
+  let furthestEnd = 0;
+  // The parser emits disjoint declarations in source order. Every raw cache
+  // range that begins before this image ends is consumed once, even if it
+  // extends across several images. A range touching only a boundary is safe.
   for (const { image, kind, locator } of declarations) {
-    // An exact record stays subject to target coverage below. An overlapping or
-    // displaced record must not become permission to ignore stale metadata.
-    const opposed = rawCachedEmbeds.some(embed => {
-      const start = embed.position.start.offset;
-      const end = embed.position.end.offset;
-      if (start < image.end && end > image.start) return true;
-      return embed.original === image.token && !declarationKeys.has(embedKey(start, end, embed.original));
-    });
-    if (opposed) continue;
+    while (nextRange < ranges.length && ranges[nextRange].start < image.end) {
+      furthestEnd = Math.max(furthestEnd, ranges[nextRange].end);
+      nextRange += 1;
+    }
+    if (furthestEnd > image.start || displacedTokens.has(image.token)) continue;
     output.push({
       original: image.token,
       link: image.link,

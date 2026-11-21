@@ -27,6 +27,36 @@ describe("Markdown image embed cache coverage", () => {
     expect(findUncoveredImageEmbeds(source, includeUncachedImages(source, [], raw))).toHaveLength(1);
   });
 
+  it("matches repeated cached images without rescanning raw metadata for each occurrence", () => {
+    const token = "![alt](assets/p.png)";
+    const line = token + "\n\n";
+    const count = 128;
+    const source = line.repeat(count);
+    const cached = Array.from({ length: count }, (_, index) => ({
+      original: token, link: "assets/p.png",
+      position: { start: { offset: index * line.length }, end: { offset: index * line.length + token.length } },
+    }));
+    let reads = 0;
+    const raw = cached.map((embed) => ({
+      ...embed, get position() { reads += 1; return embed.position; },
+    })).reverse();
+    expect(includeUncachedImages(source, cached, raw)).toEqual(cached);
+    expect(reads).toBeLessThan(count * 8);
+  });
+
+  it("checks unsorted overlapping ranges and displaced identical tokens without blocking adjacent images", () => {
+    const token = "![alt](assets/p.png)";
+    const other = "![other](assets/q.png)";
+    const source = [token, token, token, other].join(" ");
+    const start = token.length + 1;
+    const raw = [
+      { original: "stale", link: "old.png", position: { start: { offset: start - 1 }, end: { offset: start } } },
+      { original: "old", link: "old.png", position: { start: { offset: 1 }, end: { offset: start * 2 } } },
+      { original: other, link: "assets/q.png", position: { start: { offset: 500 }, end: { offset: 520 } } },
+    ];
+    expect(includeUncachedImages(source, [], raw).map((embed) => embed.position.start.offset)).toEqual([start * 2]);
+  });
+
   it.each([
     ["![photo](<media/my photo.png>)", "media/my photo.png"],
     ["![photo](media/photo(1).png)", "media/photo(1).png"],
