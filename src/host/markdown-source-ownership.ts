@@ -70,10 +70,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 import { parser } from "@lezer/markdown";
+import { authoredMath, MATH_NODE } from "./markdown-math";
 
 // Wiki targets are Obsidian atoms. In particular, a backtick in one target
 // cannot pair with a backtick in another target to create a CommonMark code span.
-const authoredParser = parser.configure({
+const authoredParser = parser.configure([authoredMath(), {
   defineNodes: ["AuthoredWiki", "AuthoredWikiImage"],
   parseInline: [{
     name: "AuthoredWiki",
@@ -89,15 +90,15 @@ const authoredParser = parser.configure({
       return context.addElement(context.elt(image ? "AuthoredWikiImage" : "AuthoredWiki", position, end));
     },
   }],
-});
+}]);
 
-const LITERAL_NODES = new Set(["FencedCode", "CodeBlock", "InlineCode", "HTMLBlock", "HTMLTag", "CommentBlock",
+const LITERAL_NODES = new Set([MATH_NODE, "FencedCode", "CodeBlock", "InlineCode", "HTMLBlock", "HTMLTag", "CommentBlock",
   "Comment", "ProcessingInstruction", "ProcessingInstructionBlock"]);
 
 /** Parse ownership without changing any UTF-16 source positions or original bytes. */
 export function parseAuthoredMarkdown(source: string) {
   const characters = source.split("");
-  const frontmatter = /^(?:\uFEFF)?---[ \t]*\r?\n[\s\S]*?(?:\r?\n(?:---|\.\.\.)[ \t]*(?=\r?\n|$)|$)/u.exec(source);
+  const frontmatter = /^(?:\uFEFF)?---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?=\r?\n|$)/u.exec(source);
   if (frontmatter) mask(characters, 0, frontmatter[0].length);
 
   // Obsidian comments can span Markdown blocks. Only an opener outside an
