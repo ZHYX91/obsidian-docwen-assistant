@@ -173,6 +173,25 @@ describe("accepted detected-format exports", () => {
     expect(convert).toHaveBeenCalledOnce();
   });
 
+  it("uses Core's admitted same-family format and verifies the canonical copy", async () => {
+    const test = await fixture("rtf");
+    const inspect = test.inspect.getMockImplementation()!;
+    test.inspect.mockImplementation(async (input) => {
+      const result = await inspect(input);
+      if (extname(input.path) === ".rtf") {
+        result.decision = "allow_with_warning";
+        result.warningCode = "FILE_FORMAT_SAME_FAMILY_MISMATCH";
+      }
+      return result;
+    });
+    await test.run();
+    expect(test.captured.map((input) => extname(input.path))).toEqual([".rtf", ".rtf", ".docx"]);
+    expect(test.convert.mock.calls[0][0].sourceInput).toMatchObject({ mediaType: DOCX, logicalPath: "Detected-format.rtf" });
+    expect(ui.confirm).not.toHaveBeenCalled();
+    expect(ui.review).toHaveBeenCalledOnce();
+    expect(ui.commit).toHaveBeenCalledOnce();
+  });
+
   it("accepts a detected format when the temporary directory has a real filesystem alias", async () => {
     const actualOs = await vi.importActual<typeof import("node:os")>("node:os");
     const root = await realpath(await mkdtemp(join(actualOs.tmpdir(), "docwen-snapshot-alias-")));
@@ -300,11 +319,16 @@ describe("accepted detected-format exports", () => {
     expect(ui.commit).not.toHaveBeenCalled();
   });
 
-  it.each(["allow", "allow_with_warning"])("rejects an unconfirmed cross-family change even with decision %s", async (decision) => {
+  it.each([
+    ["allow", ""],
+    ["allow_with_warning", "FILE_FORMAT_COMPATIBLE_TEXT"],
+    ["allow_with_warning", "FILE_FORMAT_CROSS_FAMILY_MISMATCH"],
+    ["block", "FILE_FORMAT_SAME_FAMILY_MISMATCH"],
+  ])("rejects an unconfirmed cross-family change with %s and %s", async (decision, warningCode) => {
     const test = await fixture();
     test.inspect.mockImplementation(async (source) => ({
       filePath: source.path, contentSha256: digest(await readFile(source.path)), sizeBytes: 890,
-      declaredFormat: "txt", warningCode: "FILE_FORMAT_COMPATIBLE_TEXT", reasonCode: "",
+      declaredFormat: "txt", warningCode, reasonCode: "",
       decision, mediaType: DOCX, supportedActions: ["convert"], workflowCategory: "document", detectedFormat: "docx",
     }));
     await expect(test.run()).rejects.toMatchObject({ code: "cli_input_invalid" });

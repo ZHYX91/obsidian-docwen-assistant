@@ -11,7 +11,7 @@ import {
   type TemplateItem,
   LocalCliError,
 } from "../docwen";
-import { isCompatibleTextRebinding } from "../docwen/capability-service";
+import { admittedSourceFormat } from "../docwen/client";
 import { confirmDetectedFormat } from "../host/confirm";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
@@ -133,7 +133,7 @@ export class ExportActions {
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
       const requiresConfirmation = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
-      const useDetectedFormat = requiresConfirmation || isCompatibleTextRebinding(capturedSource, capability.inspection);
+      const { mediaType, useDetectedFormat } = admittedSourceFormat(capability.inspection, capturedSource);
       if (requiresConfirmation) {
         const accepted = await confirmDetectedFormat(this.app, signal, {
           sourceName: capturedSource.logicalPath ?? file.path,
@@ -204,7 +204,7 @@ export class ExportActions {
         request.checks = buildProofreadChecks(settings);
       }
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", selectedTemplate,
+        request, mediaType ?? sourceInput.mediaType ?? "", selectedTemplate,
       ), signal);
       if (!accepted || signal.aborted) return;
       return this.docwen.convert(request, signal);

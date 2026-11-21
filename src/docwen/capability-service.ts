@@ -1,4 +1,5 @@
 import { LocalCliError } from "./errors";
+import { admittedSourceFormat } from "./client";
 import type {
   ConvertTarget,
   DocWenClient,
@@ -22,13 +23,6 @@ export interface FileCapability {
   readonly machineCapabilities: readonly MachineCapability[];
 }
 
-/** Core admits .txt and Markdown as a compatible text pair without a separate format prompt. */
-export function isCompatibleTextRebinding(source: TaskInput, inspection: FileInspection): boolean {
-  return inspection.decision === "allow_with_warning" && inspection.warningCode === "FILE_FORMAT_COMPATIBLE_TEXT"
-    && ((source.mediaType === "text/plain" && inspection.mediaType === MARKDOWN_MEDIA_TYPE)
-      || (source.mediaType === MARKDOWN_MEDIA_TYPE && inspection.mediaType === "text/plain"));
-}
-
 /** Bind the admitted format to this snapshot and the selected capability's source slot. */
 export function bindAcceptedDetectedSource(
   source: TaskInput,
@@ -39,7 +33,7 @@ export function bindAcceptedDetectedSource(
   const slots = route.inputShape.slots.filter((slot) =>
     slot.role === source.role && slot.role === "source" && slot.media_types.includes(inspection.mediaType));
   if (
-    (inspection.decision !== "require_explicit_acceptance" && !isCompatibleTextRebinding(source, inspection))
+    !admittedSourceFormat(inspection, source).useDetectedFormat
     || route.capabilityId !== route.capability.capability_id
     || route.inputShape !== route.capability.input_shape
     || inspection.filePath !== source.path
@@ -82,14 +76,15 @@ export class DocWenCapabilityService {
     if (generation !== this.generation) {
       throw new LocalCliError("cli_cancelled", "DocWen capabilities changed during discovery.");
     }
+    const { mediaType } = admittedSourceFormat(inspection, typeof input === "string" ? undefined : input);
     const machineCapabilities = projection.capabilities.filter((capability) =>
-      capabilitySupportsInspectedMediaType(capability, inspection.mediaType)
+      capabilitySupportsSourceMediaType(capability, mediaType)
       && capability.availability !== "unavailable");
     if (machineCapabilities.length === 0) {
       throw new LocalCliError(
         "cli_capability_unavailable",
         "DocWen does not expose a Machine capability for the inspected media type.",
-        { mediaType: inspection.mediaType },
+        { mediaType },
       );
     }
     const routes = machineCapabilities.map(toRuntimeRoute).filter((route): route is RuntimeRoute => route !== null);
@@ -330,7 +325,7 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
   };
 }
 
-function capabilitySupportsInspectedMediaType(capability: MachineCapability, mediaType: string): boolean {
+function capabilitySupportsSourceMediaType(capability: MachineCapability, mediaType: string): boolean {
   if (capability.capability_id === MARKDOWN_TO_DOCX_CAPABILITY_ID) {
     return false;
   }

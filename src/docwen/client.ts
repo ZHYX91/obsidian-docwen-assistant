@@ -321,7 +321,7 @@ export class DocWenClient {
         capabilityId = prepared.capability_id = selected.capability_id;
         prepared.options = buildConversionMachineOptions({
           ...request, selectedCapability: selected, supportedOptions: Object.keys(asObject(selected.options_schema.properties)),
-        }, inspection.mediaType);
+        }, admittedSourceFormat(inspection, source).mediaType);
         return prepared;
       }, signal);
       if (
@@ -344,7 +344,7 @@ export class DocWenClient {
   ): Promise<ValidateReport> {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const inspection = await this.inspect(source, signal);
-    if (inspection.mediaType !== "text/markdown") {
+    if (admittedSourceFormat(inspection, source).mediaType !== "text/markdown") {
       throw new LocalCliError("cli_invalid_envelope", "Machine v2 proofreading currently accepts Markdown input.");
     }
     return this.withTaskStaging(async (stagingRoot) => {
@@ -484,6 +484,31 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
     throw new LocalCliError("cli_integrity_error", "Numbering returned incomplete UTF-8.");
   }
   await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
+}
+
+/** Project Core's admission onto the Machine input without losing the original inspection. */
+export function admittedSourceFormat(inspection: FileInspection, source?: TaskInput): {
+  mediaType: string;
+  useDetectedFormat: boolean;
+} {
+  const mediaType = inspection.mediaType;
+  if (inspection.decision !== "allow_with_warning") {
+    return { mediaType, useDetectedFormat: inspection.decision === "require_explicit_acceptance" };
+  }
+  const declared = mediaTypeForFormat(inspection.declaredFormat);
+  if (source?.mediaType !== undefined && source.mediaType !== declared) return { mediaType, useDetectedFormat: false };
+  if (inspection.warningCode === "FILE_FORMAT_COMPATIBLE_TEXT") {
+    // Plain paragraphs are valid Markdown. Core's source-native route accepts
+    // the original Markdown handle even when its content detector returns txt.
+    if (declared === "text/markdown" && mediaType === "text/plain") {
+      return { mediaType: declared, useDetectedFormat: false };
+    }
+    return { mediaType, useDetectedFormat: declared === "text/plain" && mediaType === "text/markdown" };
+  }
+  return {
+    mediaType,
+    useDetectedFormat: inspection.warningCode === "FILE_FORMAT_SAME_FAMILY_MISMATCH",
+  };
 }
 
 function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {

@@ -191,10 +191,13 @@ function conversionQuery(file: string, capability = conversionCapability(), form
 }
 
 describe("DocWenClient Machine semantics", () => {
-  it.each([true, false])("sends Word proofreading through the selected capability (prepared=%s)", async (prepared) => {
+  it.each([
+    [true, false], [false, false], [true, true],
+  ])("sends Word proofreading through the selected capability (prepared=%s, plain=%s)", async (prepared, plain) => {
     const root = await temporaryRoot();
     const source = path.join(root, "note.md");
-    await writeFile(source, "# Unchanged source");
+    const content = plain ? "Ordinary paragraph." : "# Unchanged source";
+    await writeFile(source, content);
     const proofread = { enable_symbol_pairing: true, enable_symbol_correction: false, enable_typos_rule: true, enable_sensitive_word: false };
     const capability: MachineCapability = {
       ...conversionCapability(), capability_id: "convert.markdown_source.to_docx",
@@ -202,7 +205,9 @@ describe("DocWenClient Machine semantics", () => {
       options_schema: { properties: { proofread: { type: "object", additionalProperties: false,
         properties: Object.fromEntries(Object.keys(proofread).map((key) => [key, { type: "boolean" }])) } } },
     };
-    const query = conversionQuery(source, capability);
+    const query = plain ? vi.fn(async (_method: string) => ({
+      ...inspection(source), detected_format: "txt", decision: "allow_with_warning", warning_code: "FILE_FORMAT_COMPATIBLE_TEXT",
+    })) : conversionQuery(source, capability);
     const runTask = vi.fn(async (request: MachineTaskRequest) => {
       expect(request.capability_id).toBe("convert.markdown_source.to_docx");
       expect(request.options).toEqual({ proofread });
@@ -215,7 +220,7 @@ describe("DocWenClient Machine semantics", () => {
     })).rejects.toThrow("captured document-proofreading plan");
     expect(runTask).toHaveBeenCalledOnce();
     expect(query.mock.calls.map(([method]) => method)).toEqual(prepared ? ["file/inspect"] : ["file/inspect", "capability/list"]);
-    expect(await readFile(source, "utf8")).toBe("# Unchanged source");
+    expect(await readFile(source, "utf8")).toBe(content);
     expect(await readdir(root)).toEqual(["note.md"]);
   });
 
@@ -719,11 +724,15 @@ describe("DocWenClient Machine semantics", () => {
     expect(runTask).not.toHaveBeenCalled();
   });
 
-  it("reads the preferred JSON report resource", async () => {
+  it.each(["markdown", "txt"])("reads the preferred JSON report for a Markdown file detected as %s", async (format) => {
     const root = await temporaryRoot();
     const input = path.join(root, "note.md");
     await writeFile(input, "１ note\n", "utf8");
-    const query = vi.fn().mockResolvedValue(inspection(input));
+    const query = vi.fn().mockResolvedValue({
+      ...inspection(input), ...(format === "txt" ? {
+        detected_format: "txt", decision: "allow_with_warning", warning_code: "FILE_FORMAT_COMPATIBLE_TEXT",
+      } : {}),
+    });
     const runTask = vi.fn().mockImplementation(async (request: MachineTaskRequest) => {
       const reportPath = path.join(request.output.staging_root.path, "report.json");
       const reportBytes = Buffer.from(JSON.stringify({
