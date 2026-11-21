@@ -161,6 +161,8 @@ describe("accepted detected-format exports", () => {
 
   it.each([
     ["txt", DOCX, "document"],
+    ["md", DOCX, "document"],
+    ["markdown", DOCX, "document"],
     ["xlsx", DOCX, "document"],
     ["docx", PDF, "resource"],
   ] as const)("binds %s to accepted %s media and %s kind in the request only", async (extension, mediaType, kind) => {

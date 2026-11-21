@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const effects = vi.hoisted(() => ({ image: vi.fn(), spawn: vi.fn() }));
+const effects = vi.hoisted(() => ({ image: vi.fn(), spawn: vi.fn(), readChildren: vi.fn() }));
 vi.mock("node:fs", async (original) => ({
   ...await original<typeof import("node:fs")>(),
   mkdtempSync: effects.image,
+  readFileSync: effects.readChildren,
 }));
 vi.mock("node:child_process", () => ({ spawn: effects.spawn }));
 
@@ -32,6 +33,26 @@ describe("architecture-bound Linux Machine assets", () => {
     expect(payload.readUInt16LE(18)).toBe(machine);
     expect(createHash("sha256").update(payload).digest("hex")).toBe(sha256);
   });
+
+  it.each([["x64", "ENOENT"], ["arm64", "EACCES"]])(
+    "rejects Linux %s without readable procfs task children before any spawn",
+    async (arch, code) => {
+      Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+      Object.defineProperty(process, "arch", { value: arch, configurable: true });
+      effects.readChildren.mockImplementationOnce(() => { throw Object.assign(new Error(), { code }); });
+      const client = new DocWenMachineClient(() => "/unused/DocWenCLI", () => "en_US");
+      try {
+        await expect(client.query("health/check", {})).rejects.toMatchObject({
+          code: "cli_platform_unsupported", details: { arch, requirement: "procfs_task_children", systemCode: code },
+        });
+        expect(effects.readChildren).toHaveBeenCalledWith(`/proc/self/task/${process.pid}/children`);
+        expect(effects.image).not.toHaveBeenCalled();
+        expect(effects.spawn).not.toHaveBeenCalled();
+      } finally {
+        await client.dispose();
+      }
+    },
+  );
 
   it.each(["arm", "ia32", "s390x", "riscv64", "__proto__", "constructor"])(
     "rejects Linux %s through the actual client before image writes or business spawn",

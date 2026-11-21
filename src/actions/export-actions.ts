@@ -180,7 +180,8 @@ export class ExportActions {
 
       // Preserve authored dialect syntax and let the same effective DocWen
       // configuration govern direct conversion and Assistant export.
-      const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
+      const declaredMarkdown = target === "docx" && capability.source.category === "markdown"
+        ? await snapshot.getDeclaredMarkdownInputs() : undefined;
       const taskInputs = (declaredMarkdown?.inputs ?? snapshot.inputs).map((input) =>
         useDetectedFormat && input === capturedSource ? sourceInput : input);
       this.capabilities.requireTaskInputs(route, taskInputs);

@@ -197,7 +197,7 @@ export class AssistantView extends ItemView {
   }
 
   /** File changes update only the action controls; the report, focus and scroll stay intact. */
-  refreshActiveFile(): void {
+  refreshActiveFile(connectionChanged = false): void {
     if (!this.sidebarOpen) return;
     // Public host contract: non-FileView focus retains the most recently active file.
     // Read it afresh; file changes and closure must never reuse a cached TFile.
@@ -211,7 +211,7 @@ export class AssistantView extends ItemView {
       if (name) name.setText(localFile ? t("sidebarCurrentFile", { filename: localFile.name }) : t("sidebarNoFile"));
       if (path) path.setText(localFile?.path ?? "");
     }
-    this.exports.refresh(localFile, this.activeTab === "actions");
+    this.exports.refresh(localFile, this.activeTab === "actions", connectionChanged);
   }
 
   private currentLocalFile(): TFile | null {

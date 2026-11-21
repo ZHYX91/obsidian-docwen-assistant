@@ -518,12 +518,19 @@ describe("DocWenPlugin lifecycle", () => {
     const plugin = new DocWenPlugin({} as never, {} as never);
     await plugin.onload();
 
+    const { AssistantView } = await import("../src/assistant-view");
+    const view = Object.create(AssistantView.prototype) as InstanceType<typeof AssistantView>;
+    view.refreshActiveFile = vi.fn();
+    state.leaves.push({ view });
+
     plugin.resetDocWenRuntime();
 
+    expect(view.refreshActiveFile).toHaveBeenCalledWith(true);
     expect(state.cancelAllCalls).toBe(1);
     expect(state.monitorResetCalls).toBe(2);
     expect(state.capabilityResetCalls).toBe(1);
     plugin.onunload();
+    expect(view.refreshActiveFile).toHaveBeenCalledOnce();
   });
 
   it("uses completed Core capabilities for command availability", async () => {

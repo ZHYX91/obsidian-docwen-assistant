@@ -104,6 +104,7 @@ export interface Translations {
   settingsConnectionHealthFailed: string;
   settingsConnectionFailed: string;
   settingsPlatformUnsupported: string;
+  errorLinuxProcessListUnavailable: string;
   settingsPathValid: string;
   settingsPathInvalid: string;
   settingsCliPathNotSet: string;

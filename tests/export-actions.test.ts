@@ -132,6 +132,7 @@ describe("ExportActions optimization discovery", () => {
     await actions.toDocx({ path: "note.bin", name: "note.bin" } as never);
 
     expect(docwen.optimizations).not.toHaveBeenCalled();
+    expect(state.getDeclaredMarkdownInputs).not.toHaveBeenCalled();
     expect(docwen.convert).toHaveBeenCalledOnce();
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
   });

@@ -82,7 +82,7 @@ Windows 启动失败的可分享诊断保留固定组件名 `DocWenCLI`、限定
 
 宿主正常退出时，通过 Obsidian 公开的 `Workspace.quit` 任务收集器等待取消后的操作收尾。每项动作的 `finally` 完成前持续记录其收尾状态，包括已被替换或先前卸载时取消的任务。等待最多十秒，避免未返回的原生对话框或文件系统操作无限阻塞退出；超时写入日志。强制终止、未触发退出事件或断电不保证临时文件清理。
 
-Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。未知 Linux 架构在 owner image 写入或业务 spawn 前失败，不存在 legacy 回退。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
+Linux x64/arm64 Machine 会话使用内嵌于 `main.js`、独立校验的 ELF。两层原生 subreaper 均处于业务 session 外，收养跨 session 后代，并仅通过 pidfd 终止已认证的 wait-child。完成必须以 `ECHILD` 证明；owner 失败保持未确认并阻止该 client 实例启动新会话。Machine 启动前删除自有 image。每种支持架构均绑定各自的精确大小、摘要与 ELF machine 身份。启动器在创建进程管理程序的临时文件前检查架构，并读取回收后代进程所需的 procfs 子进程列表。该接口不可用时，操作会在启动 DocWen 之前结束。独立结果目录发布 addon 仍仅支持 x64；健康检查、校对与单文件编号可使用两种 owner。
 
 ## 信任边界
 

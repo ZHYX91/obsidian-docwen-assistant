@@ -374,6 +374,35 @@ describe("Assistant sidebar tabs and exports", () => {
     expect(button(view, "export-docx")).toBeNull();
   });
 
+  it.each(["ready", "failed", "pending"])("rediscovers the same file after replacing a %s connection", async (state) => {
+    const fixture = createFixture();
+    fixture.current.file = file("Source.md");
+    const discover = vi.mocked(fixture.actions.getExportTargets);
+    let complete: (() => void) | undefined;
+    if (state === "ready") discover.mockResolvedValueOnce(["docx"]);
+    if (state === "failed") discover.mockRejectedValueOnce(new Error("Old connection"));
+    if (state === "pending") discover.mockImplementationOnce(() => new Promise(resolve => {
+      complete = () => resolve(["docx"]);
+    }));
+    discover.mockResolvedValueOnce(["xlsx"]);
+    const view = await fixture.open();
+    button(view, "tab-actions").click();
+    if (state === "ready") await vi.waitFor(() => expect(button(view, "export-docx")).not.toBeNull());
+    if (state === "failed") await vi.waitFor(() => expect(button(view, "export-retry")).not.toBeNull());
+
+    view.refreshActiveFile(true);
+    await vi.waitFor(() => expect(button(view, "export-xlsx")).not.toBeNull());
+    if (complete) {
+      expect(discover.mock.calls[0][1].aborted).toBe(true);
+      complete();
+      await Promise.resolve();
+    }
+    expect(discover).toHaveBeenCalledTimes(2);
+    expect(button(view, "export-xlsx")).not.toBeNull();
+    expect(button(view, "export-docx")).toBeNull();
+    expect(button(view, "export-retry")).toBeNull();
+  });
+
   it("shows query failures with retry and details while GUI actions remain available", async () => {
     const fixture = createFixture();
     fixture.current.file = file("Source.md");

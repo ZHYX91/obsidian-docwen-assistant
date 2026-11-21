@@ -51,6 +51,17 @@ describe("DocWen settings location picker", () => {
     expect(cleanup.message).toContain(locale === "en" ? "cleanup could not be confirmed" : "无法确认 Windows 进程清理完成");
   });
 
+  it("explains the missing Linux process list in connection and action failures", async () => {
+    const { getDocWenConnectionDisplay } = await import("../src/settings-docwen-location");
+    const { getErrorMessage } = await import("../src/actions/action-errors");
+    const { LocalCliError } = await import("../src/docwen/errors");
+    const code = "cli_platform_unsupported";
+    const details = { requirement: "procfs_task_children", systemCode: "ENOENT" };
+    const status = getDocWenConnectionDisplay("manual", "", { state: "error", mode: "manual", code, details }, "linux");
+    expect(status.message).toContain("child processes");
+    expect(getErrorMessage(new LocalCliError(code, "private", details))).toBe(status.message);
+  });
+
   it("turns automatic connection outcomes into user-facing status messages", async () => {
     const { getDocWenConnectionDisplay } = await import("../src/settings-docwen-location");
 
