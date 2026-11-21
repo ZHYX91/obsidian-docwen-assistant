@@ -2,6 +2,8 @@
 
 DocWen Assistant requires DocWen 0.23.0 or later on Windows and 0.17.0 or later on Linux. Content operations consume `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target; other Bundle schemas, older product releases, and incompatible process envelopes fail closed. GUI launch/open is intentionally a separate local control path described below.
 
+When Core admits plain paragraphs in a Markdown file with `FILE_FORMAT_COMPATIBLE_TEXT`, the original Markdown snapshot can use the advertised Markdown routes. For Markdown detected in a text file or a mismatch admitted with `FILE_FORMAT_SAME_FAMILY_MISMATCH`, Assistant uses a byte-identical snapshot with the detected extension and asks Core to verify it before export review. Inputs requiring explicit acceptance still open the format confirmation dialog.
+
 ## Process boundary
 
 - Automatic mode verifies and launches the fixed `%LOCALAPPDATA%/Microsoft/WindowsApps/docwen.exe` execution alias from a safe temporary working directory. Windows resolves the installed package; no arbitrary package-directory search, bare PATH lookup or persistent package-path setting is used. Linux does not use automatic alias discovery.
@@ -54,7 +56,7 @@ planning and acceptance. Global settings contribute only options exposed by the 
 | Markdown proofreading | Machine `validate.markdown` |
 | Markdown heading numbering | Machine `transform.markdown.heading_numbering` |
 
-Support comes from the conjunction of content-derived `file/inspect` results and available Machine capabilities for the detected media type. The Assistant does not infer conversion support from extensions or DocWen route IDs. Route-specific optimizers are not exposed until DocWen promotes them to a normalized Machine capability.
+Support comes from the conjunction of content-derived `file/inspect` results and available Machine capabilities for the admitted source media type. The Assistant does not infer conversion support from extensions or DocWen route IDs. Route-specific optimizers are not exposed until DocWen promotes them to a normalized Machine capability.
 
 ## Artifact Bundle consumption
 

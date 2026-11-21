@@ -8,6 +8,7 @@ import { findUncoveredImageEmbeds, includeUncachedReferenceImages } from "./mark
 import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
 import { isActiveCachedReference, maskProtectedSource } from "./markdown-source-ownership";
 import { VaultWriteError } from "./vault-write-transaction";
+import { sourceFormatForExtension } from "../docwen/formats";
 
 export interface DeclaredMarkdownSnapshot {
   readonly inputs: readonly TaskInput[];
@@ -15,15 +16,8 @@ export interface DeclaredMarkdownSnapshot {
 }
 
 const MAX_EMBEDDED_RESOURCE_BYTES = 6_000_000;
-const SUPPORTED_IMAGE_MEDIA_TYPES = new Map<string, string>([
-  ["png", "image/png"],
-  ["jpg", "image/jpeg"],
-  ["jpeg", "image/jpeg"],
-  ["gif", "image/gif"],
-  ["bmp", "image/bmp"],
-  ["webp", "image/webp"],
-]);
-const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_MEDIA_TYPES.keys(), "svg", "ico"]);
+const SUPPORTED_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp"]);
+const IMAGE_LIKE_EXTENSIONS = new Set([...SUPPORTED_IMAGE_EXTENSIONS, "svg", "ico"]);
 
 export async function buildDeclaredMarkdownInputs(
 app: App,
@@ -107,8 +101,8 @@ app: App,
       continue;
     }
     const extension = linked.extension.toLowerCase();
-    const mediaType = SUPPORTED_IMAGE_MEDIA_TYPES.get(extension);
-    if (!mediaType) {
+    const format = sourceFormatForExtension(extension);
+    if (!format || !SUPPORTED_IMAGE_EXTENSIONS.has(extension)) {
       if (IMAGE_LIKE_EXTENSIONS.has(extension)) {
         throw new VaultWriteError(
           "vault_input_invalid",
@@ -144,7 +138,7 @@ app: App,
       kind: "resource",
       role: "linked_resource",
       logicalPath: logicalPathFor(linked.path),
-      mediaType,
+      mediaType: format.mediaType,
     });
   }
 

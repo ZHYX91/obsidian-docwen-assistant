@@ -9,7 +9,8 @@ export type {
   ValidatedArtifactBundle,
   ValidatedBundleArtifact,
 } from "./machine-client";
-export { DocWenClient, mediaTypeForPath, normalizeLogicalPath, sourceKindForPath } from "./client";
+export { DocWenClient, normalizeLogicalPath } from "./client";
+export { mediaTypeForPath, sourceKindForPath, type ConvertTarget, type FileInspection } from "./formats";
 export { captureOutputTarget } from "./output-files";
 export type { OperationWarning } from "./operation-outcome";
 export { captureOutputDirectory } from "./output-directory";
@@ -23,9 +24,7 @@ export type {
   ConversionOutcome,
   ConvertOptions,
   ConvertRequest,
-  ConvertTarget,
   MarkdownResourceBindings,
-  FileInspection,
   HealthReport,
   NumberingSchemeItem,
   OptimizationItem,

@@ -131,20 +131,24 @@ export class ExportActions {
       let sourceInput = capturedSource;
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
-      const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
-      if (useDetectedFormat) {
+      const { mediaType, binding } = capability.admittedFormat;
+      const useDetectedFormat = binding !== "original";
+      if (binding === "confirm-detected") {
         const accepted = await confirmDetectedFormat(this.app, signal, {
           sourceName: capturedSource.logicalPath ?? file.path,
           declaredFormat: capability.inspection.declaredFormat,
           detectedFormat: capability.inspection.detectedFormat,
         });
         if (!accepted || signal.aborted) return;
+      }
+      if (useDetectedFormat) {
         sourceInput = await snapshot.getAcceptedDetectedSource(
           capability.inspection, route, (input) => this.docwen.inspect(input, signal),
         );
       }
 
       const settings = { ...this.getSettings() };
+      const markdownToWord = target === "docx" && capability.source.category === "markdown";
       const options: ConvertOptions = {
         target,
         ...selected,
@@ -164,7 +168,7 @@ export class ExportActions {
           );
         }
       }
-      if (target === "docx" && capability.source.category === "markdown") {
+      if (markdownToWord) {
         Object.assign(
           options,
           buildNumberingOptions(
@@ -180,7 +184,7 @@ export class ExportActions {
 
       // Preserve authored dialect syntax and let the same effective DocWen
       // configuration govern direct conversion and Assistant export.
-      const declaredMarkdown = target === "docx" && capability.source.category === "markdown"
+      const declaredMarkdown = markdownToWord
         ? await snapshot.getDeclaredMarkdownInputs(sourceInput.mediaType) : undefined;
       const taskInputs = (declaredMarkdown?.inputs ?? snapshot.inputs).map((input) =>
         useDetectedFormat && input === capturedSource ? sourceInput : input);
@@ -196,11 +200,11 @@ export class ExportActions {
         selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
       };
-      if (target === "docx" && capability.source.category === "markdown" && settings.proofreadOnConvert) {
+      if (markdownToWord && settings.proofreadOnConvert) {
         request.checks = buildProofreadChecks(settings);
       }
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", selectedTemplate,
+        request, mediaType, selectedTemplate,
       ), signal);
       if (!accepted || signal.aborted) return;
       return this.docwen.convert(request, signal);

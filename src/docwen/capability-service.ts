@@ -1,8 +1,8 @@
+import { isJsonObject } from "./machine-framing";
 import { LocalCliError } from "./errors";
+import { admittedSourceFormat, CONVERSION_MEDIA_TYPES, type AdmittedSourceFormat, type ConvertTarget, type FileInspection } from "./formats";
 import type {
-  ConvertTarget,
   DocWenClient,
-  FileInspection,
   OptimizationItem,
   RuntimeCapabilityProjection,
   RuntimeRoute,
@@ -13,16 +13,15 @@ import type { MachineCapability } from "./machine-client";
 
 const MARKDOWN_TO_DOCX_CAPABILITY_ID = "convert.markdown.to_docx";
 const MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID = "convert.markdown_source.to_docx";
-const MARKDOWN_MEDIA_TYPE = "text/markdown";
-const DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 export interface FileCapability {
   readonly inspection: FileInspection;
+  readonly admittedFormat: AdmittedSourceFormat;
   readonly source: RuntimeSource;
   readonly machineCapabilities: readonly MachineCapability[];
 }
 
-/** Bind an explicitly accepted inspection to this snapshot and selected source slot. */
+/** Bind the admitted format to this snapshot and the selected capability's source slot. */
 export function bindAcceptedDetectedSource(
   source: TaskInput,
   contentSha256: string,
@@ -32,7 +31,7 @@ export function bindAcceptedDetectedSource(
   const slots = route.inputShape.slots.filter((slot) =>
     slot.role === source.role && slot.role === "source" && slot.media_types.includes(inspection.mediaType));
   if (
-    inspection.decision !== "require_explicit_acceptance"
+    admittedSourceFormat(inspection, source.mediaType).binding === "original"
     || route.capabilityId !== route.capability.capability_id
     || route.inputShape !== route.capability.input_shape
     || inspection.filePath !== source.path
@@ -75,19 +74,22 @@ export class DocWenCapabilityService {
     if (generation !== this.generation) {
       throw new LocalCliError("cli_cancelled", "DocWen capabilities changed during discovery.");
     }
+    const admittedFormat = admittedSourceFormat(inspection, typeof input === "string" ? undefined : input.mediaType);
+    const { mediaType } = admittedFormat;
     const machineCapabilities = projection.capabilities.filter((capability) =>
-      capabilitySupportsInspectedMediaType(capability, inspection.mediaType)
+      capabilitySupportsSourceMediaType(capability, mediaType)
       && capability.availability !== "unavailable");
     if (machineCapabilities.length === 0) {
       throw new LocalCliError(
         "cli_capability_unavailable",
         "DocWen does not expose a Machine capability for the inspected media type.",
-        { mediaType: inspection.mediaType },
+        { mediaType },
       );
     }
     const routes = machineCapabilities.map(toRuntimeRoute).filter((route): route is RuntimeRoute => route !== null);
     return {
       inspection,
+      admittedFormat,
       machineCapabilities,
       source: {
         id: inspection.detectedFormat,
@@ -199,10 +201,6 @@ export class DocWenCapabilityService {
     return [...new Set(ids)].filter((id) => this.findConversionRoute(capability, target, id) !== null);
   }
 
-  requiresDetectedFormatAcceptance(inspection: FileInspection): boolean {
-    return inspection.decision === "require_explicit_acceptance";
-  }
-
   peek(filePath: string): FileCapability | Error | null {
     return this.fileCache.get(filePath) ?? null;
   }
@@ -304,7 +302,7 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
   if (!action && optimizationId === undefined && !["convert", "render"].includes(capability.operation)) return null;
   const target = action ? "md" : targetForMediaTypes(capability.output_media_types);
   if (!target) return null;
-  const properties = isObject(capability.options_schema.properties)
+  const properties = isJsonObject(capability.options_schema.properties)
     ? Object.keys(capability.options_schema.properties)
     : [];
   return {
@@ -323,12 +321,12 @@ function toRuntimeRoute(capability: MachineCapability): RuntimeRoute | null {
   };
 }
 
-function capabilitySupportsInspectedMediaType(capability: MachineCapability, mediaType: string): boolean {
+function capabilitySupportsSourceMediaType(capability: MachineCapability, mediaType: string): boolean {
   if (capability.capability_id === MARKDOWN_TO_DOCX_CAPABILITY_ID) {
     return false;
   }
   if (capability.capability_id === MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID) {
-    return mediaType === MARKDOWN_MEDIA_TYPE && isCurrentSourceMarkdownToDocxCapability(capability);
+    return mediaType === CONVERSION_MEDIA_TYPES.md && isCurrentSourceMarkdownToDocxCapability(capability);
   }
   return capability.input_shape.slots.some((slot) =>
     slot.role === "source" && slot.media_types.includes(mediaType));
@@ -339,13 +337,13 @@ function isCurrentSourceMarkdownToDocxCapability(capability: MachineCapability):
     capability.operation !== "convert"
     || capability.input_shape.undeclared_roles !== "reject"
     || capability.output_media_types.length !== 1
-    || capability.output_media_types[0] !== DOCX_MEDIA_TYPE
+    || capability.output_media_types[0] !== CONVERSION_MEDIA_TYPES.docx
   ) return false;
   const slots = new Map(capability.input_shape.slots.map((slot) => [slot.role, slot]));
   const source = slots.get("source");
   const resources = slots.get("linked_resource");
   return capability.input_shape.slots.length === 2
-    && exactInputSlot(source, "document", MARKDOWN_MEDIA_TYPE)
+    && exactInputSlot(source, "document", CONVERSION_MEDIA_TYPES.md)
     && resources?.kind === "resource"
     && resources.min_items === 0
     && resources.max_items === undefined
@@ -366,12 +364,5 @@ function exactInputSlot(
 }
 
 function targetForMediaTypes(mediaTypes: readonly string[]): ConvertTarget | null {
-  if (mediaTypes.includes("text/markdown")) return "md";
-  if (mediaTypes.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) return "docx";
-  if (mediaTypes.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) return "xlsx";
-  return null;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return (["md", "docx", "xlsx"] as const).find((target) => mediaTypes.includes(CONVERSION_MEDIA_TYPES[target])) ?? null;
 }

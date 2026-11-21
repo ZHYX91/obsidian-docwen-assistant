@@ -5,6 +5,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 ## [Unreleased]
 [pr-74]: https://github.com/ZHYX91/obsidian-docwen-assistant/pull/74
 
+- Export plain Markdown notes to Word, Markdown tables saved as `.txt` to Excel, and files whose extensions differ from a same-family format admitted by DocWen.
 - Keep Markdown image and link bindings when a file with another extension is accepted as Markdown for Word export. [#74][pr-74]
 
 ## [3.6.3] - 2026-11-21
