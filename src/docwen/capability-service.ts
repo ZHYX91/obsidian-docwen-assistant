@@ -22,7 +22,14 @@ export interface FileCapability {
   readonly machineCapabilities: readonly MachineCapability[];
 }
 
-/** Bind an explicitly accepted inspection to this snapshot and selected source slot. */
+/** Core admits .txt and Markdown as a compatible text pair without a separate format prompt. */
+export function isCompatibleTextRebinding(source: TaskInput, inspection: FileInspection): boolean {
+  return inspection.decision === "allow_with_warning" && inspection.warningCode === "FILE_FORMAT_COMPATIBLE_TEXT"
+    && ((source.mediaType === "text/plain" && inspection.mediaType === MARKDOWN_MEDIA_TYPE)
+      || (source.mediaType === MARKDOWN_MEDIA_TYPE && inspection.mediaType === "text/plain"));
+}
+
+/** Bind the admitted format to this snapshot and the selected capability's source slot. */
 export function bindAcceptedDetectedSource(
   source: TaskInput,
   contentSha256: string,
@@ -32,7 +39,7 @@ export function bindAcceptedDetectedSource(
   const slots = route.inputShape.slots.filter((slot) =>
     slot.role === source.role && slot.role === "source" && slot.media_types.includes(inspection.mediaType));
   if (
-    inspection.decision !== "require_explicit_acceptance"
+    (inspection.decision !== "require_explicit_acceptance" && !isCompatibleTextRebinding(source, inspection))
     || route.capabilityId !== route.capability.capability_id
     || route.inputShape !== route.capability.input_shape
     || inspection.filePath !== source.path

@@ -2,6 +2,8 @@
 
 DocWen Assistant requires DocWen 0.23.0 or later on Windows and 0.17.0 or later on Linux. Content operations consume `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target; other Bundle schemas, older product releases, and incompatible process envelopes fail closed. GUI launch/open is intentionally a separate local control path described below.
 
+When Core identifies Markdown in a text file (or plain text in a Markdown file) with `FILE_FORMAT_COMPATIBLE_TEXT`, export uses a byte-identical copy with the detected extension. Assistant rechecks the copy before the usual export review. Cross-format inputs requiring explicit acceptance still open the format confirmation dialog.
+
 ## Process boundary
 
 - Automatic mode verifies and launches the fixed `%LOCALAPPDATA%/Microsoft/WindowsApps/docwen.exe` execution alias from a safe temporary working directory. Windows resolves the installed package; no arbitrary package-directory search, bare PATH lookup or persistent package-path setting is used. Linux does not use automatic alias discovery.

@@ -300,12 +300,12 @@ describe("accepted detected-format exports", () => {
     expect(ui.commit).not.toHaveBeenCalled();
   });
 
-  it("does not project detected metadata without explicit acceptance", async () => {
+  it.each(["allow", "allow_with_warning"])("rejects an unconfirmed cross-family change even with decision %s", async (decision) => {
     const test = await fixture();
     test.inspect.mockImplementation(async (source) => ({
       filePath: source.path, contentSha256: digest(await readFile(source.path)), sizeBytes: 890,
-      declaredFormat: "txt", warningCode: "", reasonCode: "",
-      decision: "allow", mediaType: DOCX, supportedActions: ["convert"], workflowCategory: "document", detectedFormat: "docx",
+      declaredFormat: "txt", warningCode: "FILE_FORMAT_COMPATIBLE_TEXT", reasonCode: "",
+      decision, mediaType: DOCX, supportedActions: ["convert"], workflowCategory: "document", detectedFormat: "docx",
     }));
     await expect(test.run()).rejects.toMatchObject({ code: "cli_input_invalid" });
     expect(ui.confirm).not.toHaveBeenCalled();
@@ -322,5 +322,49 @@ describe("accepted detected-format exports", () => {
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
+  });
+
+  it("exports Markdown detected in a text file through the advertised spreadsheet route", async () => {
+    const file = { path: "Tables.txt", extension: "txt", name: "Tables.txt" };
+    const bytes = Buffer.from("# Data\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async () => Uint8Array.from(bytes).buffer,
+      },
+    };
+    const capability = {
+      ...machineCapability("text/markdown", "document"), capability_id: "convert.markdown.to_xlsx",
+      output_media_types: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    };
+    const inspect = vi.fn(async (input: TaskInput) => {
+      const canonical = extname(input.path) === ".markdown";
+      return {
+        filePath: input.path, contentSha256: digest(await readFile(input.path)), sizeBytes: bytes.length,
+        decision: canonical ? "allow" : "allow_with_warning", declaredFormat: canonical ? "markdown" : "txt",
+        warningCode: canonical ? "" : "FILE_FORMAT_COMPATIBLE_TEXT", detectedFormat: "markdown",
+        supportedActions: ["convert"], workflowCategory: "markdown", mediaType: "text/markdown",
+      };
+    });
+    const convert = vi.fn(async (request: ConvertRequest) => {
+      expect(request.inputs).toEqual([request.sourceInput]);
+      expect(request.inputs[0]).toMatchObject({ logicalPath: file.path, mediaType: "text/markdown" });
+      expect(await readFile(request.inputs[0].path)).toEqual(bytes);
+      return { output: "/output/Tables.xlsx", warnings: [] };
+    });
+    const client = { inspect, convert, runtimeCapabilities: async () => ({ capabilities: [capability] }) };
+    const runner = {
+      run: async (_key: unknown, _notice: unknown, action: (lease: unknown) => Promise<void>) =>
+        action({ signal: new AbortController().signal, isCurrent: () => true }),
+      presentWarnings: vi.fn(), presentCompletion: vi.fn(),
+    };
+    const actions = new ExportActions(app as never, client as never, new DocWenCapabilityService(client as never),
+      () => DEFAULT_SETTINGS, runner as never);
+    await actions.toXlsx(file as never);
+    expect(inspect.mock.calls.map(([input]) => extname(input.path))).toEqual([".txt", ".txt", ".markdown"]);
+    expect(ui.confirm).not.toHaveBeenCalled();
+    expect(ui.review).toHaveBeenCalledOnce();
+    expect(convert).toHaveBeenCalledOnce();
   });
 });

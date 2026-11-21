@@ -11,6 +11,7 @@ import {
   type TemplateItem,
   LocalCliError,
 } from "../docwen";
+import { isCompatibleTextRebinding } from "../docwen/capability-service";
 import { confirmDetectedFormat } from "../host/confirm";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
@@ -131,14 +132,17 @@ export class ExportActions {
       let sourceInput = capturedSource;
       const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
-      const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
-      if (useDetectedFormat) {
+      const requiresConfirmation = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
+      const useDetectedFormat = requiresConfirmation || isCompatibleTextRebinding(capturedSource, capability.inspection);
+      if (requiresConfirmation) {
         const accepted = await confirmDetectedFormat(this.app, signal, {
           sourceName: capturedSource.logicalPath ?? file.path,
           declaredFormat: capability.inspection.declaredFormat,
           detectedFormat: capability.inspection.detectedFormat,
         });
         if (!accepted || signal.aborted) return;
+      }
+      if (useDetectedFormat) {
         sourceInput = await snapshot.getAcceptedDetectedSource(
           capability.inspection, route, (input) => this.docwen.inspect(input, signal),
         );
