@@ -226,6 +226,34 @@ describe("source-relative inline images", () => {
     expect(test.getFirstLinkpathDest).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["\n", "\n"], ["\r\n", "\r\n"], ["\r", "\r"], ["\r", "\r\n"],
+  ])("preserves exact bytes and ignores frontmatter links across %j and %j line endings", async (ending, bodyEnding) => {
+    const source = ["---", "cover: ![[not-an-embed.png]]", "---"].join(ending) + bodyEnding + bodyEnding + "😀 " + image + bodyEnding;
+    const test = await fixture(source);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: image, logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["\n", "\r\n", "\r"])("binds cached multiline and uncached reference images after fenced code across %j line endings", async ending => {
+    const token = "![label" + ending + "continued](assets/green-marker.png)";
+    const source = ["```", "![[example.png]]", "```", "", "😀 " + token, "![active][sample]",
+      "", "[sample]: assets/green-marker.png", ""].join(ending);
+    const test = await fixture(source, [cached(source, token, "assets/green-marker.png")]);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: token, logical_path: "Assistant-QA/assets/green-marker.png" },
+      { authored_token: "![active][sample]", logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.getFirstLinkpathDest).toHaveBeenCalledTimes(2);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
   it("reports a missing exact image and ignores a like-named file elsewhere", async () => {
     const test = await fixture(sample(""), [], { imagePath: "Elsewhere/assets/green-marker.png" });
     await expect(test.run()).rejects.toMatchObject({

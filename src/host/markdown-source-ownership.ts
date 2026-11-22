@@ -93,13 +93,16 @@ const wikiParser = parser.configure({
 });
 
 function parseWithMath(source: string) {
+  // Lezer splits on LF. A lone CR occupies the same UTF-16 width as LF, so
+  // its parse view can keep every source and Obsidian cache offset intact.
+  const parserSource = source.replace(/\r(?!\n)/gu, "\n");
   const unmatchedOpeners = new Set<number>();
-  const authoredParser = wikiParser.configure(authoredMath(source, unmatchedOpeners));
+  const authoredParser = wikiParser.configure(authoredMath(parserSource, unmatchedOpeners));
   let previousCount: number;
   let tree;
   do {
     previousCount = unmatchedOpeners.size;
-    tree = authoredParser.parse(source);
+    tree = authoredParser.parse(parserSource);
   } while (unmatchedOpeners.size !== previousCount);
   return tree;
 }
@@ -110,7 +113,7 @@ const LITERAL_NODES = new Set([MATH_NODE, "FencedCode", "CodeBlock", "InlineCode
 /** Parse ownership without changing any UTF-16 source positions or original bytes. */
 export function parseAuthoredMarkdown(source: string) {
   const characters = source.split("");
-  const frontmatter = /^(?:\uFEFF)?---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?=\r?\n|$)/u.exec(source);
+  const frontmatter = /^(?:\uFEFF)?---[ \t]*(?:\r\n?|\n)(?:[\s\S]*?(?:\r\n?|\n))?(?:---|\.\.\.)[ \t]*(?=[\r\n]|$)/u.exec(source);
   if (frontmatter) mask(characters, 0, frontmatter[0].length);
 
   // Obsidian comments can span Markdown blocks. Only an opener outside an
