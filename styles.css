@@ -7,6 +7,82 @@
   min-width: 0;
 }
 
+.docwen-settings-tab-bar {
+  display: grid;
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+  container-type: inline-size;
+}
+
+.docwen-settings-tab-bar.has-overflow {
+  --docwen-tab-scroll-size: 32px;
+  grid-template-columns: var(--docwen-tab-scroll-size) minmax(0, 1fr) var(--docwen-tab-scroll-size);
+}
+
+.docwen-settings-tab-bar > .docwen-settings-tabs {
+  grid-area: 1 / 2;
+  min-inline-size: 0;
+}
+
+.docwen-settings-tab-bar > button.docwen-settings-tab-scroll {
+  grid-area: 1 / 1;
+  appearance: none;
+  display: grid;
+  place-items: center;
+  color: var(--text-accent);
+  cursor: var(--cursor, default);
+  padding: 0;
+  block-size: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.docwen-settings-tab-bar > button.docwen-settings-tab-scroll[data-direction="next"] {
+  grid-column: 3;
+}
+
+.docwen-settings-tab-bar > button.docwen-settings-tab-scroll[hidden] {
+  display: none;
+}
+
+.docwen-settings-tab-scroll::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  direction: ltr;
+  transform: rotate(135deg);
+}
+
+.docwen-settings-tab-scroll[data-direction="next"]::before,
+.docwen-settings-tab-scroll:dir(rtl)::before {
+  transform: rotate(-45deg);
+}
+
+.docwen-settings-tab-scroll[data-direction="next"]:dir(rtl)::before {
+  transform: rotate(135deg);
+}
+
+.docwen-settings-tab-bar > button.docwen-settings-tab-scroll:hover {
+  background: var(--background-modifier-hover);
+}
+
+.docwen-settings-tab-bar > button.docwen-settings-tab-scroll:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .docwen-settings-tab-bar.has-overflow {
+    --docwen-tab-scroll-size: 44px;
+  }
+
+  .docwen-settings-tab-bar > button.docwen-settings-tab-scroll {
+    min-block-size: 44px;
+  }
+}
+
 .docwen-settings-tabs {
   align-items: stretch;
   border-block-end: 1px solid var(--background-modifier-border);
@@ -60,6 +136,12 @@
 .docwen-settings-tabs > button.docwen-settings-tab:focus-visible {
   outline: 2px solid var(--interactive-accent) !important;
   outline-offset: -2px;
+}
+
+@container (max-width: 600px) {
+  .docwen-settings-tabs > button.docwen-settings-tab {
+    padding-inline: var(--size-4-2) !important;
+  }
 }
 
 .docwen-settings-panel {
@@ -456,17 +538,6 @@
 
   button.docwen-proofread-item {
     min-height: 44px;
-  }
-}
-
-@media (max-width: 600px) {
-  .docwen-settings-tabs {
-    margin-inline: calc(var(--size-4-2) * -1);
-    padding-inline: var(--size-4-2);
-  }
-
-  .docwen-settings-tabs > button.docwen-settings-tab {
-    padding-inline: var(--size-4-2) !important;
   }
 }
 

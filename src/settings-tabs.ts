@@ -1,5 +1,6 @@
 import type { SettingsPageDefinition, SettingsPageId } from "./settings-definitions";
-import { getCurrentLocale } from "./i18n";
+import { createScrollButton, observeTabOverflow } from "./settings-tab-overflow";
+import { getCurrentLocale, t } from "./i18n";
 import { preserveSettingsView } from "./settings-view-state";
 
 let settingsTabsInstance = 0;
@@ -18,6 +19,7 @@ export class SettingsTabs {
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly instanceId = ++settingsTabsInstance;
   private readonly panelElementId = `docwen-settings-panel-${this.instanceId}`;
+  private readonly overflowCleanup: () => void;
   private readonly panelEl: HTMLElement;
   private readonly tabListEl: HTMLElement;
 
@@ -30,7 +32,9 @@ export class SettingsTabs {
     const locale = getCurrentLocale();
     rootEl.setAttribute("lang", locale);
     rootEl.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
-    this.tabListEl = rootEl.createDiv({
+    const bar = rootEl.createDiv({ cls: "docwen-settings-tab-bar" });
+    const previous = createScrollButton(bar, "previous", t("settingsPreviousTabs"));
+    this.tabListEl = bar.createDiv({
       cls: "docwen-settings-tabs",
       attr: {
         "aria-label": options.ariaLabel,
@@ -44,7 +48,13 @@ export class SettingsTabs {
     });
 
     options.pages.forEach((page, index) => this.createTab(page, index));
+    const next = createScrollButton(bar, "next", t("settingsNextTabs"));
+    this.overflowCleanup = observeTabOverflow(bar, this.tabListEl, previous, next);
     this.activate(this.activeIndex, false);
+  }
+
+  destroy(): void {
+    this.overflowCleanup();
   }
 
   get activePageId(): SettingsPageId {
@@ -105,12 +115,6 @@ export class SettingsTabs {
         break;
       case "ArrowRight":
         targetIndex = currentIndex + (isRtl ? -1 : 1);
-        break;
-      case "ArrowUp":
-        targetIndex = currentIndex - 1;
-        break;
-      case "ArrowDown":
-        targetIndex = currentIndex + 1;
         break;
       case "Home":
         targetIndex = 0;

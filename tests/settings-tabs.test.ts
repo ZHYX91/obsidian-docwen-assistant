@@ -45,6 +45,10 @@ class FakeElement {
     return event;
   }
 
+  removeEventListener(type: string, listener: (event: FakeEvent) => void): void {
+    this.listeners.set(type, (this.listeners.get(type) ?? []).filter(item => item !== listener));
+  }
+
   empty(): void {
     this.children.length = 0;
   }
@@ -108,7 +112,7 @@ describe("settings top tabs", () => {
     });
 
     const root = container.children[0];
-    const tabList = root.children[0];
+    const tabList = root.children[0].children[1];
     const panel = root.children[1];
     expect(tabList.attributes.get("role")).toBe("tablist");
     expect(tabList.attributes.get("aria-label")).toBe("DocWen Assistant settings");
@@ -173,7 +177,7 @@ describe("settings top tabs", () => {
       pages,
       renderPage: vi.fn(),
     });
-    const tabButtons = container.children[0].children[0].children;
+    const tabButtons = container.children[0].children[0].children[1].children;
     const panel = container.children[0].children[1];
     const originalPanelId = panel.id;
     expect(tabButtons.every((tab) => tab.attributes.get("aria-controls") === originalPanelId)).toBe(true);
@@ -194,9 +198,8 @@ describe("settings top tabs", () => {
     expect(tabs.activePageId).toBe("general");
 
     document.direction = "ltr";
-    tabButtons[0].dispatch("keydown", "ArrowDown");
-    expect(tabs.activePageId).toBe("markdown");
-    tabButtons[1].dispatch("keydown", "ArrowUp");
+    expect(tabButtons[0].dispatch("keydown", "ArrowDown").defaultPrevented).toBe(false);
+    expect(tabButtons[0].dispatch("keydown", "ArrowUp").defaultPrevented).toBe(false);
     expect(tabs.activePageId).toBe("general");
     tabButtons[0].dispatch("keydown", "ArrowRight");
     expect(tabs.activePageId).toBe("markdown");

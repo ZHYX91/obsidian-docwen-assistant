@@ -55,6 +55,7 @@ export class SettingTab extends PluginSettingTab {
     preserveSettingsView(this.containerEl, () => {
       this.activePageId = this.tabs?.activePageId ?? this.activePageId;
       this.destroyPageSurface();
+      this.tabs?.destroy();
       this.containerEl.empty();
       renderSettingsSchemaCompatibility(this.containerEl, this.plugin.getSettingsCompatibility());
       const pages = this.getSettingsPages();
@@ -115,6 +116,7 @@ export class SettingTab extends PluginSettingTab {
     this.activePageId = this.tabs?.activePageId ?? this.activePageId;
     this.destroyPageSurface();
     this.expandedHelp.clear();
+    this.tabs?.destroy();
     this.tabs = null;
   }
 

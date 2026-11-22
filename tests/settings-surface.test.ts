@@ -74,6 +74,10 @@ class FakeElement {
   scrollIntoView(): void {}
   getBoundingClientRect(): DOMRect { return { left: 0, width: 0 } as DOMRect; }
   querySelector(): null { return null; }
+  removeEventListener(type: string, listener: (event: FakeKeyboardEvent) => void): void {
+    this.listeners.set(type, (this.listeners.get(type) ?? []).filter(item => item !== listener));
+  }
+
   empty(): void { lifecycle.push("empty"); this.children.length = 0; this.textContent = ""; }
   private append(options?: FakeElementOptions): FakeElement {
     const child = new FakeElement();
@@ -224,7 +228,7 @@ describe("settings surface lifecycle", () => {
     tab.display();
 
     const root = (tab.containerEl as unknown as FakeElement).children[0];
-    const tabList = root.children[0];
+    const tabList = root.children[0].children[1];
     const panel = root.children[1];
     expect(tabList.attributes.get("role")).toBe("tablist");
     expect(tabList.children).toHaveLength(4);
@@ -265,7 +269,7 @@ describe("settings surface lifecycle", () => {
     expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
 
     const tabRoot = (tab.containerEl as unknown as FakeElement).children[1];
-    expect(tabRoot.children[0].children).toHaveLength(4);
+    expect(tabRoot.children[0].children[1].children).toHaveLength(4);
     await expect(tab.setControlValue("extractImages", false)).rejects.toMatchObject({
       code: "settings_schema_incompatible",
     });
@@ -278,7 +282,7 @@ describe("settings surface lifecycle", () => {
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
 
     expect(tabButtons).toHaveLength(4);
     tabButtons[3].dispatch("click");
@@ -299,7 +303,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
 
     tabButtons[1].dispatch("click");
     const dpi = texts.find((text) => text.inputEl.type === "number")!;
@@ -423,7 +427,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
     tabButtons[1].dispatch("click");
     const extractImages = toggles[0];
 
@@ -448,8 +452,8 @@ describe("settings surface lifecycle", () => {
     plugin.fetchNumberingSchemes = vi.fn().mockResolvedValue([{ id: "legal", name: "Legal" }]);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const [tabList, panel] = (tab.containerEl as unknown as FakeElement).children[0].children;
-    tabList.children[2].dispatch("click");
+    const [bar, panel] = (tab.containerEl as unknown as FakeElement).children[0].children;
+    bar.children[1].children[2].dispatch("click");
     const format = dropdowns.find((control) => control.options.has("word_native"))!;
     const scheme = dropdowns.find((control) => control.options.has("none"))!;
     await vi.waitFor(() => expect(scheme.options.has("legal")).toBe(true));
@@ -489,7 +493,7 @@ describe("settings surface lifecycle", () => {
     await dropdowns[0].choose("zh-CN");
     await vi.waitFor(() => expect(plugin.settings.language).toBe("zh-CN"));
 
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
     expect(tabButtons[0].textContent).toBe("常规");
     expect(tabButtons[3].textContent).toBe("校对");
   });

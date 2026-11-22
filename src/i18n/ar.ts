@@ -67,6 +67,8 @@ export const AR_TRANSLATIONS: Translations = {
   contextMenuNoActions: "لا توجد عمليات تحويل أو تعديل متاحة لهذا الملف.",
   contextMenuCapabilityUnavailable: "تعذّر تحميل العمليات المتاحة",
   contextMenuFolderTarget: "الملف المستهدف: {path}",
+  settingsPreviousTabs: "إظهار علامات التبويب السابقة",
+  settingsNextTabs: "إظهار علامات التبويب التالية",
   settingsTitle: "إعدادات DocWen Assistant",
   settingsGeneralTitle: "عام",
   settingsGeneralGuideTitle: "كيفية تطبيق هذه الإعدادات",
