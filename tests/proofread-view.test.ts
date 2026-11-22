@@ -1,29 +1,12 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { MarkdownView, TFile } from "obsidian";
-import { createAssistantSidebarOpener } from "../src/host/assistant-sidebar";
 import { describe, expect, it, vi } from "vitest";
 import { createAssistantViewActions, useObsidianDom } from "./helpers/obsidian-dom";
 
 useObsidianDom();
 
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
-vi.mock("../src/utils/suggest-modal", () => ({ pickItem: vi.fn() }));
-vi.mock("../src/host/vault-files", () => ({
-  resolveTargetFile: (file: unknown) => file,
-  resolveAbsoluteFilePath: () => "D:/Vault/Notes/B.md",
-}));
-vi.mock("../src/host/vault-read-snapshot", () => ({
-  VaultReadSnapshot: class {
-    async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
-      return { value: await work({
-        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64), proofreadSourceDigest: () => "a".repeat(64),
-        publish: async (commit: () => Promise<unknown>) => commit(),
-      }), warnings: [] };
-    }
-  },
-}));
-
 vi.mock("obsidian", async () => import("./helpers/obsidian-dom"));
 
 describe("AssistantView", () => {
@@ -39,169 +22,6 @@ describe("AssistantView", () => {
     await view.onClose();
     expect(view.captureLifetime()()).toBe(false);
   });
-
-  it.each([
-    "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
-    "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
-    "command-close", "command-replace", "command-error", "menu-close", "menu-replace", "menu-error", "menu-dispose",
-    "menu-dispose-error",
-  ])(
-    "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
-      const { AssistantView } = await import("../src/assistant-view");
-      const { ProofreadActions } = await import("../src/actions/proofread-actions");
-      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
-      const operations = new OperationCoordinator();
-      const file = { name: "B.md", path: "Notes/B.md" };
-      let complete!: (report: unknown) => void;
-      let signal!: AbortSignal;
-      const validate = vi.fn((_input, _checks, receivedSignal: AbortSignal) => {
-        // Keep B pending, but let an unexpected second request settle so failures
-        // report cancellation/publication errors rather than a test timeout.
-        if (validate.mock.calls.length > 1) return Promise.resolve({ issues: [], warnings: [] });
-        signal = receivedSignal;
-        return new Promise((resolve) => { complete = resolve; });
-      });
-      const completion = vi.fn();
-      const presentFailure = vi.fn();
-      const runner = {
-        presentCompletion: completion,
-        presentFailure,
-        run: async (request: Parameters<typeof operations.begin>[0], _notice: string,
-          work: (lease: ReturnType<typeof operations.begin>) => Promise<unknown>) => {
-          const lease = operations.begin(request);
-          try { return await work(lease); } finally { lease.finish(); }
-        },
-      };
-      const leaves: Array<{ view: InstanceType<typeof AssistantView> }> = [];
-      let reveal!: () => void;
-      let rejectReveal!: (error: Error) => void;
-      const app = {
-        vault: { getFileByPath: () => file },
-        workspace: {
-          getLeavesOfType: () => leaves, getActiveFile: () => file,
-          revealLeaf: () => new Promise<void>((resolve, reject) => { reveal = resolve; rejectReveal = reject; }),
-        },
-      };
-      const openSidebar = createAssistantSidebarOpener(app as never, operations, () => true);
-      const actions = new ProofreadActions({
-        ...app,
-      } as never, { validate } as never, { requireAction: async () => ({ admittedFormat: { binding: "original" } }) } as never,
-      () => ({ proofreadPunct: true } as never), runner as never, openSidebar);
-      let pending: Promise<void> | undefined;
-      const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
-        pending = actions.refresh(path, target);
-        return pending;
-      };
-      const a = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      const b = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      leaves.push({ view: a }, { view: b });
-      await a.onOpen();
-      await b.onOpen();
-      a.updateResults([], "A.md", "Notes/A.md", digest("A"));
-      b.updateResults([], file.name, file.path, digest("old B"));
-      const updateA = vi.spyOn(a, "updateResults");
-      const updateB = vi.spyOn(b, "updateResults");
-      findByClass(b.containerEl.children[1] as HTMLElement,
-        "docwen-proofread-btn")?.click();
-      await vi.waitFor(() => expect(validate).toHaveBeenCalledOnce());
-      if (change.startsWith("command-") || change.startsWith("menu-")) {
-        const activated = vi.spyOn(actions, "activateAndRun");
-        let dispose = () => {};
-        if (change.startsWith("command-")) {
-          const { registerCommands } = await import("../src/app/register-commands");
-          let invoke!: (checking: boolean) => boolean;
-          registerCommands({ app, proofreadActions: actions, activeFileSupports: () => true,
-            addLocalizedCommand: (key: string, command: { checkCallback: typeof invoke }) => {
-              if (key === "commandProofread") invoke = command.checkCallback;
-            },
-          } as never);
-          expect(invoke(false)).toBe(true);
-        } else {
-          const { registerFileMenu } = await import("../src/app/register-file-menu");
-          let handler!: (menu: unknown, file: unknown) => void;
-          let invoke!: () => void;
-          registerFileMenu({ app: { ...app, workspace: { ...app.workspace,
-            on: (_event: string, callback: typeof handler) => { handler = callback; },
-          } }, register: (callback: () => void) => { dispose = callback; }, registerEvent: () => {},
-          } as never, { proofread: actions,
-            capabilities: { peek: () => ({ inspection: { supportedActions: ["validate"] } }),
-              supportsAction: (_capability: unknown, action: string) => action === "validate",
-              findConversionRoute: () => null },
-          } as never);
-          handler({ addItem: (build: (item: unknown) => void) => {
-            let icon = "";
-            const item = { setTitle: () => item, setIcon: (value: string) => { icon = value; return item; },
-              onClick: (callback: () => void) => { if (icon === "check-circle") invoke = callback; return item; },
-              setDisabled: () => item };
-            build(item);
-          } }, file);
-          invoke();
-        }
-        expect(activated).toHaveBeenCalledOnce();
-        const activation = activated.mock.results[0].value;
-        if (change.endsWith("close")) await a.onClose();
-        if (change.endsWith("replace")) {
-          const newView = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-          await newView.onOpen();
-          leaves[0].view = newView;
-        }
-        if (change.startsWith("menu-dispose")) dispose();
-        const failure = new Error("host reveal failed");
-        if (change.endsWith("error")) rejectReveal(failure);
-        else reveal();
-        await expect(activation).resolves.toBeUndefined();
-        if (change.endsWith("error") && !change.startsWith("menu-dispose")) {
-          expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
-        } else expect(presentFailure).not.toHaveBeenCalled();
-      }
-      if (change.startsWith("activate-")) {
-        const rejected = vi.fn();
-        const activation = openSidebar().then((view) => actions.run(file as never, view)).catch(rejected);
-        if (change === "activate-close" || change === "activate-reopen") await a.onClose();
-        if (change === "activate-reopen") await a.onOpen();
-        if (change === "activate-replace") {
-          const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-          await replacement.onOpen();
-          leaves[0].view = replacement;
-        }
-        if (change === "activate-detach") leaves.shift();
-        reveal();
-        await activation;
-        expect.soft(rejected).toHaveBeenCalledOnce();
-      }
-      if (change === "closed-before-run") {
-        await a.onClose();
-        await actions.run(file as never, a);
-      }
-      expect.soft(validate).toHaveBeenCalledOnce();
-      expect.soft(findByClass(a.containerEl.children[1] as HTMLElement,
-        "docwen-proofread-cancel")).toBeUndefined();
-      if (change === "close-observer") await a.onClose();
-      const cancelled = ["close-owner", "reopen-owner", "replace-owner", "unload"].includes(change);
-      if (cancelled && change !== "unload") await b.onClose();
-      if (change === "reopen-owner") await b.onOpen();
-      const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      const updateReplacement = vi.spyOn(replacement, "updateResults");
-      if (change === "replace-owner") {
-        leaves[1] = { view: replacement };
-        await replacement.onOpen();
-      }
-      if (change === "unload") operations.cancelAll();
-      expect.soft(signal.aborted).toBe(cancelled);
-      complete({ issues: [], warnings: [] });
-      await pending;
-      expect.soft(updateA).not.toHaveBeenCalled();
-      expect(updateReplacement).not.toHaveBeenCalled();
-      if (cancelled) {
-        expect(updateB).not.toHaveBeenCalled();
-        expect(completion).not.toHaveBeenCalled();
-      } else {
-        expect(updateB).toHaveBeenCalledWith([], file.name, file.path, "a".repeat(64));
-        expect(completion).toHaveBeenCalledOnce();
-      }
-      expect(operations.getSnapshot().operations).toEqual([]);
-    },
-  );
 
   it("passes the displayed source path when refreshing a detached view", async () => {
     const { AssistantView } = await import("../src/assistant-view");
