@@ -254,6 +254,20 @@ describe("source-relative inline images", () => {
     expect(test.imageRead).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["\n", "\r\n"])("binds images after an HTML block separated by a blank %j line", async ending => {
+    const cachedToken = "![cached" + ending + "multiline](assets/green-marker.png)";
+    const source = ["", "<div>", "![example](assets/hidden.png)", "</div>", "", "😀 " + cachedToken,
+      "![active][sample]", "", "[sample]: assets/green-marker.png", ""].join(ending);
+    const test = await fixture(source, [cached(source, cachedToken, "assets/green-marker.png")]);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: cachedToken, logical_path: "Assistant-QA/assets/green-marker.png" },
+      { authored_token: "![active][sample]", logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
   it("reports a missing exact image and ignores a like-named file elsewhere", async () => {
     const test = await fixture(sample(""), [], { imagePath: "Elsewhere/assets/green-marker.png" });
     await expect(test.run()).rejects.toMatchObject({

@@ -93,16 +93,25 @@ const wikiParser = parser.configure({
 });
 
 function parseWithMath(source: string) {
-  // Lezer splits on LF. A lone CR occupies the same UTF-16 width as LF, so
-  // its parse view can keep every source and Obsidian cache offset intact.
-  const parserSource = source.replace(/\r(?!\n)/gu, "\n");
+  // Lezer splits on LF. Keep each physical break at its original offset and
+  // omit the second character of CRLF through parse ranges. Lezer maps node
+  // positions across these gaps back to the original UTF-16 coordinates.
+  const parserSource = source.replace(/\r/gu, "\n");
+  const ranges: { from: number; to: number }[] = [];
+  let from = 0;
+  for (const match of source.matchAll(/\r\n/gu)) {
+    ranges.push({ from, to: match.index + 1 });
+    from = match.index + 2;
+  }
+  if (from > 0 && from < source.length) ranges.push({ from, to: source.length });
+  const logicalSource = ranges.length ? source.replace(/\r\n?/gu, "\n") : parserSource;
   const unmatchedOpeners = new Set<number>();
-  const authoredParser = wikiParser.configure(authoredMath(parserSource, unmatchedOpeners));
+  const authoredParser = wikiParser.configure(authoredMath(logicalSource, unmatchedOpeners));
   let previousCount: number;
   let tree;
   do {
     previousCount = unmatchedOpeners.size;
-    tree = authoredParser.parse(parserSource);
+    tree = authoredParser.parse(parserSource, [], ranges.length ? ranges : undefined);
   } while (unmatchedOpeners.size !== previousCount);
   return tree;
 }
