@@ -3,19 +3,19 @@
 This changelog records notable source changes to DocWen Assistant. A source version or tag does not by itself prove that a GitHub Release was published, that Community Plugins accepted the plugin, or that any Vault was updated.
 
 ## [Unreleased]
-[pr-74]: https://github.com/ZHYX91/obsidian-docwen-assistant/pull/74
 
-- Honor the inspected Markdown format for proofreading and in-place heading numbering. Ask before changing headings in a file with a conflicting extension and reject invalid UTF-8 before writing.
-- Export plain Markdown notes to Word, Markdown tables saved as `.txt` to Excel, and files whose extensions differ from a same-family format admitted by DocWen.
-- Keep Markdown image and link bindings when a file with another extension is accepted as Markdown for Word export. [#74][pr-74]
+## [3.6.4] - 2026-11-22
 
-- Export explicitly relative inline images to Word when Obsidian omits the embed record. Check cached image ranges in one pass through notes with many repeated images.
+- Keep Word-export images and links between opening horizontal rules and after an empty properties block. Resolve relative inline images missing from Obsidian's index, including in notes with Windows line endings.
+- Export Markdown tables saved as `.txt` to Excel. Keep image and link bindings when accepting a file with a different extension as Markdown for Word export.
+- Inspect notes before proofreading and numbering headings. Ask before writing when the filename conflicts with the contents, and keep the original bytes on cancellation.
+- Refresh export targets when the DocWen connection changes. Keep proofreading navigation on the latest selected issue and make operation feedback and cancellation easier to use.
+- On Linux, explain when the required process ownership interface is unavailable before starting DocWen.
 
 ## [3.6.3] - 2026-11-21
 
 - Keep local images and note links after an opening horizontal rule when exporting to Word. Treat matched math expressions as literal content when identifying linked resources and keep resources after an unmatched delimiter.
 - Show the proofreading and heading-numbering commands for inspected files when the connected DocWen runtime offers the corresponding action.
-- Keep Word-export images and links between opening horizontal rules and after an empty properties block, including when another rule follows.
 - Recognize exact YAML delimiters when finding resources for Word export, including the alternate closing delimiter and files with Windows line endings.
 - Make the Word export guide easier to recognize as expandable with a theme-accented arrow and a subtle border.
 
