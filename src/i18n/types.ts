@@ -257,6 +257,7 @@ export interface Translations {
   proofreadViewTitle: string;
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
+  proofreadChecksDisabled: string;
   proofreadIssueCount: string;
   proofreadLineNumber: string;
   proofreadLoadMore: string;

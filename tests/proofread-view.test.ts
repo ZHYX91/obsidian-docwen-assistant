@@ -86,7 +86,7 @@ describe("AssistantView", () => {
       const actions = new ProofreadActions({
         ...app,
       } as never, { validate } as never, { requireAction: async () => ({ admittedFormat: { binding: "original" } }) } as never,
-      () => ({} as never), runner as never, openSidebar);
+      () => ({ proofreadPunct: true } as never), runner as never, openSidebar);
       let pending: Promise<void> | undefined;
       const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
         pending = actions.refresh(path, target);

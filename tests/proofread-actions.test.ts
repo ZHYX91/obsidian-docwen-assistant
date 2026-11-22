@@ -115,6 +115,20 @@ describe("ProofreadActions", () => {
     expect(state.notices).toEqual(["noticeProofreadNoMdFile", "noticeProofreadNoMdFile"]);
   });
 
+  it("explains when no proofreading rule is enabled without replacing the current report", async () => {
+    const { ProofreadActions } = await import("../src/actions/proofread-actions");
+    const file = { name: "Source.md", path: "Notes/Source.md" };
+    const runner = { run: vi.fn(), presentCompletion: vi.fn() };
+    const actions = new ProofreadActions({ workspace: { getActiveFile: () => file } } as never,
+      {} as never, {} as never, () => ({
+        proofreadTypo: false, proofreadSymbol: false, proofreadPunct: false, proofreadSensitive: false,
+      } as never), runner as never, vi.fn());
+    await actions.runActive({ captureLifetime: () => () => true, updateResults: state.updateResults } as never);
+    expect(state.notices).toEqual(["proofreadChecksDisabled"]);
+    expect(runner.run).not.toHaveBeenCalled();
+    expect(state.updateResults).not.toHaveBeenCalled();
+  });
+
   it("labels results with the Vault file name instead of the temporary snapshot name", async () => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
     const signal = new AbortController().signal;
