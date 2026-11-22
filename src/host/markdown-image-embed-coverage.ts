@@ -1,14 +1,4 @@
-import { parseAuthoredMarkdown } from "./markdown-source-ownership";
-export { maskProtectedSource } from "./markdown-source-ownership";
-
-export interface CachedEmbedLike {
-  readonly link: string;
-  readonly original: string;
-  readonly position: {
-    readonly start: { readonly offset: number };
-    readonly end: { readonly offset: number };
-  };
-}
+import { parseAuthoredMarkdown, type AuthoredMarkdown, type CachedMarkdownReference } from "./markdown-source-ownership";
 
 export interface ScannedImageEmbed {
   readonly start: number;
@@ -17,7 +7,7 @@ export interface ScannedImageEmbed {
   readonly link: string;
 }
 
-export interface DeclaredImageEmbed extends CachedEmbedLike {
+export interface DeclaredImageEmbed extends CachedMarkdownReference {
   /** Only uncached references need a parsed URI path for the host resolver. */
   readonly linkpath?: string;
   /** Explicit Markdown path to look up relative to the authored note. */
@@ -38,11 +28,11 @@ function embedKey(start: number, end: number, token: string): string {
 
 /** Only current, unopposed declarations may fill gaps in the host image cache. */
 export function includeUncachedImages(
-  source: string,
-  cachedEmbeds: readonly CachedEmbedLike[],
-  rawCachedEmbeds: readonly CachedEmbedLike[] = cachedEmbeds,
+  occurrences: readonly ImageOccurrence[],
+  cachedEmbeds: readonly CachedMarkdownReference[],
+  rawCachedEmbeds: readonly CachedMarkdownReference[] = cachedEmbeds,
 ): readonly DeclaredImageEmbed[] {
-  const declarations = scanImageOccurrences(source).flatMap(({ image, kind, requiresCache }) => {
+  const declarations = occurrences.flatMap(({ image, kind, requiresCache }) => {
     if (!requiresCache || kind === "wiki") return [];
     const locator = kind === "reference" ? decodeHostLinkpath(image.link) : explicitRelativePath(image.link);
     return locator === null ? [] : [{ image, kind, locator }];
@@ -51,13 +41,14 @@ export function includeUncachedImages(
   // Host records are untrusted data: an extra field cannot supply our private
   // resolver locator or override the target whose coverage is checked below.
   const output: DeclaredImageEmbed[] = cachedEmbeds.map(({ link, original, position }) => ({ link, original, position }));
+  const lastDeclarationEnd = declarations[declarations.length - 1]?.image.end ?? 0;
   const displacedTokens = new Set<string>();
   const ranges: { start: number; end: number }[] = [];
   for (const { original, position } of rawCachedEmbeds) {
     const start = position.start.offset;
     const end = position.end.offset;
     if (!declarationKeys.has(embedKey(start, end, original))) displacedTokens.add(original);
-    if (start < source.length && end > 0) ranges.push({ start, end });
+    if (start < lastDeclarationEnd && end > 0) ranges.push({ start, end });
   }
   ranges.sort((left, right) => left.start - right.start);
   let nextRange = 0;
@@ -106,17 +97,17 @@ function decodeHostLinkpath(link: string): string | null {
 }
 
 export function findUncoveredImageEmbeds(
-  source: string,
-  cachedEmbeds: readonly CachedEmbedLike[],
+  occurrences: readonly ImageOccurrence[],
+  cachedEmbeds: readonly CachedMarkdownReference[],
 ): readonly ScannedImageEmbed[] {
-  const cached = new Map<string, CachedEmbedLike[]>();
+  const cached = new Map<string, CachedMarkdownReference[]>();
   for (const embed of cachedEmbeds) {
     const key = embedKey(embed.position.start.offset, embed.position.end.offset, embed.original);
     const matches = cached.get(key) ?? [];
     matches.push(embed);
     cached.set(key, matches);
   }
-  return scanImageOccurrences(source).filter(({ image, kind, requiresCache }) => {
+  return occurrences.filter(({ image, kind, requiresCache }) => {
     const matches = cached.get(embedKey(image.start, image.end, image.token));
     if (!matches?.length) return requiresCache;
     if (kind !== "reference") return false;
@@ -128,11 +119,10 @@ export function findUncoveredImageEmbeds(
 }
 
 export function scanAuthoredImageEmbeds(source: string): readonly ScannedImageEmbed[] {
-  return scanImageOccurrences(source).filter(({ requiresCache }) => requiresCache).map(({ image }) => image);
+  return scanImageOccurrences(parseAuthoredMarkdown(source)).filter(({ requiresCache }) => requiresCache).map(({ image }) => image);
 }
 
-function scanImageOccurrences(source: string): readonly ImageOccurrence[] {
-  const { tree } = parseAuthoredMarkdown(source);
+export function scanImageOccurrences({ source, tree }: AuthoredMarkdown): readonly ImageOccurrence[] {
   // Container markers are not part of a label split across blockquote lines.
   // Keep the original source for tokens and offsets; this copy is only for keys.
   const labelParts: string[] = [];

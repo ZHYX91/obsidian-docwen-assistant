@@ -4,9 +4,9 @@ import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
 import { parseLinktext, TFile, type App } from "obsidian";
 import { normalizeLogicalPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
-import { findUncoveredImageEmbeds, includeUncachedImages } from "./markdown-image-embed-coverage";
-import { findUncoveredWikiNavigations } from "./markdown-wiki-navigation-coverage";
-import { isActiveCachedReference, maskProtectedSource } from "./markdown-source-ownership";
+import { findUncoveredImageEmbeds, includeUncachedImages, scanImageOccurrences } from "./markdown-image-embed-coverage";
+import { findUncoveredWikiNavigations, isLocalWikiNavigationLink } from "./markdown-wiki-navigation-coverage";
+import { activeCachedReferences, parseAuthoredMarkdown } from "./markdown-source-ownership";
 import { VaultWriteError } from "./vault-write-transaction";
 
 export interface DeclaredMarkdownSnapshot {
@@ -42,24 +42,18 @@ export async function buildDeclaredMarkdownInputs(
   const imageBindings = new Map<string, string>();
   const wikiLinkBindings = new Map<string, string>();
   let totalResourceBytes = 0;
-  const imageSource = maskProtectedSource(authoredMarkdown, { preserveImageDestinations: true });
-  const navigationSource = maskProtectedSource(authoredMarkdown);
+  const markdown = parseAuthoredMarkdown(authoredMarkdown);
+  const occurrences = scanImageOccurrences(markdown);
   const rawEmbeds = fileCache?.embeds ?? [];
-  const activeEmbeds = [...rawEmbeds].filter((item) => isActiveCachedReference(
-    authoredMarkdown, imageSource, item.original, item.position.start.offset, item.position.end.offset,
-  ))
-    .sort((left, right) => left.position.start.offset - right.position.start.offset);
-  const embeds = includeUncachedImages(authoredMarkdown, activeEmbeds, rawEmbeds);
-  const [missingImage] = findUncoveredImageEmbeds(authoredMarkdown, embeds);
+  const activeEmbeds = activeCachedReferences(rawEmbeds, authoredMarkdown, markdown.imageSource);
+  const embeds = includeUncachedImages(occurrences, activeEmbeds, rawEmbeds);
+  const [missingImage] = findUncoveredImageEmbeds(occurrences, embeds);
   if (missingImage !== undefined) {
     throw imageInputError("metadata", missingImage.link);
   }
 
-  const links = [...(fileCache?.links ?? [])].filter((item) => isActiveCachedReference(
-    authoredMarkdown, navigationSource, item.original, item.position.start.offset, item.position.end.offset,
-  ))
-    .sort((left, right) => left.position.start.offset - right.position.start.offset);
-  const [missingNavigation] = findUncoveredWikiNavigations(authoredMarkdown, links);
+  const links = activeCachedReferences(fileCache?.links ?? [], authoredMarkdown, markdown.navigationSource);
+  const [missingNavigation] = findUncoveredWikiNavigations(markdown, links);
   if (missingNavigation !== undefined) {
     throw new VaultWriteError(
       "vault_input_invalid",
@@ -182,12 +176,6 @@ async function readEmbeddedImage(
     throw new VaultWriteError("vault_input_invalid", message);
   }
   return Buffer.from(content);
-}
-
-function isLocalWikiNavigationLink(link: string): boolean {
-  const target = (link.split("|", 1)[0] ?? "").trim();
-  if (!target || target.startsWith("#") || target.startsWith("//")) return false;
-  return !/^[A-Za-z][A-Za-z0-9+.-]*:/u.test(target);
 }
 
 function obsidianNavigationHref(vaultName: string, resolvedPath: string, authoredLink: string): string {

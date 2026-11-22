@@ -1,3 +1,4 @@
+import { parseAuthoredMarkdown } from "../src/host/markdown-source-ownership";
 import { Window } from "happy-dom";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -5,7 +6,12 @@ import {
   findUncoveredImageEmbeds,
   includeUncachedImages,
   scanAuthoredImageEmbeds,
+  scanImageOccurrences,
 } from "../src/host/markdown-image-embed-coverage";
+
+function occurrences(source: string) {
+  return scanImageOccurrences(parseAuthoredMarkdown(source));
+}
 
 let host: Window;
 beforeAll(() => {
@@ -23,8 +29,8 @@ describe("Markdown image embed cache coverage", () => {
     const raw = [{ original: "![stale]", link: "old.png", position: {
       start: { offset: 0 }, end: { offset: "![image]".length },
     } }];
-    expect(includeUncachedImages(source, [], raw)).toEqual([]);
-    expect(findUncoveredImageEmbeds(source, includeUncachedImages(source, [], raw))).toHaveLength(1);
+    expect(includeUncachedImages(occurrences(source), [], raw)).toEqual([]);
+    expect(findUncoveredImageEmbeds(occurrences(source), includeUncachedImages(occurrences(source), [], raw))).toHaveLength(1);
   });
 
   it("matches repeated cached images without rescanning raw metadata for each occurrence", () => {
@@ -40,7 +46,7 @@ describe("Markdown image embed cache coverage", () => {
     const raw = cached.map((embed) => ({
       ...embed, get position() { reads += 1; return embed.position; },
     })).reverse();
-    expect(includeUncachedImages(source, cached, raw)).toEqual(cached);
+    expect(includeUncachedImages(occurrences(source), cached, raw)).toEqual(cached);
     expect(reads).toBeLessThan(count * 8);
   });
 
@@ -54,7 +60,7 @@ describe("Markdown image embed cache coverage", () => {
       { original: "old", link: "old.png", position: { start: { offset: 1 }, end: { offset: start * 2 } } },
       { original: other, link: "assets/q.png", position: { start: { offset: 500 }, end: { offset: 520 } } },
     ];
-    expect(includeUncachedImages(source, [], raw).map((embed) => embed.position.start.offset)).toEqual([start * 2]);
+    expect(includeUncachedImages(occurrences(source), [], raw).map((embed) => embed.position.start.offset)).toEqual([start * 2]);
   });
 
   it.each([
@@ -62,7 +68,7 @@ describe("Markdown image embed cache coverage", () => {
     ["![photo](media/photo(1).png)", "media/photo(1).png"],
     ["![photo](media/photo\\(1\\).png \"title (1)\")", "media/photo(1).png"],
   ])("requires exact cache coverage for %s", (source, link) => {
-    const missing = findUncoveredImageEmbeds(source, []);
+    const missing = findUncoveredImageEmbeds(occurrences(source), []);
     expect(missing).toEqual([{ start: 0, end: source.length, token: source, link }]);
   });
 
@@ -82,8 +88,8 @@ describe("Markdown image embed cache coverage", () => {
     const source = "😀 " + token + "\n\n" + definition + "\n";
     const start = source.indexOf(token);
     const expected = { start, end: start + token.length, token, link };
-    expect(findUncoveredImageEmbeds(source, [])).toEqual([expected]);
-    expect(findUncoveredImageEmbeds(source, [{
+    expect(findUncoveredImageEmbeds(occurrences(source), [])).toEqual([expected]);
+    expect(findUncoveredImageEmbeds(occurrences(source), [{
       original: token, link,
       position: { start: { offset: start }, end: { offset: start + token.length } },
     }])).toEqual([]);
@@ -146,7 +152,7 @@ describe("Markdown image embed cache coverage", () => {
     const source = token + "\n\n[image]: " + destination + "\n";
     const cache = [{ original: token, link, position: { start: { offset: 0 }, end: { offset: token.length } } }];
     expect(scanAuthoredImageEmbeds(source)).toHaveLength(1);
-    expect(findUncoveredImageEmbeds(source, cache)).toEqual([]);
+    expect(findUncoveredImageEmbeds(occurrences(source), cache)).toEqual([]);
   });
 
   it.each([
@@ -168,18 +174,18 @@ describe("Markdown image embed cache coverage", () => {
     const token = "![ref][image]";
     const source = token + "\n\n" + definition + "\n";
     const cache = [{ original: token, link, position: { start: { offset: 0 }, end: { offset: token.length } } }];
-    expect(findUncoveredImageEmbeds(source, cache)).toHaveLength(1);
+    expect(findUncoveredImageEmbeds(occurrences(source), cache)).toHaveLength(1);
   });
 
   it("rejects conflicting reference cache records and preserves Wiki host resolution", () => {
     const token = "![ref][image]";
     const position = { start: { offset: 0 }, end: { offset: token.length } };
-    expect(findUncoveredImageEmbeds(token + "\n\n[image]: current.png\n", [
+    expect(findUncoveredImageEmbeds(occurrences(token + "\n\n[image]: current.png\n"), [
       { original: token, link: "current.png", position },
       { original: token, link: "old.png", position },
     ])).toHaveLength(1);
     const wiki = "![[active.png]]";
-    expect(findUncoveredImageEmbeds(wiki, [{ original: wiki, link: "assets/active.png",
+    expect(findUncoveredImageEmbeds(occurrences(wiki), [{ original: wiki, link: "assets/active.png",
       position: { start: { offset: 0 }, end: { offset: wiki.length } },
     }])).toEqual([]);
   });
@@ -243,7 +249,7 @@ describe("Markdown image embed cache coverage", () => {
     const oldToken = "![[old.png]]";
     const oldStart = source.indexOf(oldToken);
 
-    const missing = findUncoveredImageEmbeds(source, [{
+    const missing = findUncoveredImageEmbeds(occurrences(source), [{
       link: "old.png",
       original: oldToken,
       position: {
