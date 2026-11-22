@@ -281,4 +281,5 @@ export interface Translations {
   noticeProofreadSuccess: string;
   noticeProofreadFailed: string;
   noticeProofreadNoMdFile: string;
+  noticeProofreadSourceMissing: string;
 }

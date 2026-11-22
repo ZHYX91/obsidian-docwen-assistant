@@ -42,7 +42,7 @@ export class ProofreadActions {
     }
     const file = this.app.vault.getFileByPath(vaultPath);
     if (!file) {
-      showNotice(t("noticeProofreadNoMdFile"));
+      showNotice(t("noticeProofreadSourceMissing"));
       return;
     }
     await this.run(file, view);

@@ -282,6 +282,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校对完成，发现 {count} 个问题",
     noticeProofreadFailed: "校对失败：{error}",
     noticeProofreadNoMdFile: "请先打开一个 Markdown 文件",
+    noticeProofreadSourceMissing: "找不到这份报告的源文件。请打开要检查的文件，再次运行校对。",
   },
 
   // Traditional Chinese
@@ -563,6 +564,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校對完成，發現 {count} 個問題",
     noticeProofreadFailed: "校對失敗：{error}",
     noticeProofreadNoMdFile: "請先開啟一個 Markdown 檔案",
+    noticeProofreadSourceMissing: "找不到這份報告的來源檔案。請開啟要檢查的檔案，再次執行校對。",
   },
 
   // English
@@ -844,6 +846,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Proofread complete, {count} issue(s) found",
     noticeProofreadFailed: "Proofread failed: {error}",
     noticeProofreadNoMdFile: "Please open a Markdown file first",
+    noticeProofreadSourceMissing: "The source file for this report could not be found. Open the file you want to check and run proofreading again.",
   },
 
   // Arabic
@@ -1128,6 +1131,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Korrektur abgeschlossen, {count} Problem(e) gefunden",
     noticeProofreadFailed: "Korrektur fehlgeschlagen: {error}",
     noticeProofreadNoMdFile: "Bitte öffnen Sie zuerst eine Markdown-Datei",
+    noticeProofreadSourceMissing: "Die Quelldatei für diesen Bericht wurde nicht gefunden. Öffnen Sie die gewünschte Datei und starten Sie die Korrektur erneut.",
   },
 
   // French
@@ -1409,6 +1413,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Relecture terminée, {count} problème(s) trouvé(s)",
     noticeProofreadFailed: "Relecture échouée : {error}",
     noticeProofreadNoMdFile: "Veuillez d'abord ouvrir un fichier Markdown",
+    noticeProofreadSourceMissing: "Le fichier source de ce rapport est introuvable. Ouvrez le fichier à vérifier et relancez la relecture.",
   },
 
   // Russian
@@ -1690,6 +1695,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Проверка завершена, найдено проблем: {count}",
     noticeProofreadFailed: "Ошибка проверки: {error}",
     noticeProofreadNoMdFile: "Сначала откройте файл Markdown",
+    noticeProofreadSourceMissing: "Не удалось найти исходный файл этого отчёта. Откройте нужный файл и снова запустите проверку.",
   },
 
   // Portuguese (Brazil)
@@ -1971,6 +1977,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Revisão concluída, {count} problema(s) encontrado(s)",
     noticeProofreadFailed: "Falha na revisão: {error}",
     noticeProofreadNoMdFile: "Abra um arquivo Markdown primeiro",
+    noticeProofreadSourceMissing: "O arquivo de origem deste relatório não foi encontrado. Abra o arquivo que deseja verificar e execute a revisão novamente.",
   },
 
   // Japanese
@@ -2252,6 +2259,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校正完了、{count} 件の問題が見つかりました",
     noticeProofreadFailed: "校正に失敗：{error}",
     noticeProofreadNoMdFile: "先に Markdown ファイルを開いてください",
+    noticeProofreadSourceMissing: "このレポートの元ファイルが見つかりません。確認したいファイルを開き、もう一度校正を実行してください。",
   },
 
   "ko": {
@@ -2532,6 +2540,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "교정 완료, {count}개 문제 발견",
     noticeProofreadFailed: "교정 실패: {error}",
     noticeProofreadNoMdFile: "먼저 Markdown 파일을 열어주세요",
+    noticeProofreadSourceMissing: "이 보고서의 원본 파일을 찾을 수 없습니다. 확인할 파일을 열고 교정을 다시 실행하세요.",
   },
 
   "es": {
@@ -2812,6 +2821,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Corrección completada, {count} problema(s) encontrado(s)",
     noticeProofreadFailed: "Corrección fallida: {error}",
     noticeProofreadNoMdFile: "Abra un archivo Markdown primero",
+    noticeProofreadSourceMissing: "No se ha encontrado el archivo de origen de este informe. Abre el archivo que quieras comprobar y vuelve a ejecutar la corrección.",
   },
 
   "vi": {
@@ -3092,5 +3102,6 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Hiệu đính hoàn tất, tìm thấy {count} vấn đề",
     noticeProofreadFailed: "Hiệu đính thất bại: {error}",
     noticeProofreadNoMdFile: "Vui lòng mở tệp Markdown trước",
+    noticeProofreadSourceMissing: "Không tìm thấy tệp nguồn của báo cáo này. Hãy mở tệp bạn muốn kiểm tra rồi chạy hiệu đính lại.",
   },
 };

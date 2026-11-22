@@ -67,18 +67,36 @@ describe("ProofreadActions", () => {
     expect(getActiveFile).not.toHaveBeenCalled();
   });
 
-  it("does not switch to another active note when the displayed source is missing", async () => {
+  it.each(["moved", "deleted"])("explains why a %s report source cannot refresh while another note is active", async (change) => {
     const { ProofreadActions } = await import("../src/actions/proofread-actions");
-    const getActiveFile = vi.fn().mockReturnValue({ path: "Other.md" });
+    const reportPath = "Notes/Source.md";
+    const source = { name: "Source.md", path: reportPath };
+    const other = { name: "Other.md", path: "Notes/Other.md" };
+    const files = new Map([[source.path, source], [other.path, other]]);
+    const getActiveFile = vi.fn(() => other);
     const actions = new ProofreadActions(
-      { vault: { getFileByPath: () => null }, workspace: { getActiveFile } } as never,
+      { vault: { getFileByPath: (path: string) => files.get(path) ?? null }, workspace: { getActiveFile } } as never,
       {} as never, {} as never, () => ({} as never), {} as never, vi.fn(),
     );
     const run = vi.spyOn(actions, "run").mockResolvedValue();
-    await actions.refresh("Deleted.md", {} as never);
+    const view = {} as never;
+    await actions.refresh(reportPath, view);
+    expect(run).toHaveBeenCalledExactlyOnceWith(source, view);
+    expect(state.notices).toEqual([]);
+
+    files.delete(reportPath);
+    if (change === "moved") {
+      source.path = "Archive/Source.md";
+      files.set(source.path, source);
+    }
+    run.mockClear();
+    await actions.refresh(reportPath, view);
     expect(run).not.toHaveBeenCalled();
     expect(getActiveFile).not.toHaveBeenCalled();
-    expect(state.notices).toEqual(["noticeProofreadNoMdFile"]);
+    expect(state.notices).toEqual(["noticeProofreadSourceMissing"]);
+
+    await actions.runActive(view);
+    expect(run).toHaveBeenCalledExactlyOnceWith(other, view);
   });
 
   it("uses the active note only when the view has no previous source", async () => {
