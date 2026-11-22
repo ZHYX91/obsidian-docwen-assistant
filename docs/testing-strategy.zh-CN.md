@@ -40,7 +40,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 本地诊断命令明确区分测试范围：
 
 - `npm run test:source` 运行 Linux Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
-- `npm run test:native:linux` 在 Linux x64/arm64 运行真实 Machine 生命周期测试。整组测试前只检查一次内嵌 owner 映像、`/usr/bin/python3` 的 pidfd 支持、运行器的 `/proc` 身份，以及独立 session 哨兵自己报告的身份与运行器观测是否一致。前提失败会在任何生命周期用例执行前使测试组失败，输出失败阶段和观测结果，并在专用临时目录保留 `prerequisites.json` 诊断；哨兵始终通过本次拥有的进程句柄清理。
+- `npm run test:native:linux` 在 Linux x64/arm64 上测试 Machine 进程的启动和清理。开始前会检查内嵌的进程管理程序、`/usr/bin/python3` 的 pidfd 支持，以及能否从 `/proc` 读到测试进程自己的 PID 和子进程列表（`/proc/self/task/<pid>/children`）。接着会启动一个独立会话中的子进程，核对父子双方看到的进程信息，再通过启动时取得的进程句柄清理它。任一步失败，测试都会停止，输出失败原因，并将详情保存在临时目录的 `prerequisites.json` 中。
 - `npm run test:native:windows` 在 Windows 调用哈希绑定的配对实包门禁；原生 Job 测试由 Core 拥有，没有候选不能算实包验收通过。
 
 `npm test`、`npm run test:coverage` 和 `npm run check` 保持默认完整测试集。仅源码测试通过不能替代受支持宿主上的原生进程验证。前提检查不会延长生命周期等待期限，也不会跳过失败环境。

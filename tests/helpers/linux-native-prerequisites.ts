@@ -106,6 +106,10 @@ export async function checkLinuxNativePrerequisites(): Promise<void> {
     report.runner = runner;
     assertRunnerObservable(process.pid, runner);
 
+    phase = "procfs-task-children";
+    await readFile(`/proc/self/task/${process.pid}/children`);
+    report.procfsTaskChildrenReadable = true;
+
     phase = "sentinel-ready";
     const child = spawn(process.execPath, ["-e", [
       "const fs=require('node:fs');",
