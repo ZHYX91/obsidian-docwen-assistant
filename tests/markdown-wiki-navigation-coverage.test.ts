@@ -1,3 +1,4 @@
+import { parseAuthoredMarkdown } from "../src/host/markdown-source-ownership";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,7 +10,7 @@ describe("Markdown WikiLink navigation cache coverage", () => {
   it("ignores WikiLink-looking text in Markdown destinations and titles", () => {
     const source = '[label](https://example.test/[[Destination]] "[[Title]]") '
       + '![photo](media/[[ImagePath]].png) [[Real]]';
-    expect(scanAuthoredWikiNavigations(source).map((item) => item.link)).toEqual(["Real"]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((item) => item.link)).toEqual(["Real"]);
   });
 
   it("finds active local ordinary WikiLinks and ignores embeds/fragment-only/remote links", () => {
@@ -24,7 +25,7 @@ describe("Markdown WikiLink navigation cache coverage", () => {
       "",
     ].join("\n");
 
-    const scanned = scanAuthoredWikiNavigations(source);
+    const scanned = scanAuthoredWikiNavigations(parseAuthoredMarkdown(source));
 
     expect(scanned.map((item) => item.token)).toEqual([
       "[[Other Note]]",
@@ -52,7 +53,7 @@ describe("Markdown WikiLink navigation cache coverage", () => {
       "[[Real]]",
     ].join("\n");
 
-    expect(scanAuthoredWikiNavigations(source).map((item) => item.link)).toEqual(["Real"]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((item) => item.link)).toEqual(["Real"]);
   });
 
   it("reports only source WikiLinks not exactly covered by cached metadata", () => {
@@ -60,7 +61,7 @@ describe("Markdown WikiLink navigation cache coverage", () => {
     const oldToken = "[[Old]]";
     const oldStart = source.indexOf(oldToken);
 
-    const missing = findUncoveredWikiNavigations(source, [{
+    const missing = findUncoveredWikiNavigations(parseAuthoredMarkdown(source), [{
       link: "Old",
       original: oldToken,
       position: {

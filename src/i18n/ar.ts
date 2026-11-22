@@ -141,6 +141,8 @@ export const AR_TRANSLATIONS: Translations = {
   settingsCheckConnection: "فحص",
   dialogDetails: "التفاصيل التقنية",
   errorOperationFailed: "تعذّر إكمال العملية. راجع التفاصيل ثم حاول مرة أخرى.",
+  errorImageMetadata: "تعذّر التحقق من صورة مضمّنة. تحقّق من رابطها وأغلق كتل المعادلات غير المكتملة.",
+  errorImageMissing: "تعذّر العثور على صورة مضمّنة. تحقّق من المسار ومن وجود الملف.",
   errorDocWenInternal: "حدث خطأ داخل DocWen أثناء معالجة المستند وتوقفت العملية. انسخ التفاصيل التقنية عند الإبلاغ عن المشكلة.",
   errorDocumentProofreadUnavailable: "لا يدعم إصدار DocWen هذا تدقيق مستندات Word المصدّرة. حدّث DocWen، أو عطّل تدقيق تصدير Word في إعدادات Assistant ثم أعد المحاولة.",
   errorCapabilityUnavailable: "الميزة المطلوبة غير متاحة في تثبيت DocWen الحالي. راجع التفاصيل لمعرفة ما ينقص.",

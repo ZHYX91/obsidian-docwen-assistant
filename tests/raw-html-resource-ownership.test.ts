@@ -1,3 +1,4 @@
+import { parseAuthoredMarkdown, type CachedMarkdownReference } from "../src/host/markdown-source-ownership";
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
@@ -15,8 +16,8 @@ vi.mock("node:fs/promises", async (importOriginal) => ({
 
 import { buildDeclaredMarkdownInputs } from "../src/host/declared-markdown-snapshot";
 import { TFile } from "obsidian";
-import { scanAuthoredImageEmbeds, type CachedEmbedLike } from "../src/host/markdown-image-embed-coverage";
-import { scanAuthoredWikiNavigations, type CachedLinkLike } from "../src/host/markdown-wiki-navigation-coverage";
+import { scanAuthoredImageEmbeds } from "../src/host/markdown-image-embed-coverage";
+import { scanAuthoredWikiNavigations } from "../src/host/markdown-wiki-navigation-coverage";
 
 const literalReferences = "![[hidden.png]]\n![hidden](hidden.webp)\n[[Hidden note]]";
 const rawBlocks = [
@@ -41,7 +42,7 @@ const rawBlocks = [
 beforeEach(() => vi.clearAllMocks());
 
 async function buildWithEmptyMetadata(source: string, cache: {
-  embeds: readonly CachedEmbedLike[]; links: readonly CachedLinkLike[];
+  embeds: readonly CachedMarkdownReference[]; links: readonly CachedMarkdownReference[];
 } = { embeds: [], links: [] }) {
   const getFirstLinkpathDest = vi.fn();
   const readBinary = vi.fn();
@@ -87,7 +88,7 @@ describe("raw HTML resource ownership", () => {
   ])("retains real block-external resources after literal delimiters in %j", async (prefix) => {
     const source = prefix + "![[active.png]] [[Active note]]\n";
     expect(new Set(scanAuthoredImageEmbeds(source).map((item) => item.link))).toEqual(new Set(["active.png"]));
-    expect(new Set(scanAuthoredWikiNavigations(source).map((item) => item.link))).toEqual(new Set(["Active note"]));
+    expect(new Set(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((item) => item.link))).toEqual(new Set(["Active note"]));
     const cached = (original: string, link: string) => ({ original, link,
       position: { start: { offset: source.indexOf(original) }, end: { offset: source.indexOf(original) + original.length } } });
     const image = Object.assign(new TFile(), { path: "assets/active.png", extension: "png" });
@@ -121,7 +122,7 @@ describe("raw HTML resource ownership", () => {
     '[label](https://example.test/path`segment) [[Active note]] `code\n',
     '![[foo`bar.png]] [[Foo`bar]]',
   ])("keeps Wiki atoms outside destinations and titles: %j", (source) => {
-    expect(scanAuthoredWikiNavigations(source).map((item) => item.link)).toEqual([
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((item) => item.link)).toEqual([
       source.includes("Foo`bar") ? "Foo`bar" : "Active note",
     ]);
   });
@@ -150,7 +151,7 @@ describe("raw HTML resource ownership", () => {
   it("does not let a generic inline tag interrupt an existing paragraph", () => {
     const source = "Paragraph\n<span>\n![[active.png]] [[Active note]]\n";
     expect(scanAuthoredImageEmbeds(source).map((item) => item.link)).toEqual(["active.png"]);
-    expect(scanAuthoredWikiNavigations(source).map((item) => item.link)).toEqual(["Active note"]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((item) => item.link)).toEqual(["Active note"]);
   });
 
   it("ignores cache entries whose exact source range belongs to literal HTML", async () => {
@@ -168,7 +169,7 @@ describe("raw HTML resource ownership", () => {
 
   it.each(rawBlocks)("keeps $name contents out of both resource scanners", ({ source }) => {
     expect(scanAuthoredImageEmbeds(source)).toEqual([]);
-    expect(scanAuthoredWikiNavigations(source)).toEqual([]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source))).toEqual([]);
   });
 
   it.each(rawBlocks)("accepts $name literal text without host resource metadata", async ({ source }) => {
@@ -187,7 +188,7 @@ describe("raw HTML resource ownership", () => {
         { start: source.indexOf(image), end: source.indexOf(image) + image.length, token: image, link: "outside.png" },
         { start: source.indexOf(markdownImage), end: source.indexOf(markdownImage) + markdownImage.length, token: markdownImage, link: "outside.webp" },
       ]);
-      expect(scanAuthoredWikiNavigations(source)).toEqual([
+      expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source))).toEqual([
         { start: source.indexOf(link), end: source.indexOf(link) + link.length, token: link, link: "Outside note" },
       ]);
     },
@@ -212,12 +213,12 @@ describe("raw HTML resource ownership", () => {
   it("ends a closed HTML block inside a quote before active document references", () => {
     const source = "> <pre>\n> ![[hidden.png]]\n> [[Hidden note]]\n> </pre>\n\n![[outside.png]]\n[[Outside note]]\n";
     expect(scanAuthoredImageEmbeds(source).map((image) => image.link)).toEqual(["outside.png"]);
-    expect(scanAuthoredWikiNavigations(source).map((link) => link.link)).toEqual(["Outside note"]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((link) => link.link)).toEqual(["Outside note"]);
   });
 
   it("does not let a tag displayed in fenced code claim the following Markdown", () => {
     const source = "```html\n<pre>\n```\n\n![[outside.png]]\n[[Outside note]]\n";
     expect(scanAuthoredImageEmbeds(source).map((image) => image.link)).toEqual(["outside.png"]);
-    expect(scanAuthoredWikiNavigations(source).map((link) => link.link)).toEqual(["Outside note"]);
+    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map((link) => link.link)).toEqual(["Outside note"]);
   });
 });

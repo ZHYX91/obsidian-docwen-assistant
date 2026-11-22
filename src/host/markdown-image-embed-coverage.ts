@@ -1,14 +1,4 @@
-import { parseAuthoredMarkdown } from "./markdown-source-ownership";
-export { maskProtectedSource } from "./markdown-source-ownership";
-
-export interface CachedEmbedLike {
-  readonly link: string;
-  readonly original: string;
-  readonly position: {
-    readonly start: { readonly offset: number };
-    readonly end: { readonly offset: number };
-  };
-}
+import { parseAuthoredMarkdown, type AuthoredMarkdown, type CachedMarkdownReference } from "./markdown-source-ownership";
 
 export interface ScannedImageEmbed {
   readonly start: number;
@@ -17,16 +7,18 @@ export interface ScannedImageEmbed {
   readonly link: string;
 }
 
-export interface DeclaredImageEmbed extends CachedEmbedLike {
+export interface DeclaredImageEmbed extends CachedMarkdownReference {
   /** Only uncached references need a parsed URI path for the host resolver. */
   readonly linkpath?: string;
+  /** Explicit Markdown path to look up relative to the authored note. */
+  readonly sourceRelativePath?: string;
 }
 
 const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico"]);
 
 interface ImageOccurrence {
   readonly image: ScannedImageEmbed;
-  readonly reference: boolean;
+  readonly kind: "reference" | "inline" | "wiki";
   readonly requiresCache: boolean;
 }
 
@@ -34,40 +26,62 @@ function embedKey(start: number, end: number, token: string): string {
   return [start, end, token].join(":");
 }
 
-/** Host versions may omit reference images; only current, unopposed declarations fill that gap. */
-export function includeUncachedReferenceImages(
-  source: string,
-  cachedEmbeds: readonly CachedEmbedLike[],
-  rawCachedEmbeds: readonly CachedEmbedLike[] = cachedEmbeds,
+/** Only current, unopposed declarations may fill gaps in the host image cache. */
+export function includeUncachedImages(
+  occurrences: readonly ImageOccurrence[],
+  cachedEmbeds: readonly CachedMarkdownReference[],
+  rawCachedEmbeds: readonly CachedMarkdownReference[] = cachedEmbeds,
 ): readonly DeclaredImageEmbed[] {
-  const references = scanImageOccurrences(source)
-    .filter(({ reference, requiresCache }) => reference && requiresCache)
-    .map(({ image }) => image);
-  const referenceKeys = new Set(references.map(image => embedKey(image.start, image.end, image.token)));
+  const declarations = occurrences.flatMap(({ image, kind, requiresCache }) => {
+    if (!requiresCache || kind === "wiki") return [];
+    const locator = kind === "reference" ? decodeHostLinkpath(image.link) : explicitRelativePath(image.link);
+    return locator === null ? [] : [{ image, kind, locator }];
+  });
+  const declarationKeys = new Set(declarations.map(({ image }) => embedKey(image.start, image.end, image.token)));
   // Host records are untrusted data: an extra field cannot supply our private
   // resolver locator or override the target whose coverage is checked below.
   const output: DeclaredImageEmbed[] = cachedEmbeds.map(({ link, original, position }) => ({ link, original, position }));
-  for (const image of references) {
-    // An exact record stays subject to target coverage below. An overlapping or
-    // displaced record must not become permission to ignore stale metadata.
-    const opposed = rawCachedEmbeds.some(embed => {
-      const start = embed.position.start.offset;
-      const end = embed.position.end.offset;
-      if (start < image.end && end > image.start) return true;
-      return embed.original === image.token && !referenceKeys.has(embedKey(start, end, embed.original));
-    });
-    if (opposed) continue;
-    const linkpath = uncachedReferenceLinkpath(image.link);
-    if (linkpath === null) continue;
+  const lastDeclarationEnd = declarations[declarations.length - 1]?.image.end ?? 0;
+  const displacedTokens = new Set<string>();
+  const ranges: { start: number; end: number }[] = [];
+  for (const { original, position } of rawCachedEmbeds) {
+    const start = position.start.offset;
+    const end = position.end.offset;
+    if (!declarationKeys.has(embedKey(start, end, original))) displacedTokens.add(original);
+    if (start < lastDeclarationEnd && end > 0) ranges.push({ start, end });
+  }
+  ranges.sort((left, right) => left.start - right.start);
+  let nextRange = 0;
+  let furthestEnd = 0;
+  // The parser emits disjoint declarations in source order. Every raw cache
+  // range that begins before this image ends is consumed once, even if it
+  // extends across several images. A range touching only a boundary is safe.
+  for (const { image, kind, locator } of declarations) {
+    while (nextRange < ranges.length && ranges[nextRange].start < image.end) {
+      furthestEnd = Math.max(furthestEnd, ranges[nextRange].end);
+      nextRange += 1;
+    }
+    if (furthestEnd > image.start || displacedTokens.has(image.token)) continue;
     output.push({
-      original: image.token, link: image.link, linkpath,
+      original: image.token,
+      link: image.link,
+      ...(kind === "reference" ? { linkpath: locator } : { sourceRelativePath: locator }),
       position: { start: { offset: image.start }, end: { offset: image.end } },
     });
   }
   return output.sort((left, right) => left.position.start.offset - right.position.start.offset);
 }
 
-function uncachedReferenceLinkpath(link: string): string | null {
+function explicitRelativePath(link: string): string | null {
+  if (!link.includes("/") || link.startsWith("/") || /[?#]/u.test(link)) return null;
+  const decoded = decodeHostLinkpath(link);
+  if (decoded === null || /[:\p{Cc}]/u.test(decoded)) return null;
+  const relative = decoded.startsWith("./") ? decoded.slice(2) : decoded;
+  return relative.split("/").some(segment => !segment || segment === "." || segment === "..")
+    ? null : relative;
+}
+
+function decodeHostLinkpath(link: string): string | null {
   if (referenceTargetKey(link) === null) return null;
   const pathname = link.split(/[?#]/u, 1)[0] ?? "";
   try {
@@ -83,20 +97,20 @@ function uncachedReferenceLinkpath(link: string): string | null {
 }
 
 export function findUncoveredImageEmbeds(
-  source: string,
-  cachedEmbeds: readonly CachedEmbedLike[],
+  occurrences: readonly ImageOccurrence[],
+  cachedEmbeds: readonly CachedMarkdownReference[],
 ): readonly ScannedImageEmbed[] {
-  const cached = new Map<string, CachedEmbedLike[]>();
+  const cached = new Map<string, CachedMarkdownReference[]>();
   for (const embed of cachedEmbeds) {
     const key = embedKey(embed.position.start.offset, embed.position.end.offset, embed.original);
     const matches = cached.get(key) ?? [];
     matches.push(embed);
     cached.set(key, matches);
   }
-  return scanImageOccurrences(source).filter(({ image, reference, requiresCache }) => {
+  return occurrences.filter(({ image, kind, requiresCache }) => {
     const matches = cached.get(embedKey(image.start, image.end, image.token));
     if (!matches?.length) return requiresCache;
-    if (!reference) return false;
+    if (kind !== "reference") return false;
     // The occurrence can stay byte-identical when only its definition changes.
     // Never authorize the stale cache target (or conflicting duplicate records).
     const expected = referenceTargetKey(image.link);
@@ -105,11 +119,10 @@ export function findUncoveredImageEmbeds(
 }
 
 export function scanAuthoredImageEmbeds(source: string): readonly ScannedImageEmbed[] {
-  return scanImageOccurrences(source).filter(({ requiresCache }) => requiresCache).map(({ image }) => image);
+  return scanImageOccurrences(parseAuthoredMarkdown(source)).filter(({ requiresCache }) => requiresCache).map(({ image }) => image);
 }
 
-function scanImageOccurrences(source: string): readonly ImageOccurrence[] {
-  const { tree } = parseAuthoredMarkdown(source);
+export function scanImageOccurrences({ source, tree }: AuthoredMarkdown): readonly ImageOccurrence[] {
   // Container markers are not part of a label split across blockquote lines.
   // Keep the original source for tokens and offsets; this copy is only for keys.
   const labelParts: string[] = [];
@@ -142,7 +155,7 @@ function scanImageOccurrences(source: string): readonly ImageOccurrence[] {
       const body = token.slice(3, -2);
       const link = (body.split("|", 1)[0] ?? "").trim();
       if (isLocalImageLocator(link)) {
-        output.push({ image: { start: node.from, end: node.to, token, link }, reference: false, requiresCache: true });
+        output.push({ image: { start: node.from, end: node.to, token, link }, kind: "wiki", requiresCache: true });
       }
     } else {
       const destination = node.node.getChild("URL");
@@ -158,7 +171,7 @@ function scanImageOccurrences(source: string): readonly ImageOccurrence[] {
       const reference = !destination && marks.length === 2;
       const requiresCache = link !== undefined && isLocalImageLocator(link, true);
       if (reference || requiresCache) {
-        output.push({ image: { start: node.from, end: node.to, token, link: link ?? "" }, reference, requiresCache });
+        output.push({ image: { start: node.from, end: node.to, token, link: link ?? "" }, kind: reference ? "reference" : "inline", requiresCache });
       }
     }
     return false;
