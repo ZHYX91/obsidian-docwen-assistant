@@ -53,8 +53,10 @@ export class SettingsTabs {
     this.activate(this.activeIndex, false);
   }
 
-  destroy(): void {
+  /** Close this strip and return the page to restore on the next display. */
+  close(): SettingsPageId {
     this.overflowCleanup();
+    return this.activePageId;
   }
 
   get activePageId(): SettingsPageId {
