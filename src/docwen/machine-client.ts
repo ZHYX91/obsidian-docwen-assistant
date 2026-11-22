@@ -1,8 +1,6 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { linuxOwnerErrorDetails, spawnLinuxOwnedMachine, type LinuxOwner } from "./linux-native-owner";
-import { createHash } from "node:crypto";
 import { validateBundleFields, validateBundlePages } from "./bundle-metadata";
-import { createReadStream } from "node:fs";
 import { lstat, realpath, stat } from "node:fs/promises";
 import * as path from "node:path";
 import { clearTimeout as cancelTimeout, setTimeout as scheduleTimeout } from "node:timers";
@@ -16,7 +14,7 @@ import {
   type DocWenLaunchTarget,
 } from "./process-launch";
 import { containsMachineProtocolFrame, encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
-import { fileIdentity, sameFileIdentity } from "./output-integrity";
+import { fileIdentity, hashFileAtSize, sameFileIdentity } from "./output-integrity";
 import {
   spawnWindowsOwnedMachineProcess,
   windowsMachineOwnerDetails,
@@ -911,7 +909,8 @@ export async function validateArtifactBundle(
     if (!isPathWithin(root, canonicalPath)) throw integrityError("Artifact resolves outside staging.");
     const actual = await stat(canonicalPath, { bigint: true });
     if (actual.size !== BigInt(sizeBytes)) throw integrityError("Artifact size does not match its manifest.");
-    const digest = await sha256File(canonicalPath, sizeBytes, assertActive);
+    const digest = await hashFileAtSize(canonicalPath, sizeBytes, assertActive,
+      (change) => integrityError(`Artifact ${change} while it was being hashed.`));
     if (digest !== sha256) throw integrityError("Artifact sha256 does not match its content.");
     const finalInfo = await lstat(absolutePath, { bigint: true });
     const finalCanonicalPath = await realpath(absolutePath);
@@ -1187,25 +1186,6 @@ function integrityError(message: string): LocalCliError {
 
 function outputLimitError(message: string, details: Record<string, unknown> = {}): LocalCliError {
   return new LocalCliError("cli_output_limit", message, details);
-}
-
-async function sha256File(
-  filename: string,
-  expectedBytes: number,
-  assertActive?: () => void,
-): Promise<string> {
-  const hash = createHash("sha256");
-  let bytesRead = 0;
-  assertActive?.();
-  for await (const chunk of createReadStream(filename) as AsyncIterable<Buffer<ArrayBufferLike>>) {
-    assertActive?.();
-    bytesRead += chunk.length;
-    if (bytesRead > expectedBytes) throw integrityError("Artifact grew while it was being hashed.");
-    hash.update(chunk);
-  }
-  assertActive?.();
-  if (bytesRead !== expectedBytes) throw integrityError("Artifact size changed while it was being hashed.");
-  return hash.digest("hex");
 }
 
 function remoteRpcError(error: JsonObject): RemoteMachineError {

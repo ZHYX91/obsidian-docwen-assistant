@@ -91,25 +91,32 @@ export function samePath(left: string, right: string): boolean {
     : normalizedLeft === normalizedRight;
 }
 
-export async function sha256File(
+export function sha256File(
   filePath: string,
   expectedBytes: number,
   signal?: AbortSignal,
 ): Promise<string> {
+  return hashFileAtSize(filePath, expectedBytes, () => throwIfAborted(signal),
+    (change) => new LocalCliError("cli_integrity_error", `File ${change} while it was being hashed.`, { filePath }));
+}
+
+export async function hashFileAtSize(
+  filePath: string,
+  expectedBytes: number,
+  assertActive: (() => void) | undefined,
+  sizeError: (change: "grew" | "size changed") => LocalCliError,
+): Promise<string> {
   const hash = createHash("sha256");
   let bytesRead = 0;
-  throwIfAborted(signal);
+  assertActive?.();
   for await (const chunk of createReadStream(filePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
-    throwIfAborted(signal);
+    assertActive?.();
     bytesRead += chunk.length;
-    if (bytesRead > expectedBytes) {
-      throw new LocalCliError("cli_integrity_error", "File grew while it was being hashed.", { filePath });
-    }
+    if (bytesRead > expectedBytes) throw sizeError("grew");
     hash.update(chunk);
   }
-  if (bytesRead !== expectedBytes) {
-    throw new LocalCliError("cli_integrity_error", "File size changed while it was being hashed.", { filePath });
-  }
+  assertActive?.();
+  if (bytesRead !== expectedBytes) throw sizeError("size changed");
   return hash.digest("hex");
 }
 
