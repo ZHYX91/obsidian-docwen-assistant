@@ -191,7 +191,7 @@ describe("VaultWriteTransaction", () => {
     const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
     const file = { path: "note.md", name: "note.md" };
     const vault = {
-      read: vi.fn().mockResolvedValue("# Heading\n"),
+      readBinary: vi.fn().mockResolvedValue(new TextEncoder().encode("# Heading\n").buffer),
       process: vi.fn(async (_file, update: (value: string) => string) => update("# Heading\n")),
       getFileByPath: vi.fn(() => file),
     };
@@ -240,7 +240,7 @@ describe("VaultWriteTransaction", () => {
     const replacement = { path: "note.md", name: "note.md" };
     let registeredFile = file;
     const vault = {
-      read: vi.fn().mockResolvedValue("# Heading\n"),
+      readBinary: vi.fn().mockResolvedValue(new TextEncoder().encode("# Heading\n").buffer),
       process: vi.fn(),
       getFileByPath: vi.fn(() => registeredFile),
     };
@@ -263,7 +263,7 @@ describe("VaultWriteTransaction", () => {
     const { VaultWriteTransaction } = await import("../src/host/vault-write-transaction");
     const file = { path: "note.md", name: "note.md" };
     const vault = {
-      read: vi.fn().mockResolvedValue("# Heading\n"),
+      readBinary: vi.fn().mockResolvedValue(new TextEncoder().encode("# Heading\n").buffer),
       process: vi.fn(),
       getFileByPath: vi.fn((candidate: string) => candidate === "note.md" ? file : null),
     };
@@ -288,7 +288,7 @@ describe("VaultWriteTransaction", () => {
     let leaves: unknown[] = [];
     const editor = { getValue: vi.fn(() => "# Heading\n") };
     const vault = {
-      read: vi.fn().mockResolvedValue("# Heading\n"),
+      readBinary: vi.fn().mockResolvedValue(new TextEncoder().encode("# Heading\n").buffer),
       process: vi.fn(async (_file, update: (value: string) => string) => {
         leaves = [{ view: { file, editor, requestSave: vi.fn() } }];
         return update("# Heading\n");
@@ -313,7 +313,7 @@ describe("VaultWriteTransaction", () => {
     const replacement = { path: "note.md", name: "note.md" };
     let registeredFile = file;
     const vault = {
-      read: vi.fn().mockResolvedValue("# Heading\n"),
+      readBinary: vi.fn().mockResolvedValue(new TextEncoder().encode("# Heading\n").buffer),
       process: vi.fn(async (_file, update: (value: string) => string) => {
         const published = update("# Heading\n");
         registeredFile = replacement;

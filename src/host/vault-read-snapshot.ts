@@ -6,14 +6,15 @@ import {
 export type { DeclaredMarkdownSnapshot } from "./declared-markdown-snapshot";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 
 import type { App, TFile } from "obsidian";
 
-import { mediaTypeForPath, sourceKindForPath, type TaskInput } from "../docwen";
-import { bindAcceptedDetectedSource } from "../docwen/capability-service";
+import type { TaskInput } from "../docwen";
+import { sourceFormatForPath } from "../docwen/formats";
+import { materializeDetectedSource } from "./detected-source";
 import type { FileInspection, RuntimeRoute } from "../docwen/client";
 import {
   isSameOpenMarkdownTarget,
@@ -21,9 +22,12 @@ import {
 } from "./open-markdown-target";
 import { VaultWriteError } from "./vault-write-transaction";
 
+import { proofreadSourceDigest } from "./proofread-source";
+
 export interface IsolatedSnapshot {
   readonly inputPath: string;
   readonly contentSha256: string;
+  readonly proofreadSourceDigest: () => string;
   readonly sourceInput: TaskInput;
   readonly inputs: readonly TaskInput[];
   /** Materialize an explicitly accepted format only inside this snapshot's ownership. */
@@ -32,7 +36,7 @@ export interface IsolatedSnapshot {
     route: RuntimeRoute,
     inspect: (input: TaskInput) => Promise<FileInspection>,
   ) => Promise<TaskInput>;
-  readonly getDeclaredMarkdownInputs: () => Promise<DeclaredMarkdownSnapshot | undefined>;
+  readonly getDeclaredMarkdownInputs: (mediaType?: string) => Promise<DeclaredMarkdownSnapshot | undefined>;
   /** Validate the captured source immediately before publishing visible results. */
   readonly publish: <T>(commit: (assertIdentity: () => void) => Promise<T>) => Promise<T>;
 }
@@ -96,9 +100,6 @@ export class VaultReadSnapshot {
     const editor = target?.editor ?? null;
     const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
     assertSourceIdentity();
-    const authoredMarkdown = ["md", "markdown"].includes(file.extension.toLowerCase())
-      ? decodeMarkdown(original)
-      : null;
     const contentSha256 = sha256(original);
     let published = false;
     const assertPublicationIdentity = (): void => {
@@ -134,59 +135,31 @@ export class VaultReadSnapshot {
       return committed;
     };
     const ownedWorkspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
-    const extension = file.extension.replace(/[^a-z0-9]/giu, "") || "bin";
+    const extension = path.extname(originalPath) || ".bin";
     let result: T;
     try {
       throwIfAborted(signal);
       // Core inspections return canonical paths, including for aliased TEMP parents.
       // Bind both snapshot copies to that spelling without relaxing inspection checks.
       const workspace = await realpath(ownedWorkspace);
-      const inputPath = path.join(workspace, `source.${extension}`);
+      const inputPath = path.join(workspace, `source${extension}`);
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
-        kind: sourceKindForPath(originalPath),
+        ...sourceFormatForPath(originalPath),
         role: "source",
         logicalPath: logicalPathFor(originalPath),
-        mediaType: mediaTypeForPath(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
-        const bound = bindAcceptedDetectedSource(sourceInput, contentSha256, inspection, route);
-        const format = inspection.detectedFormat;
-        if (
-          !/^[a-z0-9]{1,16}$/u.test(format)
-          || inspection.mediaType === "application/octet-stream"
-          || mediaTypeForPath(`source.${format}`) !== inspection.mediaType
-          || sourceKindForPath(`source.${format}`) !== bound.kind
-        ) {
-          throw new VaultWriteError("vault_input_invalid", "The accepted format has no matching canonical snapshot extension.");
-        }
-        await assertCurrent();
-        const acceptedPath = path.join(workspace, `accepted-source.${format}`);
-        await writeFile(acceptedPath, typeof original === "string" ? original : Buffer.from(original), { flag: "wx" });
-        if (sha256(await readFile(acceptedPath)) !== contentSha256) {
-          throw new VaultWriteError("vault_input_invalid", "The accepted snapshot bytes changed.");
-        }
-        const accepted = { ...bound, path: acceptedPath };
-        const verified = await inspect(accepted);
-        if (
-          verified.decision !== "allow"
-          || verified.filePath !== accepted.path
-          || verified.contentSha256 !== contentSha256
-          || verified.sizeBytes !== inspection.sizeBytes
-          || verified.detectedFormat !== format
-          || verified.mediaType !== bound.mediaType
-        ) {
-          throw new VaultWriteError("vault_input_invalid", "The canonical snapshot does not match the accepted inspection.");
-        }
-        await assertCurrent();
-        return accepted;
+        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent);
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
-      const getDeclaredMarkdownInputs = async (): Promise<DeclaredMarkdownSnapshot | undefined> => {
-        if (authoredMarkdown === null) return undefined;
+      const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {
+        if (mediaType !== "text/markdown") return undefined;
         await assertCurrent();
-        declaredMarkdownInputs ??= buildDeclaredMarkdownInputs(this.app, file, authoredMarkdown, workspace, signal, sourceInput, contentSha256);
+        // Inspection may identify binary content despite a Markdown filename.
+        // Decode only when the conversion actually consumes Markdown resources.
+        declaredMarkdownInputs ??= buildDeclaredMarkdownInputs(this.app, file, decodeMarkdown(original), workspace, signal, sourceInput, contentSha256);
         const declared = await declaredMarkdownInputs;
         await assertCurrent();
         return declared;
@@ -194,6 +167,7 @@ export class VaultReadSnapshot {
       result = await work({
         inputPath,
         contentSha256,
+        proofreadSourceDigest: () => proofreadSourceDigest(original),
         publish,
         sourceInput,
         inputs: [sourceInput],

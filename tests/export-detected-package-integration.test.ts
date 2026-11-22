@@ -79,11 +79,13 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
         expect(await realpath(aliasTemp)).not.toBe(aliasTemp);
         ui.tempDirectory = aliasTemp;
       }
-      ui.sourcePath = join(caseRoot, "Detected-format.txt");
+      const extension = scenario === "continue" ? "md" : "txt";
+      const name = `Detected-format.${extension}`;
+      ui.sourcePath = join(caseRoot, name);
       ui.outputDirectory = join(caseRoot, "published");
       await mkdir(ui.outputDirectory);
       await writeFile(ui.sourcePath, original);
-      const file = { path: "Detected-format.txt", name: "Detected-format.txt", extension: "txt" };
+      const file = { path: name, name, extension };
       let currentFile = file;
       const app = {
         workspace: { getLeavesOfType: () => [] },
@@ -107,7 +109,7 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
       ui.confirm.mockImplementation(async () => {
         const captured = inspected.mock.calls.at(-1)![0];
         expect(typeof captured).toBe("object");
-        expect(await readdir(dirname((captured as { path: string }).path))).toEqual(["source.txt"]);
+        expect(await readdir(dirname((captured as { path: string }).path))).toEqual([`source.${extension}`]);
         if (scenario === "changed-at-confirmation") await writeFile(ui.sourcePath, "User changed the source");
         return scenario !== "cancel";
       });

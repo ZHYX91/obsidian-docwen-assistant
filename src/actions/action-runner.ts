@@ -66,7 +66,7 @@ export class ActionRunner {
 
   presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
     const code = getLocalErrorCode(error) ?? "";
-    const summary = getErrorMessage(error);
+    const summary = getErrorMessage(error, true);
     const notice = t(failureNotice, { error: summary });
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
     if (SETUP_ERROR_CODES.has(code)) {

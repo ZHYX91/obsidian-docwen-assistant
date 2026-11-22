@@ -4,11 +4,19 @@ import { VaultWriteError } from "../host/vault-write-transaction";
 import { t } from "../i18n";
 import { diagnosticCode, diagnosticDetails } from "./diagnostic-details";
 
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown, showImageName = false): string {
   const code = getLocalErrorCode(error);
   const details = getErrorDetails(error);
   if (typeof details === "object" && details !== null && "outputState" in details && details.outputState === "unconfirmed") {
     return t("errorOutputUnconfirmed");
+  }
+  if (error instanceof VaultWriteError && code === "vault_input_invalid") {
+    const { imageIssue, imageName } = error.details;
+    if (imageIssue === "metadata" || imageIssue === "missing") {
+      const message = t(imageIssue === "missing" ? "errorImageMissing" : "errorImageMetadata");
+      return showImageName && typeof imageName === "string" && imageName
+        ? message + " (" + imageName + ")" : message;
+    }
   }
   const recovery = getWindowsOwnerRecoveryMessage(code, details);
   if (recovery) return recovery;
@@ -21,6 +29,7 @@ export function getErrorMessage(error: unknown): string {
     if (error.category === "conflict") return t("errorContentConflict");
   }
   if (code === "cli_incompatible_version") return t("settingsConnectionIncompatible");
+  if (code === "cli_platform_unsupported") return getUnsupportedPlatformMessage(details);
   if (code === "cli_health_failed") return t("settingsConnectionHealthFailed");
   if (code === "cli_document_proofread_unavailable") return t("errorDocumentProofreadUnavailable");
   if (code === "cli_capability_unavailable") return t("errorCapabilityUnavailable");
@@ -70,4 +79,9 @@ export function getWindowsOwnerRecoveryMessage(code: string, value: unknown): st
   if (!["cli_spawn_failed", "cli_integrity_error"].includes(code)) return null;
   if (!["owner_materialize", "owner_verify", "owner_spawn", "owner_runtime"].includes(String(details.phase))) return null;
   return t("errorWindowsOwnerRecovery");
+}
+
+export function getUnsupportedPlatformMessage(details: unknown): string {
+  return diagnosticDetails(details).requirement === "procfs_task_children"
+    ? t("errorLinuxProcessListUnavailable") : t("settingsPlatformUnsupported");
 }

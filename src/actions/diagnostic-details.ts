@@ -20,6 +20,7 @@ export function diagnosticDetails(value: unknown): Record<string, unknown> {
     const count = read(key);
     if (typeof count === "number" && Number.isSafeInteger(count)) details[key] = count;
   }
+  if (read("requirement") === "procfs_task_children") details.requirement = "procfs_task_children";
   const incompatibility = read("incompatibility");
   if (read("phase") === "initialize") details.phase = "initialize";
   for (const key of ["phase", "primaryPhase"]) {

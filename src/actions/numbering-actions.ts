@@ -6,6 +6,9 @@ import {
   LocalCliError,
   type NumberingSchemeItem,
 } from "../docwen";
+import { sourceFormatForPath, CONVERSION_MEDIA_TYPES } from "../docwen/formats";
+import { materializeDetectedSource } from "../host/detected-source";
+import { admittedActionInput } from "./admitted-input";
 import { showNotice } from "../host/notices";
 import { VaultWriteTransaction } from "../host/vault-write-transaction";
 import { t } from "../i18n";
@@ -83,8 +86,16 @@ export class NumberingActions {
             },
           );
         }
+        const source = { path: inputPath, ...sourceFormatForPath(inputPath), role: "source" as const, logicalPath: file.path };
+        const admitted = await admittedActionInput(this.app, source, capability, "number markdown", transformSignal, route =>
+          materializeDetectedSource(source, originalSha256, capability.inspection, route,
+            input => this.docwen.inspect(input, transformSignal), () => transformSignal.throwIfAborted()));
+        if (!admitted) throw new DOMException("Numbering cancelled", "AbortError");
+        if (admitted.mediaType !== CONVERSION_MEDIA_TYPES.md) {
+          throw new LocalCliError("cli_input_invalid", "Heading numbering requires Markdown input.");
+        }
         const outcome = await this.docwen.numberMarkdown(
-          inputPath,
+          admitted.path,
           outputPath,
           operation,
           scheme,

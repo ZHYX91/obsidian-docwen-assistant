@@ -2,6 +2,8 @@ import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 
+const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 const state = vi.hoisted(() => ({
   notices: [] as string[],
   pickerItems: [] as Array<{ id: string }>,
@@ -107,6 +109,7 @@ describe("ExportActions optimization discovery", () => {
     };
     const capability = {
       inspection: { decision: "allow" },
+      admittedFormat: { mediaType: "application/octet-stream", binding: "original" },
       source: { id: "binary", category: "binary", routes: [] },
     };
     const capabilities = {
@@ -115,7 +118,6 @@ describe("ExportActions optimization discovery", () => {
       requireTaskInputs: vi.fn(),
       optimizationActionIds: vi.fn().mockReturnValue([]),
       findApplicableOptimizations: vi.fn().mockReturnValue([]),
-      requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
     };
     const docwen = {
       optimizations: vi.fn(),
@@ -132,6 +134,7 @@ describe("ExportActions optimization discovery", () => {
     await actions.toDocx({ path: "note.bin", name: "note.bin" } as never);
 
     expect(docwen.optimizations).not.toHaveBeenCalled();
+    expect(state.getDeclaredMarkdownInputs).not.toHaveBeenCalled();
     expect(docwen.convert).toHaveBeenCalledOnce();
     expect(state.notices).toEqual(["noticeExportSuccess:note.docx"]);
   });
@@ -149,6 +152,7 @@ describe("ExportActions optimization discovery", () => {
     const joined = { id: "gongwen", name: "Gongwen", scopes: ["opaque"] };
     const capability = {
       inspection: { decision: "allow" },
+      admittedFormat: { mediaType: DOCX, binding: "original" },
       source: { id: "docx", category: "document", routes: [] },
     };
     const capabilities = {
@@ -191,7 +195,11 @@ describe("ExportActions optimization discovery", () => {
     const signal = new AbortController().signal;
     const runner = advisoryRunner(signal);
     const selectedCapability = { capability_id: "opaque.gongwen", operation: "transform", optimization_id: "gongwen" };
-    const capability = { inspection: { decision: "allow" }, source: { id: "docx", category: "document", routes: [] } };
+    const capability = {
+      inspection: { decision: "allow" },
+      admittedFormat: { mediaType: DOCX, binding: "original" },
+      source: { id: "docx", category: "document", routes: [] },
+    };
     const resources = [{ id: "gongwen", name: "Gongwen", scopes: [] }];
     const capabilities = {
       requireAction: vi.fn().mockResolvedValue(capability),
@@ -203,7 +211,6 @@ describe("ExportActions optimization discovery", () => {
       }),
       requireTaskInputs: vi.fn(), optimizationActionIds: vi.fn().mockReturnValue(["gongwen"]),
       findApplicableOptimizations: vi.fn().mockReturnValue(resources),
-      requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
     };
     const docwen = { optimizations: vi.fn().mockResolvedValue(resources), convert: vi.fn().mockResolvedValue({ output: "letter.md", outputs: [], bundleId: "bundle.1", warnings: [] }) };
     const actions = new ExportActions({} as never, docwen as never, capabilities as never, () => DEFAULT_SETTINGS, runner as never);
@@ -226,6 +233,7 @@ describe("ExportActions optimization discovery", () => {
     const runner = advisoryRunner(signal);
     const capability = {
       inspection: { decision: "allow" },
+      admittedFormat: { mediaType: DOCX, binding: "original" },
       source: { id: "docx", category: "document", routes: [] },
     };
     const supportedOptions = [
@@ -246,7 +254,6 @@ describe("ExportActions optimization discovery", () => {
       requireTaskInputs: vi.fn(),
       optimizationActionIds: vi.fn().mockReturnValue([]),
       findApplicableOptimizations: vi.fn().mockReturnValue([]),
-      requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
     };
     const docwen = {
       optimizations: vi.fn(),
@@ -472,6 +479,7 @@ function advisoryRunner(signal: AbortSignal) {
 function markdownCapability() {
   return {
     inspection: { decision: "allow" },
+    admittedFormat: { mediaType: "text/markdown", binding: "original" },
     source: { id: "markdown", category: "markdown", routes: [] },
   };
 }
@@ -489,7 +497,6 @@ function advisoryCapabilities(capability: ReturnType<typeof markdownCapability>)
     requireTaskInputs: vi.fn(),
     optimizationActionIds: vi.fn().mockReturnValue([]),
     findApplicableOptimizations: vi.fn().mockReturnValue([]),
-    requiresDetectedFormatAcceptance: vi.fn().mockReturnValue(false),
   };
 }
 

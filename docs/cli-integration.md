@@ -2,6 +2,8 @@
 
 DocWen Assistant requires DocWen 0.23.0 or later on Windows and 0.17.0 or later on Linux. Content operations consume `docwen.machine.v2` and Artifact Bundle v3 from a verified local DocWen launch target; other Bundle schemas, older product releases, and incompatible process envelopes fail closed. GUI launch/open is intentionally a separate local control path described below.
 
+When Core admits plain paragraphs in a Markdown file with `FILE_FORMAT_COMPATIBLE_TEXT`, the original Markdown snapshot can use the advertised Markdown routes. For Markdown detected in a text file or a mismatch admitted with `FILE_FORMAT_SAME_FAMILY_MISMATCH`, Assistant uses a byte-identical snapshot with the detected extension and asks Core to verify it before export review. Inputs requiring explicit acceptance still open the format confirmation dialog.
+
 ## Process boundary
 
 - Automatic mode verifies and launches the fixed `%LOCALAPPDATA%/Microsoft/WindowsApps/docwen.exe` execution alias from a safe temporary working directory. Windows resolves the installed package; no arbitrary package-directory search, bare PATH lookup or persistent package-path setting is used. Linux does not use automatic alias discovery.
@@ -20,7 +22,7 @@ DocWen Assistant requires DocWen 0.23.0 or later on Windows and 0.17.0 or later 
 
 Heading numbering accepts exactly one Markdown document, one preferred primary entry and no relations. It supports the flat `docwen.artifact_layout.v1` bundle and Core's single-document `docwen.document_node.v1` bundle. The document node requires entry ordinal zero, matching `locator` and `logical_path` of the form `<node>/<node>.md`, and the matching `suggested_name`. Both the client and the final host write boundary validate UTF-8 before replacing note content.
 
-Full, collapsed and shortcut local reference images are declared by the current CommonMark syntax tree. If Obsidian omits their embed records, Assistant resolves each explicit definition destination through the host's `getFirstLinkpathDest` API and applies the same resource-binding and byte checks. Existing records with nonmatching overlapping ranges, displaced identical tokens or conflicting definition targets still fail closed. Inline images, Wiki images and ordinary Wiki navigation retain their exact cache requirements; a missing required declaration is never silently omitted.
+Full, collapsed and shortcut local reference images are declared by the current CommonMark syntax tree. If Obsidian omits their embed records, Assistant resolves each explicit definition destination through the host's `getFirstLinkpathDest` API and applies the same resource-binding and byte checks. Existing records with nonmatching overlapping ranges, displaced identical tokens or conflicting definition targets still fail closed. An inline Markdown image with an explicit relative path inside the source folder can use one exact Vault file lookup when its embed record is absent and no raw cache record conflicts. This lookup uses no basename search or other guessed target. Wiki images and ordinary Wiki navigation still require exact cache records, and missing required resources stop the export.
 
 Coverage validates the current reference target as well as the image occurrence, so a changed definition cannot authorize an older cache target. For an uncached reference, URI query and fragment delimiters are separated before its path segments are decoded once for the host resolver. An encoded separator, delimiter or percent sign has no unambiguous host linkpath representation and still requires exact cache metadata; Assistant never tries alternate raw and decoded paths. Escaped percent signs and URI delimiters retain their literal meaning; ambiguous cache representations are rejected instead of being decoded repeatedly or selecting a different resource.
 
@@ -54,7 +56,7 @@ planning and acceptance. Global settings contribute only options exposed by the 
 | Markdown proofreading | Machine `validate.markdown` |
 | Markdown heading numbering | Machine `transform.markdown.heading_numbering` |
 
-Support comes from the conjunction of content-derived `file/inspect` results and available Machine capabilities for the detected media type. The Assistant does not infer conversion support from extensions or DocWen route IDs. Route-specific optimizers are not exposed until DocWen promotes them to a normalized Machine capability.
+Support comes from the conjunction of content-derived `file/inspect` results and available Machine capabilities for the admitted source media type. The Assistant does not infer conversion support from extensions or DocWen route IDs. Route-specific optimizers are not exposed until DocWen promotes them to a normalized Machine capability.
 
 ## Artifact Bundle consumption
 
@@ -84,6 +86,8 @@ fallback to Markdown validation, resolved-document conversion, or an unproofread
 success. Core checks the generated Word document and embeds Word comments before
 returning the result. Spreadsheet exports never request proofreading. Export success
 alone does not claim that comments were generated; the document may have no issues.
+
+Proofreading and in-place heading numbering use the same detected-format admission as exports. Numbering checks closed notes as strict UTF-8 and inspects a snapshot with the original file extension before writing. If explicit format acceptance is required, the numbering confirmation identifies the file that will change. Proofreading reports for attachments remain readable when there is no open Markdown editor. Clicking an issue only reveals an attachment in an existing Markdown editor.
 
 Direct Markdown proofreading always selects the `validate.markdown` capability, reads the preferred `docwen.proofread_report.v2` JSON resource, and never commits that report. It does not invoke Markdown→DOCX conversion or DocWen's conversion post-processing pipeline. Numbering still passes through the existing editor/Vault snapshot, conflict, and reconciliation transaction before changing a note.
 

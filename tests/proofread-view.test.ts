@@ -17,7 +17,7 @@ vi.mock("../src/host/vault-read-snapshot", () => ({
   VaultReadSnapshot: class {
     async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
       return { value: await work({
-        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64),
+        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64), proofreadSourceDigest: () => "a".repeat(64),
         publish: async (commit: () => Promise<unknown>) => commit(),
       }), warnings: [] };
     }
@@ -85,7 +85,7 @@ describe("AssistantView", () => {
       const openSidebar = createAssistantSidebarOpener(app as never, operations, () => true);
       const actions = new ProofreadActions({
         ...app,
-      } as never, { validate } as never, { requireAction: async () => ({}) } as never,
+      } as never, { validate } as never, { requireAction: async () => ({ admittedFormat: { binding: "original" } }) } as never,
       () => ({} as never), runner as never, openSidebar);
       let pending: Promise<void> | undefined;
       const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
@@ -285,7 +285,7 @@ describe("AssistantView", () => {
     const issue = findByClass(content, "docwen-proofread-item");
     expect(issue?.tagName.toLowerCase()).toBe("button");
     expect(issue?.getAttribute("type")).toBe("button");
-    expect(issue?.getAttribute("aria-label")).toBe("L1 Typo check: bad → good");
+    expect(issue?.getAttribute("aria-label")).toBe("Line 1 Typo check: bad → good");
     const filename = findByClass(content, "docwen-proofread-filename");
     expect(filename?.textContent).toBe("Proofread.md");
     expect(filename?.getAttribute("title")).toBe("Proofread.md");
@@ -323,6 +323,7 @@ describe("AssistantView", () => {
     expect(css).toMatch(/\.docwen-assistant-panel\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
+    expect(css).toMatch(/@media \(pointer:\s*coarse\)\s*\{\s*\.docwen-proofread-btn\s*\{[^}]*min-inline-size:\s*44px;[^}]*min-block-size:\s*44px;/s);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
   });
 
@@ -341,7 +342,7 @@ describe("AssistantView", () => {
       const content = view.containerEl.children[1] as HTMLElement;
       expect(findByClass(content, "docwen-proofread-rule")?.textContent).toBe("符号缺少配对");
       expect(findByClass(content, "docwen-proofread-item")?.getAttribute("aria-label"))
-        .toBe("L1 符号缺少配对: （");
+        .toBe("第 1 行 符号缺少配对: （");
       expect(findByClass(content, "docwen-proofread-suggestion")).toBeUndefined();
     } finally {
       initI18n("en");
@@ -363,6 +364,27 @@ describe("AssistantView", () => {
       { line: 0, ch: 3 }, { line: 0, ch: 6 },
     ));
     expect(f.editor.scrollIntoView).toHaveBeenCalledOnce();
+  });
+
+  it.each(["resolves", "rejects"])("keeps the latest issue selected when an earlier file open %s late", async (outcome) => {
+    const f = await navigationFixture();
+    const reports = [0, 1].map((column) => ({
+      range: { start: { offset: column, line: 0, column }, end: { offset: column + 1, line: 0, column: column + 1 } },
+      matched_text: column === 0 ? "A" : "😀", error_text: "issue", rule_key: "typo", suggestion: "", error_type: "typo", source: "fixture",
+    }));
+    f.view.updateResults(reports, "Proofread.md", "Proofread.md", digest(f.content.value));
+    const [first, second] = f.root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item");
+    let finish!: () => void;
+    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
+      finish = outcome === "resolves" ? resolve : () => reject(new Error("obsolete open"));
+    }));
+    first.click();
+    second.click();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledWith({ line: 0, ch: 1 }, { line: 0, ch: 3 }));
+    finish();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(f.editor.setSelection).toHaveBeenCalledTimes(1);
+    expect(f.root.querySelectorAll(".docwen-proofread-item")).toHaveLength(2);
   });
 
   it("rejects edited content even when the reported substring is unchanged", async () => {
@@ -411,6 +433,27 @@ describe("AssistantView", () => {
     expect(f.editor.setSelection).not.toHaveBeenCalled();
   });
 
+  it.each(["txt", "docx", "markdown"])("keeps a .%s report readable when no Markdown editor is open", async extension => {
+    const f = await navigationFixture("Source." + extension);
+    f.leaves.length = 0;
+    f.clickIssue();
+    expect(f.openFile).not.toHaveBeenCalled();
+    expect(findByClass(f.root, "docwen-proofread-item")).toBeDefined();
+    expect((await import("../src/host/notices")).showNotice).toHaveBeenCalledWith(
+      "Open this file in a Markdown editor to locate this issue.",
+    );
+  });
+
+  it("locates a compatible note in its existing Markdown editor", async () => {
+    const f = await navigationFixture("Source.txt");
+    const revealLeaf = vi.fn().mockResolvedValue(undefined);
+    Object.assign(f.view.app.workspace, { revealLeaf });
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
+    expect(revealLeaf).toHaveBeenCalledWith(f.leaf);
+    expect(f.openFile).not.toHaveBeenCalled();
+  });
+
   it("contains file-open failure and asks to refresh instead of using another editor", async () => {
     const f = await navigationFixture();
     f.openFile.mockRejectedValueOnce(new Error("host file open failed"));
@@ -418,6 +461,19 @@ describe("AssistantView", () => {
     await vi.waitFor(() => expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
       .toBe("The note or editor has changed. Refresh proofreading before locating an issue."));
     expect(f.editor.setSelection).not.toHaveBeenCalled();
+  });
+
+  it.each(["\n", "\r\n", "\r"])("selects the reported line when an editor uses %j", async (eol) => {
+    const f = await navigationFixture();
+    f.content.value = ["heading", "A😀bad"].join(eol);
+    f.editor.getLine = () => "A😀bad";
+    f.view.updateResults([{
+      range: { start: { offset: 10, line: 1, column: 2 }, end: { offset: 13, line: 1, column: 5 } },
+      matched_text: "bad", error_text: "bad", rule_key: "typo", suggestion: "good",
+      error_type: "typo", source: "fixture",
+    }], "Proofread.md", "Proofread.md", digest("heading\nA😀bad"));
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledWith({ line: 1, ch: 3 }, { line: 1, ch: 6 }));
   });
 
   it("ignores a detached issue button after a newer report replaces it", async () => {
@@ -434,13 +490,13 @@ function digest(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-async function navigationFixture() {
+async function navigationFixture(path = "Proofread.md") {
   const { AssistantView } = await import("../src/assistant-view");
   const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
   const operations = new OperationCoordinator();
   const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
   const content = { value: "A😀bad" };
-  const currentFile = { value: Object.assign(new TFile(), { path: "Proofread.md" }) };
+  const currentFile = { value: Object.assign(new TFile(), { path }) };
   const editor = {
     getValue: () => content.value,
     getLine: () => content.value,
@@ -457,7 +513,7 @@ async function navigationFixture() {
     range: { start: { offset: 2, line: 0, column: 2 }, end: { offset: 5, line: 0, column: 5 } },
     matched_text: "bad", error_text: "bad", rule_key: "typo", suggestion: "good",
     error_type: "typo", source: "fixture",
-  }], "Proofread.md", "Proofread.md", digest(content.value));
+  }], path, path, digest(content.value));
   publishCurrent();
   const root = view.containerEl.children[1] as HTMLElement;
   const clickIssue = () => {

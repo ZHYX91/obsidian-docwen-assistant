@@ -209,3 +209,122 @@ describe("uncached local reference images", () => {
     await expect(test.run()).rejects.toMatchObject({ code: "vault_content_conflict" });
   });
 });
+
+describe("source-relative inline images", () => {
+  const image = "![Marker](assets/green-marker.png)";
+  const sample = (closing: string) => "# Export probe\n\n$$\nx^2\n" + closing + "\n" + image + "\n\nAfter image.\n";
+
+  it.each([
+    ["\n", "---"], ["\r\n", "..."],
+  ])("keeps the body image after the first empty properties block, before a later rule (%j, %j)", async (eol, close) => {
+    const source = ["---", close, "", image, "", "---", "", "Tail"].join(eol);
+    const test = await fixture(source);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings?.images).toEqual([
+      { authored_token: image, logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["", "$$\n"])("binds an exact existing image with empty host cache (closing=%j)", async closing => {
+    const source = sample(closing);
+    const test = await fixture(source);
+    const result = (await test.run()).value!;
+    expect(result.source.toString("utf8")).toBe(source);
+    expect(result.resourceBytes).toEqual([Buffer.from([1, 2, 3])]);
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: image, logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.getFirstLinkpathDest).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["\n", "\n"], ["\r\n", "\r\n"], ["\r", "\r"], ["\r", "\r\n"],
+  ])("preserves exact bytes and ignores frontmatter links across %j and %j line endings", async (ending, bodyEnding) => {
+    const source = ["---", "cover: ![[not-an-embed.png]]", "---"].join(ending) + bodyEnding + bodyEnding + "😀 " + image + bodyEnding;
+    const test = await fixture(source);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: image, logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["\n", "\r\n", "\r"])("binds cached multiline and uncached reference images after fenced code across %j line endings", async ending => {
+    const token = "![label" + ending + "continued](assets/green-marker.png)";
+    const source = ["```", "![[example.png]]", "```", "", "😀 " + token, "![active][sample]",
+      "", "[sample]: assets/green-marker.png", ""].join(ending);
+    const test = await fixture(source, [cached(source, token, "assets/green-marker.png")]);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: token, logical_path: "Assistant-QA/assets/green-marker.png" },
+      { authored_token: "![active][sample]", logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.getFirstLinkpathDest).toHaveBeenCalledTimes(2);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["\n", "\r\n"])("binds images after an HTML block separated by a blank %j line", async ending => {
+    const cachedToken = "![cached" + ending + "multiline](assets/green-marker.png)";
+    const source = ["", "<div>", "![example](assets/hidden.png)", "</div>", "", "😀 " + cachedToken,
+      "![active][sample]", "", "[sample]: assets/green-marker.png", ""].join(ending);
+    const test = await fixture(source, [cached(source, cachedToken, "assets/green-marker.png")]);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings!.images).toEqual([
+      { authored_token: cachedToken, logical_path: "Assistant-QA/assets/green-marker.png" },
+      { authored_token: "![active][sample]", logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a missing exact image and ignores a like-named file elsewhere", async () => {
+    const test = await fixture(sample(""), [], { imagePath: "Elsewhere/assets/green-marker.png" });
+    await expect(test.run()).rejects.toMatchObject({
+      code: "vault_input_invalid", details: { imageIssue: "missing", imageName: "green-marker.png" },
+    });
+    expect(test.getFirstLinkpathDest).not.toHaveBeenCalled();
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
+  it("refuses a fallback when there is a displaced cache record for the same token", async () => {
+    const source = sample("");
+    const record = cached(source, image, "stale.png");
+    const test = await fixture(source, [{ ...record, position: {
+      start: { offset: record.position.start.offset + 1 }, end: { offset: record.position.end.offset + 1 },
+    } }]);
+    await expect(test.run()).rejects.toMatchObject({
+      code: "vault_input_invalid", details: { imageIssue: "metadata", imageName: "green-marker.png" },
+    });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
+  it.each(["../assets/green-marker.png", "assets/a%2Fgreen-marker.png", "!wiki"])(
+    "keeps ambiguous, parent-directory and Wiki forms subject to exact cache (%s)",
+    async target => {
+      const source = target === "!wiki" ? "![[assets/green-marker.png]]" : "![Marker](" + target + ")";
+      const test = await fixture(source);
+      await expect(test.run()).rejects.toMatchObject({
+        code: "vault_input_invalid", details: { imageIssue: "metadata" },
+      });
+      expect(test.imageRead).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects an unsupported image with a percent-encoded extension instead of silently dropping it", async () => {
+    const test = await fixture("![Marker](assets/marker%2esvg)", [], {
+      imagePath: "Assistant-QA/assets/marker.svg", extension: "svg",
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid" });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
+  it("does not bind a relative image inside a closed formula", async () => {
+    const test = await fixture("$$\nx^2\n\n" + image + "\n$$\n");
+    expect((await test.run()).value!.declared!.inputs).toHaveLength(1);
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+});

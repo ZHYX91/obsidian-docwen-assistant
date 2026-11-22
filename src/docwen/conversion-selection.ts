@@ -1,5 +1,5 @@
 import { LocalCliError } from "./errors";
-import type { ConvertTarget } from "./client";
+import { CONVERSION_MEDIA_TYPES, type ConvertTarget } from "./formats";
 import type { MachineCapability, MachineInputHandle } from "./machine-client";
 
 /** Select by declared facts; capability names and resource scopes are opaque. */
@@ -10,18 +10,13 @@ export function selectConversionCapability(
   optimizationId?: string,
   capabilityId?: string,
 ): MachineCapability {
-  const mediaTypes: Record<ConvertTarget, string> = {
-    md: "text/markdown",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  };
   const matches = capabilities.filter((capability) =>
     capability.availability !== "unavailable"
     && (capabilityId === undefined || capability.capability_id === capabilityId)
     && (optimizationId === undefined
       ? capability.optimization_id === undefined && ["convert", "render"].includes(capability.operation)
       : capability.operation === "transform" && capability.optimization_id === optimizationId)
-    && capability.output_media_types.includes(mediaTypes[target])
+    && capability.output_media_types.includes(CONVERSION_MEDIA_TYPES[target])
     && acceptsInputs(capability, inputs));
   if (matches.length !== 1) {
     throw new LocalCliError("cli_invalid_envelope", "No unique available Machine conversion matches the selected inputs and optimization.", {

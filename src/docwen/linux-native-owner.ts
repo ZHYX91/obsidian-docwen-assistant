@@ -4,6 +4,7 @@ import {
   closeSync,
   mkdtempSync,
   openSync,
+  readFileSync,
   rmdirSync,
   unlinkSync,
   writeFileSync,
@@ -57,6 +58,15 @@ export function spawnLinuxOwnedMachine(
   if (process.platform !== "linux") throw new LocalCliError("cli_platform_unsupported", "Linux Machine ownership requires Linux.", { platform: process.platform, arch: process.arch });
   // Architecture admission precedes all image writes and every business spawn.
   const payload = linuxOwnerPayload();
+  // The native subreapers run in this same procfs and PID namespace. Without
+  // the task children interface they cannot discover adopted descendants.
+  try {
+    readFileSync(`/proc/self/task/${process.pid}/children`);
+  } catch (error) {
+    throw new LocalCliError("cli_platform_unsupported", "Linux Machine ownership requires a readable procfs task children list.", {
+      platform: "linux", arch: process.arch, requirement: "procfs_task_children", systemCode: systemCode(error),
+    });
+  }
   const root = mkdtempSync(join(tmpdir(), "docwen-owner-"));
   const executable = join(root, "owner");
   let imagePresent = false;

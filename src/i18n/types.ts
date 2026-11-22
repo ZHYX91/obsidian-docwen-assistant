@@ -26,6 +26,7 @@ export interface Translations {
   dialogDeclaredFormat: string;
   dialogActualFormat: string;
   dialogReadDetectedFormat: string;
+  dialogNumberDetectedFile: string;
   dialogFormatUnknown: string;
   // Ribbon & Commands
   ribbonTooltip: string;
@@ -104,6 +105,7 @@ export interface Translations {
   settingsConnectionHealthFailed: string;
   settingsConnectionFailed: string;
   settingsPlatformUnsupported: string;
+  errorLinuxProcessListUnavailable: string;
   settingsPathValid: string;
   settingsPathInvalid: string;
   settingsCliPathNotSet: string;
@@ -123,6 +125,8 @@ export interface Translations {
   dialogExportDirectory: string;
   dialogDetails: string;
   errorOperationFailed: string;
+  errorImageMetadata: string;
+  errorImageMissing: string;
   errorDocWenInternal: string;
   errorDocumentProofreadUnavailable: string;
   errorCapabilityUnavailable: string;
@@ -254,6 +258,7 @@ export interface Translations {
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
   proofreadIssueCount: string;
+  proofreadLineNumber: string;
   proofreadLoadMore: string;
   proofreadCancelled: string;
   proofreadOpenMdFile: string;
@@ -261,6 +266,7 @@ export interface Translations {
   proofreadSortByRule: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
+  proofreadLocationNeedsEditor: string;
   operationProofread: string;
   operationExport: string;
   operationNumbering: string;

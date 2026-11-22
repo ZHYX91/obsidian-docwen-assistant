@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportActions } from "../src/actions/export-actions";
@@ -15,7 +15,7 @@ vi.mock("node:os", async (importOriginal) => {
 });
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+  return { ...actual, copyFile: vi.fn(actual.copyFile) };
 });
 vi.mock("obsidian", () => ({ TFile: class TFile {}, MarkdownView: class MarkdownView {}, Modal: class Modal {}, SuggestModal: class SuggestModal {} }));
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
@@ -116,6 +116,82 @@ describe("accepted detected-format exports", () => {
     ui.review.mockResolvedValue(true);
   });
 
+  it("declares image resources after accepting Markdown stored under a document suffix", async () => {
+    const { TFile } = await import("obsidian");
+    const file = Object.assign(new TFile(), { path: "Notes/Disguised.docx", name: "Disguised.docx", extension: "docx" });
+    const image = Object.assign(new TFile(), { path: "Notes/assets/p.png", extension: "png" });
+    const token = "![chart](assets/p.png)";
+    const source = "# Heading\n\n" + token + "\n";
+    const start = source.indexOf(token);
+    const png = Uint8Array.from([1, 2, 3]);
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async (target: typeof file | typeof image) =>
+          target === file ? new TextEncoder().encode(source).buffer : png.buffer,
+      },
+      metadataCache: {
+        getFileCache: () => ({ embeds: [{ original: token, link: "assets/p.png",
+          position: { start: { offset: start }, end: { offset: start + token.length } } }] }),
+        getFirstLinkpathDest: () => image,
+      },
+    };
+    const mediaType = "text/markdown";
+    const capability = machineCapability(mediaType, "document");
+    capability.capability_id = "convert.markdown_source.to_docx";
+    capability.output_media_types = [DOCX];
+    capability.options_schema = { type: "object", properties: { markdown_resource_bindings: { type: "object" } } };
+    capability.input_shape.slots.push({ role: "linked_resource", kind: "resource", media_types: ["image/png"], min_items: 0 });
+    const inspect = async (input: TaskInput) => {
+      const bytes = await readFile(input.path);
+      const canonical = extname(input.path) === ".markdown";
+      return {
+        filePath: input.path, contentSha256: digest(bytes), sizeBytes: bytes.length,
+        decision: canonical ? "allow" : "require_explicit_acceptance", declaredFormat: canonical ? "markdown" : "docx",
+        detectedFormat: "markdown", workflowCategory: "markdown", mediaType, supportedActions: ["convert"],
+      };
+    };
+    const convert = vi.fn(async (request: ConvertRequest) => {
+      expect(request.inputs[0]).toBe(request.sourceInput);
+      expect(request.sourceInput).toMatchObject({ logicalPath: file.path, mediaType });
+      expect(await readFile(request.inputs[0].path, "utf8")).toBe(source);
+      expect(request.markdownResourceBindings?.images).toEqual([{ authored_token: token, logical_path: image.path }]);
+      expect(await readFile(request.inputs[1].path)).toEqual(Buffer.from(png));
+      return { output: "/output/result.docx", warnings: [] };
+    });
+    const client = { inspect, convert, runtimeCapabilities: async () => ({ capabilities: [capability] }) };
+    const runner = {
+      run: async (_key: unknown, _notice: unknown, action: (lease: unknown) => Promise<void>) =>
+        action({ signal: new AbortController().signal, isCurrent: () => true }),
+      presentWarnings: vi.fn(), presentCompletion: vi.fn(),
+    };
+    const actions = new ExportActions(app as never, client as never, new DocWenCapabilityService(client as never),
+      () => ({ ...DEFAULT_SETTINGS, proofreadOnConvert: false }), runner as never);
+    await actions.toDocx(file);
+    expect(ui.confirm).toHaveBeenCalledOnce();
+    expect(convert).toHaveBeenCalledOnce();
+  });
+
+  it("uses Core's admitted same-family format and verifies the canonical copy", async () => {
+    const test = await fixture("rtf");
+    const inspect = test.inspect.getMockImplementation()!;
+    test.inspect.mockImplementation(async (input) => {
+      const result = await inspect(input);
+      if (extname(input.path) === ".rtf") {
+        result.decision = "allow_with_warning";
+        result.warningCode = "FILE_FORMAT_SAME_FAMILY_MISMATCH";
+      }
+      return result;
+    });
+    await test.run();
+    expect(test.captured.map((input) => extname(input.path))).toEqual([".rtf", ".rtf", ".docx"]);
+    expect(test.convert.mock.calls[0][0].sourceInput).toMatchObject({ mediaType: DOCX, logicalPath: "Detected-format.rtf" });
+    expect(ui.confirm).not.toHaveBeenCalled();
+    expect(ui.review).toHaveBeenCalledOnce();
+    expect(ui.commit).toHaveBeenCalledOnce();
+  });
+
   it("accepts a detected format when the temporary directory has a real filesystem alias", async () => {
     const actualOs = await vi.importActual<typeof import("node:os")>("node:os");
     const root = await realpath(await mkdtemp(join(actualOs.tmpdir(), "docwen-snapshot-alias-")));
@@ -156,11 +232,13 @@ describe("accepted detected-format exports", () => {
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
-    expect(vi.mocked(writeFile).mock.calls.filter(([target]) => String(target).includes("accepted-source."))).toHaveLength(0);
+    expect(vi.mocked(copyFile).mock.calls.filter(([, target]) => String(target).includes("accepted-source."))).toHaveLength(0);
   });
 
   it.each([
     ["txt", DOCX, "document"],
+    ["md", DOCX, "document"],
+    ["markdown", DOCX, "document"],
     ["xlsx", DOCX, "document"],
     ["docx", PDF, "resource"],
   ] as const)("binds %s to accepted %s media and %s kind in the request only", async (extension, mediaType, kind) => {
@@ -241,12 +319,17 @@ describe("accepted detected-format exports", () => {
     expect(ui.commit).not.toHaveBeenCalled();
   });
 
-  it("does not project detected metadata without explicit acceptance", async () => {
+  it.each([
+    ["allow", ""],
+    ["allow_with_warning", "FILE_FORMAT_COMPATIBLE_TEXT"],
+    ["allow_with_warning", "FILE_FORMAT_CROSS_FAMILY_MISMATCH"],
+    ["block", "FILE_FORMAT_SAME_FAMILY_MISMATCH"],
+  ])("rejects an unconfirmed cross-family change with %s and %s", async (decision, warningCode) => {
     const test = await fixture();
     test.inspect.mockImplementation(async (source) => ({
       filePath: source.path, contentSha256: digest(await readFile(source.path)), sizeBytes: 890,
-      declaredFormat: "txt", warningCode: "", reasonCode: "",
-      decision: "allow", mediaType: DOCX, supportedActions: ["convert"], workflowCategory: "document", detectedFormat: "docx",
+      declaredFormat: "txt", warningCode, reasonCode: "",
+      decision, mediaType: DOCX, supportedActions: ["convert"], workflowCategory: "document", detectedFormat: "docx",
     }));
     await expect(test.run()).rejects.toMatchObject({ code: "cli_input_invalid" });
     expect(ui.confirm).not.toHaveBeenCalled();
@@ -263,5 +346,49 @@ describe("accepted detected-format exports", () => {
     expect(ui.review).not.toHaveBeenCalled();
     expect(test.convert).not.toHaveBeenCalled();
     expect(ui.commit).not.toHaveBeenCalled();
+  });
+
+  it("exports Markdown detected in a text file through the advertised spreadsheet route", async () => {
+    const file = { path: "Tables.txt", extension: "txt", name: "Tables.txt" };
+    const bytes = Buffer.from("# Data\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n");
+    const app = {
+      workspace: { getLeavesOfType: () => [] },
+      vault: {
+        getFileByPath: (path: string) => path === file.path ? file : null,
+        readBinary: async () => Uint8Array.from(bytes).buffer,
+      },
+    };
+    const capability = {
+      ...machineCapability("text/markdown", "document"), capability_id: "convert.markdown.to_xlsx",
+      output_media_types: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    };
+    const inspect = vi.fn(async (input: TaskInput) => {
+      const canonical = extname(input.path) === ".markdown";
+      return {
+        filePath: input.path, contentSha256: digest(await readFile(input.path)), sizeBytes: bytes.length,
+        decision: canonical ? "allow" : "allow_with_warning", declaredFormat: canonical ? "markdown" : "txt",
+        warningCode: canonical ? "" : "FILE_FORMAT_COMPATIBLE_TEXT", detectedFormat: "markdown",
+        supportedActions: ["convert"], workflowCategory: "markdown", mediaType: "text/markdown",
+      };
+    });
+    const convert = vi.fn(async (request: ConvertRequest) => {
+      expect(request.inputs).toEqual([request.sourceInput]);
+      expect(request.inputs[0]).toMatchObject({ logicalPath: file.path, mediaType: "text/markdown" });
+      expect(await readFile(request.inputs[0].path)).toEqual(bytes);
+      return { output: "/output/Tables.xlsx", warnings: [] };
+    });
+    const client = { inspect, convert, runtimeCapabilities: async () => ({ capabilities: [capability] }) };
+    const runner = {
+      run: async (_key: unknown, _notice: unknown, action: (lease: unknown) => Promise<void>) =>
+        action({ signal: new AbortController().signal, isCurrent: () => true }),
+      presentWarnings: vi.fn(), presentCompletion: vi.fn(),
+    };
+    const actions = new ExportActions(app as never, client as never, new DocWenCapabilityService(client as never),
+      () => DEFAULT_SETTINGS, runner as never);
+    await actions.toXlsx(file as never);
+    expect(inspect.mock.calls.map(([input]) => extname(input.path))).toEqual([".txt", ".txt", ".markdown"]);
+    expect(ui.confirm).not.toHaveBeenCalled();
+    expect(ui.review).toHaveBeenCalledOnce();
+    expect(convert).toHaveBeenCalledOnce();
   });
 });

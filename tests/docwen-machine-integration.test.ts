@@ -208,13 +208,13 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     expect(restored).not.toMatch(/\[\^endnote-/u);
   }, 240_000);
 
-  it("exports a real VaultReadSnapshot through the packaged source route with a cross-folder Wiki image", async () => {
+  it("exports a cross-folder Wiki image between empty properties and a later rule through the packaged source route", async () => {
     const source = join(root, "physical-source", "typed-source.md");
     const linked = join(root, "declared-pool", "typed linked.png");
     const decoy = join(root, "physical-source", "assets", "typed linked.png");
     await mkdir(join(root, "physical-source", "assets"), { recursive: true });
     await mkdir(join(root, "declared-pool"), { recursive: true });
-    const sourceBytes = Buffer.from("# Typed input\n\n![[typed linked.png]]\n", "utf8");
+    const sourceBytes = Buffer.from("---\n---\n# Typed input\n\n![[typed linked.png]]\n\n---\nEnd\n", "utf8");
     const declaredBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP8zwACTGCSAQANHQEDgslx/wAAAABJRU5ErkJggg==", "base64");
     const decoyBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGNkYPjPwMDAxAAGAAsfAQMU4wsAAAAAAElFTkSuQmCC", "base64");
     await writeFile(source, sourceBytes);

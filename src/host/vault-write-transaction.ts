@@ -76,7 +76,7 @@ export class VaultWriteTransaction {
     const editor = target.editor;
     const original = editor.getValue();
     const originalSha256 = sha256(original);
-    const prepared = await withIsolatedMarkdown(original, originalSha256, transform, signal);
+    const prepared = await withIsolatedMarkdown(original, originalPath, originalSha256, transform, signal);
     const output = prepared.value;
     try {
       throwIfAborted(signal);
@@ -133,11 +133,13 @@ export class VaultWriteTransaction {
     const originalFile = file;
     const originalPath = file.path;
     this.assertVaultFileIdentity(originalFile, originalPath);
-    const original = await this.app.vault.read(file);
+    const initialStat = file.stat ? { ...file.stat } : undefined;
+    const sourceBytes = await this.app.vault.readBinary(file);
+    const original = decodeNumberingMarkdown(sourceBytes, "input");
     this.assertVaultFileIdentity(originalFile, originalPath);
     this.assertNoOpenMarkdownTarget(originalPath);
     const originalSha256 = sha256(original);
-    const prepared = await withIsolatedMarkdown(original, originalSha256, transform, signal);
+    const prepared = await withIsolatedMarkdown(original, originalPath, originalSha256, transform, signal);
     const output = prepared.value;
     try {
       throwIfAborted(signal);
@@ -151,11 +153,19 @@ export class VaultWriteTransaction {
     let accepted = false;
     let published: string;
     try {
+      // Vault.process decodes malformed bytes to the same character as a literal U+FFFD.
+      if (original.includes("\uFFFD")) {
+        const currentBytes = await this.app.vault.readBinary(originalFile);
+        if (!Buffer.from(currentBytes).equals(Buffer.from(sourceBytes))) {
+          throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
+        }
+      }
       published = await this.app.vault.process(originalFile, (current) => {
         throwIfAborted(signal);
         this.assertVaultFileIdentity(originalFile, originalPath);
         this.assertNoOpenMarkdownTarget(originalPath);
-        if (sha256(current) !== originalSha256) {
+        if ((initialStat && (file.stat.size !== initialStat.size || file.stat.mtime !== initialStat.mtime
+          || file.stat.ctime !== initialStat.ctime)) || sha256(current) !== originalSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
         }
         accepted = true;
@@ -218,12 +228,14 @@ export class VaultWriteTransaction {
 
 async function withIsolatedMarkdown(
   original: string,
+  originalPath: string,
   originalSha256: string,
   transform: IsolatedMarkdownTransform,
   signal: AbortSignal,
 ): Promise<Completed<string>> {
   const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-numbering-"));
-  const inputPath = path.join(workspace, "input.md");
+  const extension = path.extname(originalPath) || ".bin";
+  const inputPath = path.join(workspace, `input${extension}`);
   const outputPath = path.join(workspace, "output.md");
   let output: string;
   const warnings: OperationWarning[] = [];
@@ -233,12 +245,7 @@ async function withIsolatedMarkdown(
     warnings.push(...(await transform(inputPath, outputPath, originalSha256, signal) ?? []));
     throwIfAborted(signal);
     const bytes = await readFile(outputPath);
-    try {
-      // Preserve a real BOM and U+FFFD while rejecting malformed byte sequences.
-      output = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-    } catch {
-      throw new VaultWriteError("vault_input_invalid", "Numbering output is not valid UTF-8 Markdown.");
-    }
+    output = decodeNumberingMarkdown(bytes, "output");
   } catch (primaryError) {
     for (const warning of warnings) recordFailureWarning(primaryError, warning);
     try {
@@ -254,6 +261,14 @@ async function withIsolatedMarkdown(
     warnings.push(operationWarning("input_cleanup_failed", cleanupError));
   }
   return { value: output, warnings };
+}
+
+function decodeNumberingMarkdown(bytes: ArrayBuffer | Uint8Array, role: "input" | "output"): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  } catch {
+    throw new VaultWriteError("vault_input_invalid", `Numbering ${role} is not valid UTF-8 Markdown.`);
+  }
 }
 
 function sha256(value: string): string {

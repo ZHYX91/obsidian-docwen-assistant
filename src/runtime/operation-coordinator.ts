@@ -1,6 +1,6 @@
 import { clearTimeout, setTimeout } from "node:timers";
 
-import { LocalCliError } from "../docwen";
+import { LocalCliError } from "../docwen/errors";
 
 export type OperationKind = "proofread" | "export" | "numbering" | "doctor" | "gui-control" | "choose-action";
 export type OperationState = "running" | "cancelling";
@@ -113,7 +113,8 @@ export class OperationCoordinator {
 
   cancelAll(): number {
     let cancelled = 0;
-    for (const operation of this.active.values()) {
+    // Aborting one lease may synchronously start another via an abort listener.
+    for (const operation of [...this.active.values()]) {
       if (operation.state !== "running") continue;
       if (this.cancelActive(
         operation.generation,

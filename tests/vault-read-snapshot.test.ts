@@ -6,6 +6,20 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
 
 describe("VaultReadSnapshot", () => {
+  it("retains strict UTF-8 validation when a conversion requests Markdown resources", async () => {
+    const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
+    const file = { path: "note.md", extension: "md" };
+    const app = { workspace: { getLeavesOfType: () => [] }, vault: {
+      getFileByPath: () => file,
+      readBinary: async () => Uint8Array.from([0xff]).buffer,
+    } };
+    const work = vi.fn(async (snapshot: { getDeclaredMarkdownInputs: () => Promise<unknown> }) =>
+      snapshot.getDeclaredMarkdownInputs());
+    await expect(new VaultReadSnapshot(app as never).run(file as never, new AbortController().signal, work))
+      .rejects.toMatchObject({ code: "vault_input_invalid" });
+    expect(work).toHaveBeenCalledOnce();
+  });
+
   it.each(["stat", "modify-event"])("rejects a closed-source %s change after the final read", async (change) => {
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const file = { path: "note.md", extension: "md", stat: { mtime: 1, ctime: 1, size: 7 } };

@@ -4,6 +4,14 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.4] - 2026-11-22
+
+- Keep Word-export images and links between opening horizontal rules and after an empty properties block. Resolve relative inline images missing from Obsidian's index, including in notes with Windows line endings.
+- Export Markdown tables saved as `.txt` to Excel. Keep image and link bindings when accepting a file with a different extension as Markdown for Word export.
+- Inspect notes before proofreading and numbering headings. Ask before writing when the filename conflicts with the contents, and keep the original bytes on cancellation.
+- Refresh export targets when the DocWen connection changes. Keep proofreading navigation on the latest selected issue and make operation feedback and cancellation easier to use.
+- On Linux, explain when the required process ownership interface is unavailable before starting DocWen.
+
 ## [3.6.3] - 2026-11-21
 
 - Keep local images and note links after an opening horizontal rule when exporting to Word. Treat matched math expressions as literal content when identifying linked resources and keep resources after an unmatched delimiter.

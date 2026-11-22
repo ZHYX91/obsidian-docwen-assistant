@@ -6,7 +6,7 @@ const state = vi.hoisted(() => ({
   pick: vi.fn(),
 }));
 
-vi.mock("obsidian", () => ({ TFile: class TFile {} }));
+vi.mock("obsidian", () => ({ TFile: class TFile {}, Modal: class {} }));
 vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => state.notices.push(message) }));
 vi.mock("../src/i18n", () => ({
   t: (key: string, values?: { filename?: string }) => values?.filename ? `${key}:${values.filename}` : key,
@@ -71,7 +71,7 @@ describe("NumberingActions", () => {
     };
     const docwen = { numberMarkdown: vi.fn().mockResolvedValue({ warnings: [] }) };
     const capabilities = {
-      requireAction: vi.fn().mockResolvedValue({ inspection: { contentSha256: "snapshot-sha" } }),
+      requireAction: vi.fn().mockResolvedValue({ inspection: { contentSha256: "snapshot-sha" }, admittedFormat: { binding: "original" } }),
     };
     state.writerRun.mockImplementation(async (
       _file: unknown,

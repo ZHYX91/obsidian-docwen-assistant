@@ -9,7 +9,7 @@ import type { ValidatedArtifactBundle, ValidatedBundleArtifact } from "./machine
 import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
 import { atomicCommitBundle } from "./output-files";
-import type { ConvertTarget } from "./client";
+import { CONVERSION_MEDIA_TYPES, type ConvertTarget } from "./formats";
 
 export type DirectoryPublication = <T>(outputRoot: string, commit: PublicationCommit<T>) => Promise<T>;
 
@@ -129,16 +129,11 @@ export async function atomicCommitConversion(
   if (bundle.layout_schema === "docwen.document_node.v1") return atomicCommitDirectory(bundle, parent, signal, publish);
   const artifact = preferredArtifact(bundle);
   const entry = bundle.entries[0];
-  const mediaType = {
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    md: "text/markdown",
-  }[target];
   const parts = logicalParts(artifact.logical_path, 1);
   if (bundle.layout_schema !== "docwen.artifact_layout.v1" || target === "md"
     || bundle.artifacts.length !== 1 || bundle.entries.length !== 1 || bundle.relations.length !== 0
     || parts.length !== 1 || parts[0] !== artifact.suggested_name || !artifact.suggested_name.endsWith(`.${target}`)
-    || artifact.media_type !== mediaType || artifact.kind !== "document"
+    || artifact.media_type !== CONVERSION_MEDIA_TYPES[target] || artifact.kind !== "document"
     || entry?.artifact_id !== artifact.artifact_id || entry.preferred !== true || entry.ordinal !== 0 || entry.role !== "primary") {
     throw new LocalCliError("cli_integrity_error", "A flat conversion requires one matching preferred output file.");
   }

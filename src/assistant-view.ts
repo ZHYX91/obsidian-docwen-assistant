@@ -3,13 +3,15 @@
  * source-bound proofreading report. Opening the view never starts an action.
  */
 
+import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "./docwen/formats";
 import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
-import { createHash } from "node:crypto";
+import { proofreadSourceDigest } from "./host/proofread-source";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
 import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
 import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
+import { showNotice } from "./host/notices";
 import { resolveAbsoluteFilePath } from "./host/vault-files";
 import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
@@ -49,6 +51,7 @@ export class AssistantView extends ItemView {
   private vaultPath = "";
   private sourceSha256 = "";
   private resultsRevision = 0;
+  private navigationSequence = 0;
   private visibleIssueCount = ISSUE_BATCH_SIZE;
   private stale = false;
   private activeOperation: OperationItem | null = null;
@@ -197,12 +200,12 @@ export class AssistantView extends ItemView {
   }
 
   /** File changes update only the action controls; the report, focus and scroll stay intact. */
-  refreshActiveFile(): void {
+  refreshActiveFile(connectionChanged = false): void {
     if (!this.sidebarOpen) return;
     // Public host contract: non-FileView focus retains the most recently active file.
     // Read it afresh; file changes and closure must never reuse a cached TFile.
     const localFile = this.currentLocalFile();
-    const isMarkdown = localFile?.extension.toLowerCase() === "md";
+    const isMarkdown = localFile !== null && mediaTypeForPath(localFile.path) === CONVERSION_MEDIA_TYPES.md;
     if (this.openFileButton) this.openFileButton.disabled = !localFile;
     if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
     for (const context of this.fileContexts) {
@@ -211,7 +214,7 @@ export class AssistantView extends ItemView {
       if (name) name.setText(localFile ? t("sidebarCurrentFile", { filename: localFile.name }) : t("sidebarNoFile"));
       if (path) path.setText(localFile?.path ?? "");
     }
-    this.exports.refresh(localFile, this.activeTab === "actions");
+    this.exports.refresh(localFile, this.activeTab === "actions", connectionChanged);
   }
 
   private currentLocalFile(): TFile | null {
@@ -376,54 +379,18 @@ export class AssistantView extends ItemView {
       }
     }
 
-    // Content
+    const showStatus = (text: string): void => {
+      container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
+    };
     if (this.activeOperation) {
-      const cancelling = this.activeOperation.state === "cancelling";
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: cancelling
-          ? t("operationCancelling")
-          : t("operationRunning", { operation: t("operationProofread") }),
-        attr: {
-          role: "status",
-          "aria-live": "polite",
-          "aria-busy": "true",
-        },
-      });
-      return;
+      return showStatus(this.activeOperation.state === "cancelling"
+        ? t("operationCancelling")
+        : t("operationRunning", { operation: t("operationProofread") }));
     }
-
-    if (this.cancelled) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadCancelled"),
-        attr: { role: "status", "aria-live": "polite" },
-      });
-      return;
-    }
-
-    if (!this.fileName) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadOpenMdFile"),
-        attr: { role: "status" },
-      });
-      return;
-    }
-
-    if (this.stale) {
-      container.createDiv({
-        cls: "docwen-proofread-status",
-        text: t("proofreadSourceChanged"),
-        attr: { role: "status", "aria-live": "polite" },
-      });
-      return;
-    }
-
-    if (this.issues.length === 0) {
-      container.createDiv({ cls: "docwen-proofread-status", text: t("proofreadNoIssues") });
-      return;
-    }
+    if (this.cancelled) return showStatus(t("proofreadCancelled"));
+    if (!this.fileName) return showStatus(t("proofreadOpenMdFile"));
+    if (this.stale) return showStatus(t("proofreadSourceChanged"));
+    if (this.issues.length === 0) return showStatus(t("proofreadNoIssues"));
 
     // Issue list
     const shown = Math.min(this.visibleIssueCount, this.issues.length);
@@ -486,7 +453,7 @@ export class AssistantView extends ItemView {
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {
     let first: HTMLButtonElement | undefined;
     for (const issue of sorted.slice(from, to)) {
-      const displayLine = issue.range.start.line + 1;
+      const lineLabel = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
         : t(RULE_LABELS[issue.rule_key] ?? "proofreadViewTitle");
@@ -497,7 +464,7 @@ export class AssistantView extends ItemView {
         attr: {
           type: "button",
           "data-docwen-view-key": `issue:${revision}:${this.issueIndices.get(issue)}`,
-          "aria-label": `L${displayLine} ${ruleLabel}: ${issue.error_text}${correction}`,
+          "aria-label": `${lineLabel} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
       first ??= item;
@@ -506,7 +473,7 @@ export class AssistantView extends ItemView {
       });
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
-      header.createSpan({ cls: "docwen-proofread-line", text: `L${displayLine}` });
+      header.createSpan({ cls: "docwen-proofread-line", text: lineLabel });
       header.createSpan({ cls: "docwen-proofread-rule", text: ruleLabel });
 
       const body = item.createDiv({ cls: "docwen-proofread-item-body" });
@@ -546,15 +513,16 @@ export class AssistantView extends ItemView {
   }
 
   private async navigateToIssue(issue: ProofreadIssue, revision: number): Promise<void> {
+    if (revision !== this.resultsRevision || this.activeOperation || this.stale) return;
+    const sequence = ++this.navigationSequence;
     const sourceSha256 = this.sourceSha256;
     const vaultPath = this.vaultPath;
-    const isCurrent = (): boolean => revision === this.resultsRevision && !this.activeOperation;
+    const isCurrent = (): boolean => sequence === this.navigationSequence && revision === this.resultsRevision && !this.activeOperation;
     const invalidate = (): void => {
       if (!isCurrent()) return;
       this.stale = true;
       this.render();
     };
-    if (!isCurrent() || this.stale) return;
     try {
       const file = this.app.vault.getAbstractFileByPath(vaultPath);
       if (!(file instanceof TFile) || !/^[a-f0-9]{64}$/u.test(sourceSha256)) {
@@ -567,9 +535,15 @@ export class AssistantView extends ItemView {
         invalidate();
         return;
       }
+      const nativeNote = vaultPath.toLowerCase().endsWith(".md");
+      if (!nativeNote && target.kind === "closed") {
+        showNotice(t("proofreadLocationNeedsEditor"));
+        return;
+      }
       const leaf = target.kind === "open" ? target.target.leaf : this.app.workspace.getLeaf(false);
       if (!leaf) return;
-      await leaf.openFile(file);
+      if (nativeNote) await leaf.openFile(file);
+      else await this.app.workspace.revealLeaf(leaf);
       if (!isCurrent()) return;
       const view = leaf.view;
       if (!(view instanceof MarkdownView) || view.file !== file || file.path !== vaultPath
@@ -601,9 +575,14 @@ export class AssistantView extends ItemView {
 }
 
 function matchesSource(content: string, sourceSha256: string): boolean {
-  return createHash("sha256").update(content, "utf8").digest("hex") === sourceSha256;
+  return proofreadSourceDigest(content) === sourceSha256;
 }
 
 export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {
-  return Array.from(line).slice(0, unicodeColumn).join("").length;
+  let offset = 0;
+  for (const codePoint of line) {
+    if (unicodeColumn-- <= 0) break;
+    offset += codePoint.length;
+  }
+  return offset;
 }

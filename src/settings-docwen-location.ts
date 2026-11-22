@@ -1,6 +1,6 @@
 import { Setting } from "obsidian";
 
-import { getWindowsOwnerRecoveryMessage } from "./actions/action-errors";
+import { getUnsupportedPlatformMessage, getWindowsOwnerRecoveryMessage } from "./actions/action-errors";
 import { LocalCliError } from "./docwen/errors";
 import type { DocWenConnectionStatus } from "./docwen/connection-status";
 import { DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "./docwen/links";
@@ -92,7 +92,7 @@ export function getDocWenConnectionDisplay(
       return { message: t("settingsConnectionStoreMissing"), state: "error" };
     }
     if (connection.code === "cli_platform_unsupported") {
-      return { message: t("settingsPlatformUnsupported"), state: "error" };
+      return { message: getUnsupportedPlatformMessage(connection.details), state: "error" };
     }
     if (connection.code === "cli_incompatible_version") {
       return {

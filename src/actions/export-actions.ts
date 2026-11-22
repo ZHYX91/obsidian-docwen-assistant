@@ -11,7 +11,7 @@ import {
   type TemplateItem,
   LocalCliError,
 } from "../docwen";
-import { confirmDetectedFormat } from "../host/confirm";
+import { admittedActionInput } from "./admitted-input";
 import { getElectronOpenDialog } from "../host/electron-dialogs";
 import { confirmExport } from "../host/export-review";
 import { openResultFolder } from "../host/result-folder";
@@ -128,23 +128,16 @@ export class ExportActions {
     const destination = await captureExportTarget(this.app, outputDirectory, signal);
     const completed = await this.snapshots.run(file, signal, async (snapshot) => {
       const capturedSource = snapshot.sourceInput ?? snapshot.inputs[0];
-      let sourceInput = capturedSource;
-      const capability = await this.capabilities.requireAction(sourceInput, "convert", signal);
+      const capability = await this.capabilities.requireAction(capturedSource, "convert", signal);
       const route = this.capabilities.requireConversionRoute(capability, target, selected.optimization);
-      const useDetectedFormat = this.capabilities.requiresDetectedFormatAcceptance(capability.inspection);
-      if (useDetectedFormat) {
-        const accepted = await confirmDetectedFormat(this.app, signal, {
-          sourceName: capturedSource.logicalPath ?? file.path,
-          declaredFormat: capability.inspection.declaredFormat,
-          detectedFormat: capability.inspection.detectedFormat,
-        });
-        if (!accepted || signal.aborted) return;
-        sourceInput = await snapshot.getAcceptedDetectedSource(
-          capability.inspection, route, (input) => this.docwen.inspect(input, signal),
-        );
-      }
+      const { mediaType, binding } = capability.admittedFormat;
+      const useDetectedFormat = binding !== "original";
+      const sourceInput = await admittedActionInput(this.app, capturedSource, capability, route, signal, selectedRoute =>
+        snapshot.getAcceptedDetectedSource(capability.inspection, selectedRoute, input => this.docwen.inspect(input, signal)));
+      if (!sourceInput) return;
 
       const settings = { ...this.getSettings() };
+      const markdownToWord = target === "docx" && capability.source.category === "markdown";
       const options: ConvertOptions = {
         target,
         ...selected,
@@ -164,7 +157,7 @@ export class ExportActions {
           );
         }
       }
-      if (target === "docx" && capability.source.category === "markdown") {
+      if (markdownToWord) {
         Object.assign(
           options,
           buildNumberingOptions(
@@ -180,7 +173,8 @@ export class ExportActions {
 
       // Preserve authored dialect syntax and let the same effective DocWen
       // configuration govern direct conversion and Assistant export.
-      const declaredMarkdown = target === "docx" ? await snapshot.getDeclaredMarkdownInputs() : undefined;
+      const declaredMarkdown = markdownToWord
+        ? await snapshot.getDeclaredMarkdownInputs(sourceInput.mediaType) : undefined;
       const taskInputs = (declaredMarkdown?.inputs ?? snapshot.inputs).map((input) =>
         useDetectedFormat && input === capturedSource ? sourceInput : input);
       this.capabilities.requireTaskInputs(route, taskInputs);
@@ -195,11 +189,11 @@ export class ExportActions {
         selectedCapability: route.capability,
         publish: (root, commit) => snapshot.publish((assertIdentity) => destination.publish(root, () => commit(assertIdentity))),
       };
-      if (target === "docx" && capability.source.category === "markdown" && settings.proofreadOnConvert) {
+      if (markdownToWord && settings.proofreadOnConvert) {
         request.checks = buildProofreadChecks(settings);
       }
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, capability.inspection.mediaType ?? sourceInput.mediaType ?? "", selectedTemplate,
+        request, mediaType, selectedTemplate,
       ), signal);
       if (!accepted || signal.aborted) return;
       return this.docwen.convert(request, signal);

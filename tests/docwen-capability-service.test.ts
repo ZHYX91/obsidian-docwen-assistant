@@ -156,6 +156,20 @@ function deferred<T>() {
 }
 
 describe("DocWenCapabilityService", () => {
+  it("offers the Markdown route for a plain paragraph in a Markdown file", async () => {
+    const inspected = inspection({
+      detectedFormat: "txt", mediaType: "text/plain", decision: "allow_with_warning",
+      warningCode: "FILE_FORMAT_COMPATIBLE_TEXT",
+    });
+    const service = new DocWenCapabilityService({
+      inspect: vi.fn().mockResolvedValue(inspected), runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    const discovered = await service.forFile("note.md");
+    expect(service.requireConversionRoute(discovered, "docx").capabilityId).toBe("convert.markdown_source.to_docx");
+    expect(discovered.inspection).toBe(inspected);
+    expect(service.supportsAction(discovered, "validate")).toBe(true);
+  });
+
   it("bounds a burst of different-file background inspections to one active request", async () => {
     let active = 0;
     let peak = 0;
