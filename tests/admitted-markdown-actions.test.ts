@@ -82,11 +82,15 @@ describe("Markdown edit and proofreading sources", () => {
     expect(state.view.updateResults).toHaveBeenCalledOnce();
     expect(confirm).not.toHaveBeenCalled();
   });
-  it.each(["proofread", "number"] as const)("honors declining a cross-family %s action", async action => {
-    const state = fixture("docx");
+  it.each([
+    ["proofread", "docx"], ["proofread", "m-d"],
+    ["number", "docx"], ["number", "m-d"],
+  ] as const)("honors declining %s for a Markdown file named with .%s", async (action, extension) => {
+    const state = fixture(extension);
     confirm.mockResolvedValue(false);
     await state[action]().catch(error => { if (error.name !== "AbortError") throw error; });
     expect(confirm).toHaveBeenCalledOnce();
+    expect(confirm.mock.calls[0][2]).toMatchObject({ declaredFormat: extension });
     expect(state.process).not.toHaveBeenCalled();
     expect(state.numberMarkdown).not.toHaveBeenCalled();
     expect(state.validate).not.toHaveBeenCalled();

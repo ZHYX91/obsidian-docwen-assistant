@@ -234,8 +234,8 @@ async function withIsolatedMarkdown(
   signal: AbortSignal,
 ): Promise<Completed<string>> {
   const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-numbering-"));
-  const extension = path.extname(originalPath).slice(1).replace(/[^a-z0-9]/giu, "") || "bin";
-  const inputPath = path.join(workspace, `input.${extension}`);
+  const extension = path.extname(originalPath) || ".bin";
+  const inputPath = path.join(workspace, `input${extension}`);
   const outputPath = path.join(workspace, "output.md");
   let output: string;
   const warnings: OperationWarning[] = [];

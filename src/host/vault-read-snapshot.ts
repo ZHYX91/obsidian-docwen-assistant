@@ -135,14 +135,14 @@ export class VaultReadSnapshot {
       return committed;
     };
     const ownedWorkspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
-    const extension = file.extension.replace(/[^a-z0-9]/giu, "") || "bin";
+    const extension = path.extname(originalPath) || ".bin";
     let result: T;
     try {
       throwIfAborted(signal);
       // Core inspections return canonical paths, including for aliased TEMP parents.
       // Bind both snapshot copies to that spelling without relaxing inspection checks.
       const workspace = await realpath(ownedWorkspace);
-      const inputPath = path.join(workspace, `source.${extension}`);
+      const inputPath = path.join(workspace, `source${extension}`);
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
         path: inputPath,
