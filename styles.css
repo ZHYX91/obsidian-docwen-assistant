@@ -8,14 +8,10 @@
 }
 
 .docwen-settings-tab-bar {
-  display: grid;
-  grid-template-columns: 0 minmax(0, 1fr) 0;
-  container-type: inline-size;
-}
-
-.docwen-settings-tab-bar.has-overflow {
   --docwen-tab-scroll-size: 32px;
-  grid-template-columns: var(--docwen-tab-scroll-size) minmax(0, 1fr) var(--docwen-tab-scroll-size);
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  container-type: inline-size;
 }
 
 .docwen-settings-tab-bar > .docwen-settings-tabs {
@@ -25,6 +21,8 @@
 
 .docwen-settings-tab-bar > button.docwen-settings-tab-scroll {
   grid-area: 1 / 1;
+  inline-size: var(--docwen-tab-scroll-size);
+  min-inline-size: 0;
   appearance: none;
   display: grid;
   place-items: center;
@@ -75,7 +73,7 @@
 }
 
 @media (pointer: coarse) {
-  .docwen-settings-tab-bar.has-overflow {
+  .docwen-settings-tab-bar {
     --docwen-tab-scroll-size: 44px;
   }
 
