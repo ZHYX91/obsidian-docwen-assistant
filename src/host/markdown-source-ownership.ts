@@ -71,6 +71,7 @@ THE SOFTWARE.
 */
 import { parser } from "@lezer/markdown";
 import { authoredMath, MATH_NODE } from "./markdown-math";
+import { propertiesEnd } from "./markdown-properties";
 
 // Wiki targets are Obsidian atoms. In particular, a backtick in one target
 // cannot pair with a backtick in another target to create a CommonMark code span.
@@ -122,8 +123,7 @@ const LITERAL_NODES = new Set([MATH_NODE, "FencedCode", "CodeBlock", "InlineCode
 /** Parse ownership without changing any UTF-16 source positions or original bytes. */
 export function parseAuthoredMarkdown(source: string) {
   const characters = source.split("");
-  const frontmatter = /^(?:\uFEFF)?---[ \t]*(?:\r\n?|\n)(?:[\s\S]*?(?:\r\n?|\n))?(?:---|\.\.\.)[ \t]*(?=[\r\n]|$)/u.exec(source);
-  if (frontmatter) mask(characters, 0, frontmatter[0].length);
+  mask(characters, 0, propertiesEnd(source));
 
   // Obsidian comments can span Markdown blocks. Only an opener outside an
   // existing syntax atom can own following text; a literal %% in code/HTML,

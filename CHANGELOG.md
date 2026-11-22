@@ -10,6 +10,7 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 - Keep local images and note links after an opening horizontal rule when exporting to Word. Treat matched math expressions as literal content when identifying linked resources and keep resources after an unmatched delimiter.
 - Show the proofreading and heading-numbering commands for inspected files when the connected DocWen runtime offers the corresponding action.
+- Keep Word-export images and links between opening horizontal rules and after an empty properties block, including when another rule follows.
 - Recognize exact YAML delimiters when finding resources for Word export, including the alternate closing delimiter and files with Windows line endings.
 - Make the Word export guide easier to recognize as expandable with a theme-accented arrow and a subtle border.
 

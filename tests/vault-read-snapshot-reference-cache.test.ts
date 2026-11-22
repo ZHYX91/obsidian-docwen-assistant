@@ -214,6 +214,19 @@ describe("source-relative inline images", () => {
   const image = "![Marker](assets/green-marker.png)";
   const sample = (closing: string) => "# Export probe\n\n$$\nx^2\n" + closing + "\n" + image + "\n\nAfter image.\n";
 
+  it.each([
+    ["\n", "---"], ["\r\n", "..."],
+  ])("keeps the body image after the first empty properties block, before a later rule (%j, %j)", async (eol, close) => {
+    const source = ["---", close, "", image, "", "---", "", "Tail"].join(eol);
+    const test = await fixture(source);
+    const result = (await test.run()).value!;
+    expect(result.source).toEqual(Buffer.from(source));
+    expect(result.declared!.resourceBindings?.images).toEqual([
+      { authored_token: image, logical_path: "Assistant-QA/assets/green-marker.png" },
+    ]);
+    expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
   it.each(["", "$$\n"])("binds an exact existing image with empty host cache (closing=%j)", async closing => {
     const source = sample(closing);
     const test = await fixture(source);

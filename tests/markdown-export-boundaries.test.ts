@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { scanAuthoredImageEmbeds } from "../src/host/markdown-image-embed-coverage";
 import { scanAuthoredWikiNavigations } from "../src/host/markdown-wiki-navigation-coverage";
+import { propertiesEnd } from "../src/host/markdown-properties";
 import { buildDeclaredMarkdownInputs } from "../src/host/declared-markdown-snapshot";
 
 vi.mock("obsidian", () => ({ TFile: class TFile {}, parseLinktext: vi.fn() }));
@@ -28,6 +29,42 @@ describe("Word export source boundaries", () => {
     const source = prefix + outside;
     expect(scanAuthoredWikiNavigations(source).map(item => item.token)).toEqual(["[[Target]]"]);
     expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+  });
+
+  it.each([
+    "# Section",
+    "A paragraph",
+    "- First item",
+    "title: [unfinished",
+  ])("preserves body references between thematic breaks after %j", (firstLine) => {
+    const source = ["---", firstLine, "", outside, "", "---", "Tail"].join("\n");
+    expect(scanAuthoredWikiNavigations(source).map(item => item.start)).toEqual([source.indexOf("[[Target]]")]);
+    expect(scanAuthoredImageEmbeds(source).map(item => item.start)).toEqual([source.indexOf("![[photo.png]]")]);
+  });
+
+  it.each([
+    'aliases:\n  - "[[Property]]"\ncover: ![[front.png]]',
+    'summary: |\n  ---\n  [[Property]] ![[front.png]]',
+    '{"title": "[[Property]] ![[front.png]]"}',
+  ])("keeps nested and flow-style properties opaque (%j)", (properties) => {
+    const source = ["\uFEFF--- ", properties, "...\t", outside, "---"].join("\r\n");
+    expect(scanAuthoredWikiNavigations(source).map(item => item.token)).toEqual(["[[Target]]"]);
+    expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+  });
+
+  it.each([
+    ["封面: ![[图片.png|240]] # 预览", true],
+    ["附件:\n  - ![示例](附件/图 片.png)", true],
+    ["related: &note \"[[笔记]]\"\nalias: *note", true],
+    ["related: *missing", false],
+    ["cover: ![[未结束", false],
+    ["cover: ![图片](未结束", false],
+    ["# 只有标题", false],
+    ["title:\t 示例", true],
+  ])("classifies the entire candidate properties block %j", (properties, expected) => {
+    const prefix = ["---", properties, "..."].join("\n");
+    const source = prefix + "\n" + outside;
+    expect(propertiesEnd(source)).toBe(expected ? prefix.length : 0);
   });
 
   it.each([
