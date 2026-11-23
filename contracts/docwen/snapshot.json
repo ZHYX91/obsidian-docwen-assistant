@@ -1,7 +1,7 @@
 {
   "schema": "docwen.consumer_contract_snapshot.v1",
   "source_repository": "https://github.com/ZHYX91/DocWen",
-  "source_commit": "6344346a1a7a333c0c0e1ff89e59da7b5e587718",
+  "source_commit": "bd4182a00b4e5583f804154759cdbbcbe9b5b2a2",
   "normalization": "JSON: UTF-8, two-space indentation, one LF; data unchanged. Other files: original Git blob bytes.",
   "license": "AGPL-3.0-or-later (vendored test data only; see LICENSE)",
   "files": [
@@ -15,9 +15,9 @@
     {
       "path": "conformance-manifest.json",
       "source_path": "contracts/conformance-manifest.json",
-      "source_sha256": "6e3e177fa7ccd795f3c0dad1204073c7c7a552e0ffeb9c732c3252c3a5b14041",
-      "sha256": "6e3e177fa7ccd795f3c0dad1204073c7c7a552e0ffeb9c732c3252c3a5b14041",
-      "size_bytes": 21326
+      "source_sha256": "b6b5a7b757785e93a54c84016e76497221268d44d2bde27798abf1aa442b7a70",
+      "sha256": "b6b5a7b757785e93a54c84016e76497221268d44d2bde27798abf1aa442b7a70",
+      "size_bytes": 21506
     },
     {
       "path": "fixtures/invalid/artifact-bundle.dangling-entry.json",
@@ -606,6 +606,13 @@
       "source_sha256": "2e0940a119ba9c847843f3433291cc193dc9696e37f5732022f07137f4658b89",
       "sha256": "d1a2ae55be3637f8434c8949feb413f2f82805c1221ec3cb78eca9e9a6598efe",
       "size_bytes": 5185
+    },
+    {
+      "path": "fixtures/valid/machine.source-proofread-capability.response.json",
+      "source_path": "contracts/fixtures/valid/machine.source-proofread-capability.response.json",
+      "source_sha256": "67a9d1e207ed52c46ef9b671edbcc897accdfb7329ff3e85753ee40e1fa89868",
+      "sha256": "67a9d1e207ed52c46ef9b671edbcc897accdfb7329ff3e85753ee40e1fa89868",
+      "size_bytes": 7274
     },
     {
       "path": "fixtures/valid/machine.task-cancelled.trace.json",
