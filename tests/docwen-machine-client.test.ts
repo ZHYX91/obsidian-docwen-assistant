@@ -1238,7 +1238,7 @@ describe("DocWenMachineClient", () => {
     }
   });
 
-  it.each(["COM¹.md", "lpt².notes.md", "COM³", "NUL .md", "CONIN$", "conout$.txt", "bad?.md", "bad|name.md", "line\nbreak.md"])(
+  it.each(["COM¹.md", "lpt².notes.md", "COM³", "NUL .md", "CONIN$", "conout$.txt", "bad?.md", "bad|name.md", "line\nbreak.md", "note\ud800.md", "note\udfff.md"])(
     "rejects a nonportable suggested artifact name before using it: %j", async (name) => {
       const root = await temporaryRoot();
       const bytes = Buffer.from("# Output");
@@ -1250,7 +1250,7 @@ describe("DocWenMachineClient", () => {
     },
   );
 
-  it.each(["COM10.md", "计划².md", "report.v2.md"])("accepts portable name %s", async name => {
+  it.each(["COM10.md", "计划².md", "表😀.md", "note\ufffd.md", "report.v2.md"])("accepts portable name %s", async name => {
     const root = await temporaryRoot();
     const bytes = Buffer.from("# Output");
     writeFileSync(path.join(root, name), bytes);

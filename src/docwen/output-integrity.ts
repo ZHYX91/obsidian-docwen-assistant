@@ -15,7 +15,7 @@ export type FileIdentity = {
 
 export function isSafePortableFilenameSegment(segment: string): boolean {
   if (!segment || segment.length > 240 || Buffer.byteLength(segment, "utf8") > 240
-    || /[\\/:*?"<>|]/u.test(segment) || /[. ]$/u.test(segment)
+    || /[\\/:*?"<>|\uD800-\uDFFF]/u.test(segment) || /[. ]$/u.test(segment)
     || /^(?:aux|con|conin\$|conout\$|nul|prn|(?:com|lpt)[1-9¹²³]) *(?:\.|$)/iu.test(segment)) return false;
   for (const character of segment) {
     if (character.charCodeAt(0) < 32) return false;
