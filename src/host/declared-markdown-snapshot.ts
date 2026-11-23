@@ -38,6 +38,9 @@ export async function buildDeclaredMarkdownInputs(
   let totalResourceBytes = 0;
   const markdown = parseAuthoredMarkdown(authoredMarkdown);
   const occurrences = scanImageOccurrences(markdown);
+  // Keep the parser's decision through host resolution. A cache link can still
+  // contain a query or an encoded extension that is absent from a Vault path.
+  const imageOffsets = new Set(occurrences.filter(item => item.requiresCache).map(item => item.image.start));
   const rawEmbeds = fileCache?.embeds ?? [];
   const activeEmbeds = activeCachedReferences(rawEmbeds, authoredMarkdown, markdown.imageSource);
   const embeds = includeUncachedImages(occurrences, activeEmbeds, rawEmbeds);
@@ -87,7 +90,7 @@ export async function buildDeclaredMarkdownInputs(
     if (expectedPath !== null && linked?.path !== expectedPath) throw imageInputError("missing", embed.link);
     const requestedExtension = extensionForLink(embed.sourceRelativePath ?? linkpath);
     if (!(linked instanceof TFile)) {
-      if (IMAGE_LIKE_EXTENSIONS.has(requestedExtension)) {
+      if (imageOffsets.has(embed.position.start.offset) || IMAGE_LIKE_EXTENSIONS.has(requestedExtension)) {
         throw imageInputError("missing", embed.link);
       }
       continue;
@@ -101,6 +104,7 @@ export async function buildDeclaredMarkdownInputs(
           `DocWen does not support the embedded image format: ${linked.extension}`,
         );
       }
+      if (imageOffsets.has(embed.position.start.offset)) throw imageInputError("metadata", embed.link);
       continue;
     }
     const authoredToken = authoredMarkdown.slice(
