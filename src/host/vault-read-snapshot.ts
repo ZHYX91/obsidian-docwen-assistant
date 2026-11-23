@@ -110,7 +110,7 @@ export class VaultReadSnapshot {
         if (target === null || target.view.file !== file || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)) {
           throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
         }
-        if (sha256(editor.getValue()) !== contentSha256) {
+        if (editor.getValue() !== original) {
           throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
         }
       } else {
@@ -219,14 +219,7 @@ function decodeMarkdown(value: string | ArrayBuffer): string {
 }
 
 function sha256(value: string | ArrayBuffer | Uint8Array): string {
-  const bytes = typeof value === "string"
-    ? Buffer.from(value, "utf8")
-    : value instanceof ArrayBuffer
-      ? Buffer.from(value)
-      : Buffer.from(value.buffer, value.byteOffset, value.byteLength);
-  return createHash("sha256")
-    .update(bytes)
-    .digest("hex");
+  return createHash("sha256").update(value instanceof ArrayBuffer ? new Uint8Array(value) : value).digest("hex");
 }
 
 function throwIfAborted(signal: AbortSignal): void {

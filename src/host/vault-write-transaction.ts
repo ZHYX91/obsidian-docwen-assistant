@@ -82,7 +82,7 @@ export class VaultWriteTransaction {
     try {
       throwIfAborted(signal);
       this.assertEditorTarget(originalFile, originalPath, target);
-      if (sha256(editor.getValue()) !== originalSha256) {
+      if (editor.getValue() !== original) {
         throw new VaultWriteError("vault_content_conflict", "The Markdown editor changed during numbering.");
       }
     } catch (error) {
@@ -103,10 +103,10 @@ export class VaultWriteTransaction {
       transactionFailure = { error };
     }
     try {
-      const currentSha256 = sha256(editor.getValue());
-      if (currentSha256 !== sha256(output)) {
+      const current = editor.getValue();
+      if (current !== output) {
         throw new VaultWriteError("vault_reconciliation_failed", "The editor write could not be confirmed.", {
-          outputState: currentSha256 === originalSha256 ? "not_published" : "unconfirmed",
+          outputState: current === original ? "not_published" : "unconfirmed",
         });
       }
     } catch (error) {
@@ -166,7 +166,7 @@ export class VaultWriteTransaction {
         this.assertVaultFileIdentity(originalFile, originalPath);
         this.assertNoOpenMarkdownTarget(originalPath);
         if ((initialStat && (file.stat.size !== initialStat.size || file.stat.mtime !== initialStat.mtime
-          || file.stat.ctime !== initialStat.ctime)) || sha256(current) !== originalSha256) {
+          || file.stat.ctime !== initialStat.ctime)) || current !== original) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
         }
         accepted = true;
@@ -179,7 +179,7 @@ export class VaultWriteTransaction {
       for (const warning of prepared.warnings) recordFailureWarning(failure, warning);
       throw failure;
     }
-    if (sha256(published) !== sha256(output)) {
+    if (published !== output) {
       const failure = new VaultWriteError("vault_reconciliation_failed", "The Vault write could not be confirmed.", {
         outputState: "unconfirmed",
       });
