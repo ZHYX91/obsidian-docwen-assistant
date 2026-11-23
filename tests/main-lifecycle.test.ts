@@ -239,6 +239,55 @@ describe("DocWenPlugin lifecycle", () => {
     plugin.onunload();
   });
 
+  it.each(["reset", "unload"])("does not start the second connection probe after %s", async action => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    let closeGui!: () => void;
+    const gui = new Promise<void>(resolve => { closeGui = resolve; });
+    const machine = vi.fn(async () => undefined);
+    const runtime = plugin as unknown as Record<string, unknown>;
+    runtime.guiConnectionMonitor = { getStatus: () => ({ state: "unchecked" }), check: () => gui, reset: vi.fn() };
+    runtime.connectionMonitor = { getStatus: () => ({ state: "unchecked" }), check: machine, reset: vi.fn() };
+    const checking = plugin.checkDocWenConnectionSilently();
+    if (action === "reset") plugin.resetDocWenRuntime();
+    else plugin.onunload();
+    closeGui();
+    await checking;
+    expect(machine).not.toHaveBeenCalled();
+    if (action === "reset") plugin.onunload();
+  });
+
+  it("refreshes sidebar export availability once after active-file saves, including unchanged file stats", async () => {
+    const { TFile } = await import("obsidian");
+    const { AssistantView } = await import("../src/assistant-view");
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    vi.useFakeTimers();
+    vi.stubGlobal("window", globalThis);
+    try {
+      const active = Object.assign(new TFile(), { path: "source.md", stat: { mtime: 1, size: 4 } });
+      const other = Object.assign(new TFile(), { path: "other.md" });
+      state.activeFile = active;
+      const view = Object.create(AssistantView.prototype) as InstanceType<typeof AssistantView>;
+      view.refreshActiveFile = vi.fn();
+      state.leaves.push({ view });
+      const modify = state.vaultEvents.get("modify")!;
+      modify(active);
+      modify(active);
+      modify(other);
+      expect(view.refreshActiveFile).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(300);
+      expect(view.refreshActiveFile).toHaveBeenCalledExactlyOnceWith(true);
+      expect(state.capabilityPreloads).toHaveLength(1);
+    } finally {
+      plugin.onunload();
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("opens the sidebar from ribbon and command without requiring a file or starting a backend action", async () => {
     const { default: DocWenPlugin } = await import("../src/main");
     const plugin = new DocWenPlugin({} as never, {} as never);

@@ -69,6 +69,7 @@ export default class DocWenPlugin extends Plugin {
   private actionRunner!: ActionRunner;
   private operationStatus: OperationStatus | null = null;
   private runtimeEpoch = 0;
+  private connectionGeneration = 0;
   private unloaded = false;
   private settingsSaves!: SettingsSaveCoordinator<PersistedPluginSettings>;
   private settingsCompatibility: SettingsCompatibility = {
@@ -101,18 +102,6 @@ export default class DocWenPlugin extends Plugin {
     const activeFile = this.app.workspace.getActiveFile();
     if (!activeFile) return;
     await action(activeFile);
-  }
-
-  private async exportCurrentFileToDocx(): Promise<void> {
-    await this.runForActiveFile((file) => this.exportActions.toDocx(file));
-  }
-
-  private async exportCurrentFileToXlsx(): Promise<void> {
-    await this.runForActiveFile((file) => this.exportActions.toXlsx(file));
-  }
-
-  private async exportCurrentFileToMarkdown(): Promise<void> {
-    await this.runForActiveFile((file) => this.exportActions.toMarkdown(file));
   }
 
   private activeFileSupports(predicate: (capability: FileCapability) => boolean): boolean {
@@ -157,6 +146,7 @@ export default class DocWenPlugin extends Plugin {
   }
 
   public resetDocWenRuntime(): void {
+    ++this.connectionGeneration;
     this.operations?.cancelAll();
     this.connectionMonitor.reset();
     this.guiConnectionMonitor?.reset();
@@ -165,8 +155,11 @@ export default class DocWenPlugin extends Plugin {
   }
 
   public async checkDocWenConnectionSilently(): Promise<void> {
-    if (this.getGuiConnectionStatus().state === "unchecked") await this.checkGuiConnectionSilently();
-    if (this.connectionMonitor.getStatus().state !== "unchecked") return;
+    if (this.unloaded) return;
+    const generation = this.connectionGeneration;
+    const guiState = this.getGuiConnectionStatus().state;
+    if (guiState === "unchecked" || guiState === "checking") await this.checkGuiConnectionSilently();
+    if (generation !== this.connectionGeneration || this.connectionMonitor.getStatus().state !== "unchecked") return;
     try {
       await this.connectionMonitor.check();
     } catch {
@@ -271,18 +264,20 @@ export default class DocWenPlugin extends Plugin {
           cancelModifiedPreload();
           modifiedPreloadTimer = window.setTimeout(() => {
             modifiedPreloadTimer = undefined;
-            if (modifiedFile === this.app.workspace.getActiveFile()) preloadCapabilities(modifiedFile);
+            if (modifiedFile !== this.app.workspace.getActiveFile()) return;
+            preloadCapabilities(modifiedFile);
+            this.refreshSidebarFiles(true);
           }, 300);
         }
       }
     }));
     this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
-      this.refreshSidebarFiles();
       if (!(file instanceof TFile)) {
         // A folder move may change every cached descendant path. Invalidate
         // the complete map rather than guessing which children were reported.
         this.capabilities.invalidate();
         preloadCapabilities(this.app.workspace.getActiveFile());
+        this.refreshSidebarFiles();
         return;
       }
       const oldAbsolute = resolveAbsoluteVaultPath(this.app.vault, oldPath);
@@ -290,6 +285,7 @@ export default class DocWenPlugin extends Plugin {
       const currentAbsolute = resolveAbsoluteFilePath(this.app.vault, file);
       if (currentAbsolute) this.capabilities.invalidate(currentAbsolute);
       if (file === this.app.workspace.getActiveFile()) preloadCapabilities(file);
+      this.refreshSidebarFiles();
     }));
     this.registerEvent(this.app.vault.on("delete", (file) => {
       this.refreshSidebarFiles();
@@ -373,9 +369,9 @@ export default class DocWenPlugin extends Plugin {
       openSidebar: () => this.showAssistantSidebar(),
       activeFileSupports: (predicate) => this.activeFileSupports(predicate),
       capabilities: this.capabilities,
-      exportCurrentFileToDocx: () => this.exportCurrentFileToDocx(),
-      exportCurrentFileToXlsx: () => this.exportCurrentFileToXlsx(),
-      exportCurrentFileToMarkdown: () => this.exportCurrentFileToMarkdown(),
+      exportCurrentFileToDocx: () => this.runForActiveFile(file => this.exportActions.toDocx(file)),
+      exportCurrentFileToXlsx: () => this.runForActiveFile(file => this.exportActions.toXlsx(file)),
+      exportCurrentFileToMarkdown: () => this.runForActiveFile(file => this.exportActions.toMarkdown(file)),
       numberingActions: this.numberingActions,
       runDoctorCheck: () => this.runDoctorCheck(),
       proofreadActions: this.proofreadActions,
@@ -474,9 +470,9 @@ export default class DocWenPlugin extends Plugin {
     return this.settingsSaves.retry();
   }
 
-  private refreshSidebarFiles(connectionChanged = false): void {
+  private refreshSidebarFiles(refreshExports = false): void {
     for (const leaf of this.app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)) {
-      if (leaf.view instanceof AssistantView) leaf.view.refreshActiveFile(connectionChanged);
+      if (leaf.view instanceof AssistantView) leaf.view.refreshActiveFile(refreshExports);
     }
   }
 

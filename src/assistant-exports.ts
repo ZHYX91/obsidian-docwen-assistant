@@ -5,7 +5,7 @@ import { preserveViewState } from "./settings-view-state";
 export type AssistantExportTarget = "docx" | "xlsx" | "md";
 
 export interface AssistantExportActions {
-  getExportTargets(file: TFile, signal: AbortSignal): Promise<readonly AssistantExportTarget[]>;
+  getExportTargets(file: TFile, signal: AbortSignal, refresh: boolean): Promise<readonly AssistantExportTarget[]>;
   exportFile(file: TFile, target: AssistantExportTarget): Promise<void>;
   showExportFailure(error: unknown): void;
 }
@@ -27,7 +27,7 @@ export class AssistantExports {
   constructor(
     private readonly actions: AssistantExportActions,
     private readonly getFile: () => TFile | null,
-    private readonly refreshContext: () => void,
+    private readonly refreshContext: (refresh?: boolean) => void,
   ) {}
 
   mount(container: HTMLElement): void {
@@ -46,9 +46,9 @@ export class AssistantExports {
     this.enabled = false;
   }
 
-  refresh(file: TFile | null, enabled: boolean, connectionChanged = false): void {
+  refresh(file: TFile | null, enabled: boolean, refreshExports = false): void {
     const signature = fileSignature(file);
-    const changed = connectionChanged || file !== this.file || signature !== this.signature;
+    const changed = refreshExports || file !== this.file || signature !== this.signature;
     this.enabled = enabled;
     if (changed || !enabled) {
       this.request?.abort();
@@ -62,24 +62,20 @@ export class AssistantExports {
     }
     if (changed) this.render();
     if (enabled && file && !this.request && this.targets === null && !this.failure) {
-      void this.discover(file, signature);
+      void this.discover(file, signature, refreshExports);
     }
   }
 
   reload(): void {
-    this.request?.abort();
-    this.request = null;
-    this.targets = null;
-    this.failure = null;
-    this.refreshContext();
+    this.refreshContext(true);
   }
 
-  private async discover(file: TFile, signature: string): Promise<void> {
+  private async discover(file: TFile, signature: string, refresh: boolean): Promise<void> {
     const request = new AbortController();
     this.request = request;
     this.render();
     try {
-      const targets = await this.actions.getExportTargets(file, request.signal);
+      const targets = await this.actions.getExportTargets(file, request.signal, refresh);
       if (request.signal.aborted || this.request !== request) return;
       if (this.getFile() !== file || fileSignature(file) !== signature) {
         this.refreshContext();
