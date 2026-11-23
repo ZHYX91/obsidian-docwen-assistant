@@ -259,6 +259,46 @@ describe("file menu capability states", () => {
     expect(actions.gui.open).not.toHaveBeenCalled();
   });
 
+  it.each([true, false])("refuses a replaced file before the GUI opens its old path (submenu=%s)", async (submenu) => {
+    const { handler, actions, files } = await register({ peek: () => null, preload: vi.fn() });
+    const menu = new FakeMenu(submenu);
+    const file = { path: "Planning.md" };
+    handler(menu, file);
+    files.set(file.path, { path: file.path });
+    const items = submenu ? menu.items[0].submenu!.items : menu.items;
+    items.find(item => item.title.includes("contextMenuOpenInDocWen"))!.click!();
+    expect(actions.gui.open).not.toHaveBeenCalled();
+    expect(menuState.notices).toContain("contextMenuTargetChanged");
+  });
+
+  it.each(["loading", "choosing"])("refuses a renamed target while %s", async (stage) => {
+    let finish!: () => void;
+    const loading = new Promise<void>(resolve => { finish = resolve; });
+    let cached: unknown = null;
+    const { handler, actions, files } = await register({
+      peek: () => cached,
+      preload: () => loading,
+      findConversionRoute: (_capability: unknown, target: string) => target === "md" ? {} : null,
+    });
+    const menu = new FakeMenu();
+    const file = { path: "Planning.docx" };
+    handler(menu, file);
+    menu.items[0].submenu!.items[0].click!();
+    cached = { inspection: { supportedActions: ["convert"] } };
+    if (stage === "choosing") {
+      finish();
+      await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
+    }
+    files.delete(file.path);
+    file.path = "Archive/Planning.docx";
+    files.set(file.path, file);
+    if (stage === "loading") finish();
+    else menuState.pickers[0].choose({ id: "0" });
+    await vi.waitFor(() => expect(menuState.notices).toContain("contextMenuTargetChanged"));
+    expect(menuState.pickers).toHaveLength(stage === "loading" ? 0 : 1);
+    expect(actions.exports.toMarkdown).not.toHaveBeenCalled();
+  });
+
   it("labels the Markdown file inferred from a folder context", async () => {
     menuState.target = { path: "Project/Project.md" };
     const { handler } = await register({ peek: () => null, preload: vi.fn() });
@@ -303,17 +343,22 @@ async function register(
   const { registerFileMenu } = await import("../src/app/register-file-menu");
   const { DocWenCapabilityService } = await import("../src/docwen/capability-service");
   let handler!: (menu: FakeMenu, file: { path: string }) => void;
+  const files = new Map<string, { path: string }>();
   let dispose!: () => void;
   const controller = new AbortController();
   const plugin = {
     app: {
       workspace: {
         on: (_event: string, callback: typeof handler) => {
-          handler = callback;
+          handler = (menu, file) => {
+            const target = menuState.target ?? file;
+            files.set(target.path, target);
+            callback(menu, file);
+          };
           return {};
         },
       },
-      vault: {},
+      vault: { getFileByPath: (path: string) => files.get(path) ?? null },
     },
     registerEvent: () => undefined,
     register: (cleanup: () => void) => { dispose = () => { controller.abort(); cleanup(); }; },
@@ -340,7 +385,7 @@ async function register(
     presentCapabilityFailure,
   };
   registerFileMenu(plugin as never, actions as never);
-  return { actions, handler, dispose };
+  return { actions, handler, dispose, files };
 }
 
 function expectValidSections(menu: FakeMenu): void {
