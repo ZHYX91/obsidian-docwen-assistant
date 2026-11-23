@@ -1,3 +1,4 @@
+import { readEditorInput, readVaultInput } from "./vault-input";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -74,7 +75,7 @@ export class VaultWriteTransaction {
     const originalPath = file.path;
     this.assertEditorTarget(originalFile, originalPath, target);
     const editor = target.editor;
-    const original = editor.getValue();
+    const original = readEditorInput(editor);
     const originalSha256 = sha256(original);
     const prepared = await withIsolatedMarkdown(original, originalPath, originalSha256, transform, signal);
     const output = prepared.value;
@@ -134,7 +135,7 @@ export class VaultWriteTransaction {
     const originalPath = file.path;
     this.assertVaultFileIdentity(originalFile, originalPath);
     const initialStat = file.stat ? { ...file.stat } : undefined;
-    const sourceBytes = await this.app.vault.readBinary(file);
+    const sourceBytes = await readVaultInput(this.app.vault, file, signal);
     const original = decodeNumberingMarkdown(sourceBytes, "input");
     this.assertVaultFileIdentity(originalFile, originalPath);
     this.assertNoOpenMarkdownTarget(originalPath);
@@ -155,7 +156,7 @@ export class VaultWriteTransaction {
     try {
       // Vault.process decodes malformed bytes to the same character as a literal U+FFFD.
       if (original.includes("\uFFFD")) {
-        const currentBytes = await this.app.vault.readBinary(originalFile);
+        const currentBytes = await readVaultInput(this.app.vault, originalFile, signal);
         if (!Buffer.from(currentBytes).equals(Buffer.from(sourceBytes))) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
         }

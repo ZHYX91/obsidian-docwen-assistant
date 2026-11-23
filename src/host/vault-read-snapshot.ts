@@ -1,3 +1,4 @@
+import { readEditorInput, readVaultInput } from "./vault-input";
 import {
   buildDeclaredMarkdownInputs,
   logicalPathFor,
@@ -98,7 +99,7 @@ export class VaultReadSnapshot {
       throw new VaultWriteError("vault_target_changed", "The Markdown editor belongs to a different file object.");
     }
     const editor = target?.editor ?? null;
-    const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
+    const original = editor ? readEditorInput(editor) : await readVaultInput(this.app.vault, file, signal);
     assertSourceIdentity();
     const contentSha256 = sha256(original);
     let published = false;
@@ -120,7 +121,7 @@ export class VaultReadSnapshot {
     const assertCurrent = async (): Promise<void> => {
       assertPublicationIdentity();
       if (!editor) {
-        const current = await this.app.vault.readBinary(file);
+        const current = await readVaultInput(this.app.vault, file, signal);
         assertPublicationIdentity();
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
