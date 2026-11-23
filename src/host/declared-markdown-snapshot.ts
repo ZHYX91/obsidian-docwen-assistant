@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import * as path from "node:path";
 import { setTimeout as yieldToHost } from "node:timers/promises";
 import { parseLinktext, TFile, type App } from "obsidian";
+import { assertInputCount } from "../docwen/client";
 import { normalizeLogicalPath, type MarkdownResourceBindings, type TaskInput } from "../docwen";
 import { findUncoveredImageEmbeds, includeUncachedImages, scanImageOccurrences } from "./markdown-image-embed-coverage";
 import { findUncoveredWikiNavigations, isLocalWikiNavigationLink } from "./markdown-wiki-navigation-coverage";
@@ -35,7 +36,6 @@ export async function buildDeclaredMarkdownInputs(
   const resources = new Map<TFile, TaskInput>();
   const imageBindings = new Map<string, string>();
   const wikiLinkBindings = new Map<string, string>();
-  let totalResourceBytes = 0;
   const markdown = parseAuthoredMarkdown(authoredMarkdown);
   const occurrences = scanImageOccurrences(markdown);
   // Keep the parser's decision through host resolution. A cache link can still
@@ -121,12 +121,9 @@ export async function buildDeclaredMarkdownInputs(
     }
     imageBindings.set(authoredToken, logicalPath);
     if (resources.has(linked)) continue;
-    if (app.vault.getFileByPath(logicalPath) !== linked) throw imageInputError("missing", embed.link);
+    assertInputCount(resources.size + 2); // Include the new image and the note itself.
 
-    const content = await readEmbeddedImage(app, linked, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
-    totalResourceBytes += content.length;
     const resourcePath = path.join(workspace, `linked-${resources.size + 1}.${extension}`);
-    await writeFile(resourcePath, content);
     resources.set(linked, {
       path: resourcePath,
       kind: "resource",
@@ -136,12 +133,18 @@ export async function buildDeclaredMarkdownInputs(
     });
   }
 
+  let totalResourceBytes = 0;
+  for (const [image, input] of resources) {
+    assertImageIdentity(app, image, input.logicalPath);
+    const content = await readEmbeddedImage(app, image, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
+    totalResourceBytes += content.length;
+    await writeFile(input.path, content);
+  }
+
   // A Vault move mutates the TFile in place. Keep the authored binding and the
   // staged bytes attached to the same registered object until capture completes.
   for (const [image, input] of resources) {
-    if (image.path !== input.logicalPath || app.vault.getFileByPath(input.logicalPath) !== image) {
-      throw new VaultWriteError("vault_target_changed", "An embedded image moved or was replaced during export.");
-    }
+    assertImageIdentity(app, image, input.logicalPath);
   }
 
   return {
@@ -154,6 +157,12 @@ export async function buildDeclaredMarkdownInputs(
       }),
     },
   };
+}
+
+function assertImageIdentity(app: App, image: TFile, path: string): void {
+  if (image.path !== path || app.vault.getFileByPath(path) !== image) {
+    throw new VaultWriteError("vault_target_changed", "An embedded image moved or was replaced during export.");
+  }
 }
 
 function imageInputError(issue: "metadata" | "missing", link: string): VaultWriteError {

@@ -51,6 +51,13 @@ async function fixture(
 }
 
 describe("declared embedded image budget", () => {
+  it("counts the source and stops before reading an image outside the handle count limit", async () => {
+    const sizes = Array.from({ length: 256 }, () => ({ known: 1, actual: 1 }));
+    const test = await fixture(sizes);
+    await expect(test.run()).rejects.toMatchObject({ code: "cli_input_invalid", details: { actual: 257, limit: 256 } });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
   it("rejects a known oversized image before calling readBinary", async () => {
     // The sentinel's tiny payload keeps this regression independent of large allocations.
     const test = await fixture([{ known: 128 * 1024 * 1024, actual: 1 }]);

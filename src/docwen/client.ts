@@ -48,6 +48,12 @@ export const INPUT_HANDLE_LIMITS = Object.freeze({
   fileBytes: 512 * 1024 * 1024,
   totalBytes: 1024 * 1024 * 1024,
 });
+export function assertInputCount(count: number): void {
+  if (count > INPUT_HANDLE_LIMITS.count) {
+    throw inputLimitError("DocWen task contains too many input files.", { actual: count, limit: INPUT_HANDLE_LIMITS.count });
+  }
+}
+
 export const PROOFREAD_REPORT_LIMIT_BYTES = 16 * 1024 * 1024;
 
 export type ProofreadCheck = "typo" | "symbol" | "punct" | "sensitive" | "all" | "none";
@@ -510,12 +516,7 @@ async function taskRequest(
   if (inputs.length === 0) {
     throw new LocalCliError("cli_input_invalid", "DocWen tasks require at least one input.");
   }
-  if (inputs.length > INPUT_HANDLE_LIMITS.count) {
-    throw inputLimitError("DocWen task contains too many input files.", {
-      actual: inputs.length,
-      limit: INPUT_HANDLE_LIMITS.count,
-    });
-  }
+  assertInputCount(inputs.length);
   const logicalPaths = new Set<string>();
   for (const input of inputs) {
     const logicalPath = normalizeLogicalPath(input.logicalPath);
