@@ -170,6 +170,24 @@ describe("DocWenCapabilityService", () => {
     expect(service.supportsAction(discovered, "validate")).toBe(true);
   });
 
+  it("hides ordinary and optimized exports when the inspected file only supports other actions", async () => {
+    const ordinary = capability("ordinary", "convert", "text/markdown");
+    const optimized = { ...capability("optimized", "transform", "text/markdown"), optimization_id: "gongwen" };
+    const runtime = projection();
+    const service = new DocWenCapabilityService({
+      inspect: vi.fn().mockResolvedValue(inspection({ supportedActions: ["inspect", "validate"] })),
+      runtimeCapabilities: vi.fn().mockResolvedValue({
+        ...runtime, capabilities: [...runtime.capabilities, ordinary, optimized],
+      }),
+    } as unknown as DocWenClient);
+    const file = await service.forFile("note.md");
+
+    expect(service.supportsAction(file, "validate")).toBe(true);
+    expect(service.findConversionRoute(file, "docx")).toBeNull();
+    expect(service.findConversionRoute(file, "md")).toBeNull();
+    expect(service.optimizationActionIds(file, "md")).toEqual([]);
+  });
+
   it("bounds a burst of different-file background inspections to one active request", async () => {
     let active = 0;
     let peak = 0;

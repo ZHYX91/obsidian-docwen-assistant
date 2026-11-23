@@ -121,6 +121,7 @@ export class DocWenCapabilityService {
   }
 
   findConversionRoute(capability: FileCapability, target: ConvertTarget, optimizationId?: string): RuntimeRoute | null {
+    if (!this.supportsAction(capability, "convert")) return null;
     const matches = capability.source.routes.filter((route) =>
       route.target === target && route.available && (optimizationId === undefined
         ? route.operation === "conversion" && route.optimizationId === undefined
