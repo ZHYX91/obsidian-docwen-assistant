@@ -15,11 +15,15 @@ export function resolveAbsoluteFilePath(vault: Vault, file: TFile): string | nul
 export function resolveTargetFile(abstractFile: TAbstractFile): TFile | null {
   if (abstractFile instanceof TFile) return abstractFile;
   if (!(abstractFile instanceof TFolder)) return null;
-  const candidate = abstractFile.children?.find(
-    (child) =>
-      child instanceof TFile &&
-      child.basename === abstractFile.name &&
-      child.extension === "md",
-  );
-  return candidate instanceof TFile ? candidate : null;
+  // Folder Nodes uses NFC and Unicode simple case folding for same-name notes.
+  const name = abstractFile.name.normalize("NFC").replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const folderName = new RegExp(`^${name}$`, "iu");
+  let candidate: TFile | null = null;
+  for (const child of abstractFile.children) {
+    if (!(child instanceof TFile) || child.extension.toLowerCase() !== "md"
+      || !folderName.test(child.basename.normalize("NFC"))) continue;
+    if (candidate !== null) return null;
+    candidate = child;
+  }
+  return candidate;
 }
