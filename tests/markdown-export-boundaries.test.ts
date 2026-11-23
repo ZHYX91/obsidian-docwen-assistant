@@ -1,6 +1,6 @@
 import { parseAuthoredMarkdown } from "../src/host/markdown-source-ownership";
 import { describe, expect, it, vi } from "vitest";
-import { scanAuthoredImageEmbeds } from "../src/host/markdown-image-embed-coverage";
+import { scanAuthoredImageEmbeds, scanImageOccurrences } from "../src/host/markdown-image-embed-coverage";
 import { scanAuthoredWikiNavigations } from "../src/host/markdown-wiki-navigation-coverage";
 import { propertiesEnd } from "../src/host/markdown-properties";
 import { buildDeclaredMarkdownInputs } from "../src/host/declared-markdown-snapshot";
@@ -82,10 +82,11 @@ describe("Word export source boundaries", () => {
     "$x\\$ " + formula + "$",
   ])("excludes math without losing the ranges of subsequent references in %j", (math) => {
     const source = math + "\n\n" + outside;
-    const [link] = scanAuthoredWikiNavigations(parseAuthoredMarkdown(source));
-    expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source))).toHaveLength(1);
-    expect(link.start).toBe(source.indexOf("[[Target]]"));
-    expect(scanAuthoredImageEmbeds(source).map(item => item.token)).toEqual(["![[photo.png]]"]);
+    const markdown = parseAuthoredMarkdown(source);
+    const links = scanAuthoredWikiNavigations(markdown);
+    expect(links.map(link => link.start)).toEqual([source.indexOf("[[Target]]")]);
+    expect(scanImageOccurrences(markdown).filter(item => item.requiresCache).map(item => item.image.token))
+      .toEqual(["![[photo.png]]"]);
   });
 
   it.each([
@@ -115,6 +116,18 @@ describe("Word export source boundaries", () => {
       expect(scanAuthoredWikiNavigations(parseAuthoredMarkdown(source)).map(item => item.token)).toEqual(["[[x]]"]);
     },
   );
+
+  it("retains UTF-16 cache offsets across adjacent masked ranges and physical line breaks", () => {
+    const source = ["图😀 `%%[[Code]]`%%甲😀", "ignored ![[no.png]]%%![[图😀.png]]", "[[正文😀]]"].join("\r\n");
+    const markdown = parseAuthoredMarkdown(source);
+    const image = "![[图😀.png]]";
+    const link = "[[正文😀]]";
+    expect(markdown.imageSource).toHaveLength(source.length);
+    expect(markdown.navigationSource).toHaveLength(source.length);
+    expect(markdown.imageSource.match(/\r\n/gu)).toHaveLength(2);
+    expect(scanImageOccurrences(markdown).map(item => item.image.start)).toEqual([source.indexOf(image)]);
+    expect(scanAuthoredWikiNavigations(markdown).map(item => item.start)).toEqual([source.indexOf(link)]);
+  });
 
   it("prepares the Word snapshot when Obsidian returns no links for a formula", async () => {
     const boundary = vi.spyOn(await import("../src/host/markdown-properties"), "propertiesEnd");
