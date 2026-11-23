@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, readdir, realpath, writeFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NumberingActions } from "../src/actions/numbering-actions";
 import { ProofreadActions } from "../src/actions/proofread-actions";
 import { DocWenCapabilityService } from "../src/docwen/capability-service";
 import type { FileInspection, TaskInput } from "../src/docwen/client";
+import { withAliasedTemp } from "./helpers/aliased-temp";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
 
 const confirm = vi.hoisted(() => vi.fn());
@@ -36,7 +37,7 @@ function fixture(extension: string, bytes = Buffer.from(text)) {
     const suffix = extname(path);
     const canonical = suffix === ".md" || suffix === ".markdown";
     return {
-      filePath: path, sizeBytes: contents.length, contentSha256: hash(contents),
+      filePath: await realpath(path), sizeBytes: contents.length, contentSha256: hash(contents),
       decision: canonical ? "allow" : suffix === ".txt" ? "allow_with_warning" : "require_explicit_acceptance",
       declaredFormat: canonical ? "markdown" : suffix.slice(1), detectedFormat: "markdown", workflowCategory: "markdown",
       warningCode: suffix === ".txt" ? "FILE_FORMAT_COMPATIBLE_TEXT" : "", reasonCode: "", mediaType: "text/markdown",
@@ -103,6 +104,17 @@ describe("Markdown edit and proofreading sources", () => {
     expect(state.inspect.mock.calls.map(([input]) => extname(typeof input === "string" ? input : input.path))).toEqual([".docx", ".markdown"]);
     expect(state.current().toString()).toBe(cleaned);
   });
+  it.each(["txt", "docx"])("numbers detected Markdown named .%s with an aliased temporary directory", async (extension) => {
+    await withAliasedTemp(async (target) => {
+      const state = fixture(extension);
+      await state.number();
+      expect(confirm).toHaveBeenCalledTimes(extension === "txt" ? 0 : 1);
+      expect(state.numberMarkdown).toHaveBeenCalledOnce();
+      expect(state.current()).toEqual(Buffer.from(cleaned));
+      expect(await readdir(target)).toEqual([]);
+    });
+  });
+
   it("binds a closed note's report to editor line positions across mixed line endings", async () => {
     const bytes = Buffer.from("first\r\nsecond\rA😀bad\n");
     const state = fixture("md", bytes);

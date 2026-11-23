@@ -1,7 +1,7 @@
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import { createVaultWorkspace } from "./vault-workspace";
 import * as path from "node:path";
 import { TextDecoder } from "node:util";
 
@@ -233,7 +233,7 @@ async function withIsolatedMarkdown(
   transform: IsolatedMarkdownTransform,
   signal: AbortSignal,
 ): Promise<Completed<string>> {
-  const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-numbering-"));
+  const workspace = await createVaultWorkspace("numbering");
   const extension = path.extname(originalPath) || ".bin";
   const inputPath = path.join(workspace, `input${extension}`);
   const outputPath = path.join(workspace, "output.md");
