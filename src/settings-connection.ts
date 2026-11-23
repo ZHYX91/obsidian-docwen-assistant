@@ -3,7 +3,7 @@ import type DocWenPlugin from "./main";
 import { t } from "./i18n";
 import { diagnosticCode, diagnosticDetails } from "./actions/diagnostic-details";
 import { OperationDetailsModal } from "./actions/action-runner";
-import { getDocWenConnectionDisplay, type DocWenPathStatus } from "./settings-docwen-location";
+import { getDocWenConnectionDisplay, getDocWenPathStatus, type DocWenPathStatus } from "./settings-docwen-location";
 import packageJson from "../package.json";
 import { isSettingsReadOnly } from "./settings-schema-compatibility";
 
@@ -15,6 +15,14 @@ export function connectionDisplay(plugin: DocWenPlugin): DocWenPathStatus {
     state: background.state === "error" || application.state === "error" ? "error" : background.state,
     message: `${t("settingsApplicationControl")}: ${application.message}\n${t("settingsBackgroundIntegration")}: ${background.message}`,
   };
+}
+
+export function shouldCheckConnection(plugin: DocWenPlugin): boolean {
+  const machine = plugin.getDocWenConnectionStatus().state;
+  const gui = plugin.getGuiConnectionStatus().state;
+  if (machine !== "unchecked" && machine !== "checking" && gui !== "checking") return false;
+  return plugin.settings.docwenConnectionMode === "automatic"
+    || getDocWenPathStatus(plugin.settings.docwenCliPath).state === "valid";
 }
 
 export function configureConnectionActions(setting: Setting, plugin: DocWenPlugin, refresh: () => void): () => void {

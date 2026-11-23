@@ -159,7 +159,9 @@ export default class DocWenPlugin extends Plugin {
     const generation = this.connectionGeneration;
     const guiState = this.getGuiConnectionStatus().state;
     if (guiState === "unchecked" || guiState === "checking") await this.checkGuiConnectionSilently();
-    if (generation !== this.connectionGeneration || this.connectionMonitor.getStatus().state !== "unchecked") return;
+    if (generation !== this.connectionGeneration) return;
+    const machineState = this.connectionMonitor.getStatus().state;
+    if (machineState !== "unchecked" && machineState !== "checking") return;
     try {
       await this.connectionMonitor.check();
     } catch {

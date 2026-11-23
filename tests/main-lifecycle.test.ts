@@ -239,6 +239,25 @@ describe("DocWenPlugin lifecycle", () => {
     plugin.onunload();
   });
 
+  it("waits for an existing Machine check before refreshing the settings display", async () => {
+    const { default: DocWenPlugin } = await import("../src/main");
+    const plugin = new DocWenPlugin({} as never, {} as never);
+    await plugin.onload();
+    let complete!: () => void;
+    const pending = new Promise<void>(resolve => { complete = resolve; });
+    const runtime = plugin as unknown as Record<string, unknown>;
+    runtime.guiConnectionMonitor = { getStatus: () => ({ state: "connected" }), reset: vi.fn() };
+    runtime.connectionMonitor = { getStatus: () => ({ state: "checking" }), check: () => pending, reset: vi.fn() };
+    const refreshed = vi.fn();
+    const checking = plugin.checkDocWenConnectionSilently().then(refreshed);
+    await Promise.resolve();
+    expect(refreshed).not.toHaveBeenCalled();
+    complete();
+    await checking;
+    expect(refreshed).toHaveBeenCalledOnce();
+    plugin.onunload();
+  });
+
   it.each(["reset", "unload"])("does not start the second connection probe after %s", async action => {
     const { default: DocWenPlugin } = await import("../src/main");
     const plugin = new DocWenPlugin({} as never, {} as never);
