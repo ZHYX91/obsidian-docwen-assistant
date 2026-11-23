@@ -1238,6 +1238,27 @@ describe("DocWenMachineClient", () => {
     }
   });
 
+  it.each(["COM¹.md", "lpt².notes.md", "COM³", "NUL .md", "CONIN$", "conout$.txt", "bad?.md", "bad|name.md", "line\nbreak.md"])(
+    "rejects a nonportable suggested artifact name before using it: %j", async (name) => {
+      const root = await temporaryRoot();
+      const bytes = Buffer.from("# Output");
+      writeFileSync(path.join(root, "output.md"), bytes);
+      const output = { ...artifact("one", "output.md", bytes), suggested_name: name };
+      const entry = { artifact_id: "one", role: "primary", ordinal: 0, preferred: true };
+      await expect(validateArtifactBundle(bundle([output], [entry]), root, "task.graph", "0.10.0"))
+        .rejects.toMatchObject({ code: "cli_integrity_error" });
+    },
+  );
+
+  it.each(["COM10.md", "计划².md", "report.v2.md"])("accepts portable name %s", async name => {
+    const root = await temporaryRoot();
+    const bytes = Buffer.from("# Output");
+    writeFileSync(path.join(root, name), bytes);
+    const entry = { artifact_id: "one", role: "primary", ordinal: 0, preferred: true };
+    await expect(validateArtifactBundle(bundle([artifact("one", name, bytes)], [entry]), root, "task.graph", "0.10.0"))
+      .resolves.toMatchObject({ artifacts: [{ suggested_name: name }] });
+  });
+
   it("enforces finite Bundle counts, byte budgets, and portable suggested names", async () => {
     const root = await temporaryRoot();
     const bytes = Buffer.from("# output\n", "utf8");

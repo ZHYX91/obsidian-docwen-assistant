@@ -13,6 +13,16 @@ export type FileIdentity = {
   size: number;
 };
 
+export function isSafePortableFilenameSegment(segment: string): boolean {
+  if (!segment || segment.length > 240 || Buffer.byteLength(segment, "utf8") > 240
+    || /[\\/:*?"<>|]/u.test(segment) || /[. ]$/u.test(segment)
+    || /^(?:aux|con|conin\$|conout\$|nul|prn|(?:com|lpt)[1-9¹²³]) *(?:\.|$)/iu.test(segment)) return false;
+  for (const character of segment) {
+    if (character.charCodeAt(0) < 32) return false;
+  }
+  return true;
+}
+
 export function preferredArtifact(bundle: ValidatedArtifactBundle): ValidatedBundleArtifact {
   const entry = bundle.entries.find((candidate) => candidate.preferred === true);
   const artifact = bundle.artifacts.find((candidate) => candidate.artifact_id === entry?.artifact_id);
