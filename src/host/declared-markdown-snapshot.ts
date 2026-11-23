@@ -32,7 +32,7 @@ export async function buildDeclaredMarkdownInputs(
   throwIfAborted(signal);
   const metadataCache = app.metadataCache;
   const fileCache = metadataCache?.getFileCache(file);
-  const resources = new Map<string, TaskInput>();
+  const resources = new Map<TFile, TaskInput>();
   const imageBindings = new Map<string, string>();
   const wikiLinkBindings = new Map<string, string>();
   let totalResourceBytes = 0;
@@ -120,19 +120,28 @@ export async function buildDeclaredMarkdownInputs(
       throw new VaultWriteError("vault_input_invalid", "The embed cache maps identical image tokens to different resources.");
     }
     imageBindings.set(authoredToken, logicalPath);
-    if (resources.has(linked.path)) continue;
+    if (resources.has(linked)) continue;
+    if (app.vault.getFileByPath(logicalPath) !== linked) throw imageInputError("missing", embed.link);
 
     const content = await readEmbeddedImage(app, linked, MAX_EMBEDDED_RESOURCE_BYTES - totalResourceBytes, signal);
     totalResourceBytes += content.length;
     const resourcePath = path.join(workspace, `linked-${resources.size + 1}.${extension}`);
     await writeFile(resourcePath, content);
-    resources.set(linked.path, {
+    resources.set(linked, {
       path: resourcePath,
       kind: "resource",
       role: "linked_resource",
-      logicalPath: logicalPathFor(linked.path),
+      logicalPath,
       mediaType: format.mediaType,
     });
+  }
+
+  // A Vault move mutates the TFile in place. Keep the authored binding and the
+  // staged bytes attached to the same registered object until capture completes.
+  for (const [image, input] of resources) {
+    if (image.path !== input.logicalPath || app.vault.getFileByPath(input.logicalPath) !== image) {
+      throw new VaultWriteError("vault_target_changed", "An embedded image moved or was replaced during export.");
+    }
   }
 
   return {

@@ -52,7 +52,7 @@ The conversion request, rather than any installed editing plugin, owns numbering
 
 The provider-neutral `resolved_document` + `numbering_export_plan` capability remains a separate exact-two interface for consumers that already own a fully resolved semantic/numbering plan. Ordinary Assistant Word export does not use Number Suite `interop.v2`, its `enabled`/`derivedNumber` state, or that resolved-provider route. Number Suite may still expose its interop API for independent validation or other consumers, but it is not conversion authority for Assistant. Given the same authored Markdown, declared resources and explicit DocWen conversion options, direct DocWen and Assistant→DocWen must have the same observable targets, numbering, references and round-trip declarations.
 
-Declared Markdown inputs have a 6,000,000-byte total image budget. Before reading each unique image, its host-reported size is checked against the remaining budget; the actual bytes are checked afterward and empty content is rejected. Stale cached sizes cannot bypass the byte check. Repeated references are read and counted once, and cancellation stops resource preparation.
+Declared Markdown inputs have a 6,000,000-byte total image budget. Before reading each unique image, its host-reported size is checked against the remaining budget; the actual bytes are checked afterward and empty content is rejected. Stale cached sizes cannot bypass the byte check. Repeated references are read and counted once, and cancellation stops resource preparation. While preparing the snapshot, Assistant checks that each staged image still belongs to the Vault file and path that the authored token resolved to.
 
 ## Artifacts and commit
 

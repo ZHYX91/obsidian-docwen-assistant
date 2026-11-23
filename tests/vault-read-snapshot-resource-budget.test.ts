@@ -47,7 +47,7 @@ async function fixture(
       return Promise.all(result!.inputs.slice(1).map(async input => (await readFile(input.path)).length));
     },
   );
-  return { run, imageRead, controller };
+  return { run, imageRead, controller, images };
 }
 
 describe("declared embedded image budget", () => {
@@ -80,6 +80,20 @@ describe("declared embedded image budget", () => {
     const result = await test.run();
     expect(result.value).toEqual([LIMIT]);
     expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["move", "same-path replacement"])("rejects an image %s while preparing the snapshot", async change => {
+    const test = await fixture([{ known: 1, actual: 1 }, { known: 1, actual: 1 }]);
+    const { TFile } = await import("obsidian");
+    const original = test.images[0]!;
+    test.imageRead.mockImplementation(async reading => {
+      if (reading === test.images[1]) {
+        if (change === "move") original.path = "renamed.png";
+        else test.images[0] = Object.assign(new TFile(), original);
+      }
+      return new Uint8Array([1]).buffer;
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_target_changed" });
   });
 
   it("preserves cancellation while an image read is pending", async () => {

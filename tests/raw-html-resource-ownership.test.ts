@@ -103,7 +103,7 @@ describe("raw HTML resource ownership", () => {
           position: { start: { offset: match.index }, end: { offset: match.index + match[0].length } } })),
       }),
       getFirstLinkpathDest: (link: string) => link === "active.png" ? image : note,
-    }, vault: { readBinary, getName: () => "Fixture" } };
+    }, vault: { readBinary, getFileByPath: (path: string) => path === image.path ? image : null, getName: () => "Fixture" } };
     const snapshot = await buildDeclaredMarkdownInputs(app as never, { path: "note.md" } as never,
       source, "unused-workspace", new AbortController().signal,
       { path: "source.md", kind: "document", role: "source", logicalPath: "note.md", mediaType: "text/markdown" },
@@ -138,7 +138,7 @@ describe("raw HTML resource ownership", () => {
       getFileCache: () => ({ embeds: [{ original: token, link: "active.png",
         position: { start: { offset: 0 }, end: { offset: token.length } } }], links: [] }),
       getFirstLinkpathDest: () => image,
-    }, vault: { readBinary, getName: () => "Fixture" } };
+    }, vault: { readBinary, getFileByPath: (path: string) => path === image.path ? image : null, getName: () => "Fixture" } };
     const snapshot = await buildDeclaredMarkdownInputs(app as never, { path: "note.md" } as never,
       source, "unused-workspace", new AbortController().signal,
       { path: "source.md", kind: "document", role: "source", logicalPath: "note.md", mediaType: "text/markdown" },

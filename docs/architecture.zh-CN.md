@@ -50,7 +50,7 @@ Markdown 转 DOCX 时，Assistant 通过 source-native `convert.markdown_source.
 
 provider-neutral 的 `resolved_document` + `numbering_export_plan` capability 仍作为独立的 exact-two 接口，供已经拥有完整已解析语义/编号计划的消费者使用。普通 Assistant Word 导出不使用 Number Suite `interop.v2` 的 `enabled`/`derivedNumber` 状态，也不走该 resolved-provider 路线。Number Suite 的 interop API 仍可供独立校验或其他消费者使用，但不是 Assistant 的转换 authority。在作者 Markdown、声明资源和显式 DocWen 转换参数相同的前提下，直接 DocWen 与 Assistant→DocWen 的可观察目标、编号、引用和往返声明必须一致。
 
-声明式 Markdown 输入的图片总预算为 6,000,000 字节。每个唯一图片在读取前先按宿主已知文件大小检查剩余预算，读取后再核对实际字节数并拒绝空内容；缓存大小过期不能绕过实际字节检查。重复引用只读取一次并计入一次预算，取消后不继续构建资源输入。
+声明式 Markdown 输入的图片总预算为 6,000,000 字节。每个唯一图片在读取前先按宿主已知文件大小检查剩余预算，读取后再核对实际字节数并拒绝空内容；缓存大小过期不能绕过实际字节检查。重复引用只读取一次并计入一次预算，取消后不继续构建资源输入。在图片快照准备完成时，Assistant 会核对每个图片路径仍指向最初解析到的文件。
 
 ## 产物与提交
 
