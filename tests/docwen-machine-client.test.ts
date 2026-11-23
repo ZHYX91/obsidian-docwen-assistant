@@ -47,6 +47,10 @@ vi.mock("../src/docwen/linux-native-owner", () => ({
 }));
 
 vi.mock("node:child_process", () => ({ spawn: spawnMock }));
+vi.mock("node:timers", () => ({
+  setTimeout: (callback: () => void, delay: number) => globalThis.setTimeout(callback, delay),
+  clearTimeout: (timer: ReturnType<typeof setTimeout>) => globalThis.clearTimeout(timer),
+}));
 
 import {
   ARTIFACT_BUNDLE_LIMITS,
@@ -58,6 +62,7 @@ import {
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -251,7 +256,7 @@ class FakeChild extends EventEmitter {
       serverState.cancelRequested = true;
       if (!serverState.ignoreCancellation) {
         const notifyCancelled = () => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 });
-        if (serverState.cancellationDelayMs > 0) window.setTimeout(notifyCancelled, serverState.cancellationDelayMs);
+        if (serverState.cancellationDelayMs > 0) setTimeout(notifyCancelled, serverState.cancellationDelayMs);
         else queueMicrotask(notifyCancelled);
       }
     }
@@ -929,21 +934,23 @@ describe("DocWenMachineClient", () => {
     writeFileSync(input, bytes);
     const controller = new AbortController();
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
-    const operationStarted = Date.now();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 
-    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 1_000);
-    await vi.waitFor(() => expect(serverState.taskAccepted).toBe(true));
-    const delayUntilLateAbort = 850 - (Date.now() - operationStarted);
-    if (delayUntilLateAbort > 0) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, delayUntilLateAbort));
-    }
+    const onRejected = vi.fn();
+    void client.runTask(taskRequest(root, input, bytes), controller.signal, 1_000).catch(onRejected);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(serverState.taskAccepted).toBe(true);
+    await vi.advanceTimersByTimeAsync(850);
     controller.abort();
 
-    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(serverState.cancelRequested).toBe(true);
-    expect(Date.now() - operationStarted).toBeGreaterThanOrEqual(1_000);
+    await vi.advanceTimersByTimeAsync(150);
+    expect(child.killed).toBe(false);
+    expect(onRejected).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(150);
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: "cli_cancelled" }));
     expect(child.killed).toBe(true);
-  }, 4_000);
+  });
 
   it("force-terminates an accepted task when the server ignores cancellation", async () => {
     serverState.holdTask = true;
@@ -957,14 +964,21 @@ describe("DocWenMachineClient", () => {
     const controller = new AbortController();
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
-    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 7_000);
-    await vi.waitFor(() => expect(serverState.taskAccepted).toBe(true));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const onRejected = vi.fn();
+    void client.runTask(taskRequest(root, input, bytes), controller.signal, 7_000).catch(onRejected);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(serverState.taskAccepted).toBe(true);
     controller.abort();
 
-    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(serverState.cancelRequested).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(child.killed).toBe(false);
+    expect(onRejected).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: "cli_cancelled" }));
     expect(child.killed).toBe(true);
-  }, 6_000);
+  });
 
   it("settles a pending request when plugin unload disposes the client", async () => {
     serverState.holdHealth = true;
