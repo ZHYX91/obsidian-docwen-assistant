@@ -22,6 +22,7 @@ export interface Translations {
   errorWindowsOwnerRecovery: string;
   errorWindowsOwnerCleanup: string;
   dialogDiagnosticsPrivacy: string;
+  pickerNoMatches: string;
   dialogContinue: string;
   dialogDetectedFormat: string;
   dialogDeclaredFormat: string;

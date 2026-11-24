@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { initI18n } from "../src/i18n";
 import { OperationStatus } from "../src/operation-status";
 import { OperationCoordinator } from "../src/runtime/operation-coordinator";
 import { translations } from "../src/i18n/catalogs";
@@ -39,6 +40,25 @@ describe("OperationStatus", () => {
     lease.finish();
     expect(root.querySelector("button")).toBeNull();
     status.dispose();
+  });
+
+  it("updates the language of a running operation while preserving the focused action", () => {
+    const { root, operations, status } = fixture();
+    const lease = operations.begin({ key: "export", kind: "export" });
+    const button = root.querySelector("button")!;
+    button.focus();
+    try {
+      initI18n("ar");
+      status.refresh();
+      expect(root.lang).toBe("ar");
+      expect(root.dir).toBe("rtl");
+      expect(button.textContent).toBe(translations.ar.operationCancel);
+      expect(document.activeElement).toBe(button);
+    } finally {
+      initI18n("en");
+      lease.finish();
+      status.dispose();
+    }
   });
 
   it("cancels the operations represented at activation and leaves subsequent work running", () => {

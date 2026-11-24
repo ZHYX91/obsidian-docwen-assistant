@@ -5,14 +5,14 @@ import { useObsidianDom } from "./helpers/obsidian-dom";
 const state = vi.hoisted(() => ({ hidden: vi.fn() }));
 vi.mock("obsidian", () => ({
   Notice: class Notice {
-    readonly element = document.createElement("div");
+    readonly messageEl = document.createElement("div");
     constructor(content: DocumentFragment) {
       // The real host consumes the fragment into its notice container.
-      this.element.append(content);
-      this.element.addEventListener("click", () => this.hide());
-      document.body.append(this.element);
+      this.messageEl.append(content);
+      this.messageEl.addEventListener("click", () => this.hide());
+      document.body.append(this.messageEl);
     }
-    hide(): void { state.hidden(); this.element.remove(); }
+    hide(): void { state.hidden(); this.messageEl.remove(); }
   },
 }));
 useObsidianDom();
@@ -53,6 +53,28 @@ describe("completion notice actions", () => {
     buttons[2].click();
     expect(state.hidden).toHaveBeenCalledOnce();
     expect(document.querySelector("button")).toBeNull();
+  });
+
+  it("lets a user dismiss a single-action notice without opening the result", async () => {
+    const { showNotice, showNoticeWithAction } = await import("../src/host/notices");
+    document.documentElement.lang = "en";
+    initI18n("ar");
+    showNotice("ملف");
+    const open = vi.fn();
+    showNoticeWithAction("اكتمل التصدير", "افتح المجلد", open);
+    const [plain, actionable] = document.body.children;
+    for (const message of [plain, actionable]) {
+      expect(message.getAttribute("lang")).toBe("ar");
+      expect(message.getAttribute("dir")).toBe("rtl");
+    }
+    const dismiss = actionable.querySelectorAll("button")[1];
+    expect(dismiss?.textContent).toBe(t("dialogDismissNotice"));
+    dismiss.focus();
+    expect(document.activeElement).toBe(dismiss);
+    dismiss.click();
+    expect(open).not.toHaveBeenCalled();
+    expect(actionable.isConnected).toBe(false);
+    expect(plain.isConnected).toBe(true);
   });
 
   it("dismisses a single-action notice immediately after selection", async () => {

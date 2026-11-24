@@ -1,6 +1,7 @@
 import { type App, Modal } from "obsidian";
 import type { ExportSummaryRow } from "../actions/export-summary";
-import { getCurrentLocale, t } from "../i18n";
+import { applyInterfaceLocale } from "./interface-locale";
+import { t } from "../i18n";
 
 export function confirmExport(app: App, rows: readonly ExportSummaryRow[], signal: AbortSignal): Promise<boolean> {
   if (signal.aborted) return Promise.resolve(false);
@@ -20,8 +21,7 @@ class ExportReviewModal extends Modal {
     this.signal.addEventListener("abort", this.onAbort, { once: true });
     if (this.signal.aborted) { this.finish(false); return; }
     this.titleEl.setText(t("exportReviewTitle"));
-    this.contentEl.setAttribute("lang", getCurrentLocale());
-    this.contentEl.setAttribute("dir", getCurrentLocale() === "ar" ? "rtl" : "ltr");
+    applyInterfaceLocale(this.titleEl, this.contentEl);
     const summary = this.contentEl.createEl("dl", { cls: "docwen-export-summary" });
     for (const row of this.rows) {
       summary.createEl("dt", { text: row.label });

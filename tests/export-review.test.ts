@@ -47,6 +47,7 @@ describe("detected-format confirmation", () => {
     });
     expect(Array.from(document.querySelectorAll("dd"), (item) => item.textContent))
       .toEqual(["报告", "未声明", "PDF"]);
+    expect(document.querySelector("h2")?.lang).toBe("zh-cn");
     expect(state.modal?.contentEl.textContent).toContain("继续后将按 PDF 格式读取。");
     state.modal!.close();
     await expect(pending).resolves.toBe(false);

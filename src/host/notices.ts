@@ -1,8 +1,9 @@
 import { Notice } from "obsidian";
+import { applyInterfaceLocale } from "./interface-locale";
 import { t } from "../i18n";
 
 export function showNotice(message: string, duration?: number): void {
-  new Notice(message, duration);
+  applyInterfaceLocale(new Notice(message, duration).messageEl);
 }
 
 export interface NoticeAction {
@@ -19,16 +20,17 @@ export function showNoticeWithAction(message: string, action: string, selected: 
     button: group.createEl("button", { text: label, attr: { type: "button" } }),
     run,
   }));
-  const dismiss = additional.length ? group.createEl("button", { text: t("dialogDismissNotice"), attr: { type: "button" } }) : null;
+  const dismiss = group.createEl("button", { text: t("dialogDismissNotice"), attr: { type: "button" } });
   const notice = new Notice(content, 0);
+  applyInterfaceLocale(notice.messageEl);
   for (const { button, run } of buttons) {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      if (!dismiss) notice.hide();
+      if (buttons.length === 1) notice.hide();
       run();
     });
   }
-  dismiss?.addEventListener("click", (event) => {
+  dismiss.addEventListener("click", (event) => {
     event.stopPropagation();
     notice.hide();
   });

@@ -4,7 +4,8 @@ import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../d
 import { copyTextToClipboard } from "../host/clipboard";
 import { showNotice, showNoticeWithAction, type NoticeAction } from "../host/notices";
 import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
-import { getCurrentLocale, t, type Translations } from "../i18n";
+import { applyInterfaceLocale } from "../host/interface-locale";
+import { t, type Translations } from "../i18n";
 import { diagnosticCode } from "./diagnostic-details";
 import {
   OperationCoordinator,
@@ -157,6 +158,7 @@ class DocWenSetupModal extends Modal {
   }
 
   override onOpen(): void {
+    applyInterfaceLocale(this.titleEl, this.contentEl);
     this.titleEl.setText(t("dialogDocWenSetupTitle"));
     this.contentEl.createEl("p", { text: t("settingsDownloadDocWenDesc") });
     this.contentEl.createEl("p", { text: t("settingsConnectionModeDesc") });
@@ -200,6 +202,7 @@ export class OperationDetailsModal extends Modal {
   }
 
   override onOpen(): void {
+    applyInterfaceLocale(this.titleEl, this.contentEl);
     this.titleEl.setText(DOCWEN_PRODUCT_NAME);
     renderDiagnostics(this.contentEl, this.summary, this.detailsText, this.expanded);
   }
@@ -210,9 +213,6 @@ export class OperationDetailsModal extends Modal {
 }
 
 function renderDiagnostics(content: HTMLElement, summary: string, text: string, expanded: boolean): void {
-  const locale = getCurrentLocale();
-  content.setAttribute("lang", locale);
-  content.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
   content.createEl("p", { text: summary });
   const details = content.createEl("details", { cls: "docwen-error-details" });
   details.open = expanded;
