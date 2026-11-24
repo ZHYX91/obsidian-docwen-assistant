@@ -1,4 +1,5 @@
 import type { Setting, SettingNumberControl } from "obsidian";
+import { labelSettingsControl } from "./settings-control-accessibility";
 
 export function configureNumberSetting<K extends string>(
   setting: Setting,
@@ -11,6 +12,7 @@ export function configureNumberSetting<K extends string>(
   let lastValidValue = initialValue;
   setting.addText((text) => {
     const input = text.inputEl;
+    labelSettingsControl(setting, input);
     input.type = "number";
     if (control.min !== undefined) input.min = String(control.min);
     if (control.max !== undefined) input.max = String(control.max);

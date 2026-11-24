@@ -72,6 +72,11 @@
   outline-offset: 2px;
 }
 
+.docwen-settings-panel .checkbox-container:has(input:focus-visible) {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: 2px;
+}
+
 .docwen-settings-panel .setting-item-info {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -98,6 +103,10 @@
 }
 
 .docwen-settings-panel .setting-item-control:has(select) {
+  /* Keep the host's full-width measuring copy out of the panel's scroll area. */
+  position: relative;
+  overflow: clip;
+  overflow-clip-margin: 4px;
   flex: 0 0 auto;
   inline-size: 100%;
   justify-content: flex-start;

@@ -1,4 +1,5 @@
 import { Setting, type ButtonComponent, type DropdownComponent } from "obsidian";
+import { labelSettingsControl } from "./settings-control-accessibility";
 
 import { t } from "./i18n";
 
@@ -23,7 +24,6 @@ export function configureNumberingSchemeSetting(
   let controller: AbortController | null = null;
   let dropdown: DropdownComponent | null = null;
   let retryButton: ButtonComponent | null = null;
-  let requestGeneration = 0;
   const baseDescription = t("settingsAddNumberingDesc");
 
   const rebuildOptions = (schemes: readonly NumberingScheme[] | null): void => {
@@ -66,27 +66,36 @@ export function configureNumberingSchemeSetting(
     if (failed) setting.descEl.classList.add("docwen-settings-status-error");
     dropdown?.setDisabled(loading || options.readOnly === true);
     if (retryButton) {
-      retryButton.buttonEl.hidden = !failed;
-      retryButton.setDisabled(!failed || options.readOnly === true);
+      const retry = retryButton.buttonEl;
+      // Keep a retry in the tab order while its request runs. Move focus only
+      // when successful completion is about to remove the user's active control.
+      if (state === "ready" && retry.ownerDocument.activeElement === retry) {
+        dropdown?.selectEl.focus({ preventScroll: true });
+      }
+      if (!loading) retry.hidden = !failed;
+      retryButton.setDisabled(Boolean(retry.hidden) || options.readOnly === true);
+      retry.setAttribute("aria-disabled", String(loading || options.readOnly === true));
     }
   };
 
-  const loadSchemes = (): void => {
-    const request = ++requestGeneration;
-    controller?.abort();
+  const loadSchemes = async (): Promise<void> => {
+    if (!active || controller) return;
     controller = new AbortController();
     updateState("loading");
-    void options.loadSchemes(controller.signal).then((schemes) => {
-      if (!active || request !== requestGeneration || !options.isCurrent() || !dropdown) return;
+    try {
+      const schemes = await options.loadSchemes(controller.signal);
+      if (!active || !options.isCurrent()) return;
       if (!schemes) {
         updateState("error");
         return;
       }
       rebuildOptions(schemes);
       updateState("ready");
-    }).catch(() => {
-      if (active && request === requestGeneration && options.isCurrent()) updateState("error");
-    });
+    } catch {
+      if (active && options.isCurrent()) updateState("error");
+    } finally {
+      controller = null;
+    }
   };
 
   setting
@@ -94,6 +103,7 @@ export function configureNumberingSchemeSetting(
     .setDesc(baseDescription)
     .addDropdown((control) => {
       dropdown = control;
+      labelSettingsControl(setting, control.selectEl);
       rebuildOptions(null);
       control.setDisabled(true);
       control.onChange(options.setValue);
@@ -104,15 +114,16 @@ export function configureNumberingSchemeSetting(
         .setButtonText(t("settingsRetry"))
         .setTooltip(t("settingsRetry"))
         .setDisabled(true)
-        .onClick(loadSchemes);
+        .onClick(() => {
+          if (!options.readOnly && !button.buttonEl.hidden && options.isCurrent()) void loadSchemes();
+        });
       button.buttonEl.hidden = true;
     });
   if (options.readOnly) setting.settingEl.setAttribute("aria-disabled", "true");
-  loadSchemes();
+  void loadSchemes();
 
   return () => {
     active = false;
-    ++requestGeneration;
     controller?.abort();
   };
 }

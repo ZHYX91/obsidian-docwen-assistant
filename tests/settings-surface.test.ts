@@ -25,7 +25,7 @@ class FakeElement {
   readonly attributes = new Map<string, string>();
   readonly listeners = new Map<string, ((event: FakeKeyboardEvent) => void)[]>();
   readonly dataset: Record<string, string> = {};
-  readonly ownerDocument = { defaultView: {
+  readonly ownerDocument = { get activeElement() { return focusState.activeElement; }, defaultView: {
     requestAnimationFrame: (callback: FrameRequestCallback) => (callback(0), 1),
     cancelAnimationFrame: vi.fn(),
     getComputedStyle: () => ({ direction: "ltr" }),
@@ -174,6 +174,7 @@ class FakeDropdown {
   async choose(value: string): Promise<void> { this.value = value; await this.change?.(value); }
 }
 class FakeToggle {
+  readonly toggleEl = new FakeElement();
   change: ((value: boolean) => void | Promise<void>) | null = null;
   disabled = false;
   value = false;
@@ -682,11 +683,13 @@ describe("settings surface lifecycle", () => {
   it("exposes loading, error, and retry states for runtime numbering schemes", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
+    let finishRetry!: (value: { id: string; name: string }[]) => void;
     let rejectFirst!: (error: Error) => void;
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
     plugin.fetchNumberingSchemes = vi.fn()
       .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
-      .mockResolvedValueOnce([{ id: "legal", name: "Legal" }]);
+      .mockRejectedValueOnce(new Error("Still offline"))
+      .mockImplementationOnce(() => new Promise(resolve => { finishRetry = resolve; }));
     const tab = new SettingTab({} as never, plugin as never);
     const setting = new FakeSetting(new FakeElement());
     const cleanup = (tab as unknown as {
@@ -705,11 +708,24 @@ describe("settings surface lifecycle", () => {
     expect(setting.descEl.textContent).toContain("Failed to load numbering schemes");
     expect(setting.settingEl.attributes.get("aria-busy")).toBe("false");
 
+    retry.buttonEl.focus();
     retry.click?.();
+    expect(retry.buttonEl.hidden).toBe(false);
+    expect(retry.disabled).toBe(false);
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false"));
+    expect(focusState.activeElement).toBe(retry.buttonEl);
+    retry.click?.();
+    finishRetry([{ id: "legal", name: "Legal" }]);
     await vi.waitFor(() => expect(dropdown.options.get("legal")).toBe("Legal"));
     expect(retry.buttonEl.hidden).toBe(true);
     expect(dropdown.disabled).toBe(false);
+    expect(focusState.activeElement).toBe(dropdown.selectEl);
     cleanup();
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(3);
   });
 
   it("keeps language, direction and page text in sync through a failed save and retry", async () => {

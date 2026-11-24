@@ -40,6 +40,7 @@ Under the pinned toolchain, `npm run check` runs runtime verification, lint, for
 
 Local diagnostic commands expose their test scope explicitly:
 
+- `npm run test:settings-browser` renders the dropdown and its hidden measurement control in Chromium at three widths in both directions. Set `CHROME_BIN` to select a Chromium executable.
 - `npm run test:source` runs the source suite except the Linux Machine lifetime file. It still exercises Python fixture helpers and platform-selected publication helpers; it does not establish Machine process cleanup.
 - `npm run test:native:linux` runs the real Linux Machine lifetime suite on Linux x64/arm64. A one-time prerequisite check verifies the embedded owner image, `/usr/bin/python3` pidfd support, the runner's `/proc` identity, and a detached sentinel's own identity against the runner's observation. A failure rejects the suite before any lifecycle case, prints the failed phase and facts, and preserves a `prerequisites.json` diagnostic in a dedicated temporary directory. The sentinel is always cleaned through its owned process handle.
 - `npm run test:native:windows` invokes the hash-pinned paired package gate on Windows. Core owns the native Job tests; absence of a candidate cannot count as package acceptance.

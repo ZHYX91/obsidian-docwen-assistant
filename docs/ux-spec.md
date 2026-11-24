@@ -54,6 +54,10 @@ General includes User guide and Report a problem links. The guide opens the sele
 
 A saved numbering scheme retains its ID while the list is loading or unavailable. A successful lookup supplies the scheme name or confirms that the saved ID is missing.
 
+Settings fields are announced with their visible name and help text. Each switch has one keyboard stop and announces its saved and current state.
+
+If numbering discovery fails, Retry stays focused while it runs and can be activated once per request. On success, focus moves to the numbering list only if Retry still has focus.
+
 ## Localization
 
 The UI, notices, and resource queries use one resolved locale. The default follows Obsidian and users can select a supported language explicitly. Open proofreading reports update their text, accessible labels, language and direction immediately when settings select a different effective locale. Saving other settings leaves the report intact. Locale changes never alter capability, path, or write semantics.

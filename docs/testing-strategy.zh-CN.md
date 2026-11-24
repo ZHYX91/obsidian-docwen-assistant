@@ -39,6 +39,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 本地诊断命令明确区分测试范围：
 
+- `npm run test:settings-browser` 使用 Chromium 分别在三种宽度、两个书写方向下渲染下拉框和宿主的隐藏测量控件。可用 `CHROME_BIN` 指定浏览器。
 - `npm run test:source` 运行 Linux Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
 - `npm run test:native:linux` 在 Linux x64/arm64 运行真实 Machine 生命周期测试。整组测试前只检查一次内嵌 owner 映像、`/usr/bin/python3` 的 pidfd 支持、运行器的 `/proc` 身份，以及独立 session 哨兵自己报告的身份与运行器观测是否一致。前提失败会在任何生命周期用例执行前使测试组失败，输出失败阶段和观测结果，并在专用临时目录保留 `prerequisites.json` 诊断；哨兵始终通过本次拥有的进程句柄清理。
 - `npm run test:native:windows` 在 Windows 调用哈希绑定的配对实包门禁；原生 Job 测试由 Core 拥有，没有候选不能算实包验收通过。

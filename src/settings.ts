@@ -19,6 +19,7 @@ import {
 } from "./settings-docwen-location";
 import { configureNumberingSchemeSetting } from "./settings-numbering-scheme";
 import { renderSettingsGuide, renderSettingsSupport } from "./settings-guide";
+import { configureSettingsToggle, labelSettingsControl } from "./settings-control-accessibility";
 import { configureNumberSetting } from "./settings-number-control";
 import {
   assertSettingsWritable,
@@ -163,14 +164,14 @@ export class SettingTab extends PluginSettingTab {
         || evaluate(control.disabled, false);
       const value = this.getControlValue(control.key) ?? control.defaultValue;
       if (control.type === "toggle") {
-        setting.addToggle((toggle) => toggle
-          .setValue(Boolean(value))
-          .setDisabled(isDisabled())
-          .onChange((nextValue) => void this.changeControlValue(control.key, nextValue)));
+        setting.addToggle((toggle) => configureSettingsToggle(
+          setting, toggle, Boolean(value), isDisabled(), (nextValue) => void this.changeControlValue(control.key, nextValue),
+        ));
         return;
       }
       if (control.type === "dropdown") {
         setting.addDropdown((dropdown) => {
+          labelSettingsControl(setting, dropdown.selectEl);
           dropdown.addOptions(control.options)
             .setValue(typeof value === "string" ? value : "")
             .setDisabled(isDisabled())
