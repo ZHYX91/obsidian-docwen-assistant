@@ -53,7 +53,7 @@ Local diagnostic commands expose their test scope explicitly:
 
 ## Obsidian host
 
-Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host and a current 1.13.x host, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
+Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host, a 1.13.x host and the latest stable desktop release, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
 
 ## Manual compatibility matrix
 

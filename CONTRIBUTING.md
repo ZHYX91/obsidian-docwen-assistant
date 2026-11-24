@@ -30,7 +30,7 @@ The README remains English at the root with translations under `docs/i18n/`. Do 
 
 Add the smallest test that fails before a fix. Use synthetic files, temporary directories, and dedicated test Vaults. Never point a fixture or destructive operation at an ordinary or production Vault, and preserve `data.json` unless a reset is explicitly authorized.
 
-Source checks, a fixed packaged DocWen candidate, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, manual Windows/Office checks, Linux host checks, GitHub publication, and Community Plugins approval are separate claims. State exactly which layer was exercised.
+Source checks, a fixed packaged DocWen candidate, real-host acceptance on Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release, manual Windows/Office checks, Linux host checks, GitHub publication, and Community Plugins approval are separate claims. State exactly which layer was exercised.
 
 For local diagnosis, `npm run test:source` separates source regressions from the real Linux Machine lifetime file. Run `npm run test:native:linux` on Linux x64/arm64 for native process cases. Windows Job mechanics live in Core; `npm run test:native:windows` requires a hash-pinned packaged Core candidate and runs the paired package gate. The source command still has Python fixture and platform-specific publication prerequisites. The default `npm test`, coverage and `npm run check` continue to include all tests. Linux prerequisite failures report the exact phase and retain a temporary diagnostic; they fail the native suite and do not count as lifecycle acceptance.
 
