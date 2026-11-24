@@ -64,11 +64,15 @@ export class ActionRunner {
     }
   }
 
-  presentFailure(failureNotice: FailureNoticeKey, error: unknown): void {
+  presentFailure(failureNotice: FailureNoticeKey, error: unknown, presentation: "automatic" | "details" = "automatic"): void {
     const code = getLocalErrorCode(error) ?? "";
     const summary = getErrorMessage(error, true);
     const notice = t(failureNotice, { error: summary });
     const detailsText = JSON.stringify(getErrorDiagnostics(error), null, 2);
+    if (presentation === "details") {
+      new OperationDetailsModal(this.app, notice, detailsText).open();
+      return;
+    }
     if (SETUP_ERROR_CODES.has(code)) {
       new DocWenSetupModal(this.app, this.openSettings, notice, detailsText).open();
       return;
@@ -84,7 +88,7 @@ export class ActionRunner {
 
     // Internal/protocol failures get one detailed surface instead of a notice
     // immediately followed by a second modal for the same event.
-    new OperationDetailsModal(this.app, notice, detailsText).open();
+    new OperationDetailsModal(this.app, notice, detailsText, false).open();
   }
 
   presentCompletion(
@@ -204,6 +208,7 @@ export class OperationDetailsModal extends Modal {
     app: App,
     private readonly summary: string,
     private readonly detailsText: string,
+    private readonly expanded = true,
   ) {
     super(app);
   }
@@ -212,6 +217,7 @@ export class OperationDetailsModal extends Modal {
     this.titleEl.setText(DOCWEN_PRODUCT_NAME);
     this.contentEl.createEl("p", { text: this.summary });
     const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
+    details.open = this.expanded;
     details.createEl("summary", { text: t("dialogDetails") });
     details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
     details.createEl("pre", { text: this.detailsText });

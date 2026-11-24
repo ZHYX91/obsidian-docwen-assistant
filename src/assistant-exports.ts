@@ -17,6 +17,7 @@ const labels = {
 /** Discovery belongs to the visible Actions panel; conversion remains an explicit file action. */
 export class AssistantExports {
   private container: HTMLElement | null = null;
+  private refreshButton: HTMLButtonElement | null = null;
   private file: TFile | null = null;
   private signature = "";
   private enabled = false;
@@ -30,8 +31,9 @@ export class AssistantExports {
     private readonly refreshContext: () => void,
   ) {}
 
-  mount(container: HTMLElement): void {
+  mount(container: HTMLElement, refreshButton: HTMLButtonElement): void {
     this.container = container;
+    this.refreshButton = refreshButton;
     this.render();
   }
 
@@ -39,6 +41,7 @@ export class AssistantExports {
     this.request?.abort();
     this.request = null;
     this.container = null;
+    this.refreshButton = null;
     this.file = null;
     this.signature = "";
     this.targets = null;
@@ -110,13 +113,13 @@ export class AssistantExports {
       const status = (text: string): void => {
         container.createEl("p", { text, cls: "docwen-assistant-hint", attr: { role: "status" } });
       };
-      const button = (text: string, key: string, action: () => void): void => {
+      const button = (text: string, key: string, action: (control: HTMLButtonElement) => void): void => {
         const control = container.createEl("button", {
           text, cls: "docwen-assistant-action",
           attr: { type: "button", "data-docwen-view-key": key },
         });
         control.addEventListener("click", () => {
-          if (this.enabled && this.container === container && control.isConnected) action();
+          if (this.enabled && this.container === container && control.isConnected) action(control);
         });
       };
       if (!this.file) return;
@@ -124,7 +127,10 @@ export class AssistantExports {
       if (this.failure) {
         status(t("contextMenuCapabilityUnavailable"));
         const error = this.failure.error;
-        button(t("settingsRetry"), "export-retry", () => this.reload());
+        button(t("settingsRetry"), "export-retry", (control) => {
+          if (container.ownerDocument.activeElement === control) this.refreshButton?.focus({ preventScroll: true });
+          this.reload();
+        });
         button(t("dialogDetails"), "export-details", () => this.actions.showExportFailure(error));
         return;
       }

@@ -13,6 +13,7 @@ export const AR_TRANSLATIONS: Translations = {
   exportReviewDisabled: "معطّل",
   exportReviewStart: "تصدير",
   dialogOpenResultFolder: "فتح مجلد النتيجة",
+  dialogDismissNotice: "إغلاق الإشعار",
   noticeOpenResultFolderFailed: "اكتمل التصدير. افتح هذا المجلد يدويًا: {path}",
   settingsHelpTitle: "المساعدة",
   settingsUserGuide: "دليل الاستخدام",

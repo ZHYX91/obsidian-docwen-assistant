@@ -26,7 +26,7 @@ export interface FileMenuActions {
   readonly numbering: NumberingActions;
   readonly proofread: ProofreadActions;
   readonly capabilities: DocWenCapabilityService;
-  readonly presentCapabilityFailure: (error: Error) => void;
+  readonly presentCapabilityFailure: (error: Error, presentation?: "details") => void;
 }
 
 export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void {
@@ -139,7 +139,7 @@ function actionSections(
     sections.push([{
       title: t("contextMenuCapabilityUnavailable"),
       icon: "alert-triangle",
-      action: () => actions.presentCapabilityFailure(cached),
+      action: () => actions.presentCapabilityFailure(cached, "details"),
     }, {
       title: t("contextMenuChooseAction"),
       icon: "list",

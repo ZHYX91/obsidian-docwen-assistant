@@ -419,7 +419,7 @@ export class AssistantView extends ItemView {
     refresh.addEventListener("click", () => {
       if (isOpen() && refresh.isConnected && this.activeTab === "actions") this.exports.reload();
     });
-    this.exports.mount(container.createDiv({ cls: "docwen-assistant-actions" }));
+    this.exports.mount(container.createDiv({ cls: "docwen-assistant-actions" }), refresh);
     container.createEl("h3", { cls: "docwen-assistant-section-title", text: t("contextMenuSubmenuTitle") });
     const group = container.createDiv({
       cls: "docwen-assistant-actions",

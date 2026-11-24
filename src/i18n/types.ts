@@ -11,6 +11,7 @@ export interface Translations {
   exportReviewDisabled: string;
   exportReviewStart: string;
   dialogOpenResultFolder: string;
+  dialogDismissNotice: string;
   noticeOpenResultFolderFailed: string;
   noticeCompletedWithWarnings: string;
   noticeConversionDiagnostics: string;

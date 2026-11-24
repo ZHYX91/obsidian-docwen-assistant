@@ -12,6 +12,7 @@ class FakeElement {
   readonly children: FakeElement[] = [];
   readonly listeners = new Map<string, () => void>();
   text = "";
+  open = false;
   href = "";
   target = "";
   rel = "";
@@ -180,6 +181,7 @@ describe("ActionRunner", () => {
     ));
     expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
+    expect(state.modals[0].contentEl.children.some((element) => element.open)).toBe(false);
     expect(state.modals[0].contentEl.children[0].text).toContain("版本不兼容");
     expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
     expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
@@ -211,6 +213,57 @@ describe("ActionRunner", () => {
     state.noticeActions[0]();
     expect(allText(state.modals[0].contentEl)).toContain("cli_capability_unavailable");
     expect(allText(state.modals[0].contentEl)).not.toContain("private raw detail");
+  });
+
+  it.each(["cli_capability_unavailable", "cli_path_not_configured", "cli_invalid_envelope"] as const)(
+    "opens an explicit Details request directly with expanded redacted data for %s", async (code) => {
+      const { LocalCliError } = await import("../src/docwen");
+      const { ActionRunner } = await import("../src/actions/action-runner");
+      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+      const runner = new ActionRunner({} as never, new OperationCoordinator());
+      runner.presentFailure("noticeCapabilityFailed", new LocalCliError(code, "raw private details"), "details");
+      expect(state.notices).toHaveLength(0);
+      expect(state.modals).toHaveLength(1);
+      const disclosure = state.modals[0].contentEl.children.find((element) => element.open);
+      expect(disclosure).toBeDefined();
+      expect(allText(disclosure!)).toContain(code);
+      expect(allText(disclosure!)).not.toContain("raw private details");
+      expect(state.copied).toHaveLength(0);
+    },
+  );
+
+  it("opens the connection card's Technical details with an expanded redacted snapshot", async () => {
+    const { configureConnectionActions } = await import("../src/settings-connection");
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { t } = await import("../src/i18n");
+    const controls = new Map<string, () => void>();
+    const setting = {
+      setClass: vi.fn(),
+      addButton(create: (button: unknown) => void) {
+        let label = "";
+        create({
+          setButtonText(text: string) { label = text; return this; },
+          setDisabled() { return this; },
+          onClick(action: () => void) { controls.set(label, action); },
+        });
+      },
+    };
+    const plugin = {
+      settings: DEFAULT_SETTINGS, manifest: { version: "3.6.4" },
+      getSettingsCompatibility: () => ({ status: "compatible" }),
+      getGuiConnectionStatus: () => ({ state: "unchecked" }),
+      getDocWenConnectionStatus: () => ({
+        state: "error", code: "cli_timeout", details: { timeoutMs: 1500, path: "/private/path" },
+      }),
+    };
+    configureConnectionActions(setting as never, plugin as never, vi.fn());
+    controls.get(t("dialogDetails"))!();
+    expect(state.modals).toHaveLength(1);
+    const disclosure = state.modals[0].contentEl.children.find((entry) => entry.open);
+    expect(disclosure).toBeDefined();
+    expect(allText(disclosure!)).toContain("cli_timeout");
+    expect(allText(disclosure!)).toContain("1500");
+    expect(allText(disclosure!)).not.toContain("/private/path");
   });
 
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {

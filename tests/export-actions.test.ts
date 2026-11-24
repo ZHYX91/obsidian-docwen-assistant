@@ -222,6 +222,11 @@ describe("ExportActions optimization discovery", () => {
       expect(docwen.convert).not.toHaveBeenCalled();
     } else {
       await pending;
+      const { confirmExport } = await import("../src/host/export-review");
+      expect(confirmExport).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining([
+        { label: "exportReviewOptimization", value: "Gongwen" },
+      ]), signal);
+      expect(docwen.optimizations).toHaveBeenCalledOnce();
       expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ optimization: "gongwen", capabilityId: "opaque.gongwen", selectedCapability, supportedOptions: ["recognize_text"] }), signal);
     }
     expect(capabilities.requireConversionRoute).toHaveBeenLastCalledWith(capability, "md", "gongwen");

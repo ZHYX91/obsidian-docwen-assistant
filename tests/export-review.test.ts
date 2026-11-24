@@ -80,7 +80,7 @@ describe("export summary", () => {
       template: `template.docx.${"a".repeat(64)}`, cleanNumbering: "remove", addNumbering: "scheme.not.supported",
       supportedOptions: ["template_name", "remove_numbering"],
       markdownResourceBindings: { authored_sha256: "a".repeat(64), images: [{ authored_token: "private token", logical_path: "private-image.png" }] },
-    }), "text/markdown", { id: `template.docx.${"a".repeat(64)}`, name: "Letter", origin: "builtin" });
+    }), "text/markdown", { template: { id: `template.docx.${"a".repeat(64)}`, name: "Letter", origin: "builtin" } });
     expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t("pickerTemplateBuiltin")}` });
     expect(rows).toContainEqual({ label: t("settingsCleanNumbering"), value: t("settingsNumberingRemove") });
     expect(rows.some((row) => row.label === t("settingsAddNumbering"))).toBe(false);
@@ -91,7 +91,7 @@ describe("export summary", () => {
     for (const origin of ["builtin", "custom"] as const) {
       const selected = { id: `template.docx.${(origin === "builtin" ? "a" : "b").repeat(64)}`, name: "Letter", origin };
       const input = request({ template: selected.id, supportedOptions: ["template_name"] });
-      const rows = buildExportSummary(input, "text/markdown", selected);
+      const rows = buildExportSummary(input, "text/markdown", { template: selected });
       expect(rows).toContainEqual({ label: t("exportReviewTemplate"), value: `Letter · ${t(origin === "builtin" ? "pickerTemplateBuiltin" : "pickerTemplateCustom")}` });
       expect(input.template).toBe(selected.id);
       expect(rows.some((row) => row.value === selected.id)).toBe(false);
@@ -118,6 +118,60 @@ describe("export summary", () => {
 });
 
 describe("export review ownership", () => {
+  it("shows the current scheme name as text while preserving the submitted ID", async () => {
+    const { confirmExport } = await import("../src/host/export-review");
+    const input = request({ supportedOptions: ["add_numbering", "numbering_scheme"], addNumbering: "scheme.academic" });
+    const lookup = vi.fn().mockResolvedValueOnce("Academic <I>").mockResolvedValueOnce("学术编号");
+    for (const [locale, name] of [["en", "Academic <I>"], ["zh-cn", "学术编号"]]) {
+      initI18n(locale);
+      const rows = buildExportSummary(input, "text/markdown", { numberingSchemeName: lookup });
+      const review = confirmExport({} as never, rows, new AbortController().signal);
+      const value = Array.from(document.querySelectorAll("dd")).find((cell) => cell.textContent === input.addNumbering)!;
+      await vi.waitFor(() => expect(value.textContent).toBe(name));
+      expect(value.childElementCount).toBe(0);
+      document.querySelector<HTMLButtonElement>(".mod-cta")!.click();
+      await expect(review).resolves.toBe(true);
+    }
+    expect(lookup).toHaveBeenCalledTimes(2);
+    expect(lookup).toHaveBeenCalledWith("scheme.academic", expect.anything());
+    expect(input.addNumbering).toBe("scheme.academic");
+  });
+
+  it.each(["slow", "failed", "missing"])("can accept the ID fallback for a %s scheme lookup", async (scenario) => {
+    const { confirmExport } = await import("../src/host/export-review");
+    let finish!: (name: string) => void;
+    const lookup = vi.fn((_id: string, _signal: AbortSignal) => {
+      if (scenario === "failed") return Promise.reject(new Error("private error"));
+      if (scenario === "missing") return Promise.resolve(undefined);
+      return new Promise<string>((resolve) => { finish = resolve; });
+    });
+    const input = request({ supportedOptions: ["add_numbering", "numbering_scheme"], addNumbering: "scheme.custom" });
+    const rows = buildExportSummary(input, "text/markdown", { numberingSchemeName: lookup });
+    const review = confirmExport({} as never, rows, new AbortController().signal);
+    const cell = Array.from(document.querySelectorAll("dd")).find((value) => value.textContent === input.addNumbering)!;
+    await Promise.resolve();
+    document.querySelector<HTMLButtonElement>(".mod-cta")!.click();
+    await expect(review).resolves.toBe(true);
+    expect(lookup.mock.calls[0][1].aborted).toBe(true);
+    if (scenario === "slow") { finish("Late name"); await Promise.resolve(); }
+    expect(cell.textContent).toBe("scheme.custom");
+  });
+
+  it("skips scheme discovery for defaults, disabled numbering and unsupported scheme options", async () => {
+    const { confirmExport } = await import("../src/host/export-review");
+    const lookup = vi.fn();
+    for (const [addNumbering, supportedOptions] of [
+      [undefined, ["add_numbering", "numbering_scheme"]], ["none", ["add_numbering", "numbering_scheme"]],
+      ["scheme.custom", ["add_numbering"]], ["scheme.custom", []],
+    ] as const) {
+      const rows = buildExportSummary(request({ addNumbering, supportedOptions: [...supportedOptions] }), "text/markdown", { numberingSchemeName: lookup });
+      const review = confirmExport({} as never, rows, new AbortController().signal);
+      state.modal!.close();
+      await expect(review).resolves.toBe(false);
+    }
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
   it("renders paths as text and exports only after explicit selection", async () => {
     const { confirmExport } = await import("../src/host/export-review");
     const pending = confirmExport({} as never, [{ label: "Source", value: "<img src=x>" }], new AbortController().signal);

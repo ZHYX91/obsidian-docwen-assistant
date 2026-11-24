@@ -407,7 +407,9 @@ describe("Assistant sidebar tabs and exports", () => {
     const fixture = createFixture();
     fixture.current.file = file("Source.md");
     const error = new Error("private backend details");
-    vi.mocked(fixture.actions.getExportTargets).mockRejectedValueOnce(error).mockResolvedValue(["md", "xlsx"]);
+    let complete!: (targets: Array<"md" | "xlsx">) => void;
+    vi.mocked(fixture.actions.getExportTargets).mockRejectedValueOnce(error)
+      .mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
     const view = await fixture.open();
     button(view, "tab-actions").click();
     await vi.waitFor(() => expect(button(view, "export-retry")).not.toBeNull());
@@ -418,8 +420,13 @@ describe("Assistant sidebar tabs and exports", () => {
     expect(fixture.actions.showExportFailure).toHaveBeenCalledWith(error);
     button(view, "open-gui").click();
     expect(fixture.actions.openGui).toHaveBeenCalledOnce();
+    button(view, "export-retry").focus();
     button(view, "export-retry").click();
+    expect(document.activeElement).toBe(button(view, "refresh-exports"));
+    button(view, "open-gui").focus();
+    complete(["md", "xlsx"]);
     await vi.waitFor(() => expect(button(view, "export-md")).not.toBeNull());
+    expect(document.activeElement).toBe(button(view, "open-gui"));
     button(view, "export-xlsx").click();
     expect(fixture.actions.exportFile).toHaveBeenCalledWith(fixture.current.file, "xlsx");
   });

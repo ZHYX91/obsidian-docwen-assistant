@@ -146,6 +146,21 @@
   }
 }
 
+.docwen-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  margin-block-start: var(--size-4-2);
+}
+
+.docwen-notice-actions button {
+  height: auto;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .docwen-error-details {
   margin-block: 16px;
 }
