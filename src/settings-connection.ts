@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { ButtonComponent, Setting } from "obsidian";
 import type DocWenPlugin from "./main";
 import { t } from "./i18n";
@@ -7,14 +8,24 @@ import { getDocWenConnectionDisplay, type DocWenPathStatus } from "./settings-do
 import packageJson from "../package.json";
 import { isSettingsReadOnly } from "./settings-schema-compatibility";
 
-export function connectionDisplay(plugin: DocWenPlugin): DocWenPathStatus {
+export function connectionDisplay(plugin: DocWenPlugin): DocWenPathStatus[] {
   const { docwenConnectionMode: mode, docwenCliPath: path } = plugin.settings;
-  const background = getDocWenConnectionDisplay(mode, path, plugin.getDocWenConnectionStatus());
-  const application = getDocWenConnectionDisplay(mode, path, plugin.getGuiConnectionStatus());
-  return {
-    state: background.state === "error" || application.state === "error" ? "error" : background.state,
-    message: `${t("settingsApplicationControl")}: ${application.message}\n${t("settingsBackgroundIntegration")}: ${background.message}`,
-  };
+  const gui = plugin.getGuiConnectionStatus();
+  const machine = plugin.getDocWenConnectionStatus();
+  const application = getDocWenConnectionDisplay(mode, path, gui);
+  const openLabel = t("settingsApplicationControl");
+  const backgroundLabel = t("settingsBackgroundIntegration");
+  // The Store alias always has the same remedy. Other errors can carry different
+  // recovery instructions or version numbers even when their codes match.
+  if (gui.state === "error" && machine.state === "error" && gui.code === machine.code
+    && (gui.code === "cli_alias_not_found" || isDeepStrictEqual(gui.details, machine.details))) {
+    return [{ state: application.state, message: `${openLabel} · ${backgroundLabel}: ${application.message}` }];
+  }
+  const background = getDocWenConnectionDisplay(mode, path, machine);
+  return [
+    { state: application.state, message: `${openLabel}: ${application.message}` },
+    { state: background.state, message: `${backgroundLabel}: ${background.message}` },
+  ];
 }
 
 export function configureConnectionActions(setting: Setting, plugin: DocWenPlugin, refresh: () => void): () => void {
@@ -65,7 +76,7 @@ export function configureConnectionActions(setting: Setting, plugin: DocWenPlugi
       application: statuses[0],
       background: statuses[1],
     };
-    new OperationDetailsModal(plugin.app, connectionDisplay(plugin).message, JSON.stringify(details, null, 2)).open();
+    new OperationDetailsModal(plugin.app, connectionDisplay(plugin).map((line) => line.message).join("\n"), JSON.stringify(details, null, 2)).open();
   }));
   return () => { active = false; };
 }

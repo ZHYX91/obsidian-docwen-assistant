@@ -241,10 +241,8 @@ export class SettingTab extends PluginSettingTab {
   }
 
   private configurePathStatus(setting: Setting): void {
-    const status = this.currentConnectionDisplay();
-    setting.setName(t("settingsCliPathStatus")).setDesc(status.message);
-    setting.descEl.addClass("docwen-cli-path-status");
-    setting.descEl.addClass(`docwen-settings-status-${status.state}`);
+    setting.setName(t("settingsCliPathStatus"));
+    renderConnectionStatus(setting.descEl, connectionDisplay(this.plugin));
     setting.descEl.setAttribute("role", "status");
     setting.descEl.setAttribute("aria-live", "polite");
     this.pathStatusElements.add(setting.descEl);
@@ -269,24 +267,11 @@ export class SettingTab extends PluginSettingTab {
   }
 
   private refreshPathStatus(): void {
-    const status = this.currentConnectionDisplay();
+    const lines = connectionDisplay(this.plugin);
     for (const element of this.pathStatusElements) {
-      if (!element.isConnected) {
-        this.pathStatusElements.delete(element);
-        continue;
-      }
-      element.textContent = status.message;
-      element.classList.remove(
-        "docwen-settings-status-valid",
-        "docwen-settings-status-error",
-        "docwen-settings-status-empty",
-      );
-      element.classList.add(`docwen-settings-status-${status.state}`);
+      if (element.isConnected) renderConnectionStatus(element, lines);
+      else this.pathStatusElements.delete(element);
     }
-  }
-
-  private currentConnectionDisplay(): DocWenPathStatus {
-    return connectionDisplay(this.plugin);
   }
 
   private refreshSettingsUi(): void {
@@ -346,4 +331,11 @@ export class SettingTab extends PluginSettingTab {
 function evaluate(value: boolean | (() => boolean) | undefined, fallback: boolean): boolean {
   if (value === undefined) return fallback;
   return typeof value === "function" ? value() : value;
+}
+
+function renderConnectionStatus(element: HTMLElement, lines: readonly DocWenPathStatus[]): void {
+  element.empty();
+  for (const line of lines) {
+    element.createDiv({ cls: `docwen-settings-status-${line.state}`, text: line.message });
+  }
 }

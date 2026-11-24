@@ -586,14 +586,33 @@ button.docwen-proofread-item {
   color: var(--text-success);
 }
 
+.docwen-settings-panel .docwen-settings-connection.setting-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
+  gap: var(--size-4-3);
+  align-items: start;
+}
+
 .docwen-settings-connection .setting-item-control {
-  flex-direction: column;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--size-4-2);
 }
 
-.docwen-cli-path-status {
-  white-space: pre-line;
+.docwen-settings-connection .setting-item-control button {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: auto;
+  min-block-size: var(--input-height);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 560px) {
+  .docwen-settings-panel .docwen-settings-connection.setting-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .docwen-settings-support .setting-item-control {

@@ -33,7 +33,9 @@ class FakeElement {
   onInnerHTMLChange: ((value: string) => void) | null = null;
   hidden = false;
   isConnected = true;
-  textContent = "";
+  private ownText = "";
+  get textContent(): string { return this.ownText + this.children.map((child) => child.textContent).join(""); }
+  set textContent(value: string) { this.children.length = 0; this.ownText = value; }
   id = "";
   tabIndex = 0;
   type = "";
@@ -351,8 +353,8 @@ describe("settings surface lifecycle", () => {
     const status = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!;
     expect(status.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-connection");
     expect(status.descEl.attributes.get("aria-live")).toBe("polite");
-    expect(status.descEl.textContent).toContain("Open DocWen:");
-    expect(status.descEl.textContent).toContain("Conversion, numbering, and proofreading:");
+    expect(status.descEl.children[0].textContent).toContain("Open DocWen:");
+    expect(status.descEl.children[1].textContent).toContain("Conversion, numbering, and proofreading:");
   });
 
   it("deduplicates Check, preserves independent Launch, and ignores dismissed controls", async () => {
@@ -387,15 +389,40 @@ describe("settings surface lifecycle", () => {
 
   it("keeps GUI failure visible when background integration succeeds", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
-    const { connectionDisplay } = await import("../src/settings-connection");
+    const { SettingTab } = await import("../src/settings");
     const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
     plugin.getGuiConnectionStatus.mockImplementation(() => ({ state: "error", mode: "automatic", code: "cli_gui_control_failed" }));
     plugin.getDocWenConnectionStatus.mockReturnValue({ state: "connected", mode: "automatic", productVersion: "0.17.0" });
-    const display = connectionDisplay(plugin as never);
-    expect(display.state).toBe("error");
-    expect(display.message).toContain("Open DocWen:");
-    expect(display.message).toContain("0.17.0");
-    expect(display.message.split("\n")).toHaveLength(2);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const rows = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!.descEl.children;
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain("Open DocWen:");
+    expect(rows[0].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(rows[1].textContent).toContain("0.17.0");
+    expect(rows[1].classList.add).toHaveBeenCalledWith("docwen-settings-status-valid");
+  });
+
+  it("shares the Store remedy but preserves distinct failures with the same error code", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { connectionDisplay } = await import("../src/settings-connection");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    const failure = { state: "error", mode: "automatic", code: "cli_alias_not_found" };
+    plugin.getGuiConnectionStatus.mockReturnValue(failure);
+    plugin.getDocWenConnectionStatus.mockReturnValue({ ...failure, details: { phase: "resolve" } });
+    const shared = connectionDisplay(plugin as never);
+    expect(shared).toHaveLength(1);
+    expect(shared[0].message).toContain("Open DocWen");
+    expect(shared[0].message).toContain("Conversion, numbering, and proofreading");
+    expect(shared[0].message.match(/Microsoft Store/g)).toHaveLength(1);
+    const mismatch = { ...failure, code: "cli_incompatible_version" };
+    plugin.getGuiConnectionStatus.mockReturnValue(mismatch);
+    plugin.getDocWenConnectionStatus.mockReturnValue({
+      ...mismatch, details: { incompatibility: "product_version", actualProductVersion: "0.10.0" },
+    });
+    const distinct = connectionDisplay(plugin as never);
+    expect(distinct).toHaveLength(2);
+    expect(distinct[1].message).toContain("0.10.0");
   });
 
   it("restores Check after rejection without an unhandled promise", async () => {
@@ -623,15 +650,15 @@ describe("settings surface lifecycle", () => {
     };
     internals.configurePathStatus(new FakeSetting(new FakeElement()));
     const statusElement = [...internals.pathStatusElements][0];
-    const initialText = statusElement.textContent;
+    const initialText = statusElement.children.map((child) => child.textContent);
     plugin.settings.docwenConnectionMode = "manual";
     plugin.settings.docwenCliPath = "C:\\not-docwen.exe";
     plugin.resetDocWenRuntime();
 
     internals.refreshPathStatus();
 
-    expect(statusElement.textContent).not.toBe(initialText);
-    expect(statusElement.classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(statusElement.children.map((child) => child.textContent)).not.toEqual(initialText);
+    expect(statusElement.children[0].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
   });
 
   it("recognizes a nested settings page as current through the host tab owner", async () => {
