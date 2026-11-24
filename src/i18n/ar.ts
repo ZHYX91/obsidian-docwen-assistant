@@ -253,7 +253,7 @@ export const AR_TRANSLATIONS: Translations = {
   proofreadNoIssues: "لم تُكتشف مشكلات",
   proofreadChecksDisabled: "جميع قواعد التدقيق معطّلة. فعّل قاعدة واحدة على الأقل في إعدادات التدقيق ثم أعد المحاولة.",
   proofreadLineNumber: "السطر {line}",
-  proofreadIssueCount: "عرض {shown} من {total} مشكلة",
+  proofreadIssueCount: "المشكلات المعروضة: {shown} من أصل {total}",
   proofreadLoadMore: "عرض {count} إضافية",
   proofreadCancelled: "أُلغي التدقيق. أعد تشغيله لتحديث النتائج.",
   proofreadOpenMdFile: "افتح ملف Markdown وشغّل التدقيق لعرض المشكلات",
