@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useObsidianDom } from "./helpers/obsidian-dom";
 import { initI18n, t } from "../src/i18n";
@@ -75,6 +76,25 @@ function request(overrides: Partial<ConvertRequest> = {}): ConvertRequest {
 }
 
 describe("export summary", () => {
+  it("allows long localized labels and values to wrap in their own export summary columns", async () => {
+    const { confirmExport } = await import("../src/host/export-review");
+    initI18n("de");
+    const css = document.createElement("style");
+    css.textContent = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+    document.head.append(css);
+    const review = confirmExport({} as never, [
+      { label: t("exportReviewOptimization"), value: "Standard" },
+    ], new AbortController().signal);
+
+    const label = document.querySelector<HTMLElement>(".docwen-export-summary dt")!;
+    const value = document.querySelector<HTMLElement>(".docwen-export-summary dd")!;
+    expect(label.textContent).toBe("Konvertierungsvorlage");
+    expect(window.getComputedStyle(label).overflowWrap).toBe("anywhere");
+    expect(window.getComputedStyle(value).overflowWrap).toBe("anywhere");
+    document.querySelector<HTMLButtonElement>(".mod-cta")!.click();
+    await expect(review).resolves.toBe(true);
+  });
+
   it("shows only settings accepted by the actual conversion route", () => {
     const rows = buildExportSummary(request({
       template: `template.docx.${"a".repeat(64)}`, cleanNumbering: "remove", addNumbering: "scheme.not.supported",

@@ -626,8 +626,10 @@ button.docwen-proofread-item {
   gap: 0.5rem 1rem;
 }
 
+.docwen-export-summary dt,
+.docwen-export-summary dd { overflow-wrap: anywhere; }
 .docwen-export-summary dt { font-weight: var(--font-semibold); }
-.docwen-export-summary dd { margin: 0; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+.docwen-export-summary dd { margin: 0; unicode-bidi: plaintext; }
 
 /* Lightweight tutorial disclosure, without suppressing connection or save errors. */
 .docwen-settings-help.setting-item {
