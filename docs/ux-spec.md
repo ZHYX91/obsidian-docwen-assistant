@@ -6,6 +6,8 @@ translation_status: synced
 
 # DocWen Assistant — UX specification
 
+See the [shared plugin interface](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/shared-ui.md) for cross-plugin interaction and visual conventions.
+
 [简体中文源文](ux-spec.zh-CN.md)
 
 ## Entry points

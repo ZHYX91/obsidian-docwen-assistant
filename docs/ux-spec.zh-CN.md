@@ -5,6 +5,8 @@ translation_status: source
 
 # DocWen Assistant — 交互规范
 
+跨插件的交互与外观约定见[插件共同界面规范](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/shared-ui.zh-CN.md)。
+
 [English synced translation](ux-spec.md)
 
 ## 入口

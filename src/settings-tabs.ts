@@ -1,5 +1,5 @@
 import type { SettingsPageDefinition, SettingsPageId } from "./settings-definitions";
-import { createScrollButton, observeTabOverflow } from "./settings-tab-overflow";
+import { createScrollButton, observeTabOverflow, revealSettingsTab } from "./settings-tab-overflow";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveSettingsView } from "./settings-view-state";
 
@@ -49,8 +49,8 @@ export class SettingsTabs {
 
     options.pages.forEach((page, index) => this.createTab(page, index));
     const next = createScrollButton(bar, "next", t("settingsNextTabs"));
-    this.overflowCleanup = observeTabOverflow(bar, this.tabListEl, previous, next);
     this.activate(this.activeIndex, false);
+    this.overflowCleanup = observeTabOverflow(bar, this.tabListEl, previous, next);
   }
 
   /** Close this strip and return the page to restore on the next display. */
@@ -103,7 +103,7 @@ export class SettingsTabs {
     this.renderActivePage();
 
     const button = this.buttons[this.activeIndex];
-    button.scrollIntoView({ block: "nearest", inline: "nearest" });
+    revealSettingsTab(this.tabListEl, button);
     if (moveFocus) button.focus({ preventScroll: true });
   }
 
