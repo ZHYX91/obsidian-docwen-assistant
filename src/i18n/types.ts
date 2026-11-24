@@ -137,6 +137,7 @@ export interface Translations {
   dialogOpenSettings: string;
   dialogCopyDetails: string;
   dialogCopied: string;
+  dialogCopyFailed: string;
 
   // Notices
   noticeLaunchFailed: string;

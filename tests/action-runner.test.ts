@@ -3,6 +3,7 @@ import { initI18n } from "../src/i18n";
 
 const state = vi.hoisted(() => ({
   copied: [] as string[],
+  copySucceeds: true,
   modals: [] as Array<{ contentEl: FakeElement; titleEl: FakeElement }>,
   notices: [] as string[],
   noticeActions: [] as Array<() => void>,
@@ -13,6 +14,9 @@ class FakeElement {
   readonly listeners = new Map<string, () => void>();
   text = "";
   open = false;
+  isConnected = true;
+  readonly attributes = new Map<string, string>();
+  setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
   href = "";
   target = "";
   rel = "";
@@ -65,13 +69,14 @@ vi.mock("../src/host/notices", () => ({
 vi.mock("../src/host/clipboard", () => ({
   copyTextToClipboard: async (text: string) => {
     state.copied.push(text);
-    return true;
+    return state.copySucceeds;
   },
 }));
 
 describe("ActionRunner", () => {
   beforeEach(() => {
     initI18n("en");
+    state.copySucceeds = true;
     state.copied.length = 0;
     state.modals.length = 0;
     state.notices.length = 0;
@@ -266,6 +271,29 @@ describe("ActionRunner", () => {
     expect(allText(disclosure!)).toContain("1500");
     expect(allText(disclosure!)).not.toContain("/private/path");
   });
+
+  it.each(["cli_path_not_configured", "cli_invalid_envelope"] as const)(
+    "opens redacted details when copying fails and permits another attempt for %s", async (code) => {
+      const { ActionRunner } = await import("../src/actions/action-runner");
+      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+      const { LocalCliError } = await import("../src/docwen");
+      const runner = new ActionRunner({} as never, new OperationCoordinator());
+      runner.presentFailure("noticeDoctorFailed", new LocalCliError(code, "private failure"));
+      const content = state.modals[0].contentEl;
+      const copy = findByText(content, "Copy details")!;
+      state.copySucceeds = false;
+      copy.listeners.get("click")!();
+      await vi.waitFor(() => expect(allText(content)).toContain("Copy failed"));
+      expect(content.children.find(el => el.open)).toBeDefined();
+      expect(allText(content)).not.toContain("private failure");
+      expect(copy.text).toBe("Copy details");
+      state.copySucceeds = true;
+      copy.listeners.get("click")!();
+      await vi.waitFor(() => expect(copy.text).toBe("Copied"));
+      expect(allText(content)).not.toContain("Copy failed");
+      expect(state.copied[0]).toBe(state.copied[1]);
+    },
+  );
 
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {
     const { LocalCliError } = await import("../src/docwen");

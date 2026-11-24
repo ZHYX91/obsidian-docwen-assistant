@@ -46,6 +46,8 @@ Completion waits for owned cleanup. If a result was published but cleanup or a f
 
 Error-detail previews and copies use the same redacted data: stable codes, user summaries, confirmed states, compatibility versions, counts and timeouts. Arbitrary exception text, underlying responses, document content, local paths, command lines and credentials are excluded; unknown fields are not serialized. Ordinary failures also offer Details from the same notice and never overwrite the clipboard automatically.
 
+When the clipboard is unavailable, the dialog opens the redacted details, explains how to copy them manually, and keeps the Copy details action available for retry.
+
 Report navigation treats LF, CRLF and CR as equivalent line boundaries and checks the full content, including text outside the selected issue.
 
 ## Settings surface

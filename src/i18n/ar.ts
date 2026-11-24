@@ -154,6 +154,7 @@ export const AR_TRANSLATIONS: Translations = {
   dialogOpenSettings: "فتح إعدادات الإضافة",
   dialogCopyDetails: "نسخ التفاصيل",
   dialogCopied: "تم النسخ",
+  dialogCopyFailed: "تعذّر النسخ. حاول مجددًا أو انسخ التفاصيل أعلاه يدويًا.",
   noticeLaunchFailed: "فشل التشغيل: {error}",
   noticeFileAdded: "أُضيف الملف: {filename}",
   noticeWindowActivated: "فُعّلت نافذة DocWen",

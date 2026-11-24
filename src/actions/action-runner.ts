@@ -4,7 +4,7 @@ import { DOCWEN_PRODUCT_NAME, DOCWEN_RELEASES_URL, DOCWEN_STORE_URL } from "../d
 import { copyTextToClipboard } from "../host/clipboard";
 import { showNotice, showNoticeWithAction, type NoticeAction } from "../host/notices";
 import { getFailureWarnings, type OperationWarning } from "../docwen/operation-outcome";
-import { t, type Translations } from "../i18n";
+import { getCurrentLocale, t, type Translations } from "../i18n";
 import { diagnosticCode } from "./diagnostic-details";
 import {
   OperationCoordinator,
@@ -181,21 +181,7 @@ class DocWenSetupModal extends Modal {
     releasesLink.target = "_blank";
     releasesLink.rel = "noopener noreferrer";
 
-    this.contentEl.createEl("p", { text: this.failureSummary });
-    const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
-    details.createEl("summary", { text: t("dialogDetails") });
-    details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
-    details.createEl("pre", { text: this.detailsText });
-    const copy = this.contentEl.createEl("button", {
-      text: t("dialogCopyDetails"),
-      cls: "mod-cta",
-      attr: { type: "button" },
-    });
-    copy.addEventListener("click", () => {
-      void copyTextToClipboard(this.detailsText).then((copied) => {
-        if (copied) copy.setText(t("dialogCopied"));
-      });
-    });
+    renderDiagnostics(this.contentEl, this.failureSummary, this.detailsText, false);
   }
 
   override onClose(): void {
@@ -215,25 +201,47 @@ export class OperationDetailsModal extends Modal {
 
   override onOpen(): void {
     this.titleEl.setText(DOCWEN_PRODUCT_NAME);
-    this.contentEl.createEl("p", { text: this.summary });
-    const details = this.contentEl.createEl("details", { cls: "docwen-error-details" });
-    details.open = this.expanded;
-    details.createEl("summary", { text: t("dialogDetails") });
-    details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
-    details.createEl("pre", { text: this.detailsText });
-    const copy = this.contentEl.createEl("button", {
-      text: t("dialogCopyDetails"),
-      cls: "mod-cta",
-      attr: { type: "button" },
-    });
-    copy.addEventListener("click", () => {
-      void copyTextToClipboard(this.detailsText).then((copied) => {
-        if (copied) copy.setText(t("dialogCopied"));
-      });
-    });
+    renderDiagnostics(this.contentEl, this.summary, this.detailsText, this.expanded);
   }
 
   override onClose(): void {
     this.contentEl.empty();
   }
+}
+
+function renderDiagnostics(content: HTMLElement, summary: string, text: string, expanded: boolean): void {
+  const locale = getCurrentLocale();
+  content.setAttribute("lang", locale);
+  content.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
+  content.createEl("p", { text: summary });
+  const details = content.createEl("details", { cls: "docwen-error-details" });
+  details.open = expanded;
+  details.createEl("summary", { text: t("dialogDetails") });
+  details.createEl("p", { text: t("dialogDiagnosticsPrivacy") });
+  const preview = details.createEl("pre", { text, attr: { dir: "ltr", tabindex: "0" } });
+  preview.addEventListener("keydown", event => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== "a") return;
+    const selection = preview.ownerDocument.getSelection();
+    if (!selection) return;
+    event.preventDefault();
+    selection.selectAllChildren(preview);
+  });
+  const status = content.createDiv({ attr: { role: "status" } });
+  const copy = content.createEl("button", {
+    text: t("dialogCopyDetails"), cls: "mod-cta", attr: { type: "button" },
+  });
+  let copying = false;
+  copy.addEventListener("click", () => {
+    if (copying || !copy.isConnected) return;
+    copying = true;
+    copy.setAttribute("aria-disabled", "true");
+    void copyTextToClipboard(text).then((copied) => {
+      copying = false;
+      if (!copy.isConnected) return;
+      copy.setAttribute("aria-disabled", "false");
+      copy.setText(t(copied ? "dialogCopied" : "dialogCopyDetails"));
+      status.setText(copied ? "" : t("dialogCopyFailed"));
+      if (!copied) details.open = true;
+    });
+  });
 }

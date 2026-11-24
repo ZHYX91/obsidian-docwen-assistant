@@ -171,6 +171,7 @@
 }
 
 .docwen-error-details pre {
+  user-select: text;
   background: var(--background-secondary);
   border-radius: var(--radius-s);
   font-family: var(--font-monospace);
