@@ -336,6 +336,19 @@ describe("accepted detected-format exports", () => {
     expect(test.convert).not.toHaveBeenCalled();
   });
 
+  it("stops before reinspection when cancellation arrives while copying the accepted source", async () => {
+    const test = await fixture();
+    const fs = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    vi.mocked(copyFile).mockImplementationOnce(async (...args) => {
+      await fs.copyFile(...args);
+      test.controller.abort();
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "cli_cancelled" });
+    expect(test.inspect).toHaveBeenCalledTimes(2);
+    expect(test.convert).not.toHaveBeenCalled();
+    expect(ui.commit).not.toHaveBeenCalled();
+  });
+
   it("ignores Continue returned after the operation was cancelled", async () => {
     const test = await fixture();
     ui.confirm.mockImplementation(async () => {

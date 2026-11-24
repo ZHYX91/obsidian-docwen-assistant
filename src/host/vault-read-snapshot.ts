@@ -152,7 +152,7 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
-        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent);
+        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent, signal);
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {
