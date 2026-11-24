@@ -59,10 +59,11 @@ export class AssistantView extends ItemView {
   // Keep lifecycle state separate from the host View.open() method.
   private sidebarOpen = false;
   private lifecycle = 0;
-  private ownedGeneration: number | null = null;
+  private ownedTask: { generation: number; path: string } | null = null;
   private renderedLocale: string | null = null;
   private openFileButton: HTMLButtonElement | null = null;
   private proofreadButton: HTMLButtonElement | null = null;
+  private refreshButton: HTMLButtonElement | null = null;
   private readonly viewId = ++nextViewId;
   private activeTab: AssistantTab = "proofread";
   private readonly tabs = new Map<AssistantTab, HTMLButtonElement>();
@@ -155,32 +156,35 @@ export class AssistantView extends ItemView {
     this.sidebarOpen = false;
     this.lifecycle += 1;
     this.resultsRevision += 1;
-    const generation = this.ownedGeneration;
-    this.ownedGeneration = null;
+    const task = this.ownedTask;
+    this.ownedTask = null;
+    this.cancelled = false;
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
     this.activeOperation = null;
     this.openFileButton = null;
     this.proofreadButton = null;
+    this.refreshButton = null;
     this.exports.dispose();
     this.tabs.clear();
     this.panels.clear();
     this.fileContexts.length = 0;
     (this.containerEl.children[1] as HTMLElement).removeClass("docwen-proofread-root");
-    if (generation !== null) this.operations.cancelGeneration(generation);
+    if (task) this.operations.cancelGeneration(task.generation);
   }
 
   /** Bind publication and cancellation to this exact open view lifetime. */
-  ownOperation(lease: OperationLease): () => boolean {
+  ownOperation(lease: OperationLease, path: string): () => boolean {
     const isOpen = this.captureLifetime();
     if (!isOpen()) {
       this.operations.cancelGeneration(lease.generation);
       return () => false;
     }
+    if (!lease.isCurrent()) return () => false;
     this.selectTab("proofread", this.activeTab !== "proofread");
-    this.ownedGeneration = lease.generation;
+    this.ownedTask = { generation: lease.generation, path };
     this.updateOperation(this.operations.getSnapshot());
-    return () => isOpen() && this.ownedGeneration === lease.generation && lease.isCurrent();
+    return () => isOpen() && this.ownedTask?.generation === lease.generation && lease.isCurrent();
   }
 
   /** Scope late host cleanup to the runtime that constructed this view. */
@@ -207,6 +211,7 @@ export class AssistantView extends ItemView {
     const isMarkdown = localFile !== null && mediaTypeForPath(localFile.path) === CONVERSION_MEDIA_TYPES.md;
     if (this.openFileButton) this.openFileButton.disabled = !localFile;
     if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
+    if (this.refreshButton) this.refreshButton.disabled = this.activeOperation !== null || (!this.vaultPath && !isMarkdown);
     for (const context of this.fileContexts) {
       const name = context.querySelector<HTMLElement>(".docwen-assistant-filename");
       const path = context.querySelector<HTMLElement>(".docwen-assistant-filepath");
@@ -239,7 +244,7 @@ export class AssistantView extends ItemView {
     const previousOperation = this.activeOperation;
     const nextOperation = [...snapshot.operations]
       .reverse()
-      .find(({ generation }) => generation === this.ownedGeneration) ?? null;
+      .find(({ generation }) => generation === this.ownedTask?.generation) ?? null;
     if (nextOperation?.generation === previousOperation?.generation
       && nextOperation?.kind === previousOperation?.kind
       && nextOperation?.state === previousOperation?.state) return;
@@ -249,7 +254,19 @@ export class AssistantView extends ItemView {
     }
     if (this.activeOperation) this.cancelled = false;
     else if (previousOperation?.state === "cancelling") this.cancelled = true;
+
+    // Transfer focus only while a control in this panel is losing its action.
+    // Work finishing later must leave focus in the editor or another tab alone.
+    const panel = this.panels.get("proofread");
+    const focused = panel?.ownerDocument.activeElement;
+    const key = panel && !panel.hidden && focused && panel.contains(focused)
+      ? focused.getAttribute("data-docwen-view-key") : null;
     this.render();
+    if (nextOperation?.state === "running" && (key === "refresh" || key === "proofread-current-file")) {
+      this.panels.get("proofread")?.querySelector<HTMLElement>(".docwen-proofread-cancel")?.focus({ preventScroll: true });
+    } else if (key === "cancel" && nextOperation?.state !== "running") {
+      this.tabs.get("proofread")?.focus({ preventScroll: true });
+    }
   }
 
   private getSortedIssues(): ProofreadIssue[] {
@@ -324,17 +341,29 @@ export class AssistantView extends ItemView {
 
   private renderReport(container: HTMLElement): void {
 
+    const showStatus = (text: string, path?: string): void => {
+      const status = container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
+      if (path) {
+        status.createEl("br");
+        status.createEl("bdi", { text: path });
+      }
+    };
+    if (this.cancelled) showStatus(t("proofreadCancelled"), this.ownedTask?.path);
+
     // Report toolbar
     const toolbar = container.createDiv({ cls: "docwen-proofread-toolbar" });
 
+    const reportPath = this.vaultPath;
+    const refreshLabel = reportPath ? t("proofreadRefreshReport", { file: reportPath }) : t("proofreadRefresh");
     const refreshBtn = toolbar.createEl("button", {
       cls: "docwen-proofread-btn",
-      attr: { type: "button", "aria-label": t("proofreadRefresh"), "data-docwen-view-key": "refresh" },
+      attr: { type: "button", "aria-label": refreshLabel, title: refreshLabel, "data-docwen-view-key": "refresh" },
     });
+    this.refreshButton = refreshBtn;
     setIcon(refreshBtn, "refresh-cw");
     if (this.activeOperation) refreshBtn.setAttribute("disabled", "");
     else refreshBtn.addEventListener("click", () => {
-      void this.refresh(this.vaultPath, this);
+      if (refreshBtn.isConnected) void this.refresh(reportPath, this);
     });
 
     const sortBtn = toolbar.createEl("button", {
@@ -351,11 +380,10 @@ export class AssistantView extends ItemView {
       this.render();
     });
 
-    // Status / file name
-    if (this.fileName) {
+    if (this.fileName && !this.activeOperation) {
       toolbar.createSpan({
         cls: "docwen-proofread-filename",
-        text: this.fileName,
+        text: t("proofreadReportFile", { file: this.fileName }),
         attr: { title: this.vaultPath },
       });
     }
@@ -378,16 +406,15 @@ export class AssistantView extends ItemView {
       }
     }
 
-    const showStatus = (text: string): void => {
-      container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
-    };
     if (this.activeOperation) {
       return showStatus(this.activeOperation.state === "cancelling"
         ? t("operationCancelling")
-        : t("operationRunning", { operation: t("operationProofread") }));
+        : t("operationRunning", { operation: t("operationProofread") }), this.ownedTask?.path);
     }
-    if (this.cancelled) return showStatus(t("proofreadCancelled"));
-    if (!this.fileName) return showStatus(t("proofreadOpenMdFile"));
+    if (!this.fileName) {
+      if (!this.cancelled) showStatus(t("proofreadOpenMdFile"));
+      return;
+    }
     if (this.stale) return showStatus(t("proofreadSourceChanged"));
     if (this.issues.length === 0) return showStatus(t("proofreadNoIssues"));
 

@@ -223,11 +223,11 @@ describe("AssistantView", () => {
     const exportLease = operations.begin({ key: "export", kind: "export" });
     const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
-    view.ownOperation(proofread);
+    view.ownOperation(proofread, "Proofread.md");
     expect((view.containerEl.children[1] as HTMLElement).classList)
       .toContain("docwen-proofread-root");
     await view.onClose();
-    view.ownOperation(proofread);
+    view.ownOperation(proofread, "Proofread.md");
     expect((view.containerEl.children[1] as HTMLElement).classList)
       .not.toContain("docwen-proofread-root");
     expect(proofread.signal.aborted).toBe(true);
@@ -241,7 +241,7 @@ describe("AssistantView", () => {
     const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
 
     let content = view.containerEl.children[1] as HTMLElement;
     let cancel = findByClass(content, "docwen-proofread-cancel");
@@ -288,7 +288,7 @@ describe("AssistantView", () => {
     expect(issue?.getAttribute("type")).toBe("button");
     expect(issue?.getAttribute("aria-label")).toBe("Line 1 · Column 1 Typo check: bad → good");
     const filename = findByClass(content, "docwen-proofread-filename");
-    expect(filename?.textContent).toBe("Proofread.md");
+    expect(filename?.textContent).toBe("Report: Proofread.md");
     expect(filename?.getAttribute("title")).toBe("Proofread.md");
   });
 
@@ -300,18 +300,18 @@ describe("AssistantView", () => {
     await view.onOpen();
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     operations.cancelGeneration(lease.generation);
     lease.finish();
     const content = view.containerEl.children[1] as HTMLElement;
     expect(findByClass(content, "docwen-proofread-status")?.textContent)
-      .toBe("Proofreading cancelled. Run it again to update the results.");
+      .toContain("Proofreading cancelled.");
     const unrelated = operations.begin({ key: "export", kind: "export" });
     unrelated.finish();
     expect(findByClass(content, "docwen-proofread-status")?.textContent)
-      .toBe("Proofreading cancelled. Run it again to update the results.");
+      .toContain("Proofreading cancelled.");
     const retry = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(retry);
+    view.ownOperation(retry, "Proofread.md");
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     retry.finish();
     expect(findByClass(content, "docwen-proofread-status")?.textContent).toBe("No issues found");
@@ -325,6 +325,8 @@ describe("AssistantView", () => {
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
     expect(css).toMatch(/@media \(pointer:\s*coarse\)\s*\{\s*\.docwen-proofread-btn\s*\{[^}]*min-inline-size:\s*44px;[^}]*min-block-size:\s*44px;/s);
+    expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?\.docwen-proofread-list\s*\{\s*--docwen-issue-min-height:\s*44px;/u);
+    expect(css).toMatch(/button\.docwen-proofread-more\s*\{[^}]*min-height:\s*max\(var\(--input-height\), var\(--docwen-issue-min-height, 0px\)\);/u);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
   });
 
@@ -529,7 +531,7 @@ describe("AssistantView", () => {
     else if (change === "close") await f.view.onClose();
     else {
       const lease = f.operations.begin({ key: "proofread", kind: "proofread" });
-      f.view.ownOperation(lease);
+      f.view.ownOperation(lease, "Proofread.md");
       lease.finish();
     }
     resume();

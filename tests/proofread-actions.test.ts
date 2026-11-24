@@ -155,7 +155,9 @@ describe("ProofreadActions", () => {
     );
     const file = { name: "Proofread example.md", path: "Examples/Proofread example.md" };
 
-    await actions.run(file as never, { captureLifetime: () => () => true, ownOperation: () => () => true, updateResults: state.updateResults } as never);
+    const ownOperation = vi.fn(() => () => true);
+    await actions.run(file as never, { captureLifetime: () => () => true, ownOperation, updateResults: state.updateResults } as never);
+    expect(ownOperation).toHaveBeenCalledWith(expect.objectContaining({ signal }), file.path);
 
     expect(capabilities.requireAction).toHaveBeenCalledWith(
       expect.objectContaining({ path: "D:\\Temp\\source.md" }),

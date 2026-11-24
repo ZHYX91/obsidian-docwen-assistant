@@ -265,6 +265,8 @@ export interface Translations {
   proofreadSortByLine: string;
   proofreadSortByRule: string;
   proofreadColumnNumber: string;
+  proofreadReportFile: string;
+  proofreadRefreshReport: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
   proofreadLocationNeedsEditor: string;

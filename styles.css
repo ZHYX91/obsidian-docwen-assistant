@@ -484,6 +484,7 @@
 .docwen-proofread-status {
   flex-shrink: 0;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   padding: 24px 16px;
   text-align: center;
   color: var(--text-muted);
@@ -506,7 +507,7 @@
 button.docwen-proofread-more {
   display: block;
   height: auto;
-  min-height: var(--input-height);
+  min-height: max(var(--input-height), var(--docwen-issue-min-height, 0px));
   max-width: calc(100% - 20px);
   margin: 10px auto;
   white-space: normal;
