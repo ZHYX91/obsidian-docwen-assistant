@@ -242,6 +242,7 @@ describe("ActionRunner", () => {
       addButton(create: (button: unknown) => void) {
         let label = "";
         create({
+          buttonEl: { setAttribute: vi.fn() },
           setButtonText(text: string) { label = text; return this; },
           setDisabled() { return this; },
           onClick(action: () => void) { controls.set(label, action); },
