@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { realpathSync } from "node:fs";
+import { createReadStream, realpathSync } from "node:fs";
 import { lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
@@ -24,6 +24,11 @@ import type {
 const roots: string[] = [];
 
 vi.mock("obsidian", () => ({ MarkdownView: class MarkdownView {}, TFile: class TFile {} }));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const fs = await importOriginal<typeof import("node:fs")>();
+  return { ...fs, createReadStream: vi.fn(fs.createReadStream) };
+});
 
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
@@ -802,6 +807,44 @@ describe("DocWenClient Machine semantics", () => {
       enable_typos_rule: false,
       enable_sensitive_word: false,
     });
+  });
+
+  it.each(["valid", "cancel", "digest", "encoding"] as const)("authenticates the single consumed report stream (%s)", async mode => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "note.md");
+    await writeFile(input, "");
+    const fixture = await readFile(new URL("../contracts/docwen/fixtures/valid/proofread-report.empty.json", import.meta.url));
+    const bytes = Buffer.from(fixture);
+    if (mode === "encoding") bytes[bytes.indexOf("note.md")] = 0xff;
+    const controller = new AbortController();
+    let reportPath = "";
+    let reads = 0;
+    const fs = await vi.importActual<typeof import("node:fs")>("node:fs");
+    const runTask = vi.fn(async (request: MachineTaskRequest) => {
+      reportPath = path.join(request.output.staging_root.path, "report.json");
+      await writeFile(reportPath, bytes);
+      const bundle = bundleFor("task.1", reportPath, "application/json", "resource", bytes);
+      if (mode === "digest") bundle.artifacts[0]!.sha256 = "0".repeat(64);
+      vi.mocked(createReadStream).mockImplementation((file, options) => {
+        const stream = fs.createReadStream(file, options);
+        if (file === reportPath) {
+          reads++;
+          if (mode === "cancel") stream.once("data", () => controller.abort());
+        }
+        return stream;
+      });
+      return { taskId: "task.1", plan: {}, bundle, diagnostics: [], metrics: {} };
+    });
+    try {
+      const client = new DocWenClient(machine(vi.fn().mockResolvedValue(inspection(input)), runTask));
+      const result = client.validate(input, ["symbol"], controller.signal);
+      if (mode === "valid") await expect(result).resolves.toMatchObject({ issues: [] });
+      else await expect(result).rejects.toMatchObject({ code: mode === "cancel" ? "cli_cancelled" : "cli_integrity_error" });
+      expect(reads).toBe(1);
+      await expect(lstat(path.dirname(reportPath))).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      vi.mocked(createReadStream).mockImplementation(fs.createReadStream);
+    }
   });
 
   it("rejects the removed proofread report 1.x projection", async () => {
