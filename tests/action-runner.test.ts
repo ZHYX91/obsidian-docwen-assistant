@@ -108,7 +108,7 @@ describe("ActionRunner", () => {
 
     expect(state.notices).toHaveLength(1);
     expect(state.notices[0]).toContain("Exported result.md");
-    expect(state.notices[0]).toContain("1 warning");
+    expect(state.notices[0]).toContain("Warnings: 1. Errors: 0.");
     expect(state.notices[0]).not.toContain("cleanup");
     state.noticeActions[0]();
     const details = allText(state.modals[0].contentEl);
