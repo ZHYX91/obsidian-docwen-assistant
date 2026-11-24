@@ -114,10 +114,20 @@
   font-family: inherit !important;
   font-size: var(--font-ui-small) !important;
   font-weight: inherit;
-  margin: 0 0 -1px !important;
+  margin: 0 !important;
   min-block-size: 34px;
   padding: 7px 12px !important;
   white-space: nowrap;
+}
+
+@media (forced-colors: active) {
+  .docwen-settings-tabs {
+    --interactive-accent: Highlight;
+  }
+
+  .docwen-settings-tabs > button.docwen-settings-tab[aria-selected="false"] {
+    border-block-end-color: Canvas !important;
+  }
 }
 
 .docwen-settings-tabs > button.docwen-settings-tab:hover {
