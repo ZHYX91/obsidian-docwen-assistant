@@ -619,9 +619,20 @@ describe("settings surface lifecycle", () => {
     await vi.waitFor(() => expect(feedback.children).toHaveLength(1));
     expect(settings.find((row) => row.settingEl === feedback.children[0])?.descEl.textContent).toBe("Changes are not saved yet.");
     const retry = buttons.find((btn) => btn.label === "Retry" && !btn.buttonEl.hidden)!;
-    plugin.retrySettingsSave.mockRejectedValueOnce(new Error("still full"));
+    let rejectRetry!: () => void;
+    plugin.retrySettingsSave.mockImplementationOnce(() => {
+      state = "saving";
+      return new Promise<void>((_, reject) => {
+        rejectRetry = () => { state = "pending"; reject(new Error("still full")); };
+      });
+    });
+    const retrying = retry.click?.();
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
     await retry.click?.();
-    expect(retry.disabled).toBe(false);
+    expect(plugin.retrySettingsSave).toHaveBeenCalledOnce();
+    rejectRetry();
+    await retrying;
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false");
     expect(feedback.children).toHaveLength(1);
     plugin.retrySettingsSave.mockImplementationOnce(async () => { state = "saved"; });
     await retry.click?.();

@@ -25,6 +25,7 @@ import {
   isSettingsReadOnly,
   renderSettingsSchemaCompatibility,
 } from "./settings-schema-compatibility";
+import { refreshSettingsSaveFeedback } from "./settings-save-feedback";
 import { SettingsTabs } from "./settings-tabs";
 import { preserveSettingsView } from "./settings-view-state";
 import { configureConnectionActions, connectionDisplay } from "./settings-connection";
@@ -222,33 +223,7 @@ export class SettingTab extends PluginSettingTab {
   }
 
   private refreshSaveFeedback(): void {
-    const region = this.saveFeedback;
-    if (!region) return;
-    const state = this.plugin.getSettingsSaveState();
-    if (state !== "pending") {
-      if (state !== "saving" && region.children.length) {
-        const hadFocus = region.ownerDocument.activeElement && region.contains(region.ownerDocument.activeElement);
-        region.empty();
-        if (hadFocus) region.parentElement?.focus({ preventScroll: true });
-      }
-      return;
-    }
-    if (region.children.length) return;
-    new Setting(region)
-      .setName(t("settingsPersistence"))
-      .setDesc(t("settingsChangesPending"))
-      .addButton((button) => button.setButtonText(t("settingsRetry")).onClick(async () => {
-        if (region !== this.saveFeedback || this.plugin.getSettingsSaveState() !== "pending") return;
-        button.setDisabled(true);
-        try {
-          await this.plugin.retrySettingsSave();
-        } catch {
-          // A failed retry remains available on the currently displayed page.
-        } finally {
-          if (region === this.saveFeedback) button.setDisabled(false);
-          this.refreshSaveFeedback();
-        }
-      }));
+    refreshSettingsSaveFeedback(this.plugin, () => this.saveFeedback);
   }
 
   private configurePathStatus(setting: Setting): void {
