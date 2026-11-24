@@ -8,15 +8,12 @@ describe("settings page definitions", () => {
     const renderCliPath = vi.fn();
     const renderDocWenDownload = vi.fn();
     const renderCliStatus = vi.fn();
-    const renderPersistenceStatus = vi.fn();
     const renderNumberingScheme = vi.fn();
     const pages = getSettingsPages({
       settings: { ...DEFAULT_SETTINGS },
       renderCliPath,
       renderDocWenDownload,
       renderCliStatus,
-      renderPersistenceStatus,
-      isPersistencePending: () => false,
       renderNumberingScheme,
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
@@ -48,7 +45,6 @@ describe("settings page definitions", () => {
     expect(renderCliPath).not.toHaveBeenCalled();
     expect(renderDocWenDownload).not.toHaveBeenCalled();
     expect(renderCliStatus).not.toHaveBeenCalled();
-    expect(renderPersistenceStatus).not.toHaveBeenCalled();
     expect(renderNumberingScheme).not.toHaveBeenCalled();
   });
 
@@ -59,8 +55,6 @@ describe("settings page definitions", () => {
       renderCliPath: vi.fn(),
       renderDocWenDownload: vi.fn(),
       renderCliStatus: vi.fn(),
-      renderPersistenceStatus: vi.fn(),
-      isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
@@ -80,8 +74,6 @@ describe("settings page definitions", () => {
       renderCliPath: vi.fn(),
       renderDocWenDownload: vi.fn(),
       renderCliStatus: vi.fn(),
-      renderPersistenceStatus: vi.fn(),
-      isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
@@ -105,8 +97,6 @@ describe("settings page definitions", () => {
       renderCliPath: vi.fn(),
       renderDocWenDownload: vi.fn(),
       renderCliStatus: vi.fn(),
-      renderPersistenceStatus: vi.fn(),
-      isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),
@@ -129,8 +119,6 @@ describe("settings page definitions", () => {
       renderCliPath: vi.fn(),
       renderDocWenDownload: vi.fn(),
       renderCliStatus: vi.fn(),
-      renderPersistenceStatus: vi.fn(),
-      isPersistencePending: () => false,
       renderNumberingScheme: vi.fn(),
       renderGuide: vi.fn(),
       renderSupport: vi.fn(),

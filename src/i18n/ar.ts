@@ -229,6 +229,7 @@ export const AR_TRANSLATIONS: Translations = {
   settingsNumberingNone: "دون ترقيم",
   settingsNumberingSchemeLoading: "جارٍ تحميل أنماط الترقيم…",
   settingsNumberingSchemeError: "تعذّر تحميل أنماط الترقيم. تحقّق من اتصال DocWen.",
+  settingsNumberingSchemeSaved: "نظام الترقيم المحفوظ ({id})",
   settingsNumberingSchemeUnavailable: "نمط الترقيم المحفوظ غير متاح ({id})",
   commandAddNumbering: "إضافة ترقيم لعناوين Markdown",
   commandRemoveNumbering: "إزالة ترقيم عناوين Markdown",

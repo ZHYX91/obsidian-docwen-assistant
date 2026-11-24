@@ -20,8 +20,6 @@ export interface SettingsPageContext {
   readonly renderCliPath: (setting: Setting) => void;
   readonly renderDocWenDownload: (setting: Setting) => void;
   readonly renderCliStatus: (setting: Setting) => void;
-  readonly renderPersistenceStatus: (setting: Setting) => void;
-  readonly isPersistencePending: () => boolean;
   readonly renderNumberingScheme: (setting: Setting, key: NumberingAddKey) => void | (() => void);
   readonly renderGuide: (setting: Setting, title: string, content: SettingsGuideContent) => void | (() => void);
   readonly renderSupport: (setting: Setting) => void;
@@ -58,11 +56,6 @@ export function getSettingsPages(
         { name: t("settingsCliPathStatus"), render: context.renderCliStatus },
         { name: t("settingsDownloadDocWen"), desc: t("settingsDownloadDocWenDesc"), render: context.renderDocWenDownload },
         { name: t("settingsHelpTitle"), render: context.renderSupport },
-        {
-          name: t("settingsPersistence"),
-          render: context.renderPersistenceStatus,
-          visible: context.isPersistencePending,
-        },
       ],
     },
     {

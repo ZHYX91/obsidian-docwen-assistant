@@ -22,7 +22,6 @@ import { renderSettingsGuide, renderSettingsSupport } from "./settings-guide";
 import { configureNumberSetting } from "./settings-number-control";
 import {
   assertSettingsWritable,
-  describeSettingsSchemaCompatibility,
   isSettingsReadOnly,
   renderSettingsSchemaCompatibility,
 } from "./settings-schema-compatibility";
@@ -37,6 +36,7 @@ export class SettingTab extends PluginSettingTab {
   private updateHeadingNumberingFormat?: () => void;
   private activePageId: SettingsPageId = "general";
   private tabs: SettingsTabs | null = null;
+  private saveFeedback: HTMLElement | null = null;
   private readonly expandedHelp = new Set<string>();
   private surfaceGeneration = 0;
 
@@ -79,8 +79,6 @@ export class SettingTab extends PluginSettingTab {
       ),
       renderDocWenDownload: configureDocWenDownloadSetting,
       renderCliStatus: (setting) => this.configurePathStatus(setting),
-      renderPersistenceStatus: (setting) => this.configurePersistenceStatus(setting),
-      isPersistencePending: () => ["pending", "blocked"].includes(this.plugin.getSettingsSaveState()),
       renderNumberingScheme: (setting, key) => this.configureNumberingScheme(setting, key),
       renderGuide: (setting, title, content) => renderSettingsGuide(
         setting, title, content, this.expandedHelp,
@@ -101,12 +99,19 @@ export class SettingTab extends PluginSettingTab {
     setSettingValue(this.plugin.settings, settingKey, value);
     if (settingKey === "mdToDocAddNumbering") this.updateHeadingNumberingFormat?.();
     if (settingKey === "docwenConnectionMode") this.plugin.resetDocWenRuntime();
-    const generation = this.surfaceGeneration;
     try {
-      await this.plugin.saveSettings();
-    } catch (error) {
-      if (this.isCurrentSurface(generation)) this.refreshSettingsUi();
-      throw error;
+      const saving = this.plugin.saveSettings();
+      // saveSettings applies the chosen language before persisting the snapshot.
+      // The currently effective model drives all controls even when writing fails.
+      if (this.tabs) {
+        if (settingKey === "language") this.display();
+        else if (settingKey === "docwenConnectionMode" || settingKey === "extractImages" || settingKey === "enableOcr") {
+          this.tabs.renderActivePage();
+        }
+      }
+      await saving;
+    } finally {
+      this.refreshSaveFeedback();
     }
   }
 
@@ -121,6 +126,8 @@ export class SettingTab extends PluginSettingTab {
   private renderPage(containerEl: HTMLElement, page: SettingsPageDefinition): void {
     this.destroyPageSurface();
     ++this.surfaceGeneration;
+    this.saveFeedback = containerEl.createDiv({ attr: { role: "status" } });
+    this.refreshSaveFeedback();
     page.items.forEach((item, index) => this.renderDefinition(containerEl, item, index, page.id));
   }
 
@@ -202,14 +209,7 @@ export class SettingTab extends PluginSettingTab {
     try {
       await this.setControlValue(key, value);
     } catch {
-      // setControlValue already re-renders the recovery state on the live surface.
-      return;
-    }
-    if (!this.containerEl.isConnected) return;
-    if (key === "language") {
-      this.display();
-    } else if (key === "docwenConnectionMode" || key === "extractImages" || key === "enableOcr") {
-      this.tabs?.renderActivePage();
+      // The save coordinator retains the pending snapshot for the visible retry.
     }
   }
 
@@ -218,26 +218,37 @@ export class SettingTab extends PluginSettingTab {
     this.updateHeadingNumberingFormat = undefined;
     for (const cleanup of this.pageCleanups.splice(0)) cleanup();
     this.pathStatusElements.clear();
+    this.saveFeedback = null;
   }
 
-  private configurePersistenceStatus(setting: Setting): void {
+  private refreshSaveFeedback(): void {
+    const region = this.saveFeedback;
+    if (!region) return;
     const state = this.plugin.getSettingsSaveState();
-    setting.setName(t("settingsPersistence"));
-    setting.setDesc(state === "blocked"
-      ? describeSettingsSchemaCompatibility(this.plugin.getSettingsCompatibility())
-      : state === "pending"
-        ? t("settingsChangesPending")
-        : t("settingsChangesSaved"));
-    if (state === "pending") {
-      setting.addButton((button) => button
-        .setButtonText(t("settingsRetry"))
-        .onClick(() => {
-          const generation = this.surfaceGeneration;
-          void this.plugin.retrySettingsSave().finally(() => {
-            if (this.isCurrentSurface(generation)) this.refreshSettingsUi();
-          });
-        }));
+    if (state !== "pending") {
+      if (state !== "saving" && region.children.length) {
+        const hadFocus = region.ownerDocument.activeElement && region.contains(region.ownerDocument.activeElement);
+        region.empty();
+        if (hadFocus) region.parentElement?.focus({ preventScroll: true });
+      }
+      return;
     }
+    if (region.children.length) return;
+    new Setting(region)
+      .setName(t("settingsPersistence"))
+      .setDesc(t("settingsChangesPending"))
+      .addButton((button) => button.setButtonText(t("settingsRetry")).onClick(async () => {
+        if (region !== this.saveFeedback || this.plugin.getSettingsSaveState() !== "pending") return;
+        button.setDisabled(true);
+        try {
+          await this.plugin.retrySettingsSave();
+        } catch {
+          // A failed retry remains available on the currently displayed page.
+        } finally {
+          if (region === this.saveFeedback) button.setDisabled(false);
+          this.refreshSaveFeedback();
+        }
+      }));
   }
 
   private configurePathStatus(setting: Setting): void {
@@ -304,7 +315,7 @@ export class SettingTab extends PluginSettingTab {
       getValue: () => this.plugin.settings[key],
       isCurrent: () => this.isCurrentSurface(generation),
       loadSchemes: (signal) => this.plugin.fetchNumberingSchemes(signal),
-      setValue: (value) => this.setControlValue(key, value),
+      setValue: (value) => this.changeControlValue(key, value),
       readOnly: isSettingsReadOnly(this.plugin.getSettingsCompatibility()),
     });
   }
@@ -324,6 +335,8 @@ export class SettingTab extends PluginSettingTab {
         this.refreshSettingsUi();
       }
       return;
+    } finally {
+      this.refreshSaveFeedback();
     }
     if (this.isCurrentSurface(generation)) {
       this.refreshSettingsUi();
