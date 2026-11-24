@@ -824,6 +824,8 @@ describe("DocWenClient Machine semantics", () => {
       reportPath = path.join(request.output.staging_root.path, "report.json");
       await writeFile(reportPath, bytes);
       const bundle = bundleFor("task.1", reportPath, "application/json", "resource", bytes);
+      // On Windows the staging root can use the short TEMP alias while the bundle holds its canonical path.
+      reportPath = bundle.artifacts[0]!.absolutePath;
       if (mode === "digest") bundle.artifacts[0]!.sha256 = "0".repeat(64);
       vi.mocked(createReadStream).mockImplementation((file, options) => {
         const stream = fs.createReadStream(file, options);
