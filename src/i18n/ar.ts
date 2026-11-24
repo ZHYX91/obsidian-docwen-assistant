@@ -258,6 +258,7 @@ export const AR_TRANSLATIONS: Translations = {
   proofreadOpenMdFile: "افتح ملف Markdown وشغّل التدقيق لعرض المشكلات",
   proofreadSortByLine: "الترتيب بحسب السطر",
   proofreadSortByRule: "الترتيب بحسب القاعدة",
+  proofreadColumnNumber: "العمود {column}",
   proofreadRefresh: "تحديث",
   proofreadSourceChanged: "تغيّرت الملاحظة أو محتويات المحرر. حدّث نتائج التدقيق قبل الانتقال إلى المشكلة.",
   proofreadLocationNeedsEditor: "افتح الملف في محرر Markdown للانتقال إلى موضع هذه المشكلة.",

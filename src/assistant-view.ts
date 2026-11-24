@@ -4,8 +4,8 @@
  */
 
 import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "./docwen/formats";
-import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
-import { proofreadSourceDigest } from "./host/proofread-source";
+import { ItemView, type TFile, WorkspaceLeaf, setIcon } from "obsidian";
+import { selectProofreadIssue } from "./host/proofread-navigation";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
 import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
@@ -13,7 +13,6 @@ import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
 import { showNotice } from "./host/notices";
 import { resolveAbsoluteFilePath } from "./host/vault-files";
-import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
   type OperationCoordinator,
   type OperationItem,
@@ -453,7 +452,9 @@ export class AssistantView extends ItemView {
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {
     let first: HTMLButtonElement | undefined;
     for (const issue of sorted.slice(from, to)) {
-      const lineLabel = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
+      const line = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
+      const column = t("proofreadColumnNumber", { column: String(issue.range.start.column + 1) });
+      const location = `${line} · ${column}`;
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
         : t(RULE_LABELS[issue.rule_key] ?? "proofreadViewTitle");
@@ -464,7 +465,7 @@ export class AssistantView extends ItemView {
         attr: {
           type: "button",
           "data-docwen-view-key": `issue:${revision}:${this.issueIndices.get(issue)}`,
-          "aria-label": `${lineLabel} ${ruleLabel}: ${issue.error_text}${correction}`,
+          "aria-label": `${location} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
       first ??= item;
@@ -473,7 +474,7 @@ export class AssistantView extends ItemView {
       });
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
-      header.createSpan({ cls: "docwen-proofread-line", text: lineLabel });
+      header.createSpan({ cls: "docwen-proofread-line", text: location });
       header.createSpan({ cls: "docwen-proofread-rule", text: ruleLabel });
 
       const body = item.createDiv({ cls: "docwen-proofread-item-body" });
@@ -515,74 +516,18 @@ export class AssistantView extends ItemView {
   private async navigateToIssue(issue: ProofreadIssue, revision: number): Promise<void> {
     if (revision !== this.resultsRevision || this.activeOperation || this.stale) return;
     const sequence = ++this.navigationSequence;
-    const sourceSha256 = this.sourceSha256;
-    const vaultPath = this.vaultPath;
     const isCurrent = (): boolean => sequence === this.navigationSequence && revision === this.resultsRevision && !this.activeOperation;
-    const invalidate = (): void => {
-      if (!isCurrent()) return;
+    let result;
+    try {
+      result = await selectProofreadIssue(this.app, this.vaultPath, this.sourceSha256, issue, isCurrent);
+    } catch {
+      result = "stale";
+    }
+    if (!isCurrent()) return;
+    if (result === "needs-editor") showNotice(t("proofreadLocationNeedsEditor"));
+    if (result === "stale") {
       this.stale = true;
       this.render();
-    };
-    try {
-      const file = this.app.vault.getAbstractFileByPath(vaultPath);
-      if (!(file instanceof TFile) || !/^[a-f0-9]{64}$/u.test(sourceSha256)) {
-        invalidate();
-        return;
-      }
-      const target = locateOpenMarkdownTarget(this.app.workspace, vaultPath);
-      if (target.kind === "ambiguous"
-        || (target.kind === "open" && !matchesSource(target.target.editor.getValue(), sourceSha256))) {
-        invalidate();
-        return;
-      }
-      const nativeNote = vaultPath.toLowerCase().endsWith(".md");
-      if (!nativeNote && target.kind === "closed") {
-        showNotice(t("proofreadLocationNeedsEditor"));
-        return;
-      }
-      const leaf = target.kind === "open" ? target.target.leaf : this.app.workspace.getLeaf(false);
-      if (!leaf) return;
-      if (nativeNote) await leaf.openFile(file);
-      else await this.app.workspace.revealLeaf(leaf);
-      if (!isCurrent()) return;
-      const view = leaf.view;
-      if (!(view instanceof MarkdownView) || view.file !== file || file.path !== vaultPath
-        || this.app.vault.getAbstractFileByPath(vaultPath) !== file
-        || (target.kind === "open" && !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, target.target))
-        || !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, { leaf, view, editor: view.editor })
-        || !matchesSource(view.editor.getValue(), sourceSha256)) {
-        invalidate();
-        return;
-      }
-      const editor = view.editor;
-
-      const start = issue.range.start;
-      const end = issue.range.end;
-      const from = {
-        line: start.line,
-        ch: unicodeColumnToUtf16Column(editor.getLine(start.line), start.column),
-      };
-      const to = {
-        line: end.line,
-        ch: unicodeColumnToUtf16Column(editor.getLine(end.line), end.column),
-      };
-      editor.setSelection(from, to);
-      editor.scrollIntoView({ from, to }, true);
-    } catch {
-      invalidate();
     }
   }
-}
-
-function matchesSource(content: string, sourceSha256: string): boolean {
-  return proofreadSourceDigest(content) === sourceSha256;
-}
-
-export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {
-  let offset = 0;
-  for (const codePoint of line) {
-    if (unicodeColumn-- <= 0) break;
-    offset += codePoint.length;
-  }
-  return offset;
 }

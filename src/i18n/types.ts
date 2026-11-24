@@ -264,6 +264,7 @@ export interface Translations {
   proofreadOpenMdFile: string;
   proofreadSortByLine: string;
   proofreadSortByRule: string;
+  proofreadColumnNumber: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
   proofreadLocationNeedsEditor: string;

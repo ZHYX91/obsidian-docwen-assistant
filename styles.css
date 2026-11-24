@@ -454,8 +454,8 @@
     min-height: 44px;
   }
 
-  button.docwen-proofread-item {
-    min-height: 44px;
+  .docwen-proofread-list {
+    --docwen-issue-min-height: 44px;
   }
 }
 
@@ -521,7 +521,7 @@ button.docwen-proofread-more {
 button.docwen-proofread-item {
   display: block;
   height: auto;
-  min-height: var(--input-height);
+  min-height: max(var(--input-height), var(--docwen-issue-min-height, 0px));
   width: 100%;
   color: inherit;
   font: inherit;
