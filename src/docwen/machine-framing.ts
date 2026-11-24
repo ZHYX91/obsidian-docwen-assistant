@@ -37,38 +37,55 @@ export function containsMachineProtocolFrame(bytes: Buffer): boolean {
 }
 
 export class MachineFrameDecoder {
-  private buffer = Buffer.alloc(0);
+  private header = Buffer.alloc(0);
+  private body?: Buffer;
+  private received = 0;
 
   feed(chunk: Buffer): JsonObject[] {
-    this.buffer = Buffer.concat([this.buffer, chunk]);
     const messages: JsonObject[] = [];
-    while (this.buffer.length > 0) {
-      const headerEnd = this.buffer.indexOf("\r\n\r\n");
-      if (headerEnd < 0) {
-        if (this.buffer.indexOf("\n\n") >= 0 || this.buffer.length > HEADER_LIMIT_BYTES) {
-          throw new Error("docwen_machine_invalid_frame_header");
+    let offset = 0;
+    while (offset < chunk.length) {
+      if (!this.body) {
+        const remainingHeader = HEADER_LIMIT_BYTES - this.header.length;
+        const prefix = chunk.subarray(offset, offset + remainingHeader);
+        const header = this.header.length ? Buffer.concat([this.header, prefix]) : prefix;
+        const headerEnd = header.indexOf("\r\n\r\n");
+        if (headerEnd < 0) {
+          if (header.length === HEADER_LIMIT_BYTES || header.indexOf("\n\n") >= 0)
+            throw new Error("docwen_machine_invalid_frame_header");
+          this.header = Buffer.from(header);
+          break;
         }
-        break;
+        const headerLength = headerEnd + 4;
+        const match = HEADER_PATTERN.exec(header.toString("latin1", 0, headerLength));
+        if (!match?.[1]) throw new Error("docwen_machine_invalid_frame_header");
+        const length = Number(match[1]);
+        if (!Number.isSafeInteger(length) || length > MAX_MESSAGE_BYTES)
+          throw new Error("docwen_machine_frame_too_large");
+        offset += headerLength - this.header.length;
+        this.header = Buffer.alloc(0);
+        if (chunk.length - offset >= length) {
+          messages.push(decodeMachinePayload(chunk.subarray(offset, offset + length)));
+          offset += length;
+          continue;
+        }
+        this.body = Buffer.allocUnsafe(length);
+        this.received = 0;
       }
-      const header = this.buffer.subarray(0, headerEnd + 4);
-      if (header.length > HEADER_LIMIT_BYTES) throw new Error("docwen_machine_invalid_frame_header");
-      const match = HEADER_PATTERN.exec(header.toString("latin1"));
-      if (!match?.[1]) throw new Error("docwen_machine_invalid_frame_header");
-      const contentLength = Number(match[1]);
-      if (!Number.isSafeInteger(contentLength) || contentLength > MAX_MESSAGE_BYTES) {
-        throw new Error("docwen_machine_frame_too_large");
+      const count = Math.min(this.body.length - this.received, chunk.length - offset);
+      chunk.copy(this.body, this.received, offset, offset + count);
+      this.received += count;
+      offset += count;
+      if (this.received === this.body.length) {
+        messages.push(decodeMachinePayload(this.body));
+        this.body = undefined;
       }
-      const frameEnd = header.length + contentLength;
-      if (this.buffer.length < frameEnd) break;
-      const body = this.buffer.subarray(header.length, frameEnd);
-      this.buffer = this.buffer.subarray(frameEnd);
-      messages.push(decodeMachinePayload(body));
     }
     return messages;
   }
 
   finish(): void {
-    if (this.buffer.length !== 0) throw new Error("docwen_machine_truncated_frame");
+    if (this.header.length || this.body) throw new Error("docwen_machine_truncated_frame");
   }
 }
 

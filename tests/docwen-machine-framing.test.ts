@@ -48,6 +48,19 @@ describe("DocWen Machine v2 framing", () => {
     expect(() => new MachineFrameDecoder().feed(frame)).toThrow("docwen_machine_invalid_frame_header");
   });
 
+  it("resumes a fragmented body and the following partial header in one chunk", () => {
+    const value = { text: "文档".repeat(40_000) };
+    const first = encodeMachineFrame(value);
+    const next = encodeMachineFrame({ id: 2 });
+    const decoder = new MachineFrameDecoder();
+    for (let offset = 0; offset < first.length - 1; offset += 4096) {
+      expect(decoder.feed(first.subarray(offset, Math.min(offset + 4096, first.length - 1)))).toEqual([]);
+    }
+    expect(decoder.feed(Buffer.concat([first.subarray(-1), next.subarray(0, 5)]))).toEqual([value]);
+    expect(decoder.feed(next.subarray(5))).toEqual([{ id: 2 }]);
+    decoder.finish();
+  });
+
   it("rejects truncated frames at EOF", () => {
     const decoder = new MachineFrameDecoder();
     decoder.feed(Buffer.from("Content-Length: 10\r\n\r\n{}", "ascii"));

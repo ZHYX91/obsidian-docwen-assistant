@@ -35,7 +35,6 @@ export const MINIMUM_DOCWEN_VERSION = "0.17.0";
 const DEFAULT_QUERY_TIMEOUT_MS = 30_000;
 const STDERR_LIMIT_BYTES = 256 * 1024;
 const MAX_QUEUED_MESSAGES = 64;
-const MAX_DEFERRED_MESSAGES = 64;
 const CANCELLATION_GRACE_MS = 2_000;
 const CLEAN_CLOSE_GRACE_MS = 5_000;
 const FORCE_KILL_WAIT_MS = 2_000;
@@ -199,24 +198,9 @@ class MessageQueue {
 }
 
 function canReplaceProgress(previous: JsonObject, current: JsonObject): boolean {
-  const progress = (message: JsonObject): JsonObject | null => {
-    if (message.jsonrpc !== "2.0" || message.method !== "task/progress"
-      || Object.keys(message).some((key) => !["jsonrpc", "method", "params"].includes(key))
-      || !isJsonObject(message.params)) return null;
-    const params = message.params;
-    if (Object.keys(params).some((key) => !["task_id", "sequence", "phase", "completed", "total", "unit", "message"].includes(key))
-      || typeof params.task_id !== "string" || !params.task_id
-      || !Number.isSafeInteger(params.sequence) || (params.sequence as number) < 1
-      || params.phase !== "conversion" || params.total !== 100 || params.unit !== "percent"
-      || !Number.isInteger(params.completed) || (params.completed as number) < 0 || (params.completed as number) > 100
-      || (params.message !== undefined && (typeof params.message !== "string" || params.message.length < 1 || params.message.length > 31))) return null;
-    return params;
-  };
-  const left = progress(previous);
-  const right = progress(current);
-  return left !== null && right !== null && left.task_id === right.task_id
-    && (right.sequence as number) > (left.sequence as number)
-    && (right.completed as number) >= (left.completed as number);
+  if (previous.method !== "task/progress" || current.method !== "task/progress") return false;
+  // Both frames already belong to the same accepted task and have increasing sequence numbers.
+  return (current.params as { completed: number }).completed >= (previous.params as { completed: number }).completed;
 }
 
 class MachineSession {
@@ -224,7 +208,10 @@ class MachineSession {
   private readonly ownershipQueue = new MessageQueue();
   private windowsOwnerReady = false;
   private readonly decoder = new MachineFrameDecoder();
-  private readonly deferred: JsonObject[] = [];
+  private pendingReply?: { id: number; method: string };
+  private pendingCancel?: { id: number; taskId: string };
+  private activeTaskId?: string;
+  private lastSequence = 0;
   private readonly stderr: Buffer[] = [];
   private stderrBytes = 0;
   private nextRequestId = 0;
@@ -301,7 +288,7 @@ class MachineSession {
     });
     this.child.stdout.on("data", (chunk: Buffer) => {
       try {
-        for (const message of this.decoder.feed(Buffer.from(chunk))) this.queue.push(message);
+        for (const message of this.decoder.feed(chunk)) this.receive(message);
       } catch (error) {
         this.fail(protocolError(error));
         void this.terminate().catch(() => undefined);
@@ -411,44 +398,94 @@ class MachineSession {
   }
 
   async rpc(method: string, params: JsonObject): Promise<JsonObject> {
+    if (this.pendingReply) throw protocolError("a Machine request is already pending");
     const id = ++this.nextRequestId;
+    this.pendingReply = { id, method };
     this.send({ jsonrpc: "2.0", id, method, params });
-    while (true) {
-      const message = await this.queue.next();
-      if (message.id !== id) {
-        if (this.deferred.length >= MAX_DEFERRED_MESSAGES) {
-          throw outputLimitError("DocWen Machine Protocol deferred too many messages.");
-        }
-        this.deferred.push(message);
-        continue;
+    const message = await this.queue.next();
+    if (isJsonObject(message.error)) {
+      const remote = remoteRpcError(message.error);
+      if (method === "initialize" && remote.code === "incompatible_protocol") {
+        throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
+          ...remote.details,
+          phase: "initialize",
+          incompatibility: "machine_protocol",
+          sentProtocol: { ...MACHINE_PROTOCOL },
+          client: { name: CLIENT_NAME, version: CLIENT_VERSION },
+        });
       }
-      if (message.jsonrpc !== "2.0") throw protocolError(`invalid JSON-RPC response for ${method}`);
-      if (isJsonObject(message.error)) {
-        const remote = remoteRpcError(message.error);
-        if (method === "initialize" && remote.code === "incompatible_protocol") {
-          throw new LocalCliError("cli_incompatible_version", "DocWen Machine Protocol is incompatible.", {
-            ...remote.details,
-            phase: "initialize",
-            incompatibility: "machine_protocol",
-            sentProtocol: { ...MACHINE_PROTOCOL },
-            client: { name: CLIENT_NAME, version: CLIENT_VERSION },
-          });
-        }
-        throw remote;
-      }
-      return requiredObject(message.result, `${method}.result`);
+      throw remote;
     }
+    return requiredObject(message.result, `${method}.result`);
+  }
+
+  private receive(message: JsonObject): void {
+    if (message.jsonrpc !== "2.0") throw protocolError("invalid JSON-RPC envelope");
+    if ("id" in message) {
+      if (!this.receiveResponse(message)) return;
+    } else {
+      this.receiveNotification(message);
+    }
+    this.queue.push(message);
+  }
+
+  /** Consume a cancellation acknowledgement locally; forward ordinary replies to the RPC caller. */
+  private receiveResponse(message: JsonObject): boolean {
+    if (Object.keys(message).some(key => !["id", "jsonrpc", "result", "error"].includes(key))
+      || ("error" in message) === ("result" in message)) throw protocolError("invalid JSON-RPC response");
+
+    if (this.pendingCancel && message.id === this.pendingCancel.id) {
+      const ack = requiredObject(message.result, "task/cancel.result");
+      if (ack.task_id !== this.pendingCancel.taskId
+        || (ack.state !== "cancellation_requested" && ack.state !== "already_terminal" && ack.state !== "not_found")
+        || Object.keys(ack).some(key => key !== "task_id" && key !== "state")) {
+        throw protocolError("invalid cancellation acknowledgement");
+      }
+      this.pendingCancel = undefined;
+      return false;
+    }
+    const request = this.pendingReply;
+    if (!request || message.id !== request.id) throw protocolError("unexpected JSON-RPC response");
+    this.pendingReply = undefined;
+    if (request.method === "task/execute" && isJsonObject(message.result) && message.result.state === "accepted") {
+      this.activeTaskId = requiredString(message.result.task_id, "task/execute.task_id");
+    }
+    return true;
+  }
+
+  private receiveNotification(message: JsonObject): void {
+    if (!this.activeTaskId || Object.keys(message).some(key => !["jsonrpc", "method", "params"].includes(key))) {
+      throw protocolError("unexpected task notification");
+    }
+    const params = requiredObject(message.params, "notification.params");
+    if (params.task_id !== this.activeTaskId) throw protocolError("notification task id does not match acceptance");
+    const sequence = requiredInteger(params.sequence, "notification.sequence");
+    if (sequence <= this.lastSequence) throw protocolError("notification sequence is not strictly monotonic");
+    this.lastSequence = sequence;
+    if (message.method === "task/progress") {
+      if (params.phase !== "conversion" || params.total !== 100 || params.unit !== "percent"
+        || typeof params.completed !== "number" || !Number.isInteger(params.completed) || params.completed < 0 || params.completed > 100
+        || (params.message !== undefined && (typeof params.message !== "string" || !/^[\s\S]{1,31}$/u.test(params.message)))
+        || Object.keys(params).some(key => !["task_id", "sequence", "phase", "completed", "total", "unit", "message"].includes(key))) {
+        throw protocolError("invalid task progress");
+      }
+      return;
+    }
+    if (message.method !== "task/failed" && message.method !== "task/cancelled" && message.method !== "task/completed") {
+      throw protocolError("unexpected Machine notification");
+    }
+    this.activeTaskId = undefined;
   }
 
   nextMessage(): Promise<JsonObject> {
-    const message = this.deferred.shift();
-    return message ? Promise.resolve(message) : this.queue.next();
+    return this.queue.next();
   }
 
   requestCancellation(taskId: string, failure: Error): void {
+    this.pendingCancel = { id: ++this.nextRequestId, taskId };
     this.send({
       jsonrpc: "2.0",
-      id: ++this.nextRequestId,
+      id: this.pendingCancel.id,
       method: "task/cancel",
       params: { task_id: taskId },
     }, failure);
@@ -476,7 +513,7 @@ class MachineSession {
     if (this.linuxOwnership) await this.confirmLinuxOwnership();
     const terminalFailure = this.queue.failureError();
     if (terminalFailure) throw terminalFailure;
-    if (this.queue.drain().length > 0 || this.deferred.length > 0) {
+    if (this.queue.drain().length > 0) {
       throw protocolError("unexpected messages after the operation completed");
     }
     if (this.windowsOwned && code === WINDOWS_MACHINE_OWNER_FAILURE_EXIT) {
@@ -645,16 +682,9 @@ export class DocWenMachineClient {
       const taskId = requiredString(acceptance.task_id, "task/execute.task_id");
       if (acceptance.state !== "accepted") throw protocolError("task/execute did not accept the task");
       setTaskId(taskId);
-      let lastSequence = -1;
       while (true) {
         const message = await session.nextMessage();
-        if (message.id !== undefined) continue;
-        if (message.jsonrpc !== "2.0") throw protocolError("invalid JSON-RPC task notification");
-        const params = requiredObject(message.params, "terminal.params");
-        if (params.task_id !== taskId) throw protocolError("terminal task id does not match acceptance");
-        const sequence = requiredInteger(params.sequence, "notification.sequence");
-        if (sequence <= lastSequence) throw protocolError("notification sequence is not strictly monotonic");
-        lastSequence = sequence;
+        const params = requiredObject(message.params, "notification.params");
         if (message.method === "task/progress") continue;
         if (message.method === "task/failed") throw remoteTaskError(params);
         if (message.method === "task/cancelled") {
@@ -672,11 +702,16 @@ export class DocWenMachineClient {
             if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen task was cancelled.");
           },
         );
+        const diagnostics = jsonObjectArray(params.diagnostics, "terminal.diagnostics");
+        const artifactIds = new Set(bundle.artifacts.map(artifact => artifact.artifact_id));
+        if (diagnostics.some(item => item.artifact_id !== undefined && !artifactIds.has(requiredString(item.artifact_id, "diagnostic.artifact_id")))) {
+          throw protocolError("terminal diagnostic refers to an unknown artifact");
+        }
         return {
           taskId,
           plan,
           bundle,
-          diagnostics: jsonObjectArray(params.diagnostics, "terminal.diagnostics"),
+          diagnostics,
           metrics: requiredObject(params.metrics, "terminal.metrics"),
         };
       }
