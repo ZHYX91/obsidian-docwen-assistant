@@ -56,7 +56,7 @@
 1. على Windows، ثبّت إصدارًا متوافقًا من DocWen 0.23.0 أو أحدث من [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)، أو فك ضغط حزمة Windows من [إصدارات DocWen](https://github.com/ZHYX91/docwen/releases). على Linux x64، فك ضغط حزمة Linux من الصفحة نفسها بالكامل.
 2. ثبّت DocWen Assistant من Community Plugins. للتثبيت اليدوي، نزّل `docwen-assistant-x.y.z.zip` من [إصدارات الإضافة](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) وانسخ `main.js` و`manifest.json` و`styles.css` إلى `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. أعد تحميل Community Plugins وفعّل DocWen Assistant.
-4. يمكن اكتشاف نسخة Windows من Store تلقائيًا. لنسخة Windows المحمولة أو Linux، افتح **الإعدادات ← DocWen Assistant ← عام**، واختر الاتصال اليدوي ثم المجلد المفكوك أو الملف التنفيذي.
+4. يمكن اكتشاف نسخة Windows من Store تلقائيًا. لنسخة Windows المحمولة أو Linux، افتح **الإعدادات ← DocWen Assistant ← عام**، واختر **اختيار التثبيت يدويًا** ثم المجلد المفكوك أو الملف التنفيذي.
 
 ### الاحتفاظ بالإعدادات عند التحديث
 

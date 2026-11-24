@@ -128,7 +128,7 @@ describe("ActionRunner", () => {
       { severity: "warning", code: "C:\\private\\note.md", message: "private text" },
       { severity: "error", code: "conversion.partial", message: "private text" },
     ]);
-    expect(state.notices[0]).toContain("2 warning(s), 1 error(s)");
+    expect(state.notices[0]).toContain("Warnings: 2. Errors: 1.");
     expect(state.notices[0]).toContain("cleanup");
     state.noticeActions[0]();
     const details = allText(state.modals[0].contentEl);

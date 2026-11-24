@@ -52,7 +52,7 @@ Store のインストールがこれらの要件を満たさない場合は、�
 1. Windows では [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) から互換性のある DocWen 0.23.0 以降をインストールするか、[DocWen Releases](https://github.com/ZHYX91/docwen/releases) の Windows パッケージを完全に展開します。Linux x64 では同じページの Linux パッケージを展開します。
 2. Community Plugins から DocWen Assistant をインストールします。手動の場合は[プラグインのリリース](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)から `docwen-assistant-x.y.z.zip` を取得し、`main.js`、`manifest.json`、`styles.css` を `<Vault>/.obsidian/plugins/docwen-assistant/` にコピーします。
 3. Community Plugins を再読み込みし、DocWen Assistant を有効にします。
-4. Windows の Store 版は自動検出できます。Windows ポータブル版と Linux では **設定 → DocWen Assistant → 一般**で手動接続を選び、展開したフォルダーまたは実行ファイルを指定します。
+4. Windows の Store 版は自動検出できます。Windows ポータブル版と Linux では **設定 → DocWen Assistant → 一般**で**インストール先を手動で選択**を選び、展開したフォルダーまたは実行ファイルを指定します。
 
 ### 更新時に設定を残す
 
