@@ -387,6 +387,50 @@ describe("settings surface lifecycle", () => {
     expect(check.disabled).toBe(true);
   });
 
+  it.each([
+    ["runDoctorCheck", "Check", "Launch DocWen"],
+    ["openDocWenApplication", "Launch DocWen", "Check"],
+  ] as const)("reflects pending %s and its result in a remounted connection card", async (action, label, otherLabel) => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
+    const connected = { state: "connected", mode: "automatic", productVersion: "0.17.0" };
+    plugin.getGuiConnectionStatus.mockReturnValue(connected);
+    plugin.getDocWenConnectionStatus.mockReturnValue(connected);
+    let finish!: () => void;
+    plugin[action].mockImplementation(() => new Promise<undefined>((resolve) => { finish = () => resolve(undefined); }));
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const latestButton = (name: string) => buttons.filter((button) => button.label === name).at(-1)!;
+    const latestRow = () => settings.filter((row) => row.nameEl.textContent === "DocWen connection").at(-1)!;
+    const oldButton = latestButton(label);
+    const oldRow = latestRow();
+    oldButton.click?.();
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    tabs[3].dispatch("click");
+    tabs[0].dispatch("click");
+
+    const current = latestButton(label);
+    expect(current).not.toBe(oldButton);
+    expect(current.disabled).toBe(true);
+    expect(current.buttonEl.attributes.get("aria-busy")).toBe("true");
+    expect(latestButton(otherLabel).disabled).toBe(false);
+    current.click?.();
+    oldButton.click?.();
+    expect(plugin[action]).toHaveBeenCalledOnce();
+
+    const failed = { state: "error", mode: "automatic", code: "cli_gui_control_failed" };
+    const channel = action === "openDocWenApplication" ? 0 : 1;
+    const monitor = channel === 0 ? plugin.getGuiConnectionStatus : plugin.getDocWenConnectionStatus;
+    monitor.mockReturnValue(failed);
+    finish();
+    await vi.waitFor(() => expect(current.disabled).toBe(false));
+    expect(current.buttonEl.attributes.get("aria-busy")).toBe("false");
+    expect(latestRow().descEl.children[channel].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(oldButton.disabled).toBe(true);
+    expect(oldRow.descEl.children[channel].textContent).toContain("0.17.0");
+  });
+
   it("keeps GUI failure visible when background integration succeeds", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
