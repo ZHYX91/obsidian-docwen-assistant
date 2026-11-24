@@ -53,7 +53,7 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       const folderTargetPath = targetFile === abstractFile ? null : targetFile.path;
       const chooseActions = async (): Promise<void> => {
         if (!isActive()) return;
-        await actions.runner.run({ key: `file-menu:${filePath}`, kind: "choose-action" }, "noticeCapabilityFailed", async (lease) => {
+        const action = await actions.runner.run({ key: `file-menu:${filePath}`, kind: "choose-action" }, "noticeCapabilityFailed", async (lease) => {
           showNotice(t("contextMenuLoading"));
           await actions.capabilities.preload(filePath);
           if (!lease.isCurrent() || !isActive()) return;
@@ -77,8 +77,9 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
             t("contextMenuChooseAction"),
             lease.signal,
           );
-          if (chosen && lease.isCurrent() && isActive()) await available[Number(chosen.id)]?.action?.();
+          return chosen ? available[Number(chosen.id)]?.action : undefined;
         });
+        if (action && isActive()) await action();
       };
       let usedFallback = false;
 

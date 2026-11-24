@@ -6,7 +6,7 @@ const menuState = vi.hoisted(() => ({
   notices: [] as string[],
 }));
 
-vi.mock("obsidian", () => ({}));
+vi.mock("obsidian", () => ({ Modal: class {} }));
 vi.mock("../src/host/notices", () => ({ showNotice: (message: string) => menuState.notices.push(message) }));
 vi.mock("../src/utils/suggest-modal", () => ({
   pickItem: (_app: unknown, items: Array<{ id: string; label: string }>, _placeholder: string, signal: AbortSignal) =>
@@ -131,11 +131,16 @@ describe("file menu capability states", () => {
     let cached: unknown = null;
     let finish!: () => void;
     const loading = new Promise<void>((resolve) => { finish = resolve; });
-    const { handler, actions } = await register({
+    const { handler, actions, operations } = await register({
       peek: () => cached,
       preload: () => loading,
       findConversionRoute: (_capability: unknown, target: string) => target === "md" ? {} : null,
     });
+    const snapshots: string[][] = [];
+    operations.subscribe(({ operations: active }) => snapshots.push(active.map(({ kind }) => kind)));
+    actions.exports.toMarkdown.mockImplementation(() => actions.runner.run(
+      { key: "export:note.docx", kind: "export" }, "noticeExportFailed", async () => undefined,
+    ));
     const menu = new FakeMenu();
     handler(menu, { path: "note.docx" });
     menu.items[0].submenu!.items[0].click?.();
@@ -145,8 +150,8 @@ describe("file menu capability states", () => {
     await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
     expect(menuState.pickers[0].items.map((item) => item.label)).toEqual(["contextMenuConvertToMd"]);
     menuState.pickers[0].choose({ id: "0" });
-    await Promise.resolve();
-    expect(actions.exports.toMarkdown).toHaveBeenCalledWith({ path: "note.docx" });
+    await vi.waitFor(() => expect(actions.exports.toMarkdown).toHaveBeenCalledWith({ path: "note.docx" }));
+    expect(snapshots).toEqual([[], ["choose-action"], [], ["export"], []]);
   });
 
   it.each(["empty", "error", "unload"])("keeps %s capability outcomes from producing fallback operations", async (outcome) => {
@@ -299,6 +304,33 @@ describe("file menu capability states", () => {
     expect(actions.exports.toMarkdown).not.toHaveBeenCalled();
   });
 
+  it.each(["cancel", "replace", "unload"])("checks the selected action at handoff (%s)", async (change) => {
+    let loaded = false;
+    const { handler, actions, operations, files, dispose } = await register({
+      peek: () => loaded ? { inspection: { supportedActions: ["convert"] } } : null,
+      preload: async () => undefined,
+      findConversionRoute: (_capability: unknown, target: string) => target === "md" ? {} : null,
+    });
+    const menu = new FakeMenu();
+    const file = { path: "Draft.docx" };
+    handler(menu, file);
+    loaded = true;
+    menu.items[0].submenu!.items[0].click!();
+    await vi.waitFor(() => expect(menuState.pickers).toHaveLength(1));
+    // Model a host change exactly when the chooser gives up the status bar.
+    const unsubscribe = operations.subscribe(({ operations: active }) => {
+      if (active.length > 0) return;
+      unsubscribe();
+      if (change === "replace") files.set(file.path, { ...file });
+      if (change === "unload") dispose();
+    });
+    if (change === "cancel") operations.cancelAll();
+    menuState.pickers[0].choose({ id: "0" });
+    await vi.waitFor(() => expect(operations.hasPendingWork).toBe(false));
+    expect(actions.exports.toMarkdown).not.toHaveBeenCalled();
+    expect(menuState.notices.includes("contextMenuTargetChanged")).toBe(change === "replace");
+  });
+
   it("labels the Markdown file inferred from a folder context", async () => {
     menuState.target = { path: "Project/Project.md" };
     const { handler } = await register({ peek: () => null, preload: vi.fn() });
@@ -345,7 +377,9 @@ async function register(
   let handler!: (menu: FakeMenu, file: { path: string }) => void;
   const files = new Map<string, { path: string }>();
   let dispose!: () => void;
-  const controller = new AbortController();
+  const { ActionRunner } = await import("../src/actions/action-runner");
+  const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+  const operations = new OperationCoordinator();
   const plugin = {
     app: {
       workspace: {
@@ -361,13 +395,10 @@ async function register(
       vault: { getFileByPath: (path: string) => files.get(path) ?? null },
     },
     registerEvent: () => undefined,
-    register: (cleanup: () => void) => { dispose = () => { controller.abort(); cleanup(); }; },
+    register: (cleanup: () => void) => { dispose = () => { operations.dispose(); cleanup(); }; },
   };
   const actions = {
-    runner: {
-      run: async (_request: unknown, _failure: unknown, work: (lease: { signal: AbortSignal; isCurrent(): boolean }) => Promise<unknown>) =>
-        work({ signal: controller.signal, isCurrent: () => !controller.signal.aborted }),
-    },
+    runner: new ActionRunner(plugin.app as never, operations),
     exports: {
       toMarkdown: vi.fn().mockResolvedValue(undefined),
       toDocx: vi.fn().mockResolvedValue(undefined),
@@ -385,7 +416,7 @@ async function register(
     presentCapabilityFailure,
   };
   registerFileMenu(plugin as never, actions as never);
-  return { actions, handler, dispose, files };
+  return { actions, handler, dispose, files, operations };
 }
 
 function expectValidSections(menu: FakeMenu): void {
