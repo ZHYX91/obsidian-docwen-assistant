@@ -15,7 +15,7 @@ export interface SettingsTabsOptions {
 
 /** Accessible top-tab navigation independent from the settings-row renderer. */
 export class SettingsTabs {
-  private activeIndex: number;
+  private activeIndex = -1;
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly instanceId = ++settingsTabsInstance;
   private readonly panelElementId = `docwen-settings-panel-${this.instanceId}`;
@@ -25,7 +25,6 @@ export class SettingsTabs {
 
   constructor(private readonly options: SettingsTabsOptions) {
     const initialIndex = options.pages.findIndex((page) => page.id === options.initialPageId);
-    this.activeIndex = initialIndex < 0 ? 0 : initialIndex;
 
     const rootEl = options.containerEl.createDiv({ cls: "docwen-settings-root" });
     // The plugin language may differ from Obsidian's in either direction.
@@ -49,7 +48,7 @@ export class SettingsTabs {
 
     options.pages.forEach((page, index) => this.createTab(page, index));
     const next = createScrollButton(bar, "next", t("settingsNextTabs"));
-    this.activate(this.activeIndex, false);
+    this.activate(initialIndex < 0 ? 0 : initialIndex, false);
     this.overflowCleanup = observeTabOverflow(bar, this.tabListEl, previous, next);
   }
 
@@ -94,13 +93,16 @@ export class SettingsTabs {
 
   private activate(index: number, moveFocus: boolean): void {
     if (this.options.pages.length === 0) return;
-    this.activeIndex = (index + this.options.pages.length) % this.options.pages.length;
-    this.buttons.forEach((button, buttonIndex) => {
-      const selected = buttonIndex === this.activeIndex;
-      button.setAttribute("aria-selected", String(selected));
-      button.tabIndex = selected ? 0 : -1;
-    });
-    this.renderActivePage();
+    const nextIndex = (index + this.options.pages.length) % this.options.pages.length;
+    if (nextIndex !== this.activeIndex) {
+      this.activeIndex = nextIndex;
+      this.buttons.forEach((button, buttonIndex) => {
+        const selected = buttonIndex === nextIndex;
+        button.setAttribute("aria-selected", String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+      this.renderActivePage();
+    }
 
     const button = this.buttons[this.activeIndex];
     revealSettingsTab(this.tabListEl, button);
