@@ -47,9 +47,9 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## 固定 DocWen 包
 
-使用符合[平台版本要求](cli-integration.md)的完整 Windows 或 Linux 软件包，运行 `npm run acceptance:docwen-package`。验收脚本核对 CLI 可执行文件的绝对路径、字节数和 SHA-256，再在 Machine 初始化时核对确切的稳定版本号。[软件包验收说明](../acceptance/README.md)列出了需要设置的四个环境变量。
+使用符合[平台版本要求](cli-integration.md)的完整 Windows 或 Linux x64 软件包，运行 `npm run acceptance:docwen-package`。验收脚本核对 CLI 可执行文件的绝对路径、字节数和 SHA-256，再在 Machine 初始化时核对确切的稳定版本号。[软件包验收说明](../acceptance/README.md)列出了需要设置的四个环境变量。
 
-软件包用例检查 Machine 健康状态、文件准入，以及 Markdown 转 Word 能力声明的 `source` 和 `linked_resource` 输入。实际转换覆盖 1 至 9 级标题、脚注与尾注、嵌入图片的原始字节、Unicode 路径、单个 DOCX 的发布、Markdown 文档节点，以及连续导出到同一父目录。Markdown 往返用例还会检查业务输出列表是否排除了节点清单。常规源码测试会跳过这些软件包用例。显式运行软件包验收时，缺少候选信息或核对不一致都会导致验收失败。
+软件包用例检查 Machine 健康状态、文件准入，以及 Markdown 转 Word 能力声明的 `source` 和 `linked_resource` 输入。实际转换覆盖 7 至 9 级扩展标题、脚注与尾注、嵌入图片的原始字节、Unicode 路径、单个 DOCX 的发布、Markdown 文档节点，以及连续导出到同一父目录。Markdown 往返用例还会检查业务输出列表是否排除了节点清单。常规源码测试会跳过这些软件包用例。显式运行软件包验收时，缺少候选信息或核对不一致都会导致验收失败。
 
 ## Obsidian 宿主
 

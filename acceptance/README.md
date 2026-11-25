@@ -8,7 +8,7 @@ checks, product observations, and manual visual conclusions as separate evidence
 The acceptance matrix uses two packaged-DocWen evidence layers and keeps their claims separate:
 
 1. **Local pre-push candidate.** Before publication, run `npm run acceptance:docwen-package` against
-   the CLI in the full package (`DocWenCLI.exe` on Windows, `DocWenCLI` on Linux). Set
+   the CLI in the full package (`DocWenCLI.exe` on Windows, `DocWenCLI` on Linux x64). Set
    `DOCWEN_TEST_BINARY` to its absolute path and set
    `DOCWEN_TEST_SHA256`, `DOCWEN_TEST_SIZE_BYTES`, and `DOCWEN_TEST_VERSION` to the candidate's exact
    immutable identity. The gate refuses missing inputs, a relative/non-file/link/wrong-name path,

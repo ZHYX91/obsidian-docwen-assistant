@@ -48,9 +48,9 @@ Local diagnostic commands expose their test scope explicitly:
 
 ## Fixed DocWen package
 
-Use `npm run acceptance:docwen-package` with the CLI in a full Windows or Linux package that meets the [platform requirements](cli-integration.md). The runner checks the executable's absolute path, byte size and SHA-256, then requires its exact stable product version during Machine initialization. The [package acceptance instructions](../acceptance/README.md) list the four required environment variables.
+Use `npm run acceptance:docwen-package` with the CLI in a full Windows or Linux x64 package that meets the [platform requirements](cli-integration.md). The runner checks the executable's absolute path, byte size and SHA-256, then requires its exact stable product version during Machine initialization. The [package acceptance instructions](../acceptance/README.md) list the four required environment variables.
 
-The package suite checks Machine health, file admission and the Markdown-to-Word capability's `source` and `linked_resource` slots. Real conversions cover heading levels 1–9, footnotes and endnotes, the exact embedded image bytes, Unicode paths, single DOCX publication, Markdown document nodes and repeated exports to the same parent. The Markdown round trip also checks that the node manifest stays out of the business output list. The ordinary source suite skips these package cases. When explicitly invoked, the package runner rejects missing or mismatched candidate details.
+The package suite checks Machine health, file admission and the Markdown-to-Word capability's `source` and `linked_resource` slots. Real conversions check extended heading levels 7–9, footnotes and endnotes, the exact embedded image bytes, Unicode paths, single DOCX publication, Markdown document nodes and repeated exports to the same parent. The Markdown round trip also checks that the node manifest stays out of the business output list. The ordinary source suite skips these package cases. When explicitly invoked, the package runner rejects missing or mismatched candidate details.
 
 ## Obsidian host
 
