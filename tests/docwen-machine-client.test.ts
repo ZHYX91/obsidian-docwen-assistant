@@ -10,6 +10,7 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMachineFrame, MachineFrameDecoder, type JsonObject } from "../src/docwen/machine-framing";
+import { DocWenProcessCoordinator } from "../src/docwen/process-coordinator";
 
 const { spawnMock, serverState } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
@@ -506,6 +507,31 @@ describe("DocWenMachineClient", () => {
     else await expect(operation).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(serverState.taskAccepted).toBe(false);
     expect(serverState.requests.map((request) => request.method)).toEqual(["initialize", "health/check"]);
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
+  });
+
+  it("uses the remaining Machine deadline after waiting for another process", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    const coordinator = new DocWenProcessCoordinator();
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const owner = coordinator.run(() => held, [], 1_000);
+    serverState.holdHealth = true;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US", undefined, coordinator);
+    const failure = vi.fn();
+    const query = client.query("health/check", {}, undefined, 1_000).catch(failure);
+    await vi.advanceTimersByTimeAsync(900);
+    expect(spawnMock).not.toHaveBeenCalled();
+    release();
+    await owner;
+    await vi.advanceTimersByTimeAsync(99);
+    expect(serverState.requests.map(request => request.method)).toEqual(["initialize", "health/check"]);
+    expect(failure).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(failure).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      code: "cli_timeout", details: { timeoutMs: 1_000 },
+    }));
+    await query;
     expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
