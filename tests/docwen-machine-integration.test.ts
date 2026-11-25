@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
@@ -154,7 +154,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     });
     const docx = generated.output;
     expect(generated.outputs).toEqual([docx]);
-    expect(dirname(docx)).toBe(caseRoot);
+    expect(dirname(docx)).toBe(await realpath(caseRoot));
     expect(generated.resultDirectory).toBeUndefined();
     expect(await readFile(source, "utf8")).toBe(authored);
 
@@ -180,7 +180,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       markdownExtensions: { output: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
     });
     const markdown = roundtrip.output;
-    expect(dirname(dirname(markdown))).toBe(markdownParent);
+    expect(dirname(dirname(markdown))).toBe(await realpath(markdownParent));
     expect(roundtrip.outputs).toContain(markdown);
     expect(roundtrip.outputs.some((output) => basename(output) === "docwen-node.json")).toBe(false);
     const secondParent = join(caseRoot, "second");
@@ -193,7 +193,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       capabilityId: "convert.docx.to_markdown",
     });
     expect(second.outputs).toEqual([second.output]);
-    expect(dirname(dirname(second.output))).toBe(secondParent);
+    expect(dirname(dirname(second.output))).toBe(await realpath(secondParent));
 
     const restored = await readFile(markdown, "utf8");
     expect(restored).toContain("####### Level seven");
@@ -263,7 +263,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     const generated = completed.value;
     const output = generated.output;
     expect(generated.outputs).toEqual([output]);
-    expect(dirname(output)).toBe(root);
+    expect(dirname(output)).toBe(await realpath(root));
     expect(generated.resultDirectory).toBeUndefined();
     const outputBytes = await readFile(output);
     const archive = readStrictZip(outputBytes);
