@@ -48,7 +48,9 @@ Local diagnostic commands expose their test scope explicitly:
 
 ## Fixed DocWen package
 
-`npm run acceptance:docwen-package` accepts only a full DocWen 0.23.0-or-later Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, single-file DOCX publication directly into the selected parent, complete Markdown `docwen.document_node.v1` publication, publication without node JSON and exclusion of linked images from business output counts, and successive exports into a chosen parent, and DocWen Bundle v3 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.
+Use `npm run acceptance:docwen-package` with the CLI in a full Windows or Linux package that meets the [platform requirements](cli-integration.md). The runner checks the executable's absolute path, byte size and SHA-256, then requires its exact stable product version during Machine initialization. The [package acceptance instructions](../acceptance/README.md) list the four required environment variables.
+
+The package suite checks Machine health, file admission and the Markdown-to-Word capability's `source` and `linked_resource` slots. Real conversions cover heading levels 1–9, footnotes and endnotes, the exact embedded image bytes, Unicode paths, single DOCX publication, Markdown document nodes and repeated exports to the same parent. The Markdown round trip also checks that the node manifest stays out of the business output list. The ordinary source suite skips these package cases. When explicitly invoked, the package runner rejects missing or mismatched candidate details.
 
 ## Obsidian host
 
