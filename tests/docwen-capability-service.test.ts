@@ -435,17 +435,22 @@ describe("DocWenCapabilityService", () => {
     expect(inspect).toHaveBeenCalledTimes(3);
   });
 
-  it("closing the sidebar ignores shared results without aborting navigation", async () => {
-    const inspect = vi.fn().mockResolvedValue(inspection());
+  it("closing the sidebar releases its waiter while navigation is still inspecting", async () => {
+    const pending = deferred<ReturnType<typeof inspection>>();
+    const inspect = vi.fn(() => pending.promise);
     const service = new DocWenCapabilityService({
       inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
     } as unknown as DocWenClient);
     const controller = new AbortController();
     const navigation = service.preload("A.md");
-    const preview = service.previewFile("A.md", controller.signal, false);
+    const failure = vi.fn();
+    const preview = service.previewFile("A.md", controller.signal, false).catch(failure);
     controller.abort();
-    await expect(preview).rejects.toMatchObject({ name: "AbortError" });
-    await navigation;
+    await new Promise<void>(resolve => setImmediate(resolve));
+    expect(failure).toHaveBeenCalledExactlyOnceWith(controller.signal.reason);
+    expect(service.peek("A.md")).toBeNull();
+    pending.resolve(inspection());
+    await Promise.all([preview, navigation]);
     expect(service.peek("A.md")).toHaveProperty("inspection");
     expect(inspect).toHaveBeenCalledTimes(1);
   });

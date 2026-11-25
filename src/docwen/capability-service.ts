@@ -216,7 +216,18 @@ export class DocWenCapabilityService {
     signal.throwIfAborted();
     const pending = this.preloadRequests.get(filePath);
     if (pending) {
-      await pending.promise;
+      // Closing the panel releases this caller. Navigation still owns the inspection and its cache entry.
+      let abort!: () => void;
+      const cancelled = new Promise<never>((_, reject) => {
+        abort = () => reject(signal.reason instanceof Error ? signal.reason
+          : new LocalCliError("cli_cancelled", "Sidebar discovery was cancelled."));
+        signal.addEventListener("abort", abort, { once: true });
+      });
+      try {
+        await Promise.race([pending.promise, cancelled]);
+      } finally {
+        signal.removeEventListener("abort", abort);
+      }
       signal.throwIfAborted();
       pending.controller.signal.throwIfAborted();
     }
