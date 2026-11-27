@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
+import { sha256File } from "../docwen/output-integrity";
 import { constants } from "node:fs";
-import { copyFile, readFile } from "node:fs/promises";
+import { copyFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { bindAcceptedDetectedSource } from "../docwen/capability-service";
 import type { FileInspection, RuntimeRoute, TaskInput } from "../docwen/client";
@@ -9,7 +9,7 @@ import { VaultWriteError } from "./vault-write-transaction";
 
 export async function materializeDetectedSource(
   sourceInput: TaskInput, contentSha256: string, inspection: FileInspection, route: RuntimeRoute,
-  inspect: (input: TaskInput) => Promise<FileInspection>, assertCurrent: () => void | Promise<void>,
+  inspect: (input: TaskInput) => Promise<FileInspection>, assertCurrent: () => void | Promise<void>, signal: AbortSignal,
 ): Promise<TaskInput> {
   const bound = bindAcceptedDetectedSource(sourceInput, contentSha256, inspection, route);
   const format = inspection.detectedFormat;
@@ -25,7 +25,7 @@ export async function materializeDetectedSource(
   await assertCurrent();
   const acceptedPath = join(dirname(sourceInput.path), `accepted-source.${format}`);
   await copyFile(sourceInput.path, acceptedPath, constants.COPYFILE_EXCL);
-  if (createHash("sha256").update(await readFile(acceptedPath)).digest("hex") !== contentSha256) {
+  if (await sha256File(acceptedPath, inspection.sizeBytes, signal) !== contentSha256) {
     throw new VaultWriteError("vault_input_invalid", "The accepted snapshot bytes changed.");
   }
   const accepted = { ...bound, path: acceptedPath };

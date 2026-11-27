@@ -530,12 +530,6 @@ async function taskRequest(
   for (const input of inputs) {
     throwIfAborted(signal);
     const inspection = await inspectInputFile(input);
-    if (inspection.identity.size > INPUT_HANDLE_LIMITS.fileBytes) {
-      throw inputLimitError("DocWen input exceeds the per-file byte limit.", {
-        actual: inspection.identity.size,
-        limit: INPUT_HANDLE_LIMITS.fileBytes,
-      });
-    }
     if (totalBytes > INPUT_HANDLE_LIMITS.totalBytes - inspection.identity.size) {
       throw inputLimitError("DocWen task inputs exceed the total byte limit.", {
         limit: INPUT_HANDLE_LIMITS.totalBytes,
@@ -564,6 +558,12 @@ async function taskRequest(
   };
 }
 
+export function assertInputFileSize(bytes: number): void {
+  if (bytes > INPUT_HANDLE_LIMITS.fileBytes) {
+    throw inputLimitError("DocWen input exceeds the per-file byte limit.", { actual: bytes, limit: INPUT_HANDLE_LIMITS.fileBytes });
+  }
+}
+
 type InputFileInspection = {
   absolutePath: string;
   canonicalPath: string;
@@ -579,12 +579,7 @@ async function inspectInputFile(input: TaskInput): Promise<InputFileInspection> 
       throw new LocalCliError("cli_input_invalid", "DocWen input must be a regular file.", { filePath: absolutePath });
     }
     const identity = fileIdentity(fileInfo);
-    if (identity.size > INPUT_HANDLE_LIMITS.fileBytes) {
-      throw inputLimitError("DocWen input exceeds the per-file byte limit.", {
-        actual: identity.size,
-        limit: INPUT_HANDLE_LIMITS.fileBytes,
-      });
-    }
+    assertInputFileSize(identity.size);
     return {
       absolutePath,
       canonicalPath: await realpath(absolutePath),

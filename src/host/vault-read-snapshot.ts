@@ -1,3 +1,4 @@
+import { readEditorInput, readVaultInput } from "./vault-input";
 import {
   buildDeclaredMarkdownInputs,
   logicalPathFor,
@@ -98,7 +99,7 @@ export class VaultReadSnapshot {
       throw new VaultWriteError("vault_target_changed", "The Markdown editor belongs to a different file object.");
     }
     const editor = target?.editor ?? null;
-    const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
+    const original = editor ? readEditorInput(editor) : await readVaultInput(this.app.vault, file, signal);
     assertSourceIdentity();
     const contentSha256 = sha256(original);
     let published = false;
@@ -109,7 +110,7 @@ export class VaultReadSnapshot {
         if (target === null || target.view.file !== file || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)) {
           throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
         }
-        if (sha256(editor.getValue()) !== contentSha256) {
+        if (editor.getValue() !== original) {
           throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
         }
       } else {
@@ -120,7 +121,7 @@ export class VaultReadSnapshot {
     const assertCurrent = async (): Promise<void> => {
       assertPublicationIdentity();
       if (!editor) {
-        const current = await this.app.vault.readBinary(file);
+        const current = await readVaultInput(this.app.vault, file, signal);
         assertPublicationIdentity();
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
@@ -151,7 +152,7 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
-        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent);
+        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent, signal);
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {
@@ -218,14 +219,7 @@ function decodeMarkdown(value: string | ArrayBuffer): string {
 }
 
 function sha256(value: string | ArrayBuffer | Uint8Array): string {
-  const bytes = typeof value === "string"
-    ? Buffer.from(value, "utf8")
-    : value instanceof ArrayBuffer
-      ? Buffer.from(value)
-      : Buffer.from(value.buffer, value.byteOffset, value.byteLength);
-  return createHash("sha256")
-    .update(bytes)
-    .digest("hex");
+  return createHash("sha256").update(value instanceof ArrayBuffer ? new Uint8Array(value) : value).digest("hex");
 }
 
 function throwIfAborted(signal: AbortSignal): void {
