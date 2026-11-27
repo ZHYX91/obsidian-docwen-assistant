@@ -14,7 +14,7 @@ import {
   type DocWenLaunchTarget,
 } from "./process-launch";
 import { containsMachineProtocolFrame, encodeMachineFrame, isJsonObject, MachineFrameDecoder, type JsonObject } from "./machine-framing";
-import { fileIdentity, hashFileAtSize, sameFileIdentity } from "./output-integrity";
+import { fileIdentity, hashFileAtSize, isSafePortableFilenameSegment, sameFileIdentity } from "./output-integrity";
 import {
   spawnWindowsOwnedMachineProcess,
   windowsMachineOwnerDetails,
@@ -1123,20 +1123,6 @@ function safeSuggestedName(value: unknown): string {
     throw integrityError("Artifact suggested_name must be a safe portable filename.");
   }
   return filename;
-}
-
-function isSafePortableFilenameSegment(segment: string): boolean {
-  const windowsDevice = /^(?:aux|con|nul|prn|com[1-9]|lpt[1-9])(?:\.|$)/iu;
-  return segment.length > 0
-    && segment !== "."
-    && segment !== ".."
-    && !segment.includes(":")
-    && !segment.includes("\0")
-    && !segment.endsWith(".")
-    && !segment.endsWith(" ")
-    && segment.length <= 240
-    && Buffer.byteLength(segment, "utf8") <= 240
-    && !windowsDevice.test(segment);
 }
 
 function protocolIdentity(value: unknown): JsonObject {

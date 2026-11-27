@@ -6,7 +6,7 @@ import * as path from "node:path";
 import { LocalCliError } from "./errors";
 import { operationWarning, publishOnce, recordFailureWarning, type OperationWarning, type PublicationCommit, type PublicationGuard } from "./operation-outcome";
 import type { ValidatedArtifactBundle, ValidatedBundleArtifact } from "./machine-client";
-import { isErrno, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
+import { isErrno, isSafePortableFilenameSegment, preferredArtifact, samePath, throwIfAborted, verifyArtifactIdentity } from "./output-integrity";
 import { assertDirectoryPublicationSupported, publishDirectoryNoReplace } from "./publish-path";
 import { atomicCommitBundle } from "./output-files";
 import { CONVERSION_MEDIA_TYPES, type ConvertTarget } from "./formats";
@@ -103,10 +103,7 @@ async function requireAbsent(target: string): Promise<void> {
 
 function logicalParts(value: string, minimumParts = 2): string[] {
   const parts = value.split("/");
-  if (parts.length < minimumParts || parts.some((part) =>
-    !part || part === "." || part === ".." || /[\\:*?"<>|]/u.test(part)
-    || Array.from(part).some((character) => character.charCodeAt(0) < 32)
-    || /[. ]$/u.test(part) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part))) {
+  if (parts.length < minimumParts || parts.some(part => !isSafePortableFilenameSegment(part))) {
     throw new LocalCliError("cli_integrity_error", "Artifact logical paths must use portable result-directory names.");
   }
   return parts;
