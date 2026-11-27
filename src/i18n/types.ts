@@ -69,6 +69,8 @@ export interface Translations {
   settingsHelpTitle: string;
   settingsUserGuide: string;
   settingsReportIssue: string;
+  settingsPreviousTabs: string;
+  settingsNextTabs: string;
   settingsTitle: string;
   settingsGeneralTitle: string;
   settingsGeneralGuideTitle: string;

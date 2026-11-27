@@ -6,6 +6,8 @@ translation_status: synced
 
 # DocWen Assistant — UX specification
 
+See the [shared plugin interface](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/shared-ui.md) for cross-plugin interaction and visual conventions.
+
 [简体中文源文](ux-spec.zh-CN.md)
 
 ## Entry points
@@ -58,7 +60,9 @@ The UI, notices, and resource queries use one resolved locale. The default follo
 
 ## Accessibility and layout
 
-The settings tab list exposes complete tab, tabpanel, selection, and roving-tabindex semantics. Left/Right honor RTL, Up/Down move between tabs, Home/End jump to boundaries, and the active tab scrolls into view. The active tab combines an accent underline with a semibold label, and stable space separates the baseline from the content panel. Tabs tolerate 20 px UI text, narrow widths, third-party themes, and 44 px coarse-pointer targets. A tab is the page heading, so its panel never repeats the same title. Cancel, retry, and issue controls remain keyboard operable and use native Obsidian controls and theme variables.
+Selecting the current settings tab again keeps its controls, drafts and pending resource lookup in place. Home and End at the current boundary still reveal and focus that tab.
+
+The settings tab list exposes complete tab, tabpanel, selection, and roving-tabindex semantics. Left/Right honor RTL, Up/Down retain native page scrolling, Home/End jump to boundaries, and the active tab scrolls into view. When tabs extend beyond the settings bar, a theme-accent chevron appears at each edge with hidden tabs. Clicking it scrolls the bar without changing the selected page. The controls disappear when all tabs fit and have 44 px targets on touch screens. The active tab combines an accent underline with a semibold label, and stable space separates the baseline from the content panel. Tabs tolerate 20 px UI text, narrow widths, third-party themes, and 44 px coarse-pointer targets. A tab is the page heading, so its panel never repeats the same title. Cancel, retry, and issue controls remain keyboard operable and use native Obsidian controls and theme variables.
 
 The Assistant sidebar follows Number Suite and Link Integrity's equal-width two-tab layout: muted inactive labels, a semibold active label with a 2 px theme-accent underline, a light hover background, and a focus outline that preserves the selected marker. Tabs expose tablist, tab, tabpanel, aria-controls, aria-labelledby and roving-tabindex semantics; Left/Right honor RTL and Home/End select the boundaries. The sidebar does not repeat the plugin or tab title above its contents. Filenames, muted paths, section labels and whitespace establish hierarchy; actions use vertically stacked native buttons with consistent spacing, and the proofreading toolbar stays compact. Fonts, colors, radii and spacing use Obsidian theme variables. Long labels, filenames and RTL text wrap in narrow sidebars; coarse-pointer targets are at least 44 px. Short sidebars allow panel scrolling, and long reports retain a separate scrollable list.
 

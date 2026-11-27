@@ -4,87 +4,7 @@ import type { SettingsPageDefinition } from "../src/settings-definitions";
 import { SettingsTabs } from "../src/settings-tabs";
 import { initI18n } from "../src/i18n";
 
-interface ElementOptions {
-  attr?: Record<string, string>;
-  cls?: string;
-  text?: string;
-}
-
-class FakeElement {
-  readonly attributes = new Map<string, string>();
-  readonly children: FakeElement[] = [];
-  readonly listeners = new Map<string, ((event: FakeEvent) => void)[]>();
-  readonly ownerDocument: FakeDocument;
-  focused = false;
-  id = "";
-  scrollCalls = 0;
-  tabIndex = 0;
-  textContent = "";
-
-  constructor(ownerDocument: FakeDocument, readonly tagName = "div") {
-    this.ownerDocument = ownerDocument;
-  }
-
-  addEventListener(type: string, listener: (event: FakeEvent) => void): void {
-    const listeners = this.listeners.get(type) ?? [];
-    listeners.push(listener);
-    this.listeners.set(type, listeners);
-  }
-
-  createDiv(options?: ElementOptions): FakeElement {
-    return this.append("div", options);
-  }
-
-  createEl(tagName: string, options?: ElementOptions): FakeElement {
-    return this.append(tagName, options);
-  }
-
-  dispatch(type: string, key = ""): FakeEvent {
-    const event = new FakeEvent(key);
-    for (const listener of this.listeners.get(type) ?? []) listener(event);
-    return event;
-  }
-
-  empty(): void {
-    this.children.length = 0;
-  }
-
-  focus(): void {
-    this.focused = true;
-  }
-
-  scrollIntoView(): void {
-    ++this.scrollCalls;
-  }
-
-  setAttribute(name: string, value: string): void {
-    this.attributes.set(name, value);
-    if (name === "id") this.id = value;
-    if (name === "tabindex") this.tabIndex = Number(value);
-  }
-
-  private append(tagName: string, options?: ElementOptions): FakeElement {
-    const child = new FakeElement(this.ownerDocument, tagName);
-    if (options?.text) child.textContent = options.text;
-    if (options?.cls) child.setAttribute("class", options.cls);
-    for (const [name, value] of Object.entries(options?.attr ?? {})) child.setAttribute(name, value);
-    this.children.push(child);
-    return child;
-  }
-}
-
-class FakeDocument {
-  direction: "ltr" | "rtl" = "ltr";
-  readonly defaultView = {
-    getComputedStyle: () => ({ direction: this.direction }),
-  };
-}
-
-class FakeEvent {
-  defaultPrevented = false;
-  constructor(readonly key: string) {}
-  preventDefault(): void { this.defaultPrevented = true; }
-}
+import { useObsidianDom } from "./helpers/obsidian-dom";
 
 const pages: SettingsPageDefinition[] = [
   { id: "general", name: "General", items: [] },
@@ -94,117 +14,89 @@ const pages: SettingsPageDefinition[] = [
 ];
 
 describe("settings top tabs", () => {
-  it("renders complete tab semantics without a duplicate page heading", () => {
-    const document = new FakeDocument();
-    const container = new FakeElement(document);
-    const renderPage = vi.fn();
+  useObsidianDom();
 
-    new SettingsTabs({
-      ariaLabel: "DocWen Assistant settings",
-      containerEl: container as unknown as HTMLElement,
-      initialPageId: "general",
-      pages,
-      renderPage,
+  function mount(initialPageId: SettingsPageDefinition["id"] = "general") {
+    const container = document.body.createDiv();
+    const renderPage = vi.fn((panel: HTMLElement, page: SettingsPageDefinition) => {
+      panel.createEl("input", { attr: { placeholder: page.name } });
     });
+    const controller = new SettingsTabs({ ariaLabel: "Settings", containerEl: container, initialPageId, pages, renderPage });
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panel = container.querySelector<HTMLElement>('[role="tabpanel"]')!;
+    const list = container.querySelector<HTMLElement>('[role="tablist"]')!;
+    return { container, controller, buttons, panel, list, renderPage };
+  }
 
-    const root = container.children[0];
-    const tabList = root.children[0];
-    const panel = root.children[1];
-    expect(tabList.attributes.get("role")).toBe("tablist");
-    expect(tabList.attributes.get("aria-label")).toBe("DocWen Assistant settings");
-    expect(tabList.attributes.get("aria-orientation")).toBe("horizontal");
-    expect(tabList.children).toHaveLength(4);
-    expect(tabList.children.map((tab) => tab.attributes.get("role"))).toEqual(Array(4).fill("tab"));
-    expect(tabList.children.map((tab) => tab.tabIndex)).toEqual([0, -1, -1, -1]);
-    expect(panel.attributes.get("role")).toBe("tabpanel");
-    expect(panel.attributes.get("aria-labelledby")).toBe(tabList.children[0].id);
-    expect(tabList.children.every((tab) => tab.attributes.get("aria-controls") === panel.id)).toBe(true);
-    expect(root.attributes.get("lang")).toBe("en");
-    expect(root.children.some((child) => /^h[1-6]$/iu.test(child.tagName))).toBe(false);
+  function press(element: HTMLElement, key: string): boolean {
+    return !element.dispatchEvent(new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+  }
+
+  it("renders complete tab semantics without a duplicate heading", () => {
+    const { buttons, panel, list, container, renderPage } = mount();
+    expect(list.getAttribute("aria-label")).toBe("Settings");
+    expect(list.getAttribute("aria-orientation")).toBe("horizontal");
+    expect(buttons.map(button => button.tabIndex)).toEqual([0, -1, -1, -1]);
+    expect(panel.getAttribute("aria-labelledby")).toBe(buttons[0].id);
+    expect(buttons.every(button => button.getAttribute("aria-controls") === panel.id)).toBe(true);
+    expect(container.querySelector("h1,h2,h3,h4,h5,h6")).toBeNull();
     expect(renderPage).toHaveBeenCalledOnce();
     expect(renderPage.mock.calls[0][1].id).toBe("general");
   });
 
-  it("marks Arabic settings RTL even if the host language is LTR", () => {
-    initI18n("ar");
-    try {
-      const container = new FakeElement(new FakeDocument());
-      new SettingsTabs({
-        ariaLabel: "الإعدادات",
-        containerEl: container as unknown as HTMLElement,
-        initialPageId: "general",
-        pages,
-        renderPage: vi.fn(),
-      });
-      expect(container.children[0].attributes.get("dir")).toBe("rtl");
-      expect(container.children[0].attributes.get("lang")).toBe("ar");
-    } finally {
-      initI18n("en");
-    }
+  it.each([["ar", "ltr", "rtl"], ["en", "rtl", "ltr"], ["zh-CN", "rtl", "ltr"]])(
+    "applies the %s locale on a host with %s direction", (locale, hostDirection, direction) => {
+      document.body.dir = hostDirection;
+      initI18n(locale);
+      try {
+        const root = mount().container.firstElementChild as HTMLElement;
+        expect(root.dir).toBe(direction);
+        expect(root.lang).toBe(locale.toLowerCase());
+      } finally {
+        initI18n("en");
+      }
+    },
+  );
+
+  it("moves keyboard focus in both directions and leaves vertical scrolling to the host", () => {
+    const { buttons, controller, list, panel } = mount();
+    const panelId = panel.id;
+    expect(press(buttons[0], "ArrowLeft")).toBe(true);
+    expect(controller.activePageId).toBe("proofread");
+    expect(document.activeElement).toBe(buttons[3]);
+    expect(panel.getAttribute("aria-labelledby")).toBe(buttons[3].id);
+    press(buttons[3], "Home");
+    expect(controller.activePageId).toBe("general");
+    press(buttons[0], "End");
+    expect(controller.activePageId).toBe("proofread");
+    list.style.direction = "rtl";
+    press(buttons[3], "ArrowLeft");
+    expect(controller.activePageId).toBe("general");
+    list.style.direction = "ltr";
+    for (const key of ["ArrowDown", "ArrowUp", "Escape"]) expect(press(buttons[0], key)).toBe(false);
+    press(buttons[0], "ArrowRight");
+    expect(buttons.map(button => button.tabIndex)).toEqual([-1, 0, -1, -1]);
+    expect(document.activeElement).toBe(buttons[1]);
+    expect(panel.id).toBe(panelId);
+    expect(buttons.every(button => button.getAttribute("aria-controls") === panelId)).toBe(true);
   });
 
-  it.each(["en", "zh-CN"])("keeps %s settings LTR when Obsidian uses RTL", (locale) => {
-    initI18n(locale);
-    try {
-      const document = new FakeDocument();
-      document.direction = "rtl";
-      const container = new FakeElement(document);
-      new SettingsTabs({
-        ariaLabel: "Settings",
-        containerEl: container as unknown as HTMLElement,
-        initialPageId: "general",
-        pages,
-        renderPage: vi.fn(),
-      });
-      expect(container.children[0].attributes.get("dir")).toBe("ltr");
-      expect(container.children[0].attributes.get("lang")).toBe(locale.toLowerCase());
-    } finally {
-      initI18n("en");
-    }
-  });
-
-  it("supports roving focus, Home/End, wrapping arrows, and RTL direction", () => {
-    const document = new FakeDocument();
-    const container = new FakeElement(document);
-    const tabs = new SettingsTabs({
-      ariaLabel: "Settings",
-      containerEl: container as unknown as HTMLElement,
-      initialPageId: "general",
-      pages,
-      renderPage: vi.fn(),
-    });
-    const tabButtons = container.children[0].children[0].children;
-    const panel = container.children[0].children[1];
-    const originalPanelId = panel.id;
-    expect(tabButtons.every((tab) => tab.attributes.get("aria-controls") === originalPanelId)).toBe(true);
-
-    expect(tabButtons[0].dispatch("keydown", "ArrowLeft").defaultPrevented).toBe(true);
-    expect(tabs.activePageId).toBe("proofread");
-    expect(tabButtons[3].focused).toBe(true);
-    expect(panel.id).toBe(originalPanelId);
-    expect(panel.attributes.get("aria-labelledby")).toBe(tabButtons[3].id);
-
-    tabButtons[3].dispatch("keydown", "Home");
-    expect(tabs.activePageId).toBe("general");
-    tabButtons[0].dispatch("keydown", "End");
-    expect(tabs.activePageId).toBe("proofread");
-
-    document.direction = "rtl";
-    tabButtons[3].dispatch("keydown", "ArrowLeft");
-    expect(tabs.activePageId).toBe("general");
-
-    document.direction = "ltr";
-    tabButtons[0].dispatch("keydown", "ArrowDown");
-    expect(tabs.activePageId).toBe("markdown");
-    tabButtons[1].dispatch("keydown", "ArrowUp");
-    expect(tabs.activePageId).toBe("general");
-    tabButtons[0].dispatch("keydown", "ArrowRight");
-    expect(tabs.activePageId).toBe("markdown");
-    expect(tabButtons[1].dispatch("keydown", "Escape").defaultPrevented).toBe(false);
-    expect(tabButtons.map((tab) => tab.tabIndex)).toEqual([-1, 0, -1, -1]);
-    expect(panel.id).toBe(originalPanelId);
-    expect(panel.attributes.get("aria-labelledby")).toBe(tabButtons[1].id);
-    expect(tabButtons.every((tab) => tab.attributes.get("aria-controls") === panel.id)).toBe(true);
+  it("keeps the current page mounted on click and repeated boundary navigation", () => {
+    const { buttons, panel, renderPage, controller } = mount("proofread");
+    const draft = panel.querySelector("input")!;
+    draft.value = "draft";
+    buttons[3].click();
+    press(buttons[3], "End");
+    expect(renderPage).toHaveBeenCalledOnce();
+    expect(panel.querySelector("input")).toBe(draft);
+    expect(draft.value).toBe("draft");
+    expect(document.activeElement).toBe(buttons[3]);
+    press(buttons[3], "Home");
+    press(buttons[0], "Home");
+    expect(renderPage).toHaveBeenCalledTimes(2);
+    controller.renderActivePage();
+    expect(renderPage).toHaveBeenCalledTimes(3);
+    expect(controller.close()).toBe("general");
   });
 
   it("keeps the family tab styling resilient and responsive", () => {

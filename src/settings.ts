@@ -53,7 +53,7 @@ export class SettingTab extends PluginSettingTab {
 
   override display(): void {
     preserveSettingsView(this.containerEl, () => {
-      this.activePageId = this.tabs?.activePageId ?? this.activePageId;
+      this.activePageId = this.tabs?.close() ?? this.activePageId;
       this.destroyPageSurface();
       this.containerEl.empty();
       renderSettingsSchemaCompatibility(this.containerEl, this.plugin.getSettingsCompatibility());
@@ -112,7 +112,7 @@ export class SettingTab extends PluginSettingTab {
 
   override hide(): void {
     super.hide();
-    this.activePageId = this.tabs?.activePageId ?? this.activePageId;
+    this.activePageId = this.tabs?.close() ?? this.activePageId;
     this.destroyPageSurface();
     this.expandedHelp.clear();
     this.tabs = null;

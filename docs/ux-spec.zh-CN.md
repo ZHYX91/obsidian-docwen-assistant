@@ -5,6 +5,8 @@ translation_status: source
 
 # DocWen Assistant — 交互规范
 
+跨插件的交互与外观约定见[插件共同界面规范](https://github.com/ZHYX91/obsidian-property-order/blob/main/docs/shared-ui.zh-CN.md)。
+
 [English synced translation](ux-spec.md)
 
 ## 入口
@@ -57,7 +59,9 @@ translation_status: source
 
 ## 可访问性与布局
 
-设置页签列表必须提供完整的 tab、tabpanel、选中状态与 roving tabindex 语义；左/右键适配 RTL，上/下键切换页签，Home/End 跳到两端，并让当前页签滚入可见区域。活动页签同时使用强调色下划线和半粗字重，页签基线与内容面板之间保留稳定间距。页签需适配 20 px 界面字号、窄宽度、第三方主题和粗指针的 44 px 点击区。页签本身就是页面标题，内容面板不得重复同名标题。取消、重试和问题项仍须支持键盘，并保持原生 Obsidian 控件与主题变量。
+再次选择当前设置页签会保留原有控件、草稿和正在加载的资源。在首页按 Home 或在末页按 End 仍会显示并聚焦当前页签。
+
+设置页签列表必须提供完整的 tab、tabpanel、选中状态与 roving tabindex 语义；左/右键适配 RTL，上/下键保留原生页面滚动行为，Home/End 跳到两端，并让当前页签滚入可见区域。设置栏一侧还有未显示的页签时，该侧显示主题强调色的小箭头。点击箭头可滚动页签栏，当前页面保持选中。所有页签都能完整显示时，箭头自动隐藏。触屏箭头的点击区域至少为 44 px。活动页签同时使用强调色下划线和半粗字重，页签基线与内容面板之间保留稳定间距。页签需适配 20 px 界面字号、窄宽度、第三方主题和粗指针的 44 px 点击区。页签本身就是页面标题，内容面板不得重复同名标题。取消、重试和问题项仍须支持键盘，并保持原生 Obsidian 控件与主题变量。
 
 助手侧栏沿用 Number Suite 与 Link Integrity 的等宽双页签：未激活项使用弱化文字，激活项使用半粗文字和 2 px 主题强调色下划线，悬停使用轻量背景，焦点轮廓不覆盖选中标记。页签具有 tablist、tab、tabpanel、aria-controls、aria-labelledby 和 roving tabindex 语义；左/右键遵循 RTL，Home/End 跳到两端。侧栏顶部不重复插件标题或页签标题。内容以文件名称、弱化路径、小节标题和留白建立层级；操作使用统一间距的纵向原生按钮，校对工具栏保持紧凑。字体、颜色、圆角与间距采用 Obsidian 主题变量。长标签、文件名和 RTL 文本在窄栏中换行，粗指针点击区至少 44 px；较矮的侧栏允许面板滚动，长报告仍有独立的可滚动列表。
 

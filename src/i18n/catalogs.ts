@@ -72,6 +72,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "无法获取可用操作",
     contextMenuFolderTarget: "目标文件：{path}",
 
+    settingsPreviousTabs: "显示前面的选项卡",
+    settingsNextTabs: "显示后面的选项卡",
     settingsTitle: "DocWen 助手设置",
     settingsGeneralTitle: "常规",
     settingsGeneralGuideTitle: "这些设置如何生效",
@@ -352,6 +354,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "無法取得可用操作",
     contextMenuFolderTarget: "目標檔案：{path}",
 
+    settingsPreviousTabs: "顯示前面的分頁",
+    settingsNextTabs: "顯示後面的分頁",
     settingsTitle: "DocWen 助手設定",
     settingsGeneralTitle: "一般",
     settingsGeneralGuideTitle: "這些設定如何生效",
@@ -632,6 +636,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Available actions could not be loaded",
     contextMenuFolderTarget: "Target file: {path}",
 
+    settingsPreviousTabs: "Show previous tabs",
+    settingsNextTabs: "Show next tabs",
     settingsTitle: "DocWen Assistant Settings",
     settingsGeneralTitle: "General",
     settingsGeneralGuideTitle: "How these settings apply",
@@ -915,6 +921,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Verfügbare Aktionen konnten nicht geladen werden",
     contextMenuFolderTarget: "Zieldatei: {path}",
 
+    settingsPreviousTabs: "Vorherige Tabs anzeigen",
+    settingsNextTabs: "Weitere Tabs anzeigen",
     settingsTitle: "DocWen-Assistent Einstellungen",
     settingsGeneralTitle: "Allgemein",
     settingsGeneralGuideTitle: "So wirken diese Einstellungen",
@@ -1195,6 +1203,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Impossible de charger les actions disponibles",
     contextMenuFolderTarget: "Fichier cible : {path}",
 
+    settingsPreviousTabs: "Afficher les onglets précédents",
+    settingsNextTabs: "Afficher les onglets suivants",
     settingsTitle: "Paramètres de l'assistant DocWen",
     settingsGeneralTitle: "Général",
     settingsGeneralGuideTitle: "Application de ces paramètres",
@@ -1475,6 +1485,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Не удалось загрузить доступные действия",
     contextMenuFolderTarget: "Целевой файл: {path}",
 
+    settingsPreviousTabs: "Показать предыдущие вкладки",
+    settingsNextTabs: "Показать следующие вкладки",
     settingsTitle: "Настройки помощника DocWen",
     settingsGeneralTitle: "Общие",
     settingsGeneralGuideTitle: "Как применяются эти настройки",
@@ -1755,6 +1767,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Não foi possível carregar as ações disponíveis",
     contextMenuFolderTarget: "Arquivo de destino: {path}",
 
+    settingsPreviousTabs: "Mostrar abas anteriores",
+    settingsNextTabs: "Mostrar próximas abas",
     settingsTitle: "Configurações do Assistente DocWen",
     settingsGeneralTitle: "Geral",
     settingsGeneralGuideTitle: "Como estas configurações se aplicam",
@@ -2035,6 +2049,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "利用可能な操作を読み込めませんでした",
     contextMenuFolderTarget: "対象ファイル：{path}",
 
+    settingsPreviousTabs: "前のタブを表示",
+    settingsNextTabs: "次のタブを表示",
     settingsTitle: "DocWen アシスタント設定",
     settingsGeneralTitle: "一般",
     settingsGeneralGuideTitle: "設定の適用範囲",
@@ -2314,6 +2330,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "사용 가능한 작업을 불러오지 못했습니다",
     contextMenuFolderTarget: "대상 파일: {path}",
 
+    settingsPreviousTabs: "이전 탭 표시",
+    settingsNextTabs: "다음 탭 표시",
     settingsTitle: "DocWen Assistant 설정",
     settingsGeneralTitle: "일반",
     settingsGeneralGuideTitle: "설정 적용 방식",
@@ -2593,6 +2611,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "No se pudieron cargar las acciones disponibles",
     contextMenuFolderTarget: "Archivo de destino: {path}",
 
+    settingsPreviousTabs: "Mostrar pestañas anteriores",
+    settingsNextTabs: "Mostrar pestañas siguientes",
     settingsTitle: "Ajustes del asistente DocWen",
     settingsGeneralTitle: "General",
     settingsGeneralGuideTitle: "Cómo se aplican estos ajustes",
@@ -2872,6 +2892,8 @@ export const translations: Record<string, Translations> = {
     contextMenuCapabilityUnavailable: "Không thể tải các thao tác khả dụng",
     contextMenuFolderTarget: "Tệp đích: {path}",
 
+    settingsPreviousTabs: "Hiện các thẻ phía trước",
+    settingsNextTabs: "Hiện các thẻ tiếp theo",
     settingsTitle: "Cài đặt DocWen Assistant",
     settingsGeneralTitle: "Chung",
     settingsGeneralGuideTitle: "Cách áp dụng các cài đặt này",
