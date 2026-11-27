@@ -11,7 +11,7 @@ import { loadPackageAcceptanceReceipt } from "../scripts/run-docwen-package-acce
 
 const ui = vi.hoisted(() => ({
   sourcePath: "", outputDirectory: "", confirm: vi.fn(), review: vi.fn(), completed: vi.fn(),
-  tempDirectory: "",
+  tempDirectory: "", snapshotDirectory: "", beforeSnapshotCleanup: [] as string[][],
 }));
 vi.mock("node:os", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:os")>();
@@ -23,7 +23,16 @@ vi.mock("obsidian", () => ({
 }));
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
-  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+  return {
+    ...actual,
+    rm: async (...args: Parameters<typeof actual.rm>) => {
+      const [target] = args;
+      if (target === ui.snapshotDirectory) {
+        ui.beforeSnapshotCleanup.push((await actual.readdir(target)).sort());
+      }
+      return actual.rm(...args);
+    },
+  };
 });
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
 vi.mock("../src/host/confirm", () => ({ confirmDetectedFormat: ui.confirm }));
@@ -57,6 +66,8 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
   beforeEach(() => {
     vi.clearAllMocks();
     ui.tempDirectory = "";
+    ui.snapshotDirectory = "";
+    ui.beforeSnapshotCleanup.length = 0;
     ui.confirm.mockResolvedValue(true);
     ui.review.mockResolvedValue(true);
   });
@@ -109,7 +120,8 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
       ui.confirm.mockImplementation(async () => {
         const captured = inspected.mock.calls.at(-1)![0];
         expect(typeof captured).toBe("object");
-        expect(await readdir(dirname((captured as { path: string }).path))).toEqual([`source.${extension}`]);
+        ui.snapshotDirectory = dirname((captured as { path: string }).path);
+        expect(await readdir(ui.snapshotDirectory)).toEqual([`source.${extension}`]);
         if (scenario === "changed-at-confirmation") await writeFile(ui.sourcePath, "User changed the source");
         return scenario !== "cancel";
       });
@@ -129,15 +141,17 @@ describe.skipIf(packageBinding === null)("fixed-package detected-format export a
           await actions.toMarkdown(file as never);
         }
 
-        const acceptedWrites = vi.mocked(writeFile).mock.calls.filter(([target]) => String(target).includes("accepted-source."));
         if (scenario === "cancel" || scenario === "changed-at-confirmation") {
-          expect(acceptedWrites).toHaveLength(0);
+          expect(ui.beforeSnapshotCleanup).toEqual([[`source.${extension}`]]);
           expect(converted).not.toHaveBeenCalled();
           expect(ui.review).not.toHaveBeenCalled();
         } else {
-          expect(acceptedWrites).toHaveLength(1);
-          expect(inspected.mock.results[2].type).toBe("return");
-          await expect(inspected.mock.results[2].value).resolves.toMatchObject({
+          expect(ui.beforeSnapshotCleanup).toEqual([["accepted-source.docx", `source.${extension}`]]);
+          const canonicalPath = join(ui.snapshotDirectory, "accepted-source.docx");
+          const canonicalInspections = inspected.mock.calls.flatMap(([input], index) =>
+            typeof input === "object" && input.path === canonicalPath ? [inspected.mock.results[index]] : []);
+          expect(canonicalInspections).toHaveLength(1);
+          await expect(canonicalInspections[0].value).resolves.toMatchObject({
             decision: "allow", detectedFormat: "docx", contentSha256: digest(original),
           });
           expect(converted).toHaveBeenCalledOnce();

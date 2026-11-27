@@ -18,7 +18,8 @@ class FakeElement {
   createDiv() { return this.createEl("div"); }
   addEventListener(_event: string, callback: () => void) { this.click = callback; }
   setText(text: string) { this.text = text; }
-  setAttribute(_name: string, _value: string) {}
+  attributes = new Map<string, string>();
+  setAttribute(name: string, value: string) { this.attributes.set(name, value); }
   empty() { this.children = []; }
 }
 class FakeModal {
@@ -26,6 +27,9 @@ class FakeModal {
   titleEl = new FakeElement();
   closed = false;
   placeholder = "";
+  inputEl = new FakeElement();
+  resultContainerEl = new FakeElement();
+  emptyStateText = "";
   open() {
     if (state.failOpen) throw new Error("host unavailable");
     state.modals.push(this);
@@ -38,7 +42,7 @@ class FakeModal {
   onChooseSuggestion(_item: PickerItem) {}
 }
 vi.mock("obsidian", () => ({ Modal: FakeModal, SuggestModal: FakeModal }));
-vi.mock("../src/i18n", () => ({ t: (key: string) => key, getCurrentLocale: () => "en" }));
+vi.mock("../src/i18n", () => ({ t: (key: string) => key, getCurrentLocale: () => "ar" }));
 beforeEach(async () => {
   state.modals = [];
   state.failOpen = false;
@@ -73,6 +77,20 @@ describe("owned picker lifecycle", () => {
     expect(await result).toBeNull();
     expect(modal.closed).toBe(true);
     expect(remove).toHaveBeenCalledWith("abort", expect.any(Function));
+  });
+
+  it("names the search field and localizes both matches and empty results", async () => {
+    const controller = new AbortController();
+    const result = pickItem({} as never, items, "اختر قالبًا", controller.signal);
+    const picker = state.modals[0];
+    expect(picker.inputEl.attributes.get("aria-label")).toBe("اختر قالبًا");
+    for (const element of [picker.inputEl, picker.resultContainerEl]) {
+      expect(element.attributes.get("lang")).toBe("ar");
+      expect(element.attributes.get("dir")).toBe("rtl");
+    }
+    expect(picker.emptyStateText).toBe("pickerNoMatches");
+    controller.abort();
+    expect(await result).toBeNull();
   });
 
   it("does not open for a cancelled operation", async () => {

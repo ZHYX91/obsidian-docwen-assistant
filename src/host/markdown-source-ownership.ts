@@ -127,49 +127,72 @@ export interface AuthoredMarkdown {
   readonly navigationSource: string;
 }
 
-/** Parse ownership without changing any UTF-16 source positions or original bytes. */
-export function parseAuthoredMarkdown(source: string): AuthoredMarkdown {
-  const characters = source.split("");
-  mask(characters, 0, propertiesEnd(source));
+interface SourceRange {
+  readonly from: number;
+  readonly to: number;
+}
 
-  // Obsidian comments can span Markdown blocks. Only an opener outside an
-  // existing syntax atom can own following text; a literal %% in code/HTML,
-  // a destination, or a Wiki target cannot hide later document resources.
-  const preliminary = characters.join("");
-  const protectedCharacters = preliminary.split("");
-  const preliminaryTree = parseWithMath(preliminary);
-  preliminaryTree.iterate({ enter(node) {
+// Tree traversal and comment scanning both produce disjoint ranges in source order.
+function maskRanges(source: string, ranges: readonly SourceRange[]): string {
+  if (!ranges.length) return source;
+  const parts: string[] = [];
+  let offset = 0;
+  for (const { from, to } of ranges) {
+    parts.push(source.slice(offset, from),
+      source.slice(from, to).replace(/[^\r\n]+/gu, text => " ".repeat(text.length)));
+    offset = to;
+  }
+  parts.push(source.slice(offset));
+  return parts.join("");
+}
+
+function maskComments(source: string, tree: AuthoredMarkdown["tree"]): string {
+  if (!source.includes("%%")) return source;
+  // Only a marker outside an existing syntax atom can open a comment.
+  const protectedRanges: SourceRange[] = [];
+  tree.iterate({ enter(node) {
     if (LITERAL_NODES.has(node.name)
       || ["URL", "LinkTitle", "Image", "AuthoredWiki", "AuthoredWikiImage"].includes(node.name)) {
-      mask(protectedCharacters, node.from, node.to);
+      protectedRanges.push({ from: node.from, to: node.to });
       return false;
     }
   } });
-  for (let position = 0; position < source.length - 1; position += 1) {
-    if (protectedCharacters[position] !== "%" || protectedCharacters[position + 1] !== "%"
-      || isEscaped(source, position)) continue;
-    const closing = preliminary.indexOf("%%", position + 2);
+  const visible = maskRanges(source, protectedRanges);
+  const comments: SourceRange[] = [];
+  for (let position = visible.indexOf("%%"); position !== -1;) {
+    if (isEscaped(source, position)) {
+      position = visible.indexOf("%%", position + 1);
+      continue;
+    }
+    const closing = source.indexOf("%%", position + 2);
     const end = closing < 0 ? source.length : closing + 2;
-    mask(characters, position, end);
-    position = end - 1;
+    comments.push({ from: position, to: end });
+    position = visible.indexOf("%%", end);
   }
-  const parsedSource = characters.join("");
+  return maskRanges(source, comments);
+}
+
+/** Parse ownership without changing any UTF-16 source positions or original bytes. */
+export function parseAuthoredMarkdown(source: string): AuthoredMarkdown {
+  const end = propertiesEnd(source);
+  const preliminary = end ? maskRanges(source, [{ from: 0, to: end }]) : source;
+  const preliminaryTree = parseWithMath(preliminary);
+  const parsedSource = maskComments(preliminary, preliminaryTree);
   const tree = parsedSource === preliminary ? preliminaryTree : parseWithMath(parsedSource);
-  const imageRanges: { from: number; to: number }[] = [];
+  const literalRanges: SourceRange[] = [];
+  const imageRanges: SourceRange[] = [];
   tree.iterate({ enter(node) {
     if (node.name === "Image" || node.name === "AuthoredWikiImage") {
       imageRanges.push({ from: node.from, to: node.to });
       return false;
     }
     if (LITERAL_NODES.has(node.name) || node.name === "URL" || node.name === "LinkTitle") {
-      mask(characters, node.from, node.to);
+      literalRanges.push({ from: node.from, to: node.to });
       return false;
     }
   } });
-  const imageSource = characters.join("");
-  // Navigation also excludes image atoms. Keep their original offsets in both views.
-  for (const range of imageRanges) mask(characters, range.from, range.to);
-  const navigationSource = imageRanges.length ? characters.join("") : imageSource;
+  const imageSource = maskRanges(parsedSource, literalRanges);
+  const navigationSource = maskRanges(imageSource, imageRanges);
   return { source, tree, imageSource, navigationSource };
 }
 
@@ -205,12 +228,6 @@ function isActiveCachedReference(
   if (!original.startsWith("![") && !original.startsWith("[[")) return true;
   if (isEscaped(source, start)) return false;
   return visibleSource.slice(start, end) === original;
-}
-
-function mask(characters: string[], start: number, end: number): void {
-  for (let index = start; index < end; index += 1) {
-    if (characters[index] !== "\n" && characters[index] !== "\r") characters[index] = " ";
-  }
 }
 
 export function isEscaped(source: string, start: number): boolean {

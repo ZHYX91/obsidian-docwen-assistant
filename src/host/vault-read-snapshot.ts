@@ -1,3 +1,4 @@
+import { readEditorInput, readVaultInput } from "./vault-input";
 import {
   buildDeclaredMarkdownInputs,
   logicalPathFor,
@@ -6,8 +7,8 @@ import {
 export type { DeclaredMarkdownSnapshot } from "./declared-markdown-snapshot";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { rm, writeFile } from "node:fs/promises";
+import { createVaultWorkspace } from "./vault-workspace";
 import * as path from "node:path";
 
 import type { App, TFile } from "obsidian";
@@ -98,7 +99,7 @@ export class VaultReadSnapshot {
       throw new VaultWriteError("vault_target_changed", "The Markdown editor belongs to a different file object.");
     }
     const editor = target?.editor ?? null;
-    const original = editor ? editor.getValue() : await this.app.vault.readBinary(file);
+    const original = editor ? readEditorInput(editor) : await readVaultInput(this.app.vault, file, signal);
     assertSourceIdentity();
     const contentSha256 = sha256(original);
     let published = false;
@@ -109,7 +110,7 @@ export class VaultReadSnapshot {
         if (target === null || target.view.file !== file || !isSameOpenMarkdownTarget(this.app.workspace, originalPath, target)) {
           throw new VaultWriteError("vault_target_changed", "The Markdown editor changed during the DocWen operation.");
         }
-        if (sha256(editor.getValue()) !== contentSha256) {
+        if (editor.getValue() !== original) {
           throw new VaultWriteError("vault_content_conflict", "The editor changed during the DocWen operation.");
         }
       } else {
@@ -120,7 +121,7 @@ export class VaultReadSnapshot {
     const assertCurrent = async (): Promise<void> => {
       assertPublicationIdentity();
       if (!editor) {
-        const current = await this.app.vault.readBinary(file);
+        const current = await readVaultInput(this.app.vault, file, signal);
         assertPublicationIdentity();
         if (sha256(current) !== contentSha256) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during the DocWen operation.");
@@ -134,14 +135,11 @@ export class VaultReadSnapshot {
       published = true;
       return committed;
     };
-    const ownedWorkspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-snapshot-"));
+    const workspace = await createVaultWorkspace("snapshot");
     const extension = path.extname(originalPath) || ".bin";
     let result: T;
     try {
       throwIfAborted(signal);
-      // Core inspections return canonical paths, including for aliased TEMP parents.
-      // Bind both snapshot copies to that spelling without relaxing inspection checks.
-      const workspace = await realpath(ownedWorkspace);
       const inputPath = path.join(workspace, `source${extension}`);
       await writeFile(inputPath, typeof original === "string" ? original : Buffer.from(original));
       const sourceInput: TaskInput = {
@@ -151,7 +149,7 @@ export class VaultReadSnapshot {
         logicalPath: logicalPathFor(originalPath),
       };
       const getAcceptedDetectedSource: IsolatedSnapshot["getAcceptedDetectedSource"] = async (inspection, route, inspect) => {
-        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent);
+        return materializeDetectedSource(sourceInput, contentSha256, inspection, route, inspect, assertCurrent, signal);
       };
       let declaredMarkdownInputs: Promise<DeclaredMarkdownSnapshot> | undefined;
       const getDeclaredMarkdownInputs = async (mediaType = sourceInput.mediaType): Promise<DeclaredMarkdownSnapshot | undefined> => {
@@ -179,14 +177,14 @@ export class VaultReadSnapshot {
       // conflict after an output was already committed successfully.
       if (!published) await assertCurrent();
     } catch (primaryError) {
-      await rm(ownedWorkspace, { recursive: true, force: true }).catch((cleanupError: unknown) => {
+      await rm(workspace, { recursive: true, force: true }).catch((cleanupError: unknown) => {
         recordFailureWarning(primaryError, operationWarning("input_cleanup_failed", cleanupError));
       });
       throw primaryError;
     }
     const warnings: OperationWarning[] = [];
     try {
-      await rm(ownedWorkspace, { recursive: true, force: true });
+      await rm(workspace, { recursive: true, force: true });
     } catch (cleanupError) {
       warnings.push(operationWarning("input_cleanup_failed", cleanupError));
     }
@@ -218,14 +216,7 @@ function decodeMarkdown(value: string | ArrayBuffer): string {
 }
 
 function sha256(value: string | ArrayBuffer | Uint8Array): string {
-  const bytes = typeof value === "string"
-    ? Buffer.from(value, "utf8")
-    : value instanceof ArrayBuffer
-      ? Buffer.from(value)
-      : Buffer.from(value.buffer, value.byteOffset, value.byteLength);
-  return createHash("sha256")
-    .update(bytes)
-    .digest("hex");
+  return createHash("sha256").update(value instanceof ArrayBuffer ? new Uint8Array(value) : value).digest("hex");
 }
 
 function throwIfAborted(signal: AbortSignal): void {

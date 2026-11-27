@@ -8,7 +8,6 @@ import {
   sha256File,
   throwIfAborted,
 } from "./output-integrity";
-import { createReadStream } from "node:fs";
 import {
   lstat,
   mkdtemp,
@@ -48,6 +47,12 @@ export const INPUT_HANDLE_LIMITS = Object.freeze({
   fileBytes: 512 * 1024 * 1024,
   totalBytes: 1024 * 1024 * 1024,
 });
+export function assertInputCount(count: number): void {
+  if (count > INPUT_HANDLE_LIMITS.count) {
+    throw inputLimitError("DocWen task contains too many input files.", { actual: count, limit: INPUT_HANDLE_LIMITS.count });
+  }
+}
+
 export const PROOFREAD_REPORT_LIMIT_BYTES = 16 * 1024 * 1024;
 
 export type ProofreadCheck = "typo" | "symbol" | "punct" | "sensitive" | "all" | "none";
@@ -234,7 +239,7 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const handle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     const result = await this.machine.query("file/inspect", { input: handle }, signal);
-    return normalizeFileInspection(result, source.path);
+    return normalizeFileInspection(result);
   }
 
   async runtimeCapabilities(signal?: AbortSignal): Promise<RuntimeCapabilityProjection> {
@@ -302,7 +307,7 @@ export class DocWenClient {
     return this.withTaskStaging(async (stagingRoot) => {
       let capabilityId = "";
       const result = await this.machine.runTask(async (query) => {
-        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }), source.path);
+        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }));
         const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
         const capabilities = request.selectedCapability
           ? [request.selectedCapability]
@@ -363,7 +368,7 @@ export class DocWenClient {
       }
       let reportValue: unknown;
       try {
-        reportValue = JSON.parse(await readValidatedArtifactText(artifact, PROOFREAD_REPORT_LIMIT_BYTES));
+        reportValue = JSON.parse(await readValidatedArtifactText(artifact, signal));
       } catch (error) {
         if (error instanceof LocalCliError) throw error;
         throw new LocalCliError("cli_integrity_error", "Proofreading returned invalid JSON.", {
@@ -455,33 +460,25 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
     || (documentNode && (entry.ordinal !== 0 || !matchesPrimaryMarkdownNodePath(artifact)))) {
     throw new LocalCliError("cli_integrity_error", "Numbering requires one preferred primary Markdown document.");
   }
-  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
   const decoder = new TextDecoder("utf-8", { fatal: true });
-  let bytesRead = 0;
-  for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer>) {
-    throwIfAborted(signal);
-    bytesRead += chunk.length;
-    if (bytesRead > artifact.size_bytes) {
-      throw new LocalCliError("cli_integrity_error", "Numbering output grew while it was being read.");
-    }
+  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal, chunk => {
     try {
       decoder.decode(chunk, { stream: true });
     } catch {
       throw new LocalCliError("cli_integrity_error", "Numbering returned invalid UTF-8.");
     }
-  }
+  });
   try {
     decoder.decode();
   } catch {
     throw new LocalCliError("cli_integrity_error", "Numbering returned incomplete UTF-8.");
   }
-  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
 }
 
-function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {
+function normalizeFileInspection(result: JsonObject): FileInspection {
   const detectedFormat = requiredStringValue(result.detected_format, "file/inspect.detected_format");
   return {
-    filePath: stringValue(result.file_path) || sourcePath,
+    filePath: requiredStringValue(result.file_path, "file/inspect.file_path"),
     contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
     sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
     decision: requiredStringValue(result.decision, "file/inspect.decision"),
@@ -510,12 +507,7 @@ async function taskRequest(
   if (inputs.length === 0) {
     throw new LocalCliError("cli_input_invalid", "DocWen tasks require at least one input.");
   }
-  if (inputs.length > INPUT_HANDLE_LIMITS.count) {
-    throw inputLimitError("DocWen task contains too many input files.", {
-      actual: inputs.length,
-      limit: INPUT_HANDLE_LIMITS.count,
-    });
-  }
+  assertInputCount(inputs.length);
   const logicalPaths = new Set<string>();
   for (const input of inputs) {
     const logicalPath = normalizeLogicalPath(input.logicalPath);
@@ -529,12 +521,6 @@ async function taskRequest(
   for (const input of inputs) {
     throwIfAborted(signal);
     const inspection = await inspectInputFile(input);
-    if (inspection.identity.size > INPUT_HANDLE_LIMITS.fileBytes) {
-      throw inputLimitError("DocWen input exceeds the per-file byte limit.", {
-        actual: inspection.identity.size,
-        limit: INPUT_HANDLE_LIMITS.fileBytes,
-      });
-    }
     if (totalBytes > INPUT_HANDLE_LIMITS.totalBytes - inspection.identity.size) {
       throw inputLimitError("DocWen task inputs exceed the total byte limit.", {
         limit: INPUT_HANDLE_LIMITS.totalBytes,
@@ -563,6 +549,12 @@ async function taskRequest(
   };
 }
 
+export function assertInputFileSize(bytes: number): void {
+  if (bytes > INPUT_HANDLE_LIMITS.fileBytes) {
+    throw inputLimitError("DocWen input exceeds the per-file byte limit.", { actual: bytes, limit: INPUT_HANDLE_LIMITS.fileBytes });
+  }
+}
+
 type InputFileInspection = {
   absolutePath: string;
   canonicalPath: string;
@@ -578,12 +570,7 @@ async function inspectInputFile(input: TaskInput): Promise<InputFileInspection> 
       throw new LocalCliError("cli_input_invalid", "DocWen input must be a regular file.", { filePath: absolutePath });
     }
     const identity = fileIdentity(fileInfo);
-    if (identity.size > INPUT_HANDLE_LIMITS.fileBytes) {
-      throw inputLimitError("DocWen input exceeds the per-file byte limit.", {
-        actual: identity.size,
-        limit: INPUT_HANDLE_LIMITS.fileBytes,
-      });
-    }
+    assertInputFileSize(identity.size);
     return {
       absolutePath,
       canonicalPath: await realpath(absolutePath),
@@ -936,30 +923,18 @@ function normalizeCapability(item: JsonObject): MachineCapability {
 
 async function readValidatedArtifactText(
   artifact: ValidatedBundleArtifact,
-  limitBytes: number,
+  signal?: AbortSignal,
 ): Promise<string> {
   try {
-    await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    const chunks: Array<Buffer<ArrayBufferLike>> = [];
-    let bytesRead = 0;
-    for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
-      const bytes = Buffer.from(chunk);
-      bytesRead += bytes.length;
-      if (bytesRead > artifact.size_bytes || bytesRead > limitBytes) {
-        throw new LocalCliError("cli_integrity_error", "Artifact grew while it was being read.", {
-          artifactId: artifact.artifact_id,
-        });
-      }
-      chunks.push(bytes);
-    }
-    if (bytesRead !== artifact.size_bytes) {
-      throw new LocalCliError("cli_integrity_error", "Artifact size changed while it was being read.", {
-        artifactId: artifact.artifact_id,
-      });
-    }
-    await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    return Buffer.concat(chunks, bytesRead).toString("utf8");
+    throwIfAborted(signal);
+    // The caller caps the declared size before allocating. Verification also checks every chunk.
+    const bytes = Buffer.allocUnsafe(artifact.size_bytes);
+    await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal, (chunk, offset) => {
+      chunk.copy(bytes, offset);
+    });
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch (error) {
+    throwIfAborted(signal);
     if (error instanceof LocalCliError && error.code === "cli_integrity_error") throw error;
     throw new LocalCliError("cli_integrity_error", "Unable to revalidate the Artifact Bundle report.", {
       artifactId: artifact.artifact_id,

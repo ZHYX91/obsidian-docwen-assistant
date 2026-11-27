@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { initI18n } from "../src/i18n";
+import type { SettingsSaveState } from "../src/runtime/settings-save";
 
 const lifecycle = vi.hoisted(() => [] as string[]);
 const hostState = vi.hoisted(() => ({
@@ -24,7 +25,7 @@ class FakeElement {
   readonly attributes = new Map<string, string>();
   readonly listeners = new Map<string, ((event: FakeKeyboardEvent) => void)[]>();
   readonly dataset: Record<string, string> = {};
-  readonly ownerDocument = { defaultView: {
+  readonly ownerDocument = { get activeElement() { return focusState.activeElement; }, defaultView: {
     requestAnimationFrame: (callback: FrameRequestCallback) => (callback(0), 1),
     cancelAnimationFrame: vi.fn(),
     getComputedStyle: () => ({ direction: "ltr" }),
@@ -33,7 +34,9 @@ class FakeElement {
   onInnerHTMLChange: ((value: string) => void) | null = null;
   hidden = false;
   isConnected = true;
-  textContent = "";
+  private ownText = "";
+  get textContent(): string { return this.ownText + this.children.map((child) => child.textContent).join(""); }
+  set textContent(value: string) { this.children.length = 0; this.ownText = value; }
   id = "";
   tabIndex = 0;
   type = "";
@@ -74,6 +77,10 @@ class FakeElement {
   scrollIntoView(): void {}
   getBoundingClientRect(): DOMRect { return { left: 0, width: 0 } as DOMRect; }
   querySelector(): null { return null; }
+  removeEventListener(type: string, listener: (event: FakeKeyboardEvent) => void): void {
+    this.listeners.set(type, (this.listeners.get(type) ?? []).filter(item => item !== listener));
+  }
+
   empty(): void { lifecycle.push("empty"); this.children.length = 0; this.textContent = ""; }
   private append(options?: FakeElementOptions): FakeElement {
     const child = new FakeElement();
@@ -173,6 +180,7 @@ class FakeDropdown {
   async choose(value: string): Promise<void> { this.value = value; await this.change?.(value); }
 }
 class FakeToggle {
+  readonly toggleEl = new FakeElement();
   change: ((value: boolean) => void | Promise<void>) | null = null;
   disabled = false;
   value = false;
@@ -224,7 +232,7 @@ describe("settings surface lifecycle", () => {
     tab.display();
 
     const root = (tab.containerEl as unknown as FakeElement).children[0];
-    const tabList = root.children[0];
+    const tabList = root.children[0].children[1];
     const panel = root.children[1];
     expect(tabList.attributes.get("role")).toBe("tablist");
     expect(tabList.children).toHaveLength(4);
@@ -259,13 +267,13 @@ describe("settings surface lifecycle", () => {
     expect(warning.descEl.textContent).toContain("supports schema 2");
     expect(warning.descEl.textContent).toContain("was not rewritten");
 
-    const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings save status")!;
-    expect(persistence.descEl.textContent).toContain("unsupported schema 3");
+    expect(settings.filter((setting) => setting.descEl.textContent.includes("unsupported schema 3"))).toEqual([warning]);
+    expect(buttons.some((button) => button.label === "Retry")).toBe(false);
     expect(buttons.every((button) => button.disabled)).toBe(true);
     expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
 
     const tabRoot = (tab.containerEl as unknown as FakeElement).children[1];
-    expect(tabRoot.children[0].children).toHaveLength(4);
+    expect(tabRoot.children[0].children[1].children).toHaveLength(4);
     await expect(tab.setControlValue("extractImages", false)).rejects.toMatchObject({
       code: "settings_schema_incompatible",
     });
@@ -278,7 +286,7 @@ describe("settings surface lifecycle", () => {
     const { SettingTab } = await import("../src/settings");
     const tab = new SettingTab({} as never, settingsPlugin(DEFAULT_SETTINGS) as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
 
     expect(tabButtons).toHaveLength(4);
     tabButtons[3].dispatch("click");
@@ -299,7 +307,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
 
     tabButtons[1].dispatch("click");
     const dpi = texts.find((text) => text.inputEl.type === "number")!;
@@ -351,8 +359,8 @@ describe("settings surface lifecycle", () => {
     const status = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!;
     expect(status.settingEl.classList.add).toHaveBeenCalledWith("docwen-settings-connection");
     expect(status.descEl.attributes.get("aria-live")).toBe("polite");
-    expect(status.descEl.textContent).toContain("Open DocWen:");
-    expect(status.descEl.textContent).toContain("Conversion, numbering, and proofreading:");
+    expect(status.descEl.children[0].textContent).toContain("Open DocWen:");
+    expect(status.descEl.children[1].textContent).toContain("Conversion, numbering, and proofreading:");
   });
 
   it("deduplicates Check, preserves independent Launch, and ignores dismissed controls", async () => {
@@ -385,17 +393,86 @@ describe("settings surface lifecycle", () => {
     expect(check.disabled).toBe(true);
   });
 
+  it.each([
+    ["runDoctorCheck", "Check", "Launch DocWen"],
+    ["openDocWenApplication", "Launch DocWen", "Check"],
+  ] as const)("reflects pending %s and its result in a remounted connection card", async (action, label, otherLabel) => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
+    const connected = { state: "connected", mode: "automatic", productVersion: "0.17.0" };
+    plugin.getGuiConnectionStatus.mockReturnValue(connected);
+    plugin.getDocWenConnectionStatus.mockReturnValue(connected);
+    let finish!: () => void;
+    plugin[action].mockImplementation(() => new Promise<undefined>((resolve) => { finish = () => resolve(undefined); }));
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const latestButton = (name: string) => buttons.filter((button) => button.label === name).at(-1)!;
+    const latestRow = () => settings.filter((row) => row.nameEl.textContent === "DocWen connection").at(-1)!;
+    const oldButton = latestButton(label);
+    const oldRow = latestRow();
+    oldButton.click?.();
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    tabs[3].dispatch("click");
+    tabs[0].dispatch("click");
+
+    const current = latestButton(label);
+    expect(current).not.toBe(oldButton);
+    expect(current.disabled).toBe(true);
+    expect(current.buttonEl.attributes.get("aria-busy")).toBe("true");
+    expect(latestButton(otherLabel).disabled).toBe(false);
+    current.click?.();
+    oldButton.click?.();
+    expect(plugin[action]).toHaveBeenCalledOnce();
+
+    const failed = { state: "error", mode: "automatic", code: "cli_gui_control_failed" };
+    const channel = action === "openDocWenApplication" ? 0 : 1;
+    const monitor = channel === 0 ? plugin.getGuiConnectionStatus : plugin.getDocWenConnectionStatus;
+    monitor.mockReturnValue(failed);
+    finish();
+    await vi.waitFor(() => expect(current.disabled).toBe(false));
+    expect(current.buttonEl.attributes.get("aria-busy")).toBe("false");
+    expect(latestRow().descEl.children[channel].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(oldButton.disabled).toBe(true);
+    expect(oldRow.descEl.children[channel].textContent).toContain("0.17.0");
+  });
+
   it("keeps GUI failure visible when background integration succeeds", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
-    const { connectionDisplay } = await import("../src/settings-connection");
+    const { SettingTab } = await import("../src/settings");
     const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
     plugin.getGuiConnectionStatus.mockImplementation(() => ({ state: "error", mode: "automatic", code: "cli_gui_control_failed" }));
     plugin.getDocWenConnectionStatus.mockReturnValue({ state: "connected", mode: "automatic", productVersion: "0.17.0" });
-    const display = connectionDisplay(plugin as never);
-    expect(display.state).toBe("error");
-    expect(display.message).toContain("Open DocWen:");
-    expect(display.message).toContain("0.17.0");
-    expect(display.message.split("\n")).toHaveLength(2);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    const rows = settings.find((setting) => setting.nameEl.textContent === "DocWen connection")!.descEl.children;
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain("Open DocWen:");
+    expect(rows[0].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(rows[1].textContent).toContain("0.17.0");
+    expect(rows[1].classList.add).toHaveBeenCalledWith("docwen-settings-status-valid");
+  });
+
+  it("shares the Store remedy but preserves distinct failures with the same error code", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { connectionDisplay } = await import("../src/settings-connection");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    const failure = { state: "error", mode: "automatic", code: "cli_alias_not_found" };
+    plugin.getGuiConnectionStatus.mockReturnValue(failure);
+    plugin.getDocWenConnectionStatus.mockReturnValue({ ...failure, details: { phase: "resolve" } });
+    const shared = connectionDisplay(plugin as never);
+    expect(shared).toHaveLength(1);
+    expect(shared[0].message).toContain("Open DocWen");
+    expect(shared[0].message).toContain("Conversion, numbering, and proofreading");
+    expect(shared[0].message.match(/Microsoft Store/g)).toHaveLength(1);
+    const mismatch = { ...failure, code: "cli_incompatible_version" };
+    plugin.getGuiConnectionStatus.mockReturnValue(mismatch);
+    plugin.getDocWenConnectionStatus.mockReturnValue({
+      ...mismatch, details: { incompatibility: "product_version", actualProductVersion: "0.10.0" },
+    });
+    const distinct = connectionDisplay(plugin as never);
+    expect(distinct).toHaveLength(2);
+    expect(distinct[1].message).toContain("0.10.0");
   });
 
   it("restores Check after rejection without an unhandled promise", async () => {
@@ -423,7 +500,7 @@ describe("settings surface lifecycle", () => {
     const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
     tabButtons[1].dispatch("click");
     const extractImages = toggles[0];
 
@@ -448,8 +525,8 @@ describe("settings surface lifecycle", () => {
     plugin.fetchNumberingSchemes = vi.fn().mockResolvedValue([{ id: "legal", name: "Legal" }]);
     const tab = new SettingTab({} as never, plugin as never);
     tab.display();
-    const [tabList, panel] = (tab.containerEl as unknown as FakeElement).children[0].children;
-    tabList.children[2].dispatch("click");
+    const [bar, panel] = (tab.containerEl as unknown as FakeElement).children[0].children;
+    bar.children[1].children[2].dispatch("click");
     const format = dropdowns.find((control) => control.options.has("word_native"))!;
     const scheme = dropdowns.find((control) => control.options.has("none"))!;
     await vi.waitFor(() => expect(scheme.options.has("legal")).toBe(true));
@@ -489,7 +566,7 @@ describe("settings surface lifecycle", () => {
     await dropdowns[0].choose("zh-CN");
     await vi.waitFor(() => expect(plugin.settings.language).toBe("zh-CN"));
 
-    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children;
+    const tabButtons = (tab.containerEl as unknown as FakeElement).children[0].children[0].children[1].children;
     expect(tabButtons[0].textContent).toBe("常规");
     expect(tabButtons[3].textContent).toBe("校对");
   });
@@ -597,18 +674,66 @@ describe("settings surface lifecycle", () => {
     expect(lifecycle).not.toContain("base-update");
   });
 
-  it("renders persistence recovery on the custom tabbed surface after a failed save", async () => {
+  it("offers retry on the current page even after switching pages during a failed save", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
-    const save = vi.fn().mockRejectedValue(new Error("disk full"));
-    const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
+    let rejectSave!: (error: Error) => void;
+    const plugin = settingsPlugin(DEFAULT_SETTINGS, vi.fn(() => new Promise<void>((_, reject) => { rejectSave = reject; })));
+    let state: SettingsSaveState = "saved";
+    plugin.getSettingsSaveState.mockImplementation(() => state);
     const tab = new SettingTab({} as never, plugin as never);
-    lifecycle.length = 0;
+    tab.display();
+    const root = (tab.containerEl as unknown as FakeElement).children[0];
+    const panel = root.children.find((el) => el.attributes.get("role") === "tabpanel")!;
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    tabs[3].dispatch("click");
+    await toggles.at(-1)!.choose(!DEFAULT_SETTINGS.proofreadSensitive);
+    tabs[1].dispatch("click");
+    state = "pending";
+    rejectSave(new Error("disk full"));
+    const feedback = panel.children[0];
+    await vi.waitFor(() => expect(feedback.children).toHaveLength(1));
+    expect(settings.find((row) => row.settingEl === feedback.children[0])?.descEl.textContent).toBe("Changes are not saved yet.");
+    const retry = buttons.find((btn) => btn.label === "Retry" && !btn.buttonEl.hidden)!;
+    let rejectRetry!: () => void;
+    plugin.retrySettingsSave.mockImplementationOnce(() => {
+      state = "saving";
+      return new Promise<void>((_, reject) => {
+        rejectRetry = () => { state = "pending"; reject(new Error("still full")); };
+      });
+    });
+    const retrying = retry.click?.();
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
+    await retry.click?.();
+    expect(plugin.retrySettingsSave).toHaveBeenCalledOnce();
+    rejectRetry();
+    await retrying;
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false");
+    expect(feedback.children).toHaveLength(1);
+    plugin.retrySettingsSave.mockImplementationOnce(async () => { state = "saved"; });
+    await retry.click?.();
+    expect(plugin.retrySettingsSave).toHaveBeenCalledTimes(2);
+    expect(feedback.children).toHaveLength(0);
+    expect(plugin.settings.proofreadSensitive).toBe(!DEFAULT_SETTINGS.proofreadSensitive);
+    expect(tabs[1].attributes.get("aria-selected")).toBe("true");
+  });
 
-    await expect(tab.setControlValue("extractImages", false)).rejects.toThrow("disk full");
-
-    expect(lifecycle).not.toContain("base-update");
-    expect((tab.containerEl as unknown as FakeElement).children).not.toHaveLength(0);
+  it("reopening settings observes a connection check already in progress", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
+    let complete!: () => void;
+    const pending = new Promise<void>(resolve => { complete = resolve; });
+    plugin.getDocWenConnectionStatus.mockReturnValue({ state: "checking", mode: "automatic" });
+    plugin.checkDocWenConnectionSilently.mockReturnValue(pending);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    tab.hide();
+    tab.display();
+    const current = settings.filter(row => row.nameEl.textContent === "DocWen connection").at(-1)!;
+    plugin.getDocWenConnectionStatus.mockReturnValue({ state: "connected", mode: "automatic", productVersion: "0.23.0" });
+    complete();
+    await vi.waitFor(() => expect(current.descEl.textContent).toContain("0.23.0"));
   });
 
   it("updates a connected path status row without replacing the current page", async () => {
@@ -623,15 +748,15 @@ describe("settings surface lifecycle", () => {
     };
     internals.configurePathStatus(new FakeSetting(new FakeElement()));
     const statusElement = [...internals.pathStatusElements][0];
-    const initialText = statusElement.textContent;
+    const initialText = statusElement.children.map((child) => child.textContent);
     plugin.settings.docwenConnectionMode = "manual";
     plugin.settings.docwenCliPath = "C:\\not-docwen.exe";
     plugin.resetDocWenRuntime();
 
     internals.refreshPathStatus();
 
-    expect(statusElement.textContent).not.toBe(initialText);
-    expect(statusElement.classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
+    expect(statusElement.children.map((child) => child.textContent)).not.toEqual(initialText);
+    expect(statusElement.children[0].classList.add).toHaveBeenCalledWith("docwen-settings-status-error");
   });
 
   it("recognizes a nested settings page as current through the host tab owner", async () => {
@@ -651,11 +776,13 @@ describe("settings surface lifecycle", () => {
   it("exposes loading, error, and retry states for runtime numbering schemes", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
+    let finishRetry!: (value: { id: string; name: string }[]) => void;
     let rejectFirst!: (error: Error) => void;
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
     plugin.fetchNumberingSchemes = vi.fn()
       .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
-      .mockResolvedValueOnce([{ id: "legal", name: "Legal" }]);
+      .mockRejectedValueOnce(new Error("Still offline"))
+      .mockImplementationOnce(() => new Promise(resolve => { finishRetry = resolve; }));
     const tab = new SettingTab({} as never, plugin as never);
     const setting = new FakeSetting(new FakeElement());
     const cleanup = (tab as unknown as {
@@ -674,11 +801,52 @@ describe("settings surface lifecycle", () => {
     expect(setting.descEl.textContent).toContain("Failed to load numbering schemes");
     expect(setting.settingEl.attributes.get("aria-busy")).toBe("false");
 
+    retry.buttonEl.focus();
     retry.click?.();
+    expect(retry.buttonEl.hidden).toBe(false);
+    expect(retry.disabled).toBe(false);
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false"));
+    expect(focusState.activeElement).toBe(retry.buttonEl);
+    retry.click?.();
+    finishRetry([{ id: "legal", name: "Legal" }]);
     await vi.waitFor(() => expect(dropdown.options.get("legal")).toBe("Legal"));
     expect(retry.buttonEl.hidden).toBe(true);
     expect(dropdown.disabled).toBe(false);
+    expect(focusState.activeElement).toBe(dropdown.selectEl);
     cleanup();
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps language, direction and page text in sync through a failed save and retry", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const { t } = await import("../src/i18n");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    let state: SettingsSaveState = "saved";
+    plugin.getSettingsSaveState.mockImplementation(() => state);
+    plugin.saveSettings.mockImplementationOnce(async () => {
+      initI18n(String(plugin.settings.language));
+      state = "pending";
+      throw new Error("disk full");
+    });
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    await dropdowns[0].choose("ar");
+    await vi.waitFor(() => expect(buttons.some((btn) => btn.label === t("settingsRetry"))).toBe(true));
+    const root = (tab.containerEl as unknown as FakeElement).children[0];
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    expect(root.attributes.get("lang")).toBe("ar");
+    expect(root.attributes.get("dir")).toBe("rtl");
+    expect(tabs[0].textContent).toBe(t("settingsGeneralTitle"));
+    expect(tabs[3].textContent).toBe(t("settingsProofreadTitle"));
+    plugin.retrySettingsSave.mockImplementationOnce(async () => { state = "saved"; });
+    await buttons.find((btn) => btn.label === t("settingsRetry"))!.click?.();
+    expect((tab.containerEl as unknown as FakeElement).children[0]).toBe(root);
+    expect(plugin.settings.language).toBe("ar");
   });
 
   it("keeps an unavailable saved numbering scheme visible without saving until user choice", async () => {
@@ -704,11 +872,11 @@ describe("settings surface lifecycle", () => {
     const dropdown = dropdowns.at(-1)!;
     const retry = buttons.at(-1)!;
 
-    expect(dropdown.options.get("unavailable-custom")).toContain("unavailable-custom");
+    expect(dropdown.options.get("unavailable-custom")).toBe("Saved scheme (unavailable-custom)");
     expect(dropdown.value).toBe("unavailable-custom");
     expect(save).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(retry.buttonEl.hidden).toBe(false));
-    expect(dropdown.options.get("unavailable-custom")).toContain("unavailable-custom");
+    expect(dropdown.options.get("unavailable-custom")).toBe("Saved scheme (unavailable-custom)");
     expect(save).not.toHaveBeenCalled();
 
     retry.click?.();
@@ -741,7 +909,7 @@ describe("settings surface lifecycle", () => {
     const dropdown = dropdowns.at(-1)!;
 
     await vi.waitFor(() => expect(dropdown.disabled).toBe(false));
-    expect(dropdown.options.get("orphaned-id")).toContain("orphaned-id");
+    expect(dropdown.options.get("orphaned-id")).toBe("Saved scheme unavailable (orphaned-id)");
     expect([...dropdown.options.keys()]).toEqual(["default", "none", "orphaned-id"]);
     expect(save).not.toHaveBeenCalled();
     cleanup();
@@ -761,7 +929,7 @@ function settingsPlugin(
   return {
     settings: { ...defaults },
     fetchNumberingSchemes: vi.fn().mockResolvedValue([]),
-    getSettingsSaveState: vi.fn(() => compatibility.status === "incompatible" ? "blocked" : "saved"),
+    getSettingsSaveState: vi.fn((): SettingsSaveState => compatibility.status === "incompatible" ? "blocked" : "saved"),
     getSettingsCompatibility: vi.fn(() => compatibility),
     retrySettingsSave: vi.fn().mockResolvedValue(undefined),
     runDoctorCheck: vi.fn().mockResolvedValue(undefined),

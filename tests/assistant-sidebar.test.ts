@@ -23,11 +23,13 @@ function createFixture() {
   const actions = createAssistantViewActions();
   const views: AssistantView[] = [];
   const leaves: WorkspaceLeaf[] = [];
+  const attached = new Set<WorkspaceLeaf>();
   const current = { file: null as TFile | null, active: true };
   const app = {
     workspace: {
       getActiveFile: () => current.file,
       getLeavesOfType: vi.fn(() => leaves),
+      iterateAllLeaves: (visit: (leaf: WorkspaceLeaf) => void) => attached.forEach(visit),
       getRightLeaf: vi.fn(() => makeLeaf()),
       revealLeaf: vi.fn(async (_leaf: WorkspaceLeaf) => {}),
     },
@@ -46,16 +48,18 @@ function createFixture() {
       }),
       loadIfDeferred: vi.fn(async () => {}),
       detach: vi.fn(() => {
+        attached.delete(leaf as unknown as WorkspaceLeaf);
         const index = leaves.indexOf(leaf as unknown as WorkspaceLeaf);
         if (index !== -1) leaves.splice(index, 1);
-        void leaf.view.onClose();
+        if (leaf.view instanceof AssistantView) void leaf.view.onClose();
       }),
     };
+    attached.add(leaf as unknown as WorkspaceLeaf);
     return leaf;
   }
   const open = createAssistantSidebarOpener(app as unknown as App, operations, () => current.active);
   fixtures.push({ views, operations });
-  return { actions, app, current, leaves, makeLeaf, open, operations };
+  return { actions, app, current, leaves, makeLeaf, open, operations, views };
 }
 
 function file(name: string): TFile {
@@ -68,6 +72,23 @@ function button(view: AssistantView, key: string): HTMLButtonElement {
 }
 
 describe("Assistant sidebar opening", () => {
+  it("enables first-run refresh only for eligible files, then keeps refresh bound to the report", async () => {
+    const fixture = createFixture();
+    const view = await fixture.open();
+    const isDisabled = () => button(view, "refresh").disabled;
+    expect(isDisabled()).toBe(true);
+    fixture.current.file = file("B.md");
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(false);
+    fixture.current.file = file("C.pdf");
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(true);
+    view.updateResults([], "B.md", "Notes/B.md", "b".repeat(64));
+    fixture.current.file = null;
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(false);
+  });
+
   it("opens with no file or backend and only runs actions after an explicit button click", async () => {
     const fixture = createFixture();
     const view = await fixture.open();
@@ -141,6 +162,70 @@ describe("Assistant sidebar opening", () => {
     expect(fixture.leaves).toHaveLength(1);
   });
 
+  it.each([true, false])("distinguishes a detached new leaf from a failed live load (detached=%s)", async detached => {
+    const f = createFixture();
+    const leaf = f.makeLeaf();
+    f.app.workspace.getRightLeaf.mockReturnValue(leaf);
+    const error = new Error("host could not create the view");
+    leaf.setViewState.mockImplementationOnce(async () => {
+      if (detached) leaf.detach();
+      throw error;
+    });
+    if (detached) await expect(f.open()).rejects.toBeInstanceOf(AssistantSidebarClosedError);
+    else await expect(f.open()).rejects.toBe(error);
+    expect(f.app.workspace.revealLeaf).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["synchronous", "resolve"], ["synchronous", "reject"], ["deferred", "resolve"], ["deferred", "reject"],
+  ])("keeps the replacement view after a %s load and late %s", async (timing, outcome) => {
+    const f = createFixture();
+    const leaf = f.makeLeaf();
+    f.app.workspace.getRightLeaf.mockReturnValue(leaf);
+    const load = leaf.setViewState.getMockImplementation()!;
+    let finish!: () => void;
+    let opened!: () => void;
+    const paused = new Promise<void>(resolve => { finish = resolve; });
+    const firstOpen = new Promise<void>(resolve => { opened = resolve; });
+    leaf.setViewState.mockImplementationOnce(async () => {
+      if (timing === "deferred") await Promise.resolve();
+      await load();
+      opened();
+      await paused;
+      if (outcome === "reject") throw new Error("opening superseded");
+    });
+    const pending = f.open();
+    await firstOpen;
+    const old = leaf.view;
+    await old.onClose();
+    // The next view uses the same OperationCoordinator and the same workspace leaf.
+    const replacement = new AssistantView(leaf as never, async () => {}, f.operations, createAssistantViewActions());
+    f.views.push(replacement);
+    leaf.view = replacement;
+    await replacement.onOpen();
+    finish();
+    await expect(pending).rejects.toBeInstanceOf(AssistantSidebarClosedError);
+    expect(f.app.workspace.revealLeaf).not.toHaveBeenCalled();
+    expect(leaf.detach).not.toHaveBeenCalled();
+    expect(replacement.captureLifetime()()).toBe(true);
+  });
+
+  it("keeps a live deferred-load error and treats a detached leaf as closed", async () => {
+    const f = createFixture();
+    const leaf = f.makeLeaf();
+    leaf.isDeferred = true;
+    f.leaves.push(leaf as unknown as WorkspaceLeaf);
+    const failure = new Error("host could not restore the view");
+    leaf.loadIfDeferred.mockRejectedValueOnce(failure);
+    await expect(f.open()).rejects.toBe(failure);
+    leaf.loadIfDeferred.mockImplementationOnce(async () => {
+      leaf.detach();
+      throw failure;
+    });
+    await expect(f.open()).rejects.toBeInstanceOf(AssistantSidebarClosedError);
+    expect(f.app.workspace.revealLeaf).not.toHaveBeenCalled();
+  });
+
   it("does not detach a replacement view from a reloaded runtime when an older opening settles", async () => {
     const fixture = createFixture();
     const leaf = fixture.makeLeaf();
@@ -164,13 +249,14 @@ describe("Assistant sidebar opening", () => {
     expect(fixture.app.workspace.revealLeaf).not.toHaveBeenCalled();
   });
 
-  it("does not reveal or leave a sidebar restored after plugin unload", async () => {
+  it.each(["resolve", "reject"])("cleans the sidebar restored after unload when setViewState settles: %s", async outcome => {
     const fixture = createFixture();
     const leaf = fixture.makeLeaf();
     const setViewState = leaf.setViewState.getMockImplementation()!;
     leaf.setViewState.mockImplementation(async () => {
       await setViewState();
       fixture.current.active = false;
+      if (outcome === "reject") throw new Error("opening interrupted");
     });
     fixture.app.workspace.getRightLeaf.mockReturnValue(leaf);
     await expect(fixture.open()).rejects.toBeInstanceOf(AssistantSidebarClosedError);
@@ -234,7 +320,7 @@ describe("Assistant sidebar file controls", () => {
     fixture.current.file = file("First.md");
     const view = await fixture.open();
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     expect(button(view, "proofread-current-file").disabled).toBe(true);
     expect(button(view, "open-gui").disabled).toBe(false);
     expect(button(view, "open-current-file").disabled).toBe(false);
@@ -266,7 +352,7 @@ describe("Assistant sidebar tabs and exports", () => {
     fixture.current.file = file("Source.md");
     const view = await fixture.open();
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     const proofread = root(view).querySelector<HTMLElement>('[role="tabpanel"]')!;
     const report = root(view).querySelector(".docwen-proofread-status");
     proofread.scrollTop = 90;
@@ -321,7 +407,7 @@ describe("Assistant sidebar tabs and exports", () => {
     expect(button(view, "tab-actions").textContent).toBe("操作");
     expect(root(view).querySelector<HTMLElement>('[role="tabpanel"]')!.hidden).toBe(true);
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     expect(view.getState().activeTab).toBe("proofread");
     lease.finish();
   });
@@ -407,7 +493,9 @@ describe("Assistant sidebar tabs and exports", () => {
     const fixture = createFixture();
     fixture.current.file = file("Source.md");
     const error = new Error("private backend details");
-    vi.mocked(fixture.actions.getExportTargets).mockRejectedValueOnce(error).mockResolvedValue(["md", "xlsx"]);
+    let complete!: (targets: Array<"md" | "xlsx">) => void;
+    vi.mocked(fixture.actions.getExportTargets).mockRejectedValueOnce(error)
+      .mockImplementationOnce(() => new Promise((resolve) => { complete = resolve; }));
     const view = await fixture.open();
     button(view, "tab-actions").click();
     await vi.waitFor(() => expect(button(view, "export-retry")).not.toBeNull());
@@ -418,8 +506,13 @@ describe("Assistant sidebar tabs and exports", () => {
     expect(fixture.actions.showExportFailure).toHaveBeenCalledWith(error);
     button(view, "open-gui").click();
     expect(fixture.actions.openGui).toHaveBeenCalledOnce();
+    button(view, "export-retry").focus();
     button(view, "export-retry").click();
+    expect(document.activeElement).toBe(button(view, "refresh-exports"));
+    button(view, "open-gui").focus();
+    complete(["md", "xlsx"]);
     await vi.waitFor(() => expect(button(view, "export-md")).not.toBeNull());
+    expect(document.activeElement).toBe(button(view, "open-gui"));
     button(view, "export-xlsx").click();
     expect(fixture.actions.exportFile).toHaveBeenCalledWith(fixture.current.file, "xlsx");
   });

@@ -15,6 +15,7 @@ beforeEach(async () => {
   fixtureRoot = await mkdtemp(path.join(tmpdir(), "assistant-docs-"));
   temporaryDirectories.push(fixtureRoot);
   await cp(path.join(projectRoot, "docs"), path.join(fixtureRoot, "docs"), { recursive: true });
+  await cp(path.join(projectRoot, "acceptance/README.md"), path.join(fixtureRoot, "acceptance/README.md"));
 });
 
 afterEach(async () => {

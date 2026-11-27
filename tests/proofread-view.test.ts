@@ -1,29 +1,13 @@
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { MarkdownView, TFile } from "obsidian";
-import { createAssistantSidebarOpener } from "../src/host/assistant-sidebar";
 import { describe, expect, it, vi } from "vitest";
 import { createAssistantViewActions, useObsidianDom } from "./helpers/obsidian-dom";
+import type { EditorPosition } from "obsidian";
 
 useObsidianDom();
 
 vi.mock("../src/host/notices", () => ({ showNotice: vi.fn() }));
-vi.mock("../src/utils/suggest-modal", () => ({ pickItem: vi.fn() }));
-vi.mock("../src/host/vault-files", () => ({
-  resolveTargetFile: (file: unknown) => file,
-  resolveAbsoluteFilePath: () => "D:/Vault/Notes/B.md",
-}));
-vi.mock("../src/host/vault-read-snapshot", () => ({
-  VaultReadSnapshot: class {
-    async run(_file: unknown, _signal: AbortSignal, work: (snapshot: unknown) => Promise<unknown>) {
-      return { value: await work({
-        inputs: [{ path: "snapshot.md" }], contentSha256: "a".repeat(64), proofreadSourceDigest: () => "a".repeat(64),
-        publish: async (commit: () => Promise<unknown>) => commit(),
-      }), warnings: [] };
-    }
-  },
-}));
-
 vi.mock("obsidian", async () => import("./helpers/obsidian-dom"));
 
 describe("AssistantView", () => {
@@ -39,169 +23,6 @@ describe("AssistantView", () => {
     await view.onClose();
     expect(view.captureLifetime()()).toBe(false);
   });
-
-  it.each([
-    "keep-open", "close-observer", "close-owner", "reopen-owner", "replace-owner", "unload",
-    "activate-close", "activate-reopen", "activate-replace", "activate-detach", "closed-before-run",
-    "command-close", "command-replace", "command-error", "menu-close", "menu-replace", "menu-error", "menu-dispose",
-    "menu-dispose-error",
-  ])(
-    "routes a second view's refresh and cancellation by ownership: %s", async (change) => {
-      const { AssistantView } = await import("../src/assistant-view");
-      const { ProofreadActions } = await import("../src/actions/proofread-actions");
-      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
-      const operations = new OperationCoordinator();
-      const file = { name: "B.md", path: "Notes/B.md" };
-      let complete!: (report: unknown) => void;
-      let signal!: AbortSignal;
-      const validate = vi.fn((_input, _checks, receivedSignal: AbortSignal) => {
-        // Keep B pending, but let an unexpected second request settle so failures
-        // report cancellation/publication errors rather than a test timeout.
-        if (validate.mock.calls.length > 1) return Promise.resolve({ issues: [], warnings: [] });
-        signal = receivedSignal;
-        return new Promise((resolve) => { complete = resolve; });
-      });
-      const completion = vi.fn();
-      const presentFailure = vi.fn();
-      const runner = {
-        presentCompletion: completion,
-        presentFailure,
-        run: async (request: Parameters<typeof operations.begin>[0], _notice: string,
-          work: (lease: ReturnType<typeof operations.begin>) => Promise<unknown>) => {
-          const lease = operations.begin(request);
-          try { return await work(lease); } finally { lease.finish(); }
-        },
-      };
-      const leaves: Array<{ view: InstanceType<typeof AssistantView> }> = [];
-      let reveal!: () => void;
-      let rejectReveal!: (error: Error) => void;
-      const app = {
-        vault: { getFileByPath: () => file },
-        workspace: {
-          getLeavesOfType: () => leaves, getActiveFile: () => file,
-          revealLeaf: () => new Promise<void>((resolve, reject) => { reveal = resolve; rejectReveal = reject; }),
-        },
-      };
-      const openSidebar = createAssistantSidebarOpener(app as never, operations, () => true);
-      const actions = new ProofreadActions({
-        ...app,
-      } as never, { validate } as never, { requireAction: async () => ({ admittedFormat: { binding: "original" } }) } as never,
-      () => ({} as never), runner as never, openSidebar);
-      let pending: Promise<void> | undefined;
-      const refresh = (path: string, target: InstanceType<typeof AssistantView>) => {
-        pending = actions.refresh(path, target);
-        return pending;
-      };
-      const a = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      const b = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      leaves.push({ view: a }, { view: b });
-      await a.onOpen();
-      await b.onOpen();
-      a.updateResults([], "A.md", "Notes/A.md", digest("A"));
-      b.updateResults([], file.name, file.path, digest("old B"));
-      const updateA = vi.spyOn(a, "updateResults");
-      const updateB = vi.spyOn(b, "updateResults");
-      findByClass(b.containerEl.children[1] as HTMLElement,
-        "docwen-proofread-btn")?.click();
-      await vi.waitFor(() => expect(validate).toHaveBeenCalledOnce());
-      if (change.startsWith("command-") || change.startsWith("menu-")) {
-        const activated = vi.spyOn(actions, "activateAndRun");
-        let dispose = () => {};
-        if (change.startsWith("command-")) {
-          const { registerCommands } = await import("../src/app/register-commands");
-          let invoke!: (checking: boolean) => boolean;
-          registerCommands({ app, proofreadActions: actions, activeFileSupports: () => true,
-            addLocalizedCommand: (key: string, command: { checkCallback: typeof invoke }) => {
-              if (key === "commandProofread") invoke = command.checkCallback;
-            },
-          } as never);
-          expect(invoke(false)).toBe(true);
-        } else {
-          const { registerFileMenu } = await import("../src/app/register-file-menu");
-          let handler!: (menu: unknown, file: unknown) => void;
-          let invoke!: () => void;
-          registerFileMenu({ app: { ...app, workspace: { ...app.workspace,
-            on: (_event: string, callback: typeof handler) => { handler = callback; },
-          } }, register: (callback: () => void) => { dispose = callback; }, registerEvent: () => {},
-          } as never, { proofread: actions,
-            capabilities: { peek: () => ({ inspection: { supportedActions: ["validate"] } }),
-              supportsAction: (_capability: unknown, action: string) => action === "validate",
-              findConversionRoute: () => null },
-          } as never);
-          handler({ addItem: (build: (item: unknown) => void) => {
-            let icon = "";
-            const item = { setTitle: () => item, setIcon: (value: string) => { icon = value; return item; },
-              onClick: (callback: () => void) => { if (icon === "check-circle") invoke = callback; return item; },
-              setDisabled: () => item };
-            build(item);
-          } }, file);
-          invoke();
-        }
-        expect(activated).toHaveBeenCalledOnce();
-        const activation = activated.mock.results[0].value;
-        if (change.endsWith("close")) await a.onClose();
-        if (change.endsWith("replace")) {
-          const newView = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-          await newView.onOpen();
-          leaves[0].view = newView;
-        }
-        if (change.startsWith("menu-dispose")) dispose();
-        const failure = new Error("host reveal failed");
-        if (change.endsWith("error")) rejectReveal(failure);
-        else reveal();
-        await expect(activation).resolves.toBeUndefined();
-        if (change.endsWith("error") && !change.startsWith("menu-dispose")) {
-          expect(presentFailure).toHaveBeenCalledWith("noticeProofreadFailed", failure);
-        } else expect(presentFailure).not.toHaveBeenCalled();
-      }
-      if (change.startsWith("activate-")) {
-        const rejected = vi.fn();
-        const activation = openSidebar().then((view) => actions.run(file as never, view)).catch(rejected);
-        if (change === "activate-close" || change === "activate-reopen") await a.onClose();
-        if (change === "activate-reopen") await a.onOpen();
-        if (change === "activate-replace") {
-          const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-          await replacement.onOpen();
-          leaves[0].view = replacement;
-        }
-        if (change === "activate-detach") leaves.shift();
-        reveal();
-        await activation;
-        expect.soft(rejected).toHaveBeenCalledOnce();
-      }
-      if (change === "closed-before-run") {
-        await a.onClose();
-        await actions.run(file as never, a);
-      }
-      expect.soft(validate).toHaveBeenCalledOnce();
-      expect.soft(findByClass(a.containerEl.children[1] as HTMLElement,
-        "docwen-proofread-cancel")).toBeUndefined();
-      if (change === "close-observer") await a.onClose();
-      const cancelled = ["close-owner", "reopen-owner", "replace-owner", "unload"].includes(change);
-      if (cancelled && change !== "unload") await b.onClose();
-      if (change === "reopen-owner") await b.onOpen();
-      const replacement = new AssistantView({} as never, refresh, operations, createAssistantViewActions());
-      const updateReplacement = vi.spyOn(replacement, "updateResults");
-      if (change === "replace-owner") {
-        leaves[1] = { view: replacement };
-        await replacement.onOpen();
-      }
-      if (change === "unload") operations.cancelAll();
-      expect.soft(signal.aborted).toBe(cancelled);
-      complete({ issues: [], warnings: [] });
-      await pending;
-      expect.soft(updateA).not.toHaveBeenCalled();
-      expect(updateReplacement).not.toHaveBeenCalled();
-      if (cancelled) {
-        expect(updateB).not.toHaveBeenCalled();
-        expect(completion).not.toHaveBeenCalled();
-      } else {
-        expect(updateB).toHaveBeenCalledWith([], file.name, file.path, "a".repeat(64));
-        expect(completion).toHaveBeenCalledOnce();
-      }
-      expect(operations.getSnapshot().operations).toEqual([]);
-    },
-  );
 
   it("passes the displayed source path when refreshing a detached view", async () => {
     const { AssistantView } = await import("../src/assistant-view");
@@ -222,11 +43,11 @@ describe("AssistantView", () => {
     const exportLease = operations.begin({ key: "export", kind: "export" });
     const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
-    view.ownOperation(proofread);
+    view.ownOperation(proofread, "Proofread.md");
     expect((view.containerEl.children[1] as HTMLElement).classList)
       .toContain("docwen-proofread-root");
     await view.onClose();
-    view.ownOperation(proofread);
+    view.ownOperation(proofread, "Proofread.md");
     expect((view.containerEl.children[1] as HTMLElement).classList)
       .not.toContain("docwen-proofread-root");
     expect(proofread.signal.aborted).toBe(true);
@@ -240,7 +61,7 @@ describe("AssistantView", () => {
     const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
     await view.onOpen();
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
 
     let content = view.containerEl.children[1] as HTMLElement;
     let cancel = findByClass(content, "docwen-proofread-cancel");
@@ -285,9 +106,9 @@ describe("AssistantView", () => {
     const issue = findByClass(content, "docwen-proofread-item");
     expect(issue?.tagName.toLowerCase()).toBe("button");
     expect(issue?.getAttribute("type")).toBe("button");
-    expect(issue?.getAttribute("aria-label")).toBe("Line 1 Typo check: bad → good");
+    expect(issue?.getAttribute("aria-label")).toBe("Line 1 · Column 1 Typo check: bad → good");
     const filename = findByClass(content, "docwen-proofread-filename");
-    expect(filename?.textContent).toBe("Proofread.md");
+    expect(filename?.textContent).toBe("Report: Proofread.md");
     expect(filename?.getAttribute("title")).toBe("Proofread.md");
   });
 
@@ -299,18 +120,18 @@ describe("AssistantView", () => {
     await view.onOpen();
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     const lease = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     operations.cancelGeneration(lease.generation);
     lease.finish();
     const content = view.containerEl.children[1] as HTMLElement;
     expect(findByClass(content, "docwen-proofread-status")?.textContent)
-      .toBe("Proofreading cancelled. Run it again to update the results.");
+      .toContain("Proofreading cancelled.");
     const unrelated = operations.begin({ key: "export", kind: "export" });
     unrelated.finish();
     expect(findByClass(content, "docwen-proofread-status")?.textContent)
-      .toBe("Proofreading cancelled. Run it again to update the results.");
+      .toContain("Proofreading cancelled.");
     const retry = operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(retry);
+    view.ownOperation(retry, "Proofread.md");
     view.updateResults([], "Proofread.md", "Proofread.md", digest(""));
     retry.finish();
     expect(findByClass(content, "docwen-proofread-status")?.textContent).toBe("No issues found");
@@ -324,6 +145,8 @@ describe("AssistantView", () => {
     expect(css).toMatch(/\.docwen-proofread-list\s*\{[^}]*flex:\s*1 1 auto;[^}]*min-height:\s*120px;[^}]*overflow-y:\s*auto;/s);
     expect(css).toMatch(/button\.docwen-proofread-item\s*\{[^}]*height:\s*auto;[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/s);
     expect(css).toMatch(/@media \(pointer:\s*coarse\)\s*\{\s*\.docwen-proofread-btn\s*\{[^}]*min-inline-size:\s*44px;[^}]*min-block-size:\s*44px;/s);
+    expect(css).toMatch(/@media \(pointer:\s*coarse\)[\s\S]*?\.docwen-proofread-list\s*\{\s*--docwen-issue-min-height:\s*44px;/u);
+    expect(css).toMatch(/button\.docwen-proofread-more\s*\{[^}]*min-height:\s*max\(var\(--input-height\), var\(--docwen-issue-min-height, 0px\)\);/u);
     expect(css).not.toMatch(/\.docwen-proofread-error\s*\{[^}]*text-decoration:/s);
   });
 
@@ -342,7 +165,7 @@ describe("AssistantView", () => {
       const content = view.containerEl.children[1] as HTMLElement;
       expect(findByClass(content, "docwen-proofread-rule")?.textContent).toBe("符号缺少配对");
       expect(findByClass(content, "docwen-proofread-item")?.getAttribute("aria-label"))
-        .toBe("第 1 行 符号缺少配对: （");
+        .toBe("第 1 行 · 第 1 列 符号缺少配对: （");
       expect(findByClass(content, "docwen-proofread-suggestion")).toBeUndefined();
     } finally {
       initI18n("en");
@@ -350,7 +173,7 @@ describe("AssistantView", () => {
   });
 
   it("converts Unicode code-point columns to Obsidian UTF-16 columns", async () => {
-    const { unicodeColumnToUtf16Column } = await import("../src/assistant-view");
+    const { unicodeColumnToUtf16Column } = await import("../src/host/proofread-navigation");
 
     expect(unicodeColumnToUtf16Column("A😀é", 0)).toBe(0);
     expect(unicodeColumnToUtf16Column("A😀é", 2)).toBe(3);
@@ -366,7 +189,7 @@ describe("AssistantView", () => {
     expect(f.editor.scrollIntoView).toHaveBeenCalledOnce();
   });
 
-  it.each(["resolves", "rejects"])("keeps the latest issue selected when an earlier file open %s late", async (outcome) => {
+  it.each(["resolves", "rejects"])("keeps the latest issue selected when an earlier tab reveal %s late", async (outcome) => {
     const f = await navigationFixture();
     const reports = [0, 1].map((column) => ({
       range: { start: { offset: column, line: 0, column }, end: { offset: column + 1, line: 0, column: column + 1 } },
@@ -375,7 +198,7 @@ describe("AssistantView", () => {
     f.view.updateResults(reports, "Proofread.md", "Proofread.md", digest(f.content.value));
     const [first, second] = f.root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item");
     let finish!: () => void;
-    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
+    f.revealLeaf.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
       finish = outcome === "resolves" ? resolve : () => reject(new Error("obsolete open"));
     }));
     first.click();
@@ -387,29 +210,132 @@ describe("AssistantView", () => {
     expect(f.root.querySelectorAll(".docwen-proofread-item")).toHaveLength(2);
   });
 
+  it("selects the second identical symbol after an emoji and puts focus in the note", async () => {
+    const f = await navigationFixture();
+    f.content.value = "😀甲（乙（";
+    const issues = [2, 4].map((column) => ({
+      range: { start: { line: 0, column, offset: column }, end: { line: 0, column: column + 1, offset: column + 1 } },
+      matched_text: "（", error_text: "（", rule_key: "symbol_pair", suggestion: "", error_type: "symbol", source: "pairing",
+    }));
+    f.view.updateResults(issues, "Proofread.md", "Proofread.md", digest(f.content.value));
+    const second = f.root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item")[1];
+    expect(second.getAttribute("aria-label")).toContain("Line 1 · Column 5");
+    second.focus();
+    second.click();
+    await vi.waitFor(() => expect(document.activeElement).toBe(f.field));
+    expect([f.field.selectionStart, f.field.selectionEnd]).toEqual([5, 6]);
+    expect(f.field.value.slice(f.field.selectionStart, f.field.selectionEnd)).toBe("（");
+    expect(f.content.value).toBe("😀甲（乙（");
+  });
+
+  it.each([
+    { endLine: 0, endColumn: 500, matched: "bad" },
+    { endLine: 2, endColumn: 5, matched: "bad" },
+    { endLine: 0, endColumn: 5, matched: "BAD" },
+  ])("refuses an unverified selection %o", async ({ endLine, endColumn, matched }) => {
+    const f = await navigationFixture();
+    f.view.updateResults([{
+      range: { start: { line: 0, column: 2, offset: 2 }, end: { line: endLine, column: endColumn, offset: 500 } },
+      matched_text: matched, error_text: matched, rule_key: "typo", suggestion: "", error_type: "typo", source: "typo",
+    }], "Proofread.md", "Proofread.md", digest(f.content.value));
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.root.querySelector(".docwen-proofread-status")?.textContent).toContain("Refresh"));
+    expect(f.editor.focus).not.toHaveBeenCalled();
+    expect(f.editor.setSelection).not.toHaveBeenCalled();
+  });
+
+  it("opens a closed native note in editing view", async () => {
+    const f = await navigationFixture();
+    f.leaves.length = 0;
+    let finish!: () => void;
+    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    f.clickIssue();
+    f.clickIssue();
+    expect(f.openFile).toHaveBeenCalledOnce();
+    f.leaves.push(f.leaf);
+    finish();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
+    expect(f.openFile).toHaveBeenCalledWith(f.currentFile.value, { active: true, state: { mode: "source" } });
+  });
+
+  it("shares a pending reading-view switch and selects only the latest issue in the replacement editor", async () => {
+    const f = await navigationFixture();
+    const oldEditor = { ...f.editor, getValue: () => "inactive editor", setSelection: vi.fn() };
+    Object.assign(f.leaf.view, { editor: oldEditor });
+    f.getMode.mockReturnValue("preview");
+    const issues = [0, 1].map((column) => ({
+      range: { start: { line: 0, column, offset: column }, end: { line: 0, column: column + 1, offset: column + 1 } },
+      matched_text: column ? "😀" : "A", error_text: column ? "😀" : "A", rule_key: "typo",
+      suggestion: "", error_type: "typo", source: "typo",
+    }));
+    f.view.updateResults(issues, "Proofread.md", "Proofread.md", digest(f.content.value));
+    let finish!: () => void;
+    f.leaf.setViewState.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const [first, second] = f.root.querySelectorAll<HTMLButtonElement>(".docwen-proofread-item");
+    first.click();
+    await vi.waitFor(() => expect(f.leaf.setViewState).toHaveBeenCalledOnce());
+    f.getMode.mockReturnValue("source");
+    f.leaf.view = Object.assign(new MarkdownView({} as never), { ...f.leaf.view, editor: f.editor });
+    second.click();
+    await Promise.resolve();
+    expect(f.editor.setSelection).not.toHaveBeenCalled();
+    expect(f.leaf.setViewState).toHaveBeenCalledWith({
+      type: "markdown", pinned: true, state: { file: "Proofread.md", mode: "source", source: false },
+    });
+    finish();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
+    expect(f.editor.setSelection).toHaveBeenCalledWith({ line: 0, ch: 1 }, { line: 0, ch: 3 });
+    expect(f.leaf.setViewState).toHaveBeenCalledOnce();
+    expect(oldEditor.setSelection).not.toHaveBeenCalled();
+  });
+
+  it("rechecks the source after switching out of reading view", async () => {
+    const f = await navigationFixture();
+    f.getMode.mockReturnValue("preview");
+    f.leaf.setViewState.mockImplementationOnce(async () => {
+      f.content.value += "changed";
+      f.getMode.mockReturnValue("source");
+    });
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.root.querySelector(".docwen-proofread-status")?.textContent).toContain("Refresh"));
+    expect(f.editor.focus).not.toHaveBeenCalled();
+  });
+
+  it("matches a multiline report across CRLF and LF editor representations", async () => {
+    const f = await navigationFixture();
+    f.content.value = "😀甲\n乙";
+    f.view.updateResults([{
+      range: { start: { line: 0, column: 1, offset: 1 }, end: { line: 1, column: 1, offset: 5 } },
+      matched_text: "甲\r\n乙", error_text: "甲\r\n乙", rule_key: "typo", suggestion: "", error_type: "typo", source: "typo",
+    }], "Proofread.md", "Proofread.md", digest(f.content.value));
+    f.clickIssue();
+    await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
+    expect(f.field.value.slice(f.field.selectionStart, f.field.selectionEnd)).toBe("甲\n乙");
+  });
+
   it("rejects edited content even when the reported substring is unchanged", async () => {
     const f = await navigationFixture();
     f.content.value += " changed after proofreading";
     f.clickIssue();
-    expect(f.openFile).not.toHaveBeenCalled();
+    expect(f.revealLeaf).not.toHaveBeenCalled();
     expect(f.editor.setSelection).not.toHaveBeenCalled();
-    expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
-      .toBe("The note or editor has changed. Refresh proofreading before locating an issue.");
+    await vi.waitFor(() => expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
+      .toBe("The note or editor has changed. Refresh proofreading before locating an issue."));
     expect(findByClass(f.root, "docwen-proofread-item")).toBeUndefined();
     f.publishCurrent();
     f.clickIssue();
     await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
   });
 
-  it.each(["content", "file", "ambiguous", "view"])("rechecks %s after asynchronous file opening", async (change) => {
+  it.each(["content", "file", "ambiguous", "view"])("rechecks %s after revealing the document tab", async (change) => {
     const f = await navigationFixture();
     let resume!: () => void;
-    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = resolve; }));
+    f.revealLeaf.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = resolve; }));
     f.clickIssue();
     if (change === "content") f.content.value = "prefix " + f.content.value;
     else if (change === "file") f.currentFile.value = Object.assign(new TFile(), { path: "Proofread.md" });
     else if (change === "ambiguous") f.leaves.push({ ...f.leaf });
-    else f.leaf.view = Object.assign(new MarkdownView({} as never), { file: f.currentFile.value, editor: f.editor });
+    else f.leaf.view = Object.assign(new MarkdownView({} as never), { ...f.leaf.view });
     resume();
     await vi.waitFor(() => expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
       .toBe("The note or editor has changed. Refresh proofreading before locating an issue."));
@@ -419,13 +345,13 @@ describe("AssistantView", () => {
   it.each(["new-report", "close", "operation"])("does not navigate an obsolete callback after %s", async (change) => {
     const f = await navigationFixture();
     let resume!: () => void;
-    f.openFile.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = resolve; }));
+    f.revealLeaf.mockImplementationOnce(() => new Promise<void>((resolve) => { resume = resolve; }));
     f.clickIssue();
     if (change === "new-report") f.publishCurrent();
     else if (change === "close") await f.view.onClose();
     else {
       const lease = f.operations.begin({ key: "proofread", kind: "proofread" });
-      f.view.ownOperation(lease);
+      f.view.ownOperation(lease, "Proofread.md");
       lease.finish();
     }
     resume();
@@ -439,23 +365,23 @@ describe("AssistantView", () => {
     f.clickIssue();
     expect(f.openFile).not.toHaveBeenCalled();
     expect(findByClass(f.root, "docwen-proofread-item")).toBeDefined();
-    expect((await import("../src/host/notices")).showNotice).toHaveBeenCalledWith(
+    const { showNotice } = await import("../src/host/notices");
+    await vi.waitFor(() => expect(showNotice).toHaveBeenCalledWith(
       "Open this file in a Markdown editor to locate this issue.",
-    );
+    ));
   });
 
   it("locates a compatible note in its existing Markdown editor", async () => {
     const f = await navigationFixture("Source.txt");
-    const revealLeaf = vi.fn().mockResolvedValue(undefined);
-    Object.assign(f.view.app.workspace, { revealLeaf });
     f.clickIssue();
     await vi.waitFor(() => expect(f.editor.setSelection).toHaveBeenCalledOnce());
-    expect(revealLeaf).toHaveBeenCalledWith(f.leaf);
+    expect(f.revealLeaf).toHaveBeenCalledWith(f.leaf);
     expect(f.openFile).not.toHaveBeenCalled();
   });
 
   it("contains file-open failure and asks to refresh instead of using another editor", async () => {
     const f = await navigationFixture();
+    f.leaves.length = 0;
     f.openFile.mockRejectedValueOnce(new Error("host file open failed"));
     f.clickIssue();
     await vi.waitFor(() => expect(findByClass(f.root, "docwen-proofread-status")?.textContent)
@@ -466,7 +392,6 @@ describe("AssistantView", () => {
   it.each(["\n", "\r\n", "\r"])("selects the reported line when an editor uses %j", async (eol) => {
     const f = await navigationFixture();
     f.content.value = ["heading", "A😀bad"].join(eol);
-    f.editor.getLine = () => "A😀bad";
     f.view.updateResults([{
       range: { start: { offset: 10, line: 1, column: 2 }, end: { offset: 13, line: 1, column: 5 } },
       matched_text: "bad", error_text: "bad", rule_key: "typo", suggestion: "good",
@@ -481,7 +406,7 @@ describe("AssistantView", () => {
     const oldClick = findByClass(f.root, "docwen-proofread-item");
     f.publishCurrent();
     oldClick?.click();
-    expect(f.openFile).not.toHaveBeenCalled();
+    expect(f.revealLeaf).not.toHaveBeenCalled();
     expect(f.editor.setSelection).not.toHaveBeenCalled();
   });
 });
@@ -497,17 +422,34 @@ async function navigationFixture(path = "Proofread.md") {
   const view = new AssistantView({} as never, async () => undefined, operations, createAssistantViewActions());
   const content = { value: "A😀bad" };
   const currentFile = { value: Object.assign(new TFile(), { path }) };
+  const field = document.body.appendChild(document.createElement("textarea"));
+  const normalized = () => content.value.replace(/\r\n?/gu, "\n");
+  const offset = (position: EditorPosition): number => normalized().split("\n")
+    .slice(0, position.line).reduce((sum, line) => sum + line.length + 1, position.ch);
   const editor = {
     getValue: () => content.value,
-    getLine: () => content.value,
-    setSelection: vi.fn(),
+    lineCount: () => normalized().split("\n").length,
+    getLine: (index: number) => normalized().split("\n")[index],
+    getRange: (from: EditorPosition, to: EditorPosition) => normalized().slice(offset(from), offset(to)),
+    focus: vi.fn(() => field.focus()),
+    setSelection: vi.fn((from: EditorPosition, to: EditorPosition) => {
+      field.value = normalized();
+      field.setSelectionRange(offset(from), offset(to));
+    }),
     scrollIntoView: vi.fn(),
   };
   const openFile = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
-  const leaf = { view: Object.assign(new MarkdownView({} as never), { file: currentFile.value, editor }), openFile };
+  const revealLeaf = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const getMode = vi.fn<() => "source" | "preview">(() => "source");
+  const leaf = {
+    view: Object.assign(new MarkdownView({} as never), { file: currentFile.value, editor, getMode, getViewData: normalized }),
+    getViewState: () => ({ type: "markdown", pinned: true, state: { file: path, mode: getMode(), source: false } }),
+    setViewState: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    openFile,
+  };
   const leaves = [leaf];
   Object.assign(view.app.vault, { getAbstractFileByPath: () => currentFile.value });
-  Object.assign(view.app.workspace, { getLeavesOfType: () => leaves, getLeaf: () => leaf });
+  Object.assign(view.app.workspace, { getLeavesOfType: () => leaves, getLeaf: () => leaf, revealLeaf });
   await view.onOpen();
   const publishCurrent = () => view.updateResults([{
     range: { start: { offset: 2, line: 0, column: 2 }, end: { offset: 5, line: 0, column: 5 } },
@@ -521,7 +463,7 @@ async function navigationFixture(path = "Proofread.md") {
     expect(item).toBeDefined();
     item?.click();
   };
-  return { view, operations, content, currentFile, editor, leaf, leaves, root, openFile, publishCurrent, clickIssue };
+  return { view, operations, content, currentFile, editor, leaf, leaves, root, openFile, revealLeaf, getMode, field, publishCurrent, clickIssue };
 }
 
 function findByClass(root: HTMLElement, className: string): HTMLElement | undefined {

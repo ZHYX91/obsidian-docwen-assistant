@@ -192,7 +192,7 @@ describe("VaultReadSnapshot", () => {
     const tokenStart = source.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null,
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : filePath === image.path ? image : null,
         readBinary: vi.fn(async (target: unknown) =>
           target === file
             ? Uint8Array.from(sourceBytes).buffer
@@ -474,7 +474,7 @@ describe("VaultReadSnapshot", () => {
     });
     const app = {
       workspace: { getLeavesOfType: vi.fn(() => []) },
-      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : null, readBinary },
+      vault: { getFileByPath: (filePath: string) => filePath === file.path ? file : filePath === actual.path ? actual : null, readBinary },
       metadataCache: {
         getFileCache: vi.fn(() => ({
           embeds: [

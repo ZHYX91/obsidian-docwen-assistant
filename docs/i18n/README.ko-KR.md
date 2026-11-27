@@ -52,7 +52,7 @@ Store 설치 버전이 이 요구 사항을 충족하지 않으면 호환되는 
 1. Windows에서는 [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97)에서 호환되는 DocWen 0.23.0 이상을 설치하거나 [DocWen Releases](https://github.com/ZHYX91/docwen/releases)의 Windows 패키지를 완전히 압축 해제하세요. Linux x64에서는 같은 페이지의 Linux 패키지를 압축 해제합니다.
 2. Community Plugins에서 DocWen Assistant를 설치합니다. 수동 설치는 [플러그인 릴리스](https://github.com/ZHYX91/obsidian-docwen-assistant/releases)에서 `docwen-assistant-x.y.z.zip`을 받은 뒤 `main.js`, `manifest.json`, `styles.css`를 `<Vault>/.obsidian/plugins/docwen-assistant/`에 복사합니다.
 3. Community Plugins를 다시 불러오고 DocWen Assistant를 활성화합니다.
-4. Windows Store 버전은 자동 감지를 사용할 수 있습니다. Windows 휴대용 버전과 Linux에서는 **설정 → DocWen Assistant → 일반**에서 수동 연결을 선택하고 압축을 푼 폴더나 실행 파일을 지정하세요.
+4. Windows Store 버전은 자동 감지를 사용할 수 있습니다. Windows 휴대용 버전과 Linux에서는 **설정 → DocWen Assistant → 일반**에서 **설치 위치 직접 선택**을 선택하고 압축을 푼 폴더나 실행 파일을 지정하세요.
 
 ### 업데이트할 때 설정 유지
 

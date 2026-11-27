@@ -9,6 +9,7 @@ import {
   type DocWenClient,
   type DocWenCapabilityService,
   type TemplateItem,
+  type OptimizationItem,
   LocalCliError,
 } from "../docwen";
 import { admittedActionInput } from "./admitted-input";
@@ -23,7 +24,7 @@ import { t } from "../i18n";
 import type { PluginSettings } from "../settings-model";
 import { pickItem, type PickerItem } from "../utils/suggest-modal";
 import { ActionRunner } from "./action-runner";
-import { buildExportSummary } from "./export-summary";
+import { buildExportSummary, type ExportResourceLabels } from "./export-summary";
 import {
   buildHeadingMergeOptions,
   buildMarkdownExportOptions,
@@ -81,6 +82,7 @@ export class ExportActions {
         const selection = prepared.value;
         const selected: Pick<ConvertOptions, "template" | "optimization"> = {};
         let selectedTemplate: TemplateItem | undefined;
+        let selectedOptimization: OptimizationItem | undefined;
         if (selection.kind === "template") {
           if (selection.items.length === 0 && target !== "xlsx") {
             showNotice(t("noticeNoTemplatesAvailable"));
@@ -104,9 +106,17 @@ export class ExportActions {
           ];
           const chosen = await pickItem(this.app, items, t("pickerOptimizationPlaceholder"), signal);
           if (!chosen || !lease.isCurrent()) return;
-          if (chosen.id !== "__none__") selected.optimization = chosen.id;
+          if (chosen.id !== "__none__") {
+            selected.optimization = chosen.id;
+            selectedOptimization = selection.items.find((item) => item.id === chosen.id);
+          }
         }
-        if (lease.isCurrent()) await this.execute(file, target, selected, signal, selectedTemplate);
+        if (lease.isCurrent()) await this.execute(file, target, selected, signal, {
+          template: selectedTemplate,
+          optimization: selectedOptimization,
+          numberingSchemeName: async (id, lookupSignal) =>
+            (await this.docwen.numberingSchemes(lookupSignal)).find((scheme) => scheme.id === id)?.name,
+        });
       },
     );
   }
@@ -116,7 +126,7 @@ export class ExportActions {
     target: ConvertTarget,
     selected: Pick<ConvertOptions, "template" | "optimization">,
     signal: AbortSignal,
-    selectedTemplate?: TemplateItem,
+    labels: ExportResourceLabels,
   ): Promise<void> {
     const filePath = resolveAbsoluteFilePath(this.app.vault, file);
     if (!filePath) {
@@ -193,7 +203,7 @@ export class ExportActions {
         request.checks = buildProofreadChecks(settings);
       }
       const accepted = await confirmExport(this.app, buildExportSummary(
-        request, mediaType, selectedTemplate,
+        request, mediaType, labels,
       ), signal);
       if (!accepted || signal.aborted) return;
       return this.docwen.convert(request, signal);

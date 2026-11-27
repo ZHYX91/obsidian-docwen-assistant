@@ -11,6 +11,7 @@ export interface Translations {
   exportReviewDisabled: string;
   exportReviewStart: string;
   dialogOpenResultFolder: string;
+  dialogDismissNotice: string;
   noticeOpenResultFolderFailed: string;
   noticeCompletedWithWarnings: string;
   noticeConversionDiagnostics: string;
@@ -21,6 +22,7 @@ export interface Translations {
   errorWindowsOwnerRecovery: string;
   errorWindowsOwnerCleanup: string;
   dialogDiagnosticsPrivacy: string;
+  pickerNoMatches: string;
   dialogContinue: string;
   dialogDetectedFormat: string;
   dialogDeclaredFormat: string;
@@ -63,12 +65,15 @@ export interface Translations {
   contextMenuChooseAction: string;
   contextMenuNoActions: string;
   contextMenuCapabilityUnavailable: string;
+  contextMenuTargetChanged: string;
   contextMenuFolderTarget: string;
 
   // Settings
   settingsHelpTitle: string;
   settingsUserGuide: string;
   settingsReportIssue: string;
+  settingsPreviousTabs: string;
+  settingsNextTabs: string;
   settingsTitle: string;
   settingsGeneralTitle: string;
   settingsGeneralGuideTitle: string;
@@ -136,6 +141,7 @@ export interface Translations {
   dialogOpenSettings: string;
   dialogCopyDetails: string;
   dialogCopied: string;
+  dialogCopyFailed: string;
 
   // Notices
   noticeLaunchFailed: string;
@@ -229,6 +235,7 @@ export interface Translations {
   settingsNumberingNone: string;
   settingsNumberingSchemeLoading: string;
   settingsNumberingSchemeError: string;
+  settingsNumberingSchemeSaved: string;
   settingsNumberingSchemeUnavailable: string;
 
   // Numbering
@@ -257,6 +264,7 @@ export interface Translations {
   proofreadViewTitle: string;
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
+  proofreadChecksDisabled: string;
   proofreadIssueCount: string;
   proofreadLineNumber: string;
   proofreadLoadMore: string;
@@ -264,6 +272,9 @@ export interface Translations {
   proofreadOpenMdFile: string;
   proofreadSortByLine: string;
   proofreadSortByRule: string;
+  proofreadColumnNumber: string;
+  proofreadReportFile: string;
+  proofreadRefreshReport: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
   proofreadLocationNeedsEditor: string;
@@ -280,4 +291,5 @@ export interface Translations {
   noticeProofreadSuccess: string;
   noticeProofreadFailed: string;
   noticeProofreadNoMdFile: string;
+  noticeProofreadSourceMissing: string;
 }

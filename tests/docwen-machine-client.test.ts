@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import packageJson from "../package.json";
 import { EventEmitter } from "node:events";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
@@ -10,6 +10,7 @@ import { PassThrough } from "node:stream";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMachineFrame, MachineFrameDecoder, type JsonObject } from "../src/docwen/machine-framing";
+import { DocWenProcessCoordinator } from "../src/docwen/process-coordinator";
 
 const { spawnMock, serverState } = vi.hoisted(() => ({
   spawnMock: vi.fn(),
@@ -47,6 +48,10 @@ vi.mock("../src/docwen/linux-native-owner", () => ({
 }));
 
 vi.mock("node:child_process", () => ({ spawn: spawnMock }));
+vi.mock("node:timers", () => ({
+  setTimeout: (callback: () => void, delay: number) => globalThis.setTimeout(callback, delay),
+  clearTimeout: (timer: ReturnType<typeof setTimeout>) => globalThis.clearTimeout(timer),
+}));
 
 import {
   ARTIFACT_BUNDLE_LIMITS,
@@ -58,6 +63,7 @@ import {
 const temporaryRoots: string[] = [];
 
 afterEach(async () => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -208,6 +214,9 @@ class FakeChild extends EventEmitter {
       return;
     }
     if (message.method === "task/execute") {
+      if (serverState.notificationFault === "notification_before_acceptance") {
+        this.notify("task/progress", { task_id: "task.1", sequence: 1, phase: "conversion", completed: 0, total: 100, unit: "percent" });
+      }
       this.reply(id, { task_id: "task.1", state: "accepted" });
       serverState.taskAccepted = true;
       if (serverState.holdTask) return;
@@ -250,8 +259,9 @@ class FakeChild extends EventEmitter {
     if (message.method === "task/cancel") {
       serverState.cancelRequested = true;
       if (!serverState.ignoreCancellation) {
+        this.reply(id, { task_id: "task.1", state: "cancellation_requested" });
         const notifyCancelled = () => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 });
-        if (serverState.cancellationDelayMs > 0) window.setTimeout(notifyCancelled, serverState.cancellationDelayMs);
+        if (serverState.cancellationDelayMs > 0) setTimeout(notifyCancelled, serverState.cancellationDelayMs);
         else queueMicrotask(notifyCancelled);
       }
     }
@@ -264,11 +274,24 @@ class FakeChild extends EventEmitter {
   private notify(method: string, params: JsonObject): void {
     const fault = serverState.notificationFault;
     const completed = method === "task/completed";
+    if (completed && fault === "unknown_response") this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", id: 987, result: {} }));
+    if (completed && fault === "zero_sequence") params.sequence = 0;
+    if (completed && fault === "notification_before_acceptance") params.sequence = 2;
+    if (completed && fault === "unknown_diagnostic_artifact") {
+      const fixture = JSON.parse(readFileSync(new URL("../contracts/docwen/fixtures/invalid/machine.dangling-diagnostic-artifact.trace.json", import.meta.url), "utf8")) as { params: JsonObject }[];
+      params.diagnostics = fixture.at(-1)!.params.diagnostics;
+    }
+    if (completed && fault === "invalid_progress") {
+      this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", method: "task/progress",
+        params: { task_id: "task.1", sequence: 1, phase: "conversion", completed: 0, total: 1, unit: "percent" } }));
+      params.sequence = 2;
+    }
     if (completed && serverState.progressDelivery) {
       const frames = Array.from({ length: 65 }, (_, index) => encodeMachineFrame({
         jsonrpc: "2.0", method: "task/progress", params: {
           task_id: "task.1", sequence: index + 1, phase: "conversion",
-          completed: index === 64 ? 100 : index, total: 100, unit: "percent",
+          completed: serverState.progressDelivery === "noncoalescing" ? 100 - index : index === 64 ? 100 : index,
+          total: 100, unit: "percent",
         },
       }));
       frames.push(encodeMachineFrame({ jsonrpc: "2.0", method, params: { ...params, sequence: 66 } }));
@@ -504,6 +527,31 @@ describe("DocWenMachineClient", () => {
     expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
+  it("uses the remaining Machine deadline after waiting for another process", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    const coordinator = new DocWenProcessCoordinator();
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => { release = resolve; });
+    const owner = coordinator.run(() => held, [], 1_000);
+    serverState.holdHealth = true;
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US", undefined, coordinator);
+    const failure = vi.fn();
+    const query = client.query("health/check", {}, undefined, 1_000).catch(failure);
+    await vi.advanceTimersByTimeAsync(900);
+    expect(spawnMock).not.toHaveBeenCalled();
+    release();
+    await owner;
+    await vi.advanceTimersByTimeAsync(99);
+    expect(serverState.requests.map(request => request.method)).toEqual(["initialize", "health/check"]);
+    expect(failure).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(failure).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+      code: "cli_timeout", details: { timeoutMs: 1_000 },
+    }));
+    await query;
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
+  });
+
   it("bounds a stalled preparation query by the operation deadline", async () => {
     const root = await temporaryRoot();
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
@@ -516,7 +564,8 @@ describe("DocWenMachineClient", () => {
     expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
-  it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal"])("rejects %s without returning a task result", async (fault) => {
+  it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal",
+    "notification_before_acceptance", "unknown_response", "zero_sequence", "invalid_progress", "unknown_diagnostic_artifact"])("rejects %s without returning a task result", async (fault) => {
     serverState.notificationFault = fault;
     const root = await temporaryRoot();
     const input = path.join(root, "input.md");
@@ -879,7 +928,7 @@ describe("DocWenMachineClient", () => {
     }
   });
 
-  it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {
+  it("terminates the owned child on timeout, oversized stderr, and unrequested responses", async () => {
     for (const failure of ["timeout", "stderr", "queue"] as const) {
       const child = new FakeChild();
       spawnMock.mockReturnValueOnce(child);
@@ -889,13 +938,22 @@ describe("DocWenMachineClient", () => {
       const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
       await expect(client.query("health/check", {}, undefined, 20)).rejects.toMatchObject({
-        code: failure === "timeout" ? "cli_timeout" : "cli_output_limit",
+        code: failure === "timeout" ? "cli_timeout" : failure === "stderr" ? "cli_output_limit" : "cli_protocol_error",
       });
       expect(child.killed).toBe(true);
       serverState.holdHealth = false;
       serverState.stderrOverflow = false;
       serverState.floodHealth = false;
     }
+  });
+
+  it("bounds queued progress that cannot be coalesced", async () => {
+    serverState.progressDelivery = "noncoalescing";
+    const root = await temporaryRoot();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    await expect(client.runTask(taskRequest(root, path.join(root, "input.md"), Buffer.from("# Input"))))
+      .rejects.toMatchObject({ code: "cli_output_limit" });
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
   it("requests task cancellation and then settles the owned child", async () => {
@@ -929,21 +987,23 @@ describe("DocWenMachineClient", () => {
     writeFileSync(input, bytes);
     const controller = new AbortController();
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
-    const operationStarted = Date.now();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 
-    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 1_000);
-    await vi.waitFor(() => expect(serverState.taskAccepted).toBe(true));
-    const delayUntilLateAbort = 850 - (Date.now() - operationStarted);
-    if (delayUntilLateAbort > 0) {
-      await new Promise<void>((resolve) => window.setTimeout(resolve, delayUntilLateAbort));
-    }
+    const onRejected = vi.fn();
+    void client.runTask(taskRequest(root, input, bytes), controller.signal, 1_000).catch(onRejected);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(serverState.taskAccepted).toBe(true);
+    await vi.advanceTimersByTimeAsync(850);
     controller.abort();
 
-    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(serverState.cancelRequested).toBe(true);
-    expect(Date.now() - operationStarted).toBeGreaterThanOrEqual(1_000);
+    await vi.advanceTimersByTimeAsync(150);
+    expect(child.killed).toBe(false);
+    expect(onRejected).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(150);
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: "cli_cancelled" }));
     expect(child.killed).toBe(true);
-  }, 4_000);
+  });
 
   it("force-terminates an accepted task when the server ignores cancellation", async () => {
     serverState.holdTask = true;
@@ -957,14 +1017,21 @@ describe("DocWenMachineClient", () => {
     const controller = new AbortController();
     const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
-    const pending = client.runTask(taskRequest(root, input, bytes), controller.signal, 7_000);
-    await vi.waitFor(() => expect(serverState.taskAccepted).toBe(true));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const onRejected = vi.fn();
+    void client.runTask(taskRequest(root, input, bytes), controller.signal, 7_000).catch(onRejected);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(serverState.taskAccepted).toBe(true);
     controller.abort();
 
-    await expect(pending).rejects.toMatchObject({ code: "cli_cancelled" });
     expect(serverState.cancelRequested).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(child.killed).toBe(false);
+    expect(onRejected).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: "cli_cancelled" }));
     expect(child.killed).toBe(true);
-  }, 6_000);
+  });
 
   it("settles a pending request when plugin unload disposes the client", async () => {
     serverState.holdHealth = true;
@@ -1236,6 +1303,27 @@ describe("DocWenMachineClient", () => {
     ]) {
       await expect(validateArtifactBundle(invalid, root, "task.graph", "0.10.0")).rejects.toMatchObject({ code: "cli_integrity_error" });
     }
+  });
+
+  it.each(["COM¹.md", "lpt².notes.md", "COM³", "NUL .md", "CONIN$", "conout$.txt", "bad?.md", "bad|name.md", "line\nbreak.md", "note\ud800.md", "note\udfff.md"])(
+    "rejects a nonportable suggested artifact name before using it: %j", async (name) => {
+      const root = await temporaryRoot();
+      const bytes = Buffer.from("# Output");
+      writeFileSync(path.join(root, "output.md"), bytes);
+      const output = { ...artifact("one", "output.md", bytes), suggested_name: name };
+      const entry = { artifact_id: "one", role: "primary", ordinal: 0, preferred: true };
+      await expect(validateArtifactBundle(bundle([output], [entry]), root, "task.graph", "0.10.0"))
+        .rejects.toMatchObject({ code: "cli_integrity_error" });
+    },
+  );
+
+  it.each(["COM10.md", "计划².md", "表😀.md", "note\ufffd.md", "report.v2.md"])("accepts portable name %s", async name => {
+    const root = await temporaryRoot();
+    const bytes = Buffer.from("# Output");
+    writeFileSync(path.join(root, name), bytes);
+    const entry = { artifact_id: "one", role: "primary", ordinal: 0, preferred: true };
+    await expect(validateArtifactBundle(bundle([artifact("one", name, bytes)], [entry]), root, "task.graph", "0.10.0"))
+      .resolves.toMatchObject({ artifacts: [{ suggested_name: name }] });
   });
 
   it("enforces finite Bundle counts, byte budgets, and portable suggested names", async () => {

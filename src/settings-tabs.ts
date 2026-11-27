@@ -1,5 +1,6 @@
 import type { SettingsPageDefinition, SettingsPageId } from "./settings-definitions";
-import { getCurrentLocale } from "./i18n";
+import { createScrollButton, observeTabOverflow, revealSettingsTab } from "./settings-tab-overflow";
+import { getCurrentLocale, t } from "./i18n";
 import { preserveSettingsView } from "./settings-view-state";
 
 let settingsTabsInstance = 0;
@@ -14,23 +15,25 @@ export interface SettingsTabsOptions {
 
 /** Accessible top-tab navigation independent from the settings-row renderer. */
 export class SettingsTabs {
-  private activeIndex: number;
+  private activeIndex = -1;
   private readonly buttons: HTMLButtonElement[] = [];
   private readonly instanceId = ++settingsTabsInstance;
   private readonly panelElementId = `docwen-settings-panel-${this.instanceId}`;
+  private readonly overflowCleanup: () => void;
   private readonly panelEl: HTMLElement;
   private readonly tabListEl: HTMLElement;
 
   constructor(private readonly options: SettingsTabsOptions) {
     const initialIndex = options.pages.findIndex((page) => page.id === options.initialPageId);
-    this.activeIndex = initialIndex < 0 ? 0 : initialIndex;
 
     const rootEl = options.containerEl.createDiv({ cls: "docwen-settings-root" });
     // The plugin language may differ from Obsidian's in either direction.
     const locale = getCurrentLocale();
     rootEl.setAttribute("lang", locale);
     rootEl.setAttribute("dir", locale === "ar" ? "rtl" : "ltr");
-    this.tabListEl = rootEl.createDiv({
+    const bar = rootEl.createDiv({ cls: "docwen-settings-tab-bar" });
+    const previous = createScrollButton(bar, "previous", t("settingsPreviousTabs"));
+    this.tabListEl = bar.createDiv({
       cls: "docwen-settings-tabs",
       attr: {
         "aria-label": options.ariaLabel,
@@ -44,7 +47,15 @@ export class SettingsTabs {
     });
 
     options.pages.forEach((page, index) => this.createTab(page, index));
-    this.activate(this.activeIndex, false);
+    const next = createScrollButton(bar, "next", t("settingsNextTabs"));
+    this.activate(initialIndex < 0 ? 0 : initialIndex, false);
+    this.overflowCleanup = observeTabOverflow(bar, this.tabListEl, previous, next);
+  }
+
+  /** Close this strip and return the page to restore on the next display. */
+  close(): SettingsPageId {
+    this.overflowCleanup();
+    return this.activePageId;
   }
 
   get activePageId(): SettingsPageId {
@@ -82,16 +93,19 @@ export class SettingsTabs {
 
   private activate(index: number, moveFocus: boolean): void {
     if (this.options.pages.length === 0) return;
-    this.activeIndex = (index + this.options.pages.length) % this.options.pages.length;
-    this.buttons.forEach((button, buttonIndex) => {
-      const selected = buttonIndex === this.activeIndex;
-      button.setAttribute("aria-selected", String(selected));
-      button.tabIndex = selected ? 0 : -1;
-    });
-    this.renderActivePage();
+    const nextIndex = (index + this.options.pages.length) % this.options.pages.length;
+    if (nextIndex !== this.activeIndex) {
+      this.activeIndex = nextIndex;
+      this.buttons.forEach((button, buttonIndex) => {
+        const selected = buttonIndex === nextIndex;
+        button.setAttribute("aria-selected", String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+      this.renderActivePage();
+    }
 
     const button = this.buttons[this.activeIndex];
-    button.scrollIntoView({ block: "nearest", inline: "nearest" });
+    revealSettingsTab(this.tabListEl, button);
     if (moveFocus) button.focus({ preventScroll: true });
   }
 
@@ -105,12 +119,6 @@ export class SettingsTabs {
         break;
       case "ArrowRight":
         targetIndex = currentIndex + (isRtl ? -1 : 1);
-        break;
-      case "ArrowUp":
-        targetIndex = currentIndex - 1;
-        break;
-      case "ArrowDown":
-        targetIndex = currentIndex + 1;
         break;
       case "Home":
         targetIndex = 0;

@@ -3,6 +3,7 @@ import { initI18n } from "../src/i18n";
 
 const state = vi.hoisted(() => ({
   copied: [] as string[],
+  copySucceeds: true,
   modals: [] as Array<{ contentEl: FakeElement; titleEl: FakeElement }>,
   notices: [] as string[],
   noticeActions: [] as Array<() => void>,
@@ -12,6 +13,10 @@ class FakeElement {
   readonly children: FakeElement[] = [];
   readonly listeners = new Map<string, () => void>();
   text = "";
+  open = false;
+  isConnected = true;
+  readonly attributes = new Map<string, string>();
+  setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
   href = "";
   target = "";
   rel = "";
@@ -64,13 +69,14 @@ vi.mock("../src/host/notices", () => ({
 vi.mock("../src/host/clipboard", () => ({
   copyTextToClipboard: async (text: string) => {
     state.copied.push(text);
-    return true;
+    return state.copySucceeds;
   },
 }));
 
 describe("ActionRunner", () => {
   beforeEach(() => {
     initI18n("en");
+    state.copySucceeds = true;
     state.copied.length = 0;
     state.modals.length = 0;
     state.notices.length = 0;
@@ -108,7 +114,7 @@ describe("ActionRunner", () => {
 
     expect(state.notices).toHaveLength(1);
     expect(state.notices[0]).toContain("Exported result.md");
-    expect(state.notices[0]).toContain("1 warning");
+    expect(state.notices[0]).toContain("Warnings: 1. Errors: 0.");
     expect(state.notices[0]).not.toContain("cleanup");
     state.noticeActions[0]();
     const details = allText(state.modals[0].contentEl);
@@ -128,7 +134,7 @@ describe("ActionRunner", () => {
       { severity: "warning", code: "C:\\private\\note.md", message: "private text" },
       { severity: "error", code: "conversion.partial", message: "private text" },
     ]);
-    expect(state.notices[0]).toContain("2 warning(s), 1 error(s)");
+    expect(state.notices[0]).toContain("Warnings: 2. Errors: 1.");
     expect(state.notices[0]).toContain("cleanup");
     state.noticeActions[0]();
     const details = allText(state.modals[0].contentEl);
@@ -180,6 +186,7 @@ describe("ActionRunner", () => {
     ));
     expect(state.notices).toHaveLength(0);
     expect(state.modals).toHaveLength(1);
+    expect(state.modals[0].contentEl.children.some((element) => element.open)).toBe(false);
     expect(state.modals[0].contentEl.children[0].text).toContain("版本不兼容");
     expect(allText(state.modals[0].contentEl)).toContain("cli_incompatible_version");
     expect(allText(state.modals[0].contentEl)).toContain("0.9.0");
@@ -212,6 +219,81 @@ describe("ActionRunner", () => {
     expect(allText(state.modals[0].contentEl)).toContain("cli_capability_unavailable");
     expect(allText(state.modals[0].contentEl)).not.toContain("private raw detail");
   });
+
+  it.each(["cli_capability_unavailable", "cli_path_not_configured", "cli_invalid_envelope"] as const)(
+    "opens an explicit Details request directly with expanded redacted data for %s", async (code) => {
+      const { LocalCliError } = await import("../src/docwen");
+      const { ActionRunner } = await import("../src/actions/action-runner");
+      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+      const runner = new ActionRunner({} as never, new OperationCoordinator());
+      runner.presentFailure("noticeCapabilityFailed", new LocalCliError(code, "raw private details"), "details");
+      expect(state.notices).toHaveLength(0);
+      expect(state.modals).toHaveLength(1);
+      const disclosure = state.modals[0].contentEl.children.find((element) => element.open);
+      expect(disclosure).toBeDefined();
+      expect(allText(disclosure!)).toContain(code);
+      expect(allText(disclosure!)).not.toContain("raw private details");
+      expect(state.copied).toHaveLength(0);
+    },
+  );
+
+  it("opens the connection card's Technical details with an expanded redacted snapshot", async () => {
+    const { configureConnectionActions } = await import("../src/settings-connection");
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { t } = await import("../src/i18n");
+    const controls = new Map<string, () => void>();
+    const setting = {
+      setClass: vi.fn(),
+      addButton(create: (button: unknown) => void) {
+        let label = "";
+        create({
+          buttonEl: { setAttribute: vi.fn() },
+          setButtonText(text: string) { label = text; return this; },
+          setDisabled() { return this; },
+          onClick(action: () => void) { controls.set(label, action); },
+        });
+      },
+    };
+    const plugin = {
+      settings: DEFAULT_SETTINGS, manifest: { version: "3.6.4" },
+      getSettingsCompatibility: () => ({ status: "compatible" }),
+      getGuiConnectionStatus: () => ({ state: "unchecked" }),
+      getDocWenConnectionStatus: () => ({
+        state: "error", code: "cli_timeout", details: { timeoutMs: 1500, path: "/private/path" },
+      }),
+    };
+    configureConnectionActions(setting as never, plugin as never, vi.fn());
+    controls.get(t("dialogDetails"))!();
+    expect(state.modals).toHaveLength(1);
+    const disclosure = state.modals[0].contentEl.children.find((entry) => entry.open);
+    expect(disclosure).toBeDefined();
+    expect(allText(disclosure!)).toContain("cli_timeout");
+    expect(allText(disclosure!)).toContain("1500");
+    expect(allText(disclosure!)).not.toContain("/private/path");
+  });
+
+  it.each(["cli_path_not_configured", "cli_invalid_envelope"] as const)(
+    "opens redacted details when copying fails and permits another attempt for %s", async (code) => {
+      const { ActionRunner } = await import("../src/actions/action-runner");
+      const { OperationCoordinator } = await import("../src/runtime/operation-coordinator");
+      const { LocalCliError } = await import("../src/docwen");
+      const runner = new ActionRunner({} as never, new OperationCoordinator());
+      runner.presentFailure("noticeDoctorFailed", new LocalCliError(code, "private failure"));
+      const content = state.modals[0].contentEl;
+      const copy = findByText(content, "Copy details")!;
+      state.copySucceeds = false;
+      copy.listeners.get("click")!();
+      await vi.waitFor(() => expect(allText(content)).toContain("Copy failed"));
+      expect(content.children.find(el => el.open)).toBeDefined();
+      expect(allText(content)).not.toContain("private failure");
+      expect(copy.text).toBe("Copy details");
+      state.copySucceeds = true;
+      copy.listeners.get("click")!();
+      await vi.waitFor(() => expect(copy.text).toBe("Copied"));
+      expect(allText(content)).not.toContain("Copy failed");
+      expect(state.copied[0]).toBe(state.copied[1]);
+    },
+  );
 
   it("keeps failure details user-initiated instead of overwriting the clipboard", async () => {
     const { LocalCliError } = await import("../src/docwen");

@@ -89,7 +89,7 @@ export class NumberingActions {
         const source = { path: inputPath, ...sourceFormatForPath(inputPath), role: "source" as const, logicalPath: file.path };
         const admitted = await admittedActionInput(this.app, source, capability, "number markdown", transformSignal, route =>
           materializeDetectedSource(source, originalSha256, capability.inspection, route,
-            input => this.docwen.inspect(input, transformSignal), () => transformSignal.throwIfAborted()));
+            input => this.docwen.inspect(input, transformSignal), () => transformSignal.throwIfAborted(), transformSignal));
         if (!admitted) throw new DOMException("Numbering cancelled", "AbortError");
         if (admitted.mediaType !== CONVERSION_MEDIA_TYPES.md) {
           throw new LocalCliError("cli_input_invalid", "Heading numbering requires Markdown input.");

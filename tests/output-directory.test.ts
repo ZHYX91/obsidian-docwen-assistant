@@ -100,6 +100,15 @@ async function fixture() {
 }
 
 describe("conversion directory publication", () => {
+  it("checks portable directory segments before preparing the result", async () => {
+    const f = await fixture();
+    const invalid = { ...f.bundle, artifacts: f.bundle.artifacts.map(artifact => ({
+      ...artifact, logical_path: artifact.logical_path.replace(f.node + "/", "LPT³.notes/"),
+    })) };
+    await expect(atomicCommitDirectory(invalid, f.parent)).rejects.toMatchObject({ code: "cli_integrity_error" });
+    expect(await readdir(f.output)).toEqual([]);
+  });
+
   it.each(["rename", "delete", "replace"])("rejects a source %s after the host guard while acquiring the output lock", async (change) => {
     const f = await fixture();
     const file = { path: "source.md", extension: "md" };

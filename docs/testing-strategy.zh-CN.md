@@ -39,19 +39,22 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 本地诊断命令明确区分测试范围：
 
+- `npm run test:settings-browser` 使用 Chromium 分别在三种宽度、两个书写方向下渲染下拉框和宿主的隐藏测量控件。可用 `CHROME_BIN` 指定浏览器。
 - `npm run test:source` 运行 Linux Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
-- `npm run test:native:linux` 在 Linux x64/arm64 运行真实 Machine 生命周期测试。整组测试前只检查一次内嵌 owner 映像、`/usr/bin/python3` 的 pidfd 支持、运行器的 `/proc` 身份，以及独立 session 哨兵自己报告的身份与运行器观测是否一致。前提失败会在任何生命周期用例执行前使测试组失败，输出失败阶段和观测结果，并在专用临时目录保留 `prerequisites.json` 诊断；哨兵始终通过本次拥有的进程句柄清理。
+- `npm run test:native:linux` 在 Linux x64/arm64 上测试 Machine 进程的启动和清理。开始前会检查内嵌的进程管理程序、`/usr/bin/python3` 的 pidfd 支持，以及能否从 `/proc` 读到测试进程自己的 PID 和子进程列表（`/proc/self/task/<pid>/children`）。接着会启动一个独立会话中的子进程，核对父子双方看到的进程信息，再通过启动时取得的进程句柄清理它。任一步失败，测试都会停止，输出失败原因，并将详情保存在临时目录的 `prerequisites.json` 中。
 - `npm run test:native:windows` 在 Windows 调用哈希绑定的配对实包门禁；原生 Job 测试由 Core 拥有，没有候选不能算实包验收通过。
 
 `npm test`、`npm run test:coverage` 和 `npm run check` 保持默认完整测试集。仅源码测试通过不能替代受支持宿主上的原生进程验证。前提检查不会延长生命周期等待期限，也不会跳过失败环境。
 
 ## 固定 DocWen 包
 
-`npm run acceptance:docwen-package` 只接受绑定版本、Candidate Bundle v3 身份和哈希的完整 DocWen 0.23.0 或更高 Windows 包。它验证 Machine 健康、能力、v4 精确双输入、DocWen 1 至 9 级标题、两种当前脚注写法与当前尾注写法、Obsidian 已解析的嵌入资源、Unicode/空格路径、实际 DOCX 图片字节、单 DOCX 在所选父目录直接发布、完整 Markdown `docwen.document_node.v1` 目录发布、无需节点 JSON 的发布与关联图片不计入业务输出数量、同一父目录连续导出与 DocWen Bundle v3 写入边界；没有精确候选身份时应跳过或失败关闭，不能转称为源码通过。
+使用符合[平台版本要求](cli-integration.md)的完整 Windows 或 Linux x64 软件包，运行 `npm run acceptance:docwen-package`。验收脚本核对 CLI 可执行文件的绝对路径、字节数和 SHA-256，再在 Machine 初始化时核对确切的稳定版本号。[软件包验收说明](../acceptance/README.md)列出了需要设置的四个环境变量。
+
+软件包用例检查 Machine 健康状态、文件准入，以及 Markdown 转 Word 能力声明的 `source` 和 `linked_resource` 输入。实际转换覆盖 7 至 9 级扩展标题、脚注与尾注、嵌入图片的原始字节、Unicode 路径、单个 DOCX 的发布、Markdown 文档节点，以及连续导出到同一父目录。Markdown 往返用例还会检查业务输出列表是否排除了节点清单。常规源码测试会跳过这些软件包用例。显式运行软件包验收时，缺少候选信息或核对不一致都会导致验收失败。
 
 ## Obsidian 宿主
 
-真实宿主验收分别覆盖最低 Obsidian 1.12.7 与当前 1.13.x 的顶部页签界面，并各自使用全新隔离 Vault/profile。应检查默认与第三方主题、16/20 px 界面字号、中英文标签、窄布局、键盘与 RTL 导航、保存失败恢复、入口、侧栏取消、文件菜单、进程零残留和 `data.json` 保留。自动 DOM 测试不能替代这些观察结果。
+真实宿主验收分别覆盖最低支持的 Obsidian 1.12.7、引入新版设置 API 的 1.13.x 以及最新桌面稳定版 的顶部页签界面，并各自使用全新隔离 Vault/profile。应检查默认与第三方主题、16/20 px 界面字号、中英文标签、窄布局、键盘与 RTL 导航、保存失败恢复、入口、侧栏取消、文件菜单、进程零残留和 `data.json` 保留。自动 DOM 测试不能替代这些观察结果。
 
 ## 人工兼容矩阵
 

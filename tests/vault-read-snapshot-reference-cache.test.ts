@@ -85,6 +85,28 @@ describe("uncached local reference images", () => {
     await expect(stat(test.workspace()!)).rejects.toMatchObject({ code: "ENOENT" });
   });
 
+  it.each([
+    ["![chart](media/chart.png?rev=2#page)", "media/chart.png?rev=2#page"],
+    ["![chart](chart%2Epng)", "chart%2Epng"],
+    ["![chart][id]\n\n[id]: chart.png?rev=2", "chart.png?rev=2"],
+  ])("reports an unresolved cached local image instead of omitting it: %s", async (source, link) => {
+    const token = source.split("\n")[0]!;
+    const test = await fixture(source, [cached(source, token, link)], { resolve: false });
+    await expect(test.run()).rejects.toMatchObject({
+      code: "vault_input_invalid", details: { imageIssue: "missing" },
+    });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
+  it("refuses a cache target with a non-image format for an authored local image", async () => {
+    const token = "![chart](chart.png)";
+    const test = await fixture(token, [cached(token, token, "chart.png")], {
+      imagePath: "Wrong/Note.md", extension: "md",
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_input_invalid", details: { imageIssue: "metadata" } });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
   it("combines parsed references with exact inline and Wiki cache ranges", async () => {
     const source = "😀\r\n![inline](inline.png)\r\n![[wiki.png]]\r\n![full][image]\r\n![image][]\r\n![image]\r\n\r\n[image]: chosen.png\r\n";
     const test = await fixture(source, [cached(source, "![inline](inline.png)", "inline.png"), cached(source, "![[wiki.png]]", "wiki.png")], {

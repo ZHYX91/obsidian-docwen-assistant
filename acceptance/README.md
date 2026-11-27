@@ -8,14 +8,15 @@ checks, product observations, and manual visual conclusions as separate evidence
 The acceptance matrix uses two packaged-DocWen evidence layers and keeps their claims separate:
 
 1. **Local pre-push candidate.** Before publication, run `npm run acceptance:docwen-package` against
-   the exact locally built `DocWenCLI.exe`. Set `DOCWEN_TEST_BINARY` to its absolute path and set
+   the CLI in the full package (`DocWenCLI.exe` on Windows, `DocWenCLI` on Linux x64). Set
+   `DOCWEN_TEST_BINARY` to its absolute path and set
    `DOCWEN_TEST_SHA256`, `DOCWEN_TEST_SIZE_BYTES`, and `DOCWEN_TEST_VERSION` to the candidate's exact
    immutable identity. The gate refuses missing inputs, a relative/non-file/link/wrong-name path,
-   digest or size drift, a non-stable version or a version below DocWen 0.12.0, a wrong Machine server identity/version, or a Bundle
-   producer version that differs from initialization. This proves only that pre-push checkpoint.
+   digest or size drift, a version outside the [platform requirements](../docs/cli-integration.md),
+   a wrong Machine server identity/version, or a Bundle producer version that differs from initialization. This proves only that pre-push checkpoint.
 2. **Public distribution verification.** After publication, download the canonical immutable Release
    asset into a fresh location, independently verify its published digest and size, and repeat the same
-   command with that downloaded `DocWenCLI.exe`. Only this second layer supports a public distribution
+   command with the CLI from the extracted package. Only this second layer supports a public distribution
    claim. A local build, private package, mutable asset, or tag without a published Release cannot do so.
 
 The packaged D2 case opens the produced DOCX as a ZIP, verifies that the exact declared PNG bytes are
@@ -35,7 +36,7 @@ scenario passes only when every declared case is observed; unavailable prerequis
 cases remain unverified. Run only scratch copies of the fixtures and never write outputs back to
 this repository.
 
-Each run proves only its recorded host/version. Minimum Obsidian 1.12.7 and current 1.13.x coverage,
+Each run proves only its recorded host/version. Coverage of Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release,
 or a profile that must be seeded before launch (such as newer-schema settings), requires separate
 prepared host runs and an explicit case summary. A single fixed host profile cannot prove all of
 those environments. Retain untested matrix entries as unverified.
@@ -75,7 +76,7 @@ retry carry-forward.
 
 The following broader checks retain their source/package/host evidence boundaries:
 
-- Custom tabbed settings on minimum Obsidian 1.12.7 and current 1.13.x hosts: all four pages and contextual help cards, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
+- Custom tabbed settings on Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release: all four pages and contextual help cards, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
 - Settings compatibility: an invalid/newer schema requires a separately seeded temporary profile; controls remain visibly read-only and the stored bytes are unchanged. Normal writable-settings runs do not prove this boundary.
 - Popout: settings/proofreading use the owning document and window; closing the view cancels the active proofread child.
 - Capability: successful empty results stay empty; typed discovery failures remain visible and never produce default actions.

@@ -40,19 +40,22 @@ Under the pinned toolchain, `npm run check` runs runtime verification, lint, for
 
 Local diagnostic commands expose their test scope explicitly:
 
+- `npm run test:settings-browser` renders the dropdown and its hidden measurement control in Chromium at three widths in both directions. Set `CHROME_BIN` to select a Chromium executable.
 - `npm run test:source` runs the source suite except the Linux Machine lifetime file. It still exercises Python fixture helpers and platform-selected publication helpers; it does not establish Machine process cleanup.
-- `npm run test:native:linux` runs the real Linux Machine lifetime suite on Linux x64/arm64. A one-time prerequisite check verifies the embedded owner image, `/usr/bin/python3` pidfd support, the runner's `/proc` identity, and a detached sentinel's own identity against the runner's observation. A failure rejects the suite before any lifecycle case, prints the failed phase and facts, and preserves a `prerequisites.json` diagnostic in a dedicated temporary directory. The sentinel is always cleaned through its owned process handle.
+- `npm run test:native:linux` runs the Machine process lifecycle tests on Linux x64/arm64. Before the first case it checks the embedded owner image, Python pidfd support in `/usr/bin/python3`, and whether `/proc` reports the runner's PID and exposes its child list at `/proc/self/task/<pid>/children`. It then starts a detached child, compares the process identity reported by the child with what the runner sees, and closes the child using its process handle. If any check fails, the suite stops, prints the failed step, and saves the details to `prerequisites.json` in a temporary directory.
 - `npm run test:native:windows` invokes the hash-pinned paired package gate on Windows. Core owns the native Job tests; absence of a candidate cannot count as package acceptance.
 
 `npm test`, `npm run test:coverage` and `npm run check` retain the complete default suite. A source-only pass never replaces native process verification on a supported host. The prerequisite check does not change lifecycle deadlines or skip a failing environment.
 
 ## Fixed DocWen package
 
-`npm run acceptance:docwen-package` accepts only a full DocWen 0.23.0-or-later Windows package bound to a version, Candidate Bundle v3 identity, and digest. It verifies Machine health, capabilities, the exact v4 input pair, DocWen heading levels 1 through 9, both current footnote forms and the current endnote form, Obsidian-resolved embedded resources, Unicode/space paths, actual DOCX image bytes, single-file DOCX publication directly into the selected parent, complete Markdown `docwen.document_node.v1` publication, publication without node JSON and exclusion of linked images from business output counts, and successive exports into a chosen parent, and DocWen Bundle v3 write boundaries. Without the exact candidate identity it skips or fails closed and cannot be reported as source-suite success.
+Use `npm run acceptance:docwen-package` with the CLI in a full Windows or Linux x64 package that meets the [platform requirements](cli-integration.md). The runner checks the executable's absolute path, byte size and SHA-256, then requires its exact stable product version during Machine initialization. The [package acceptance instructions](../acceptance/README.md) list the four required environment variables.
+
+The package suite checks Machine health, file admission and the Markdown-to-Word capability's `source` and `linked_resource` slots. Real conversions check extended heading levels 7–9, footnotes and endnotes, the exact embedded image bytes, Unicode paths, single DOCX publication, Markdown document nodes and repeated exports to the same parent. The Markdown round trip also checks that the node manifest stays out of the business output list. The ordinary source suite skips these package cases. When explicitly invoked, the package runner rejects missing or mismatched candidate details.
 
 ## Obsidian host
 
-Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host and a current 1.13.x host, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
+Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host, a 1.13.x host and the latest stable desktop release, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
 
 ## Manual compatibility matrix
 

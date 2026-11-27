@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { inflateRawSync } from "node:zlib";
@@ -154,7 +154,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     });
     const docx = generated.output;
     expect(generated.outputs).toEqual([docx]);
-    expect(dirname(docx)).toBe(caseRoot);
+    expect(dirname(docx)).toBe(await realpath(caseRoot));
     expect(generated.resultDirectory).toBeUndefined();
     expect(await readFile(source, "utf8")).toBe(authored);
 
@@ -180,7 +180,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       markdownExtensions: { output: { structural_tables: true, captions_references: true, extended_headings: true, typed_endnotes: true } },
     });
     const markdown = roundtrip.output;
-    expect(dirname(dirname(markdown))).toBe(markdownParent);
+    expect(dirname(dirname(markdown))).toBe(await realpath(markdownParent));
     expect(roundtrip.outputs).toContain(markdown);
     expect(roundtrip.outputs.some((output) => basename(output) === "docwen-node.json")).toBe(false);
     const secondParent = join(caseRoot, "second");
@@ -193,7 +193,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
       capabilityId: "convert.docx.to_markdown",
     });
     expect(second.outputs).toEqual([second.output]);
-    expect(dirname(dirname(second.output))).toBe(secondParent);
+    expect(dirname(dirname(second.output))).toBe(await realpath(secondParent));
 
     const restored = await readFile(markdown, "utf8");
     expect(restored).toContain("####### Level seven");
@@ -230,12 +230,23 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const note = Object.assign(new TFile(), { path: "notes/typed-source.md", extension: "md" });
     const image = Object.assign(new TFile(), { path: "assets/typed linked.png", extension: "png" });
+    const vaultFiles = new Map([
+      [note.path, { file: note, physicalPath: source }],
+      [image.path, { file: image, physicalPath: linked }],
+    ]);
     const token = "![[typed linked.png]]";
     const authored = sourceBytes.toString("utf8");
     const start = authored.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { getFileByPath: (filePath: string) => filePath === note.path ? note : null, readBinary: async (file: unknown) => Uint8Array.from(file === note ? sourceBytes : declaredBytes).buffer },
+      vault: {
+        getFileByPath: (filePath: string) => vaultFiles.get(filePath)?.file ?? null,
+        readBinary: async (file: typeof note) => {
+          const record = vaultFiles.get(file.path);
+          if (record?.file !== file) throw new Error("Cannot read an unregistered Vault file.");
+          return Uint8Array.from(await readFile(record.physicalPath)).buffer;
+        },
+      },
       metadataCache: {
         getFileCache: () => ({ embeds: [{ link: "typed linked.png", original: token, position: { start: { offset: start }, end: { offset: start + token.length } } }] }),
         getFirstLinkpathDest: () => image,
@@ -263,7 +274,7 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     const generated = completed.value;
     const output = generated.output;
     expect(generated.outputs).toEqual([output]);
-    expect(dirname(output)).toBe(root);
+    expect(dirname(output)).toBe(await realpath(root));
     expect(generated.resultDirectory).toBeUndefined();
     const outputBytes = await readFile(output);
     const archive = readStrictZip(outputBytes);

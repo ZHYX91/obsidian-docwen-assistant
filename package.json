@@ -1,6 +1,6 @@
 {
   "name": "docwen-assistant",
-  "version": "3.6.4",
+  "version": "3.6.5",
   "description": "Open files, convert documents, proofread Markdown, and manage heading numbering with local DocWen.",
   "main": "dist/main.js",
   "scripts": {
@@ -43,7 +43,8 @@
     "prelint": "node scripts/check-shared-tools.mjs && node scripts/prepare-lint-dependencies.mjs && node scripts/check-lint-dependencies.mjs",
     "check:tools": "node scripts/check-shared-tools.mjs",
     "test:tools": "vitest run tests/scripts/shared-maintenance-tools.test.ts",
-    "prebuild:quick": "node scripts/check-runtime.mjs"
+    "prebuild:quick": "node scripts/check-runtime.mjs",
+    "test:settings-browser": "node scripts/check-settings-browser.mjs"
   },
   "keywords": [
     "obsidian",

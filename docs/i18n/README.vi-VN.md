@@ -52,7 +52,7 @@ Tự động phát hiện chỉ có trên Windows và dùng bí danh `docwen.exe
 1. Trên Windows, cài DocWen 0.23.0 trở lên tương thích từ [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), hoặc giải nén gói Windows từ [DocWen Releases](https://github.com/ZHYX91/docwen/releases). Trên Linux x64, giải nén hoàn toàn gói Linux từ cùng trang.
 2. Cài DocWen Assistant từ Community Plugins. Nếu cài thủ công, tải `docwen-assistant-x.y.z.zip` từ [trang phát hành plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) rồi sao chép `main.js`, `manifest.json` và `styles.css` vào `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Tải lại Community Plugins rồi bật DocWen Assistant.
-4. Bản Windows từ Store có thể được nhận diện tự động. Với Windows portable hoặc Linux, mở **Cài đặt → DocWen Assistant → Chung**, chọn kết nối thủ công rồi chọn thư mục đã giải nén hoặc tệp thực thi.
+4. Bản Windows từ Store có thể được nhận diện tự động. Với Windows portable hoặc Linux, mở **Cài đặt → DocWen Assistant → Chung**, chọn **Chọn nơi cài đặt thủ công** rồi chọn thư mục đã giải nén hoặc tệp thực thi.
 
 ### Giữ thiết lập khi cập nhật
 

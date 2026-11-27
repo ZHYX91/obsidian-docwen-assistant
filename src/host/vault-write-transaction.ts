@@ -1,7 +1,8 @@
+import { readEditorInput, readVaultInput } from "./vault-input";
 import { operationWarning, recordFailureWarning, type Completed, type OperationWarning } from "../docwen/operation-outcome";
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, rm, writeFile } from "node:fs/promises";
+import { createVaultWorkspace } from "./vault-workspace";
 import * as path from "node:path";
 import { TextDecoder } from "node:util";
 
@@ -74,14 +75,14 @@ export class VaultWriteTransaction {
     const originalPath = file.path;
     this.assertEditorTarget(originalFile, originalPath, target);
     const editor = target.editor;
-    const original = editor.getValue();
+    const original = readEditorInput(editor);
     const originalSha256 = sha256(original);
     const prepared = await withIsolatedMarkdown(original, originalPath, originalSha256, transform, signal);
     const output = prepared.value;
     try {
       throwIfAborted(signal);
       this.assertEditorTarget(originalFile, originalPath, target);
-      if (sha256(editor.getValue()) !== originalSha256) {
+      if (editor.getValue() !== original) {
         throw new VaultWriteError("vault_content_conflict", "The Markdown editor changed during numbering.");
       }
     } catch (error) {
@@ -102,10 +103,10 @@ export class VaultWriteTransaction {
       transactionFailure = { error };
     }
     try {
-      const currentSha256 = sha256(editor.getValue());
-      if (currentSha256 !== sha256(output)) {
+      const current = editor.getValue();
+      if (current !== output) {
         throw new VaultWriteError("vault_reconciliation_failed", "The editor write could not be confirmed.", {
-          outputState: currentSha256 === originalSha256 ? "not_published" : "unconfirmed",
+          outputState: current === original ? "not_published" : "unconfirmed",
         });
       }
     } catch (error) {
@@ -134,7 +135,7 @@ export class VaultWriteTransaction {
     const originalPath = file.path;
     this.assertVaultFileIdentity(originalFile, originalPath);
     const initialStat = file.stat ? { ...file.stat } : undefined;
-    const sourceBytes = await this.app.vault.readBinary(file);
+    const sourceBytes = await readVaultInput(this.app.vault, file, signal);
     const original = decodeNumberingMarkdown(sourceBytes, "input");
     this.assertVaultFileIdentity(originalFile, originalPath);
     this.assertNoOpenMarkdownTarget(originalPath);
@@ -155,7 +156,7 @@ export class VaultWriteTransaction {
     try {
       // Vault.process decodes malformed bytes to the same character as a literal U+FFFD.
       if (original.includes("\uFFFD")) {
-        const currentBytes = await this.app.vault.readBinary(originalFile);
+        const currentBytes = await readVaultInput(this.app.vault, originalFile, signal);
         if (!Buffer.from(currentBytes).equals(Buffer.from(sourceBytes))) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
         }
@@ -165,7 +166,7 @@ export class VaultWriteTransaction {
         this.assertVaultFileIdentity(originalFile, originalPath);
         this.assertNoOpenMarkdownTarget(originalPath);
         if ((initialStat && (file.stat.size !== initialStat.size || file.stat.mtime !== initialStat.mtime
-          || file.stat.ctime !== initialStat.ctime)) || sha256(current) !== originalSha256) {
+          || file.stat.ctime !== initialStat.ctime)) || current !== original) {
           throw new VaultWriteError("vault_content_conflict", "The Vault file changed during numbering.");
         }
         accepted = true;
@@ -178,7 +179,7 @@ export class VaultWriteTransaction {
       for (const warning of prepared.warnings) recordFailureWarning(failure, warning);
       throw failure;
     }
-    if (sha256(published) !== sha256(output)) {
+    if (published !== output) {
       const failure = new VaultWriteError("vault_reconciliation_failed", "The Vault write could not be confirmed.", {
         outputState: "unconfirmed",
       });
@@ -233,7 +234,7 @@ async function withIsolatedMarkdown(
   transform: IsolatedMarkdownTransform,
   signal: AbortSignal,
 ): Promise<Completed<string>> {
-  const workspace = await mkdtemp(path.join(tmpdir(), "docwen-assistant-numbering-"));
+  const workspace = await createVaultWorkspace("numbering");
   const extension = path.extname(originalPath) || ".bin";
   const inputPath = path.join(workspace, `input${extension}`);
   const outputPath = path.join(workspace, "output.md");

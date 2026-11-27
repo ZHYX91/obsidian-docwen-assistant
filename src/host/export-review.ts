@@ -1,6 +1,7 @@
 import { type App, Modal } from "obsidian";
 import type { ExportSummaryRow } from "../actions/export-summary";
-import { getCurrentLocale, t } from "../i18n";
+import { applyInterfaceLocale } from "./interface-locale";
+import { t } from "../i18n";
 
 export function confirmExport(app: App, rows: readonly ExportSummaryRow[], signal: AbortSignal): Promise<boolean> {
   if (signal.aborted) return Promise.resolve(false);
@@ -9,6 +10,7 @@ export function confirmExport(app: App, rows: readonly ExportSummaryRow[], signa
 
 class ExportReviewModal extends Modal {
   private settled = false;
+  private readonly labels = new AbortController();
   private readonly onAbort = () => this.finish(false);
 
   constructor(app: App, private readonly rows: readonly ExportSummaryRow[], private readonly signal: AbortSignal, private readonly resolve: (accepted: boolean) => void) {
@@ -19,12 +21,15 @@ class ExportReviewModal extends Modal {
     this.signal.addEventListener("abort", this.onAbort, { once: true });
     if (this.signal.aborted) { this.finish(false); return; }
     this.titleEl.setText(t("exportReviewTitle"));
-    this.contentEl.setAttribute("lang", getCurrentLocale());
-    this.contentEl.setAttribute("dir", getCurrentLocale() === "ar" ? "rtl" : "ltr");
+    applyInterfaceLocale(this.titleEl, this.contentEl);
     const summary = this.contentEl.createEl("dl", { cls: "docwen-export-summary" });
     for (const row of this.rows) {
       summary.createEl("dt", { text: row.label });
-      summary.createEl("dd", { text: row.value });
+      const value = summary.createEl("dd", { text: row.value });
+      // The stable ID is immediately usable even when resource discovery is slow or unavailable.
+      if (row.resolveValue) void row.resolveValue(this.labels.signal).then((name) => {
+        if (name && !this.labels.signal.aborted) value.setText(name);
+      }, () => {});
     }
     this.contentEl.createEl("p", { text: t("exportReviewInherited"), cls: "setting-item-description" });
     const buttons = this.contentEl.createDiv({ cls: "modal-button-container" });
@@ -35,6 +40,7 @@ class ExportReviewModal extends Modal {
   }
 
   override onClose(): void {
+    this.labels.abort();
     this.signal.removeEventListener("abort", this.onAbort);
     this.contentEl.empty();
     if (!this.settled) { this.settled = true; this.resolve(false); }

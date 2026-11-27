@@ -1,4 +1,4 @@
-import type { App, WorkspaceLeaf } from "obsidian";
+import type { App } from "obsidian";
 
 import { AssistantView, ASSISTANT_VIEW_TYPE } from "../assistant-view";
 import type { AssistantExportActions } from "../assistant-exports";
@@ -18,10 +18,10 @@ export function createAssistantExportActions(
   app: App, capabilities: DocWenCapabilityService, exports: ExportActions, runner: ActionRunner,
 ): AssistantExportActions {
   return {
-    getExportTargets: async (file, signal) => {
+    getExportTargets: async (file, signal, refresh) => {
       const path = resolveAbsoluteFilePath(app.vault, file);
       if (!path) return [];
-      const capability = await capabilities.forFile(path, signal);
+      const capability = await capabilities.previewFile(path, signal, refresh);
       return (["docx", "xlsx", "md"] as const).filter((target) =>
         capabilities.findConversionRoute(capability, target) !== null);
     },
@@ -30,8 +30,18 @@ export function createAssistantExportActions(
       if (target === "xlsx") return exports.toXlsx(file);
       return exports.toMarkdown(file);
     },
-    showExportFailure: (error) => runner.presentFailure("noticeCapabilityFailed", error),
+    showExportFailure: (error) => runner.presentFailure("noticeCapabilityFailed", error, "details"),
   };
+}
+
+/** Obsidian may reject a pending load or reveal after the user closes its leaf. */
+async function awaitSidebarStep(work: () => Promise<unknown>, checkCurrent: () => void): Promise<void> {
+  try { await work(); }
+  catch (error) {
+    checkCurrent();
+    throw error;
+  }
+  checkCurrent();
 }
 
 /** A single host entry for opening/revealing the sidebar, without starting a user operation. */
@@ -44,30 +54,44 @@ export function createAssistantSidebarOpener(
   };
   const activate = async (): Promise<AssistantView> => {
     requireActive();
-    let leaf: WorkspaceLeaf | undefined = app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)[0];
-    if (!leaf) {
-      leaf = app.workspace.getRightLeaf(false) ?? undefined;
-      if (leaf) await leaf.setViewState({ type: ASSISTANT_VIEW_TYPE, active: true });
-    } else if (leaf.isDeferred) {
-      await leaf.loadIfDeferred();
+    const existing = app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE)[0];
+    const leaf = existing ?? app.workspace.getRightLeaf(false);
+    if (!leaf) throw new Error("Assistant sidebar is unavailable.");
+    const load = !existing ? () => leaf.setViewState({ type: ASSISTANT_VIEW_TYPE, active: true })
+      : leaf.isDeferred ? () => leaf.loadIfDeferred() : null;
+    if (load) {
+      const sameOpening = AssistantView.captureLeafOpening(leaf);
+      await awaitSidebarStep(load, () => {
+        const current = leaf.view;
+        const registered = app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE).includes(leaf);
+        const replaced = !sameOpening();
+        if (!isActive() && !replaced && registered && current instanceof AssistantView
+          && current.belongsToRuntime(operations) && current.captureLifetime()()) leaf.detach();
+        requireActive();
+        if (replaced) throw new AssistantSidebarClosedError("Assistant sidebar was replaced.");
+        if (!registered) {
+          if (existing) throw new AssistantSidebarClosedError("Assistant sidebar was closed.");
+          // A newly allocated right leaf belongs to the workspace even before it has a view type.
+          let attached = false;
+          app.workspace.iterateAllLeaves(candidate => { if (candidate === leaf) attached = true; });
+          if (!attached) throw new AssistantSidebarClosedError("Assistant sidebar was closed.");
+        }
+        if (current instanceof AssistantView && !current.belongsToRuntime(operations)) {
+          throw new AssistantSidebarClosedError("Assistant runtime was replaced.");
+        }
+      });
     }
-    const view = leaf?.view;
-    const isOpen = view instanceof AssistantView ? view.captureLifetime() : () => false;
-    // Cleanup owns only this runtime's captured view and its still-open lifetime.
-    // An older opening must never detach a replacement created after reload.
-    if (!isActive() && leaf && view instanceof AssistantView && view.belongsToRuntime(operations)
-      && isOpen() && leaf.view === view
-      && app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE).includes(leaf)) leaf.detach();
-    requireActive();
-    if (!leaf || !(view instanceof AssistantView)) throw new Error("Assistant sidebar is unavailable.");
+    const view = leaf.view;
+    if (!(view instanceof AssistantView)) throw new Error("Assistant sidebar is unavailable.");
     if (!view.belongsToRuntime(operations)) throw new AssistantSidebarClosedError("Assistant runtime was replaced.");
+    const isOpen = view.captureLifetime();
     if (!isOpen()) throw new AssistantSidebarClosedError("Assistant sidebar was closed.");
-    await app.workspace.revealLeaf(leaf);
-    requireActive();
-    if (!isOpen() || leaf.view !== view
-      || !app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE).includes(leaf)) {
-      throw new AssistantSidebarClosedError("Assistant sidebar was closed.");
-    }
+    await awaitSidebarStep(() => app.workspace.revealLeaf(leaf), () => {
+      requireActive();
+      if (!isOpen() || leaf.view !== view || !app.workspace.getLeavesOfType(ASSISTANT_VIEW_TYPE).includes(leaf)) {
+        throw new AssistantSidebarClosedError("Assistant sidebar was closed.");
+      }
+    });
     return view;
   };
   return () => {

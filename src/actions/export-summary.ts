@@ -5,13 +5,20 @@ import { t, type Translations } from "../i18n";
 export interface ExportSummaryRow {
   readonly label: string;
   readonly value: string;
+  readonly resolveValue?: (signal: AbortSignal) => Promise<string | undefined>;
+}
+
+export interface ExportResourceLabels {
+  readonly template?: Pick<TemplateItem, "id" | "name" | "origin">;
+  readonly optimization?: { id: string; name: string };
+  readonly numberingSchemeName?: (id: string, signal: AbortSignal) => Promise<string | undefined>;
 }
 
 /** Project the same capability-filtered request that conversion will send. */
 export function buildExportSummary(
   request: ConvertRequest,
   mediaType: string,
-  template?: Pick<TemplateItem, "id" | "name" | "origin">,
+  { template, optimization, numberingSchemeName }: ExportResourceLabels = {},
 ): ExportSummaryRow[] {
   // Resource bindings are validated by the client, not displayed as settings.
   const options = buildConversionMachineOptions({ ...request, markdownResourceBindings: undefined }, mediaType);
@@ -27,9 +34,20 @@ export function buildExportSummary(
     ? `${template.name} · ${t(template.origin === "builtin" ? "pickerTemplateBuiltin" : "pickerTemplateCustom")}`
     : undefined;
   add("template_name", "exportReviewTemplate", templateLabel);
-  if (request.optimization) rows.push({ label: t("exportReviewOptimization"), value: request.optimization });
+  if (request.optimization) rows.push({
+    label: t("exportReviewOptimization"),
+    value: optimization?.id === request.optimization ? optimization.name : request.optimization,
+  });
   add("remove_numbering", "settingsCleanNumbering", t(options.remove_numbering ? "settingsNumberingRemove" : "settingsNumberingKeep"));
-  add("add_numbering", "settingsAddNumbering", options.add_numbering ? optionText(options.numbering_scheme ?? t("settingsNumberingDefault")) : t("settingsNumberingNone"));
+  if (options.add_numbering !== undefined) {
+    const scheme = typeof options.numbering_scheme === "string" ? options.numbering_scheme : undefined;
+    rows.push({
+      label: t("settingsAddNumbering"),
+      value: options.add_numbering ? scheme ?? t("settingsNumberingDefault") : t("settingsNumberingNone"),
+      ...(options.add_numbering && scheme && numberingSchemeName
+        ? { resolveValue: (signal: AbortSignal) => numberingSchemeName(scheme, signal) } : {}),
+    });
+  }
   add("heading_numbering_render_mode", "settingsHeadingNumberingRenderMode", t(options.heading_numbering_render_mode === "word_native" ? "settingsHeadingNumberingRenderModeWordNative" : "settingsHeadingNumberingRenderModeText"));
   const enabled = (value: unknown) => t(value ? "exportReviewEnabled" : "exportReviewDisabled");
   for (const key of ["preserve_resources", "to_md_keep_images"]) add(key, "settingsExtractImages", enabled(options[key]));

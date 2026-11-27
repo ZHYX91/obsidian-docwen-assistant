@@ -44,11 +44,12 @@
       },
       "steps": [
         "In this run's disposable Vault, verify the exact packaged Assistant candidate, record desktop host and DocWen package identities, reset temporary settings and scratch inputs to baseline, and configure that package in General with no active operation",
-        "On this run's recorded Obsidian host/version, open General, Export to Markdown, Export to Word, and Proofreading; inspect each contextual help card, without a separate Usage tab; minimum 1.12.7 and current 1.13.x coverage requires separate host runs",
+        "On this run's recorded Obsidian host/version, open General, Export to Markdown, Export to Word, and Proofreading; inspect each contextual help card, without a separate Usage tab; coverage of minimum 1.12.7, the 1.13.x settings API and the latest stable desktop release requires separate host runs",
         "On Export to Word, focus How to export to Word and toggle the tutorial with Enter and Space. Check that only the chevron and title appear in the summary, that the card keeps its faint tint in both states, and that the chevron matches the expanded reading-edge line. Expand and check the template, input extensions and numbering sections in order. Switch to another tab and back while the tutorial is open",
         "Use keyboard tab navigation, Home/End and RTL arrow navigation; repeat at narrow width, 16/20 px UI text, default and third-party themes, and in a popout window",
+        "Show a long connection error and both mixed and shared channel failures. At narrow and wide settings widths, verify all three button bounds and their focus outlines stay inside the card, labels wrap, and a shared Store recovery appears once",
         "Change language and dependent image/OCR controls, close and reopen settings, and verify the saved values, tab labels, ribbon and command text; exercise all supported locales including zh-Hant-HK and zh-Hans-SG host fallback",
-        "Arrange a settings-save failure only in this run's temporary profile before changing a control; observe pending changes, restore writing, and use General's Retry; restore the declared settings baseline and idle state afterward"
+        "Arrange a settings-save failure only in this run's temporary profile before changing a control; observe pending changes, restore writing, and use Retry from the tab where the failure is displayed; restore the declared settings baseline and idle state afterward"
       ],
       "expected": [
         "The imperative four-tab surface, help cards, focus and owning-window behavior remain usable on each declared host/layout combination",
@@ -69,7 +70,7 @@
       },
       "steps": [
         "In this run's disposable Vault, verify the exact packaged Assistant candidate, record host and full DocWen package identities, reset temporary settings and scratch inputs from acceptance/fixtures, and start with no active operation",
-        "In General select the full package folder, DocWen.exe, then DocWenCLI.exe using the native location controls; after each successful save run Check connection and the Doctor command; on Windows also check the automatic Store alias when installed",
+        "In General, use the location controls to select the full package folder, the GUI executable, and the CLI executable in turn (DocWen.exe and DocWenCLI.exe on Windows, DocWen and DocWenCLI on Linux). After each save run Check connection and Doctor. On Windows also check the automatic Store alias when installed.",
         "Try an unrelated executable, a folder missing the CLI sibling, and a parent whose only CLI is in a child folder; inspect the visible failure and Details, then restore the recorded valid package",
         "Open Conversion.md's DocWen menu and the numbering selectors on the Markdown/Word settings tabs; observe discovery and available actions/resources",
         "In this run's temporary settings prepare an identity-recorded controlled DocWen endpoint for successful empty capabilities/resources, a typed discovery failure, and a delayed obsolete reply; repeat discovery, Retry and connection replacement for each response, then restore the real package and idle state"
@@ -117,8 +118,9 @@
         "In this run's disposable Vault, verify the exact packaged Assistant candidate and recorded DocWen package, reset temporary settings and scratch inputs from acceptance/fixtures, configure the package with no active operation, enable typo/symbol/punctuation checks, open Proofread.md, and record its source digest",
         "Run Proofread Markdown from the command palette and from the file menu; inspect the source filename, actual issue/empty result, completion notice, and line/rule sorting",
         "Create a disposable Markdown note with more than 400 unmatched opening parentheses, run punctuation-pair proofreading, and record the actual validator total; when it exceeds 200, inspect the initial 200 rows and total, keyboard-load both later batches, change sort and interface language, and refresh to verify the displayed count resets",
-        "Activate an issue by keyboard and verify the selected source range; edit the source, try an old issue, and Refresh the report before navigating again",
-        "Prepare an identity-recorded delayed validation endpoint in this run's temporary settings, start validation for Proofread.md, then start it for Conversion.md before the first reply; release the replies, inspect the final sidebar source/results, and restore the recorded real package and idle state"
+        "Activate an issue by mouse and by keyboard from Reading view, Live Preview, and Source mode. On a line with an emoji and two identical punctuation marks, check the one-based line/column, visible native selection and editor focus for the second mark. Verify the note bytes and editing-mode preference are preserved; edit the source, try an old issue, and Refresh the report before navigating again",
+        "Prepare an identity-recorded delayed validation endpoint in this run's temporary settings. Keep a finished report for Proofread.md. Start a delayed run for Conversion.md from its file menu while another tab is active. Verify the requested path while running and cancelling, cancel by keyboard, move focus outside the sidebar and let the task settle. Verify the cancelled source, retained issue rows and explicit refresh target, then refresh Proofread.md",
+        "Using the same endpoint, start validation for Proofread.md, then start it for Conversion.md before the first reply; release the replies, inspect the final sidebar source/results, and restore the recorded real package and idle state"
       ],
       "expected": [
         "Proofreading uses direct Markdown validation and reports the captured Vault filename; validation is this operation's engine, not a separate unsupported command",

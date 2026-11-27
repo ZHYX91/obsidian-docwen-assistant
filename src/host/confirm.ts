@@ -1,7 +1,8 @@
 import { type App, Modal } from "obsidian";
 
 import { DOCWEN_PRODUCT_NAME } from "../docwen/links";
-import { getCurrentLocale, t } from "../i18n";
+import { applyInterfaceLocale } from "./interface-locale";
+import { t } from "../i18n";
 
 export interface DetectedFormatDetails {
   sourceName: string;
@@ -41,8 +42,7 @@ class ConfirmationModal extends Modal {
       return;
     }
     this.titleEl.setText(DOCWEN_PRODUCT_NAME);
-    this.contentEl.setAttribute("lang", getCurrentLocale());
-    this.contentEl.setAttribute("dir", getCurrentLocale() === "ar" ? "rtl" : "ltr");
+    applyInterfaceLocale(this.titleEl, this.contentEl);
     this.contentEl.createEl("p", { text: t("dialogDetectedFormat") });
     const summary = this.contentEl.createEl("dl", { cls: "docwen-export-summary" });
     const rows = [

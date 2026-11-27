@@ -42,7 +42,7 @@ export class ProofreadActions {
     }
     const file = this.app.vault.getFileByPath(vaultPath);
     if (!file) {
-      showNotice(t("noticeProofreadNoMdFile"));
+      showNotice(t("noticeProofreadSourceMissing"));
       return;
     }
     await this.run(file, view);
@@ -51,11 +51,16 @@ export class ProofreadActions {
   async run(file: TFile, view: AssistantView): Promise<void> {
     // No asynchronous gap before begin: a stale request must not replace live work.
     if (!view.captureLifetime()()) return;
+    const checks = buildProofreadChecks(this.getSettings());
+    if (checks.includes("none")) {
+      showNotice(t("proofreadChecksDisabled"));
+      return;
+    }
     await this.runner.run(
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
       async (lease) => {
-        const canPublish = view.ownOperation(lease);
+        const canPublish = view.ownOperation(lease, file.path);
         if (!canPublish()) return null;
         const completed = await this.snapshots.run(file, lease.signal, async (snapshot) => {
           const source = snapshot.inputs[0];
@@ -65,7 +70,7 @@ export class ProofreadActions {
           if (!admitted || !canPublish()) return null;
           const report = await this.docwen.validate(
             admitted,
-            buildProofreadChecks(this.getSettings()),
+            checks,
             lease.signal,
           );
           if (!canPublish()) return null;

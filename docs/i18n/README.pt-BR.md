@@ -52,7 +52,7 @@ A detecção automática é exclusiva do Windows, usa o alias registrado `docwen
 1. No Windows, instale uma versão compatível do DocWen 0.23.0 ou posterior pela [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97), ou extraia o pacote Windows de [DocWen Releases](https://github.com/ZHYX91/docwen/releases). No Linux x64, extraia por completo o pacote Linux da mesma página.
 2. Instale o DocWen Assistant pelos Community Plugins. Para a instalação manual, baixe `docwen-assistant-x.y.z.zip` nas [versões do plugin](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) e copie `main.js`, `manifest.json` e `styles.css` para `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Recarregue os Community Plugins e ative o DocWen Assistant.
-4. A versão Windows da Store pode ser detectada automaticamente. No Windows portátil ou Linux, abra **Configurações → DocWen Assistant → Geral**, escolha a conexão manual e selecione a pasta extraída ou o executável.
+4. A versão Windows da Store pode ser detectada automaticamente. No Windows portátil ou Linux, abra **Configurações → DocWen Assistant → Geral**, escolha **Escolher instalação manualmente** e selecione a pasta extraída ou o executável.
 
 ### Manter configurações ao atualizar
 

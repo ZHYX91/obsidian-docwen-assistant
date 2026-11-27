@@ -170,6 +170,24 @@ describe("DocWenCapabilityService", () => {
     expect(service.supportsAction(discovered, "validate")).toBe(true);
   });
 
+  it("hides ordinary and optimized exports when the inspected file only supports other actions", async () => {
+    const ordinary = capability("ordinary", "convert", "text/markdown");
+    const optimized = { ...capability("optimized", "transform", "text/markdown"), optimization_id: "gongwen" };
+    const runtime = projection();
+    const service = new DocWenCapabilityService({
+      inspect: vi.fn().mockResolvedValue(inspection({ supportedActions: ["inspect", "validate"] })),
+      runtimeCapabilities: vi.fn().mockResolvedValue({
+        ...runtime, capabilities: [...runtime.capabilities, ordinary, optimized],
+      }),
+    } as unknown as DocWenClient);
+    const file = await service.forFile("note.md");
+
+    expect(service.supportsAction(file, "validate")).toBe(true);
+    expect(service.findConversionRoute(file, "docx")).toBeNull();
+    expect(service.findConversionRoute(file, "md")).toBeNull();
+    expect(service.optimizationActionIds(file, "md")).toEqual([]);
+  });
+
   it("bounds a burst of different-file background inspections to one active request", async () => {
     let active = 0;
     let peak = 0;
@@ -379,6 +397,62 @@ describe("DocWenCapabilityService", () => {
     service.reset();
     await service.preload("B.md", "if-needed");
     expect(inspect).toHaveBeenCalledTimes(6);
+  });
+
+  it("bounds retained file inspections and keeps a frequently visited file warm", async () => {
+    const inspect = vi.fn().mockResolvedValue(inspection());
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    await service.preload("active.md");
+    await service.preload("oldest.md");
+    for (let i = 0; i < 127; i++) {
+      await service.preload("active.md", "if-needed");
+      await service.preload(`other-${i}.md`);
+    }
+    expect(service.peek("active.md")).toHaveProperty("inspection");
+    expect(service.peek("oldest.md")).toBeNull();
+    expect(inspect).toHaveBeenCalledTimes(129);
+  });
+
+  it("shares a sidebar preview with navigation, keeps refresh live and propagates failures", async () => {
+    const unavailable = new Error("cannot inspect");
+    const inspect = vi.fn().mockResolvedValue(inspection());
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    const signal = new AbortController().signal;
+    const navigation = service.preload("A.md");
+    const [preview] = await Promise.all([service.previewFile("A.md", signal, true), navigation]);
+    expect(preview).toBe(service.peek("A.md"));
+    await service.previewFile("A.md", signal, false);
+    expect(inspect).toHaveBeenCalledTimes(1);
+    await service.previewFile("A.md", signal, true);
+    expect(inspect).toHaveBeenCalledTimes(2);
+    inspect.mockRejectedValueOnce(unavailable);
+    void service.preload("A.md");
+    await expect(service.previewFile("A.md", signal, false)).rejects.toBe(unavailable);
+    expect(inspect).toHaveBeenCalledTimes(3);
+  });
+
+  it("closing the sidebar releases its waiter while navigation is still inspecting", async () => {
+    const pending = deferred<ReturnType<typeof inspection>>();
+    const inspect = vi.fn(() => pending.promise);
+    const service = new DocWenCapabilityService({
+      inspect, runtimeCapabilities: vi.fn().mockResolvedValue(projection()),
+    } as unknown as DocWenClient);
+    const controller = new AbortController();
+    const navigation = service.preload("A.md");
+    const failure = vi.fn();
+    const preview = service.previewFile("A.md", controller.signal, false).catch(failure);
+    controller.abort();
+    await new Promise<void>(resolve => setImmediate(resolve));
+    expect(failure).toHaveBeenCalledExactlyOnceWith(controller.signal.reason);
+    expect(service.peek("A.md")).toBeNull();
+    pending.resolve(inspection());
+    await Promise.all([preview, navigation]);
+    expect(service.peek("A.md")).toHaveProperty("inspection");
+    expect(inspect).toHaveBeenCalledTimes(1);
   });
 
   it("de-duplicates a pending preload for the same path", async () => {

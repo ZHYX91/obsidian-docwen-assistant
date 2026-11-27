@@ -47,10 +47,17 @@ async function fixture(
       return Promise.all(result!.inputs.slice(1).map(async input => (await readFile(input.path)).length));
     },
   );
-  return { run, imageRead, controller };
+  return { run, imageRead, controller, images };
 }
 
 describe("declared embedded image budget", () => {
+  it("counts the source and stops before reading an image outside the handle count limit", async () => {
+    const sizes = Array.from({ length: 256 }, () => ({ known: 1, actual: 1 }));
+    const test = await fixture(sizes);
+    await expect(test.run()).rejects.toMatchObject({ code: "cli_input_invalid", details: { actual: 257, limit: 256 } });
+    expect(test.imageRead).not.toHaveBeenCalled();
+  });
+
   it("rejects a known oversized image before calling readBinary", async () => {
     // The sentinel's tiny payload keeps this regression independent of large allocations.
     const test = await fixture([{ known: 128 * 1024 * 1024, actual: 1 }]);
@@ -80,6 +87,20 @@ describe("declared embedded image budget", () => {
     const result = await test.run();
     expect(result.value).toEqual([LIMIT]);
     expect(test.imageRead).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["move", "same-path replacement"])("rejects an image %s while preparing the snapshot", async change => {
+    const test = await fixture([{ known: 1, actual: 1 }, { known: 1, actual: 1 }]);
+    const { TFile } = await import("obsidian");
+    const original = test.images[0]!;
+    test.imageRead.mockImplementation(async reading => {
+      if (reading === test.images[1]) {
+        if (change === "move") original.path = "renamed.png";
+        else test.images[0] = Object.assign(new TFile(), original);
+      }
+      return new Uint8Array([1]).buffer;
+    });
+    await expect(test.run()).rejects.toMatchObject({ code: "vault_target_changed" });
   });
 
   it("preserves cancellation while an image read is pending", async () => {

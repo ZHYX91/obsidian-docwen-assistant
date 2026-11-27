@@ -5,7 +5,7 @@ import { preserveViewState } from "./settings-view-state";
 export type AssistantExportTarget = "docx" | "xlsx" | "md";
 
 export interface AssistantExportActions {
-  getExportTargets(file: TFile, signal: AbortSignal): Promise<readonly AssistantExportTarget[]>;
+  getExportTargets(file: TFile, signal: AbortSignal, refresh: boolean): Promise<readonly AssistantExportTarget[]>;
   exportFile(file: TFile, target: AssistantExportTarget): Promise<void>;
   showExportFailure(error: unknown): void;
 }
@@ -17,6 +17,7 @@ const labels = {
 /** Discovery belongs to the visible Actions panel; conversion remains an explicit file action. */
 export class AssistantExports {
   private container: HTMLElement | null = null;
+  private refreshButton: HTMLButtonElement | null = null;
   private file: TFile | null = null;
   private signature = "";
   private enabled = false;
@@ -27,11 +28,12 @@ export class AssistantExports {
   constructor(
     private readonly actions: AssistantExportActions,
     private readonly getFile: () => TFile | null,
-    private readonly refreshContext: () => void,
+    private readonly refreshContext: (refresh?: boolean) => void,
   ) {}
 
-  mount(container: HTMLElement): void {
+  mount(container: HTMLElement, refreshButton: HTMLButtonElement): void {
     this.container = container;
+    this.refreshButton = refreshButton;
     this.render();
   }
 
@@ -39,6 +41,7 @@ export class AssistantExports {
     this.request?.abort();
     this.request = null;
     this.container = null;
+    this.refreshButton = null;
     this.file = null;
     this.signature = "";
     this.targets = null;
@@ -46,9 +49,9 @@ export class AssistantExports {
     this.enabled = false;
   }
 
-  refresh(file: TFile | null, enabled: boolean, connectionChanged = false): void {
+  refresh(file: TFile | null, enabled: boolean, refreshExports = false): void {
     const signature = fileSignature(file);
-    const changed = connectionChanged || file !== this.file || signature !== this.signature;
+    const changed = refreshExports || file !== this.file || signature !== this.signature;
     this.enabled = enabled;
     if (changed || !enabled) {
       this.request?.abort();
@@ -62,24 +65,20 @@ export class AssistantExports {
     }
     if (changed) this.render();
     if (enabled && file && !this.request && this.targets === null && !this.failure) {
-      void this.discover(file, signature);
+      void this.discover(file, signature, refreshExports);
     }
   }
 
   reload(): void {
-    this.request?.abort();
-    this.request = null;
-    this.targets = null;
-    this.failure = null;
-    this.refreshContext();
+    this.refreshContext(true);
   }
 
-  private async discover(file: TFile, signature: string): Promise<void> {
+  private async discover(file: TFile, signature: string, refresh: boolean): Promise<void> {
     const request = new AbortController();
     this.request = request;
     this.render();
     try {
-      const targets = await this.actions.getExportTargets(file, request.signal);
+      const targets = await this.actions.getExportTargets(file, request.signal, refresh);
       if (request.signal.aborted || this.request !== request) return;
       if (this.getFile() !== file || fileSignature(file) !== signature) {
         this.refreshContext();
@@ -110,13 +109,13 @@ export class AssistantExports {
       const status = (text: string): void => {
         container.createEl("p", { text, cls: "docwen-assistant-hint", attr: { role: "status" } });
       };
-      const button = (text: string, key: string, action: () => void): void => {
+      const button = (text: string, key: string, action: (control: HTMLButtonElement) => void): void => {
         const control = container.createEl("button", {
           text, cls: "docwen-assistant-action",
           attr: { type: "button", "data-docwen-view-key": key },
         });
         control.addEventListener("click", () => {
-          if (this.enabled && this.container === container && control.isConnected) action();
+          if (this.enabled && this.container === container && control.isConnected) action(control);
         });
       };
       if (!this.file) return;
@@ -124,7 +123,10 @@ export class AssistantExports {
       if (this.failure) {
         status(t("contextMenuCapabilityUnavailable"));
         const error = this.failure.error;
-        button(t("settingsRetry"), "export-retry", () => this.reload());
+        button(t("settingsRetry"), "export-retry", (control) => {
+          if (container.ownerDocument.activeElement === control) this.refreshButton?.focus({ preventScroll: true });
+          this.reload();
+        });
         button(t("dialogDetails"), "export-details", () => this.actions.showExportFailure(error));
         return;
       }

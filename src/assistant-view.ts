@@ -4,8 +4,8 @@
  */
 
 import { CONVERSION_MEDIA_TYPES, mediaTypeForPath } from "./docwen/formats";
-import { ItemView, MarkdownView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
-import { proofreadSourceDigest } from "./host/proofread-source";
+import { ItemView, type TFile, WorkspaceLeaf, setIcon } from "obsidian";
+import { selectProofreadIssue } from "./host/proofread-navigation";
 import { getCurrentLocale, t } from "./i18n";
 import { preserveViewState } from "./settings-view-state";
 import { AssistantExports, type AssistantExportActions } from "./assistant-exports";
@@ -13,7 +13,6 @@ import type { Translations } from "./i18n/types";
 import type { ProofreadIssue } from "./docwen";
 import { showNotice } from "./host/notices";
 import { resolveAbsoluteFilePath } from "./host/vault-files";
-import { isSameOpenMarkdownTarget, locateOpenMarkdownTarget } from "./host/open-markdown-target";
 import {
   type OperationCoordinator,
   type OperationItem,
@@ -43,6 +42,24 @@ const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
 };
 
 export class AssistantView extends ItemView {
+  private static readonly leafOpenings = new WeakMap<WorkspaceLeaf, { count: number; view: AssistantView }>();
+
+  /** A pending host load may open one view on this leaf, even between two awaits. */
+  static captureLeafOpening(leaf: WorkspaceLeaf): () => boolean {
+    const initial = leaf.view;
+    if (initial instanceof AssistantView) {
+      const isOpen = initial.captureLifetime();
+      if (isOpen()) return () => leaf.view === initial && isOpen();
+    }
+    const before = AssistantView.leafOpenings.get(leaf);
+    return () => {
+      const opened = AssistantView.leafOpenings.get(leaf);
+      if (opened === before) return true;
+      return opened !== undefined && opened.count === (before?.count ?? 0) + 1
+        && leaf.view === opened.view && opened.view.sidebarOpen;
+    };
+  }
+
   private issues: ProofreadIssue[] = [];
   private issueIndices = new Map<ProofreadIssue, number>();
   private sortedIssuesCache: { revision: number; mode: SortMode; issues: ProofreadIssue[] } | null = null;
@@ -60,10 +77,11 @@ export class AssistantView extends ItemView {
   // Keep lifecycle state separate from the host View.open() method.
   private sidebarOpen = false;
   private lifecycle = 0;
-  private ownedGeneration: number | null = null;
+  private ownedTask: { generation: number; path: string } | null = null;
   private renderedLocale: string | null = null;
   private openFileButton: HTMLButtonElement | null = null;
   private proofreadButton: HTMLButtonElement | null = null;
+  private refreshButton: HTMLButtonElement | null = null;
   private readonly viewId = ++nextViewId;
   private activeTab: AssistantTab = "proofread";
   private readonly tabs = new Map<AssistantTab, HTMLButtonElement>();
@@ -79,7 +97,7 @@ export class AssistantView extends ItemView {
     private readonly actions: AssistantViewActions,
   ) {
     super(leaf);
-    this.exports = new AssistantExports(actions, () => this.currentLocalFile(), () => this.refreshActiveFile());
+    this.exports = new AssistantExports(actions, () => this.currentLocalFile(), refresh => this.refreshActiveFile(refresh));
   }
 
   getState(): { activeTab: AssistantTab } {
@@ -142,6 +160,8 @@ export class AssistantView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    const count = (AssistantView.leafOpenings.get(this.leaf)?.count ?? 0) + 1;
+    AssistantView.leafOpenings.set(this.leaf, { count, view: this });
     this.sidebarOpen = true;
     this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
@@ -156,32 +176,35 @@ export class AssistantView extends ItemView {
     this.sidebarOpen = false;
     this.lifecycle += 1;
     this.resultsRevision += 1;
-    const generation = this.ownedGeneration;
-    this.ownedGeneration = null;
+    const task = this.ownedTask;
+    this.ownedTask = null;
+    this.cancelled = false;
     this.unsubscribeOperations?.();
     this.unsubscribeOperations = null;
     this.activeOperation = null;
     this.openFileButton = null;
     this.proofreadButton = null;
+    this.refreshButton = null;
     this.exports.dispose();
     this.tabs.clear();
     this.panels.clear();
     this.fileContexts.length = 0;
     (this.containerEl.children[1] as HTMLElement).removeClass("docwen-proofread-root");
-    if (generation !== null) this.operations.cancelGeneration(generation);
+    if (task) this.operations.cancelGeneration(task.generation);
   }
 
   /** Bind publication and cancellation to this exact open view lifetime. */
-  ownOperation(lease: OperationLease): () => boolean {
+  ownOperation(lease: OperationLease, path: string): () => boolean {
     const isOpen = this.captureLifetime();
     if (!isOpen()) {
       this.operations.cancelGeneration(lease.generation);
       return () => false;
     }
+    if (!lease.isCurrent()) return () => false;
     this.selectTab("proofread", this.activeTab !== "proofread");
-    this.ownedGeneration = lease.generation;
+    this.ownedTask = { generation: lease.generation, path };
     this.updateOperation(this.operations.getSnapshot());
-    return () => isOpen() && this.ownedGeneration === lease.generation && lease.isCurrent();
+    return () => isOpen() && this.ownedTask?.generation === lease.generation && lease.isCurrent();
   }
 
   /** Scope late host cleanup to the runtime that constructed this view. */
@@ -200,7 +223,7 @@ export class AssistantView extends ItemView {
   }
 
   /** File changes update only the action controls; the report, focus and scroll stay intact. */
-  refreshActiveFile(connectionChanged = false): void {
+  refreshActiveFile(refreshExports = false): void {
     if (!this.sidebarOpen) return;
     // Public host contract: non-FileView focus retains the most recently active file.
     // Read it afresh; file changes and closure must never reuse a cached TFile.
@@ -208,13 +231,14 @@ export class AssistantView extends ItemView {
     const isMarkdown = localFile !== null && mediaTypeForPath(localFile.path) === CONVERSION_MEDIA_TYPES.md;
     if (this.openFileButton) this.openFileButton.disabled = !localFile;
     if (this.proofreadButton) this.proofreadButton.disabled = !isMarkdown || this.activeOperation !== null;
+    if (this.refreshButton) this.refreshButton.disabled = this.activeOperation !== null || (!this.vaultPath && !isMarkdown);
     for (const context of this.fileContexts) {
       const name = context.querySelector<HTMLElement>(".docwen-assistant-filename");
       const path = context.querySelector<HTMLElement>(".docwen-assistant-filepath");
       if (name) name.setText(localFile ? t("sidebarCurrentFile", { filename: localFile.name }) : t("sidebarNoFile"));
       if (path) path.setText(localFile?.path ?? "");
     }
-    this.exports.refresh(localFile, this.activeTab === "actions", connectionChanged);
+    this.exports.refresh(localFile, this.activeTab === "actions", refreshExports);
   }
 
   private currentLocalFile(): TFile | null {
@@ -240,7 +264,7 @@ export class AssistantView extends ItemView {
     const previousOperation = this.activeOperation;
     const nextOperation = [...snapshot.operations]
       .reverse()
-      .find(({ generation }) => generation === this.ownedGeneration) ?? null;
+      .find(({ generation }) => generation === this.ownedTask?.generation) ?? null;
     if (nextOperation?.generation === previousOperation?.generation
       && nextOperation?.kind === previousOperation?.kind
       && nextOperation?.state === previousOperation?.state) return;
@@ -250,7 +274,19 @@ export class AssistantView extends ItemView {
     }
     if (this.activeOperation) this.cancelled = false;
     else if (previousOperation?.state === "cancelling") this.cancelled = true;
+
+    // Transfer focus only while a control in this panel is losing its action.
+    // Work finishing later must leave focus in the editor or another tab alone.
+    const panel = this.panels.get("proofread");
+    const focused = panel?.ownerDocument.activeElement;
+    const key = panel && !panel.hidden && focused && panel.contains(focused)
+      ? focused.getAttribute("data-docwen-view-key") : null;
     this.render();
+    if (nextOperation?.state === "running" && (key === "refresh" || key === "proofread-current-file")) {
+      this.panels.get("proofread")?.querySelector<HTMLElement>(".docwen-proofread-cancel")?.focus({ preventScroll: true });
+    } else if (key === "cancel" && nextOperation?.state !== "running") {
+      this.tabs.get("proofread")?.focus({ preventScroll: true });
+    }
   }
 
   private getSortedIssues(): ProofreadIssue[] {
@@ -325,17 +361,29 @@ export class AssistantView extends ItemView {
 
   private renderReport(container: HTMLElement): void {
 
+    const showStatus = (text: string, path?: string): void => {
+      const status = container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
+      if (path) {
+        status.createEl("br");
+        status.createEl("bdi", { text: path });
+      }
+    };
+    if (this.cancelled) showStatus(t("proofreadCancelled"), this.ownedTask?.path);
+
     // Report toolbar
     const toolbar = container.createDiv({ cls: "docwen-proofread-toolbar" });
 
+    const reportPath = this.vaultPath;
+    const refreshLabel = reportPath ? t("proofreadRefreshReport", { file: reportPath }) : t("proofreadRefresh");
     const refreshBtn = toolbar.createEl("button", {
       cls: "docwen-proofread-btn",
-      attr: { type: "button", "aria-label": t("proofreadRefresh"), "data-docwen-view-key": "refresh" },
+      attr: { type: "button", "aria-label": refreshLabel, title: refreshLabel, "data-docwen-view-key": "refresh" },
     });
+    this.refreshButton = refreshBtn;
     setIcon(refreshBtn, "refresh-cw");
     if (this.activeOperation) refreshBtn.setAttribute("disabled", "");
     else refreshBtn.addEventListener("click", () => {
-      void this.refresh(this.vaultPath, this);
+      if (refreshBtn.isConnected) void this.refresh(reportPath, this);
     });
 
     const sortBtn = toolbar.createEl("button", {
@@ -352,11 +400,10 @@ export class AssistantView extends ItemView {
       this.render();
     });
 
-    // Status / file name
-    if (this.fileName) {
+    if (this.fileName && !this.activeOperation) {
       toolbar.createSpan({
         cls: "docwen-proofread-filename",
-        text: this.fileName,
+        text: t("proofreadReportFile", { file: this.fileName }),
         attr: { title: this.vaultPath },
       });
     }
@@ -379,16 +426,15 @@ export class AssistantView extends ItemView {
       }
     }
 
-    const showStatus = (text: string): void => {
-      container.createDiv({ cls: "docwen-proofread-status", text, attr: { role: "status" } });
-    };
     if (this.activeOperation) {
       return showStatus(this.activeOperation.state === "cancelling"
         ? t("operationCancelling")
-        : t("operationRunning", { operation: t("operationProofread") }));
+        : t("operationRunning", { operation: t("operationProofread") }), this.ownedTask?.path);
     }
-    if (this.cancelled) return showStatus(t("proofreadCancelled"));
-    if (!this.fileName) return showStatus(t("proofreadOpenMdFile"));
+    if (!this.fileName) {
+      if (!this.cancelled) showStatus(t("proofreadOpenMdFile"));
+      return;
+    }
     if (this.stale) return showStatus(t("proofreadSourceChanged"));
     if (this.issues.length === 0) return showStatus(t("proofreadNoIssues"));
 
@@ -419,7 +465,7 @@ export class AssistantView extends ItemView {
     refresh.addEventListener("click", () => {
       if (isOpen() && refresh.isConnected && this.activeTab === "actions") this.exports.reload();
     });
-    this.exports.mount(container.createDiv({ cls: "docwen-assistant-actions" }));
+    this.exports.mount(container.createDiv({ cls: "docwen-assistant-actions" }), refresh);
     container.createEl("h3", { cls: "docwen-assistant-section-title", text: t("contextMenuSubmenuTitle") });
     const group = container.createDiv({
       cls: "docwen-assistant-actions",
@@ -453,7 +499,9 @@ export class AssistantView extends ItemView {
   private appendIssues(list: HTMLElement, sorted: readonly ProofreadIssue[], revision: number, from: number, to: number): HTMLButtonElement | undefined {
     let first: HTMLButtonElement | undefined;
     for (const issue of sorted.slice(from, to)) {
-      const lineLabel = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
+      const line = t("proofreadLineNumber", { line: String(issue.range.start.line + 1) });
+      const column = t("proofreadColumnNumber", { column: String(issue.range.start.column + 1) });
+      const location = `${line} · ${column}`;
       const ruleLabel = issue.rule_key === "symbol_pair"
         ? t("proofreadUnmatchedSymbol")
         : t(RULE_LABELS[issue.rule_key] ?? "proofreadViewTitle");
@@ -464,7 +512,7 @@ export class AssistantView extends ItemView {
         attr: {
           type: "button",
           "data-docwen-view-key": `issue:${revision}:${this.issueIndices.get(issue)}`,
-          "aria-label": `${lineLabel} ${ruleLabel}: ${issue.error_text}${correction}`,
+          "aria-label": `${location} ${ruleLabel}: ${issue.error_text}${correction}`,
         },
       });
       first ??= item;
@@ -473,7 +521,7 @@ export class AssistantView extends ItemView {
       });
 
       const header = item.createDiv({ cls: "docwen-proofread-item-header" });
-      header.createSpan({ cls: "docwen-proofread-line", text: lineLabel });
+      header.createSpan({ cls: "docwen-proofread-line", text: location });
       header.createSpan({ cls: "docwen-proofread-rule", text: ruleLabel });
 
       const body = item.createDiv({ cls: "docwen-proofread-item-body" });
@@ -515,74 +563,18 @@ export class AssistantView extends ItemView {
   private async navigateToIssue(issue: ProofreadIssue, revision: number): Promise<void> {
     if (revision !== this.resultsRevision || this.activeOperation || this.stale) return;
     const sequence = ++this.navigationSequence;
-    const sourceSha256 = this.sourceSha256;
-    const vaultPath = this.vaultPath;
     const isCurrent = (): boolean => sequence === this.navigationSequence && revision === this.resultsRevision && !this.activeOperation;
-    const invalidate = (): void => {
-      if (!isCurrent()) return;
+    let result;
+    try {
+      result = await selectProofreadIssue(this.app, this.vaultPath, this.sourceSha256, issue, isCurrent);
+    } catch {
+      result = "stale";
+    }
+    if (!isCurrent()) return;
+    if (result === "needs-editor") showNotice(t("proofreadLocationNeedsEditor"));
+    if (result === "stale") {
       this.stale = true;
       this.render();
-    };
-    try {
-      const file = this.app.vault.getAbstractFileByPath(vaultPath);
-      if (!(file instanceof TFile) || !/^[a-f0-9]{64}$/u.test(sourceSha256)) {
-        invalidate();
-        return;
-      }
-      const target = locateOpenMarkdownTarget(this.app.workspace, vaultPath);
-      if (target.kind === "ambiguous"
-        || (target.kind === "open" && !matchesSource(target.target.editor.getValue(), sourceSha256))) {
-        invalidate();
-        return;
-      }
-      const nativeNote = vaultPath.toLowerCase().endsWith(".md");
-      if (!nativeNote && target.kind === "closed") {
-        showNotice(t("proofreadLocationNeedsEditor"));
-        return;
-      }
-      const leaf = target.kind === "open" ? target.target.leaf : this.app.workspace.getLeaf(false);
-      if (!leaf) return;
-      if (nativeNote) await leaf.openFile(file);
-      else await this.app.workspace.revealLeaf(leaf);
-      if (!isCurrent()) return;
-      const view = leaf.view;
-      if (!(view instanceof MarkdownView) || view.file !== file || file.path !== vaultPath
-        || this.app.vault.getAbstractFileByPath(vaultPath) !== file
-        || (target.kind === "open" && !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, target.target))
-        || !isSameOpenMarkdownTarget(this.app.workspace, vaultPath, { leaf, view, editor: view.editor })
-        || !matchesSource(view.editor.getValue(), sourceSha256)) {
-        invalidate();
-        return;
-      }
-      const editor = view.editor;
-
-      const start = issue.range.start;
-      const end = issue.range.end;
-      const from = {
-        line: start.line,
-        ch: unicodeColumnToUtf16Column(editor.getLine(start.line), start.column),
-      };
-      const to = {
-        line: end.line,
-        ch: unicodeColumnToUtf16Column(editor.getLine(end.line), end.column),
-      };
-      editor.setSelection(from, to);
-      editor.scrollIntoView({ from, to }, true);
-    } catch {
-      invalidate();
     }
   }
-}
-
-function matchesSource(content: string, sourceSha256: string): boolean {
-  return proofreadSourceDigest(content) === sourceSha256;
-}
-
-export function unicodeColumnToUtf16Column(line: string, unicodeColumn: number): number {
-  let offset = 0;
-  for (const codePoint of line) {
-    if (unicodeColumn-- <= 0) break;
-    offset += codePoint.length;
-  }
-  return offset;
 }

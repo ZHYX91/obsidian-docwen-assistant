@@ -29,8 +29,10 @@ afterEach(async () => {
 async function createFixture() {
   const operations = new OperationCoordinator();
   const leaves: Array<{ view: AssistantView }> = [];
-  const app = { workspace: { getLeavesOfType: () => leaves }, vault: {} };
-  const view = new AssistantView({ app } as never, async () => {}, operations, createAssistantViewActions());
+  const lookup = vi.fn((_path: string) => null);
+  const app = { workspace: { getLeavesOfType: () => leaves }, vault: { getAbstractFileByPath: lookup } };
+  const refreshReport = vi.fn(async () => {});
+  const view = new AssistantView({ app } as never, refreshReport, operations, createAssistantViewActions());
   leaves.push({ view });
   const saved: unknown[] = [];
   const plugin = new DocWenPlugin(app as never, { id: "docwen-assistant" } as never);
@@ -41,7 +43,7 @@ async function createFixture() {
   await view.onOpen();
   const root = view.containerEl.children[1] as HTMLElement;
   fixtures.push({ view, operations });
-  return { plugin, view, operations, root, saved };
+  return { plugin, view, operations, root, saved, refreshReport, lookup };
 }
 
 function issue(text: string, offset: number, rule = "typo"): ProofreadIssue {
@@ -143,7 +145,7 @@ describe("proofreading view DOM integration", () => {
     await plugin.saveSettings();
     expect(getCurrentLocale()).toBe("zh-cn");
     expect(root.querySelector(".docwen-proofread-status")?.textContent).toBe(t("proofreadNoIssues"));
-    expect(root.querySelector('[data-docwen-view-key="refresh"]')?.getAttribute("aria-label")).toBe(t("proofreadRefresh"));
+    expect(root.querySelector('[data-docwen-view-key="refresh"]')?.getAttribute("aria-label")).toBe(t("proofreadRefreshReport", { file: "Note.md" }));
     expect(root.getAttribute("lang")).toBe("zh-cn");
     expect(root.getAttribute("dir")).toBe("ltr");
 
@@ -172,19 +174,63 @@ describe("proofreading view DOM integration", () => {
   it("updates running, cancelling and finished states for the same owned generation", async () => {
     const { view, root, operations } = await createFixture();
     const lease = operations.begin({ key: "proofread:Note.md", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     const cancel = root.querySelector<HTMLButtonElement>(".docwen-proofread-cancel")!;
     expect(cancel.disabled).toBe(false);
-    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toBe(
+    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toContain(
       t("operationRunning", { operation: t("operationProofread") }),
     );
     cancel.click();
     expect(lease.signal.aborted).toBe(true);
     expect(root.querySelector<HTMLButtonElement>(".docwen-proofread-cancel")?.disabled).toBe(true);
-    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toBe(t("operationCancelling"));
+    expect(root.querySelector('.docwen-proofread-status[role="status"]:not([aria-busy="true"])')?.textContent).toContain(t("operationCancelling"));
     lease.finish();
     expect(root.querySelector(".docwen-proofread-cancel")).toBeNull();
-    expect(root.querySelector(".docwen-proofread-status")?.textContent).toBe(t("proofreadCancelled"));
+    expect(root.querySelector(".docwen-proofread-status")?.textContent).toContain(t("proofreadCancelled"));
+  });
+
+  it("keeps progress and cancellation bound to the latest requested file and labels the retained report", async () => {
+    const { view, root, operations, refreshReport, lookup } = await createFixture();
+    view.updateResults([issue("original", 0)], "A.md", "Old/A.md", "a".repeat(64));
+    const first = operations.begin({ key: "proofread", kind: "proofread" });
+    const canPublishFirst = view.ownOperation(first, "Other/First.md");
+    const latest = operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(latest, "Requested/B.md");
+    first.finish();
+    expect(canPublishFirst()).toBe(false);
+    expect(root.querySelector(".docwen-proofread-status bdi")?.textContent).toBe("Requested/B.md");
+    expect(root.querySelector(".docwen-proofread-filename")).toBeNull();
+
+    const cancel = root.querySelector<HTMLButtonElement>(".docwen-proofread-cancel")!;
+    cancel.focus();
+    cancel.click();
+    expect(document.activeElement).toBe(root.querySelector('[data-docwen-view-key="tab-proofread"]'));
+    expect(root.querySelector(".docwen-proofread-status bdi")?.textContent).toBe("Requested/B.md");
+    const elsewhere = document.body.appendChild(document.createElement("button"));
+    elsewhere.focus();
+    latest.finish();
+    expect(document.activeElement).toBe(elsewhere);
+    expect(root.querySelector(".docwen-proofread-status bdi")?.textContent).toBe("Requested/B.md");
+    expect(root.querySelector(".docwen-proofread-filename")?.textContent).toBe("Report: A.md");
+    const refresh = root.querySelector<HTMLButtonElement>('[data-docwen-view-key="refresh"]')!;
+    expect(refresh.disabled).toBe(false);
+    expect(refresh.title).toBe("Refresh the proofreading report for Old/A.md");
+    expect(refresh.getAttribute("aria-label")).toBe(refresh.title);
+    expect(root.querySelector(".docwen-proofread-item")?.textContent).toContain("original");
+    refresh.click();
+    expect(refreshReport).toHaveBeenCalledWith("Old/A.md", view);
+
+    const failed = operations.begin({ key: "proofread", kind: "proofread" });
+    view.ownOperation(failed, "Failed.md");
+    failed.finish(); // A rejected run finishes without publishing results.
+    expect(root.querySelector(".docwen-proofread-status")).toBeNull();
+    expect(root.querySelector(".docwen-proofread-filename")?.textContent).toBe("Report: A.md");
+    const retained = root.querySelector<HTMLButtonElement>(".docwen-proofread-item")!;
+    expect(retained.textContent).toContain("original");
+    retained.click(); // The retained note has been removed from the Vault.
+    expect(lookup).toHaveBeenCalledWith("Old/A.md");
+    await vi.waitFor(() => expect(root.querySelector(".docwen-proofread-status")?.textContent).toBe(t("proofreadSourceChanged")));
+    expect(root.querySelector(".docwen-proofread-item")).toBeNull();
   });
 
   it("preserves the focused issue and list scroll across a language change", async () => {

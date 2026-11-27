@@ -222,6 +222,11 @@ describe("ExportActions optimization discovery", () => {
       expect(docwen.convert).not.toHaveBeenCalled();
     } else {
       await pending;
+      const { confirmExport } = await import("../src/host/export-review");
+      expect(confirmExport).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining([
+        { label: "exportReviewOptimization", value: "Gongwen" },
+      ]), signal);
+      expect(docwen.optimizations).toHaveBeenCalledOnce();
       expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({ optimization: "gongwen", capabilityId: "opaque.gongwen", selectedCapability, supportedOptions: ["recognize_text"] }), signal);
     }
     expect(capabilities.requireConversionRoute).toHaveBeenLastCalledWith(capability, "md", "gongwen");
@@ -229,6 +234,7 @@ describe("ExportActions optimization discovery", () => {
 
   it("carries the exact route option set into Markdown conversion", async () => {
     const { ExportActions } = await import("../src/actions/export-actions");
+    const { confirmExport } = await import("../src/host/export-review");
     const signal = new AbortController().signal;
     const runner = advisoryRunner(signal);
     const capability = {
@@ -257,6 +263,7 @@ describe("ExportActions optimization discovery", () => {
     };
     const docwen = {
       optimizations: vi.fn(),
+      numberingSchemes: vi.fn().mockResolvedValue([{ id: "legal", name: "Legal numbering" }]),
       convert: vi.fn().mockResolvedValue({
         output: "D:\\Vault\\note.md",
         outputs: [],
@@ -276,8 +283,17 @@ describe("ExportActions optimization discovery", () => {
       runner as never,
     );
 
+    const lookup = new AbortController();
+    vi.mocked(confirmExport).mockImplementationOnce(async (_app, rows) => {
+      const scheme = rows.find((row) => row.label === "settingsAddNumbering")!;
+      expect(scheme.value).toBe("legal");
+      expect(docwen.numberingSchemes).not.toHaveBeenCalled();
+      await expect(scheme.resolveValue?.(lookup.signal)).resolves.toBe("Legal numbering");
+      return true;
+    });
     await actions.toMarkdown({ path: "note.docx", name: "note.docx" } as never);
 
+    expect(docwen.numberingSchemes).toHaveBeenCalledExactlyOnceWith(lookup.signal);
     expect(docwen.convert).toHaveBeenCalledWith(expect.objectContaining({
       capabilityId: "convert.docx.to_markdown",
       supportedOptions,

@@ -1,3 +1,4 @@
+import { applyInterfaceLocale } from "./host/interface-locale";
 import { t, type Translations } from "./i18n";
 import {
   OperationCoordinator,
@@ -24,6 +25,7 @@ export class OperationStatus {
     private readonly root: HTMLElement,
     private readonly operations: OperationCoordinator,
   ) {
+    applyInterfaceLocale(root);
     root.addClass("docwen-operation-status");
     // Mount before work starts so assistive technology can observe text changes.
     this.label = root.createSpan({ cls: "docwen-operation-status-label", attr: { role: "status", "aria-atomic": "true" } });
@@ -37,6 +39,7 @@ export class OperationStatus {
   }
 
   refresh(): void {
+    applyInterfaceLocale(this.root);
     this.render(this.operations.getSnapshot());
   }
 

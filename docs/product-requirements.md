@@ -42,4 +42,4 @@ The plugin does not download DocWen, search arbitrary Microsoft Store package di
 
 ## Acceptance boundary
 
-Source tests, fixed DocWen package tests, real minimum Obsidian 1.12.7 and current 1.13.x host acceptance, Windows manual checks, Linux x64 manual checks, and public release are separate evidence layers. Passing a lower layer does not substitute for candidate or host evidence.
+Source tests, fixed DocWen package tests, real-host acceptance on Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release, Windows manual checks, Linux x64 manual checks, and public release are separate evidence layers. Passing a lower layer does not substitute for candidate or host evidence.
