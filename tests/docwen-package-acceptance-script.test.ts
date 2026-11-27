@@ -95,7 +95,9 @@ describe("packaged DocWen acceptance input gate", () => {
     })).rejects.toThrow("candidate SHA-256 mismatch");
   });
 
-  it("requires an exact stable product version at or above DocWen 0.23.0", async () => {
+  it("enforces the exact stable minimum product version for the host", async () => {
+    const minimum = process.platform === "win32" ? "0.23.0" : "0.17.0";
+    const belowMinimum = process.platform === "win32" ? "0.22.99" : "0.16.99";
     const { environment } = await fixture();
     await expect(validateDocWenPackageCandidate({
       ...environment,
@@ -111,13 +113,13 @@ describe("packaged DocWen acceptance input gate", () => {
     })).rejects.toThrow("exact stable semantic DocWen version");
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "0.12.1",
-    })).rejects.toThrow(process.platform === "win32" ? "DocWen 0.23.0 or later" : "DocWen 0.17.0 or later");
+      DOCWEN_TEST_VERSION: belowMinimum,
+    })).rejects.toThrow(`DocWen ${minimum} or later`);
 
     await expect(validateDocWenPackageCandidate({
       ...environment,
-      DOCWEN_TEST_VERSION: "0.23.0",
-    })).resolves.toMatchObject({ productVersion: "0.23.0" });
+      DOCWEN_TEST_VERSION: minimum,
+    })).resolves.toMatchObject({ productVersion: minimum });
     await expect(validateDocWenPackageCandidate({
       ...environment,
       DOCWEN_TEST_VERSION: "0.24.0",

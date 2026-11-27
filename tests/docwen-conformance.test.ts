@@ -87,8 +87,10 @@ describe("pinned DocWen normative contract snapshot", () => {
       expect(bytes.length, file.path).toBe(file.size_bytes);
       expect(createHash("sha256").update(bytes).digest("hex"), file.path).toBe(file.sha256);
     }
-    expect(manifest.schemas).toHaveLength(9);
-    expect(manifest.fixtures).toHaveLength(93);
+    const declared = [...manifest.schemas, ...manifest.fixtures].map((item) => item.path);
+    const recorded = snapshot.files.map((file) => file.path)
+      .filter((file) => file.startsWith("schemas/") || file.startsWith("fixtures/"));
+    expect(declared.sort()).toEqual(recorded.sort());
   });
 
   it.each(fixtures.filter((fixture) => fixture.document_type !== "framing"))("$path: schema expectation", (fixture) => {

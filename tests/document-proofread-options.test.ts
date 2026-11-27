@@ -1,20 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { buildConversionMachineOptions, type ConvertRequest } from "../src/docwen/client";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import advertisedProofreading from "../contracts/docwen/fixtures/valid/machine.source-proofread-capability.response.json";
+import { buildConversionMachineOptions, DocWenClient, type ConvertRequest } from "../src/docwen/client";
+import type { DocWenMachineClient, MachineCapability } from "../src/docwen/machine-client";
 import { getErrorMessage } from "../src/actions/action-errors";
 import { LocalCliError } from "../src/docwen/errors";
 import { initI18n } from "../src/i18n";
 import { buildExportSummary } from "../src/actions/export-summary";
 
 const flags = ["enable_symbol_pairing", "enable_symbol_correction", "enable_typos_rule", "enable_sensitive_word"] as const;
+let sourceCapability: MachineCapability;
+beforeAll(async () => {
+  const query = vi.fn().mockResolvedValue(advertisedProofreading.result);
+  const client = new DocWenClient({ query } as unknown as DocWenMachineClient);
+  const projection = await client.runtimeCapabilities();
+  [sourceCapability] = projection.capabilities;
+  expect(sourceCapability.capability_id).toBe("convert.markdown_source.to_docx");
+});
+
 function request(): ConvertRequest {
   return {
     target: "docx", inputs: [{ path: "/isolated/note.md", logicalPath: "note.md", role: "source", kind: "document", mediaType: "text/markdown" }], outputDirectory: "/exports",
-    checks: ["all"], supportedOptions: ["proofread"],
-    selectedCapability: {
-      capability_id: "convert.markdown_source.to_docx",
-      options_schema: { properties: { proofread: { type: "object", additionalProperties: false,
-        properties: Object.fromEntries(flags.map((flag) => [flag, { type: "boolean" }])) } } },
-    } as unknown as ConvertRequest["selectedCapability"],
+    checks: ["all"],
+    supportedOptions: Object.keys(sourceCapability.options_schema.properties as Record<string, unknown>),
+    selectedCapability: structuredClone(sourceCapability),
   };
 }
 

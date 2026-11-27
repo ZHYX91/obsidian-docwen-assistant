@@ -69,7 +69,7 @@
       },
       "steps": [
         "In this run's disposable Vault, verify the exact packaged Assistant candidate, record host and full DocWen package identities, reset temporary settings and scratch inputs from acceptance/fixtures, and start with no active operation",
-        "In General select the full package folder, DocWen.exe, then DocWenCLI.exe using the native location controls; after each successful save run Check connection and the Doctor command; on Windows also check the automatic Store alias when installed",
+        "In General, use the location controls to select the full package folder, the GUI executable, and the CLI executable in turn (DocWen.exe and DocWenCLI.exe on Windows, DocWen and DocWenCLI on Linux). After each save run Check connection and Doctor. On Windows also check the automatic Store alias when installed.",
         "Try an unrelated executable, a folder missing the CLI sibling, and a parent whose only CLI is in a child folder; inspect the visible failure and Details, then restore the recorded valid package",
         "Open Conversion.md's DocWen menu and the numbering selectors on the Markdown/Word settings tabs; observe discovery and available actions/resources",
         "In this run's temporary settings prepare an identity-recorded controlled DocWen endpoint for successful empty capabilities/resources, a typed discovery failure, and a delayed obsolete reply; repeat discovery, Retry and connection replacement for each response, then restore the real package and idle state"
