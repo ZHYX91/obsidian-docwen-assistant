@@ -8,7 +8,6 @@ import {
   sha256File,
   throwIfAborted,
 } from "./output-integrity";
-import { createReadStream } from "node:fs";
 import {
   lstat,
   mkdtemp,
@@ -369,7 +368,7 @@ export class DocWenClient {
       }
       let reportValue: unknown;
       try {
-        reportValue = JSON.parse(await readValidatedArtifactText(artifact, PROOFREAD_REPORT_LIMIT_BYTES));
+        reportValue = JSON.parse(await readValidatedArtifactText(artifact, signal));
       } catch (error) {
         if (error instanceof LocalCliError) throw error;
         throw new LocalCliError("cli_integrity_error", "Proofreading returned invalid JSON.", {
@@ -461,27 +460,19 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
     || (documentNode && (entry.ordinal !== 0 || !matchesPrimaryMarkdownNodePath(artifact)))) {
     throw new LocalCliError("cli_integrity_error", "Numbering requires one preferred primary Markdown document.");
   }
-  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
   const decoder = new TextDecoder("utf-8", { fatal: true });
-  let bytesRead = 0;
-  for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer>) {
-    throwIfAborted(signal);
-    bytesRead += chunk.length;
-    if (bytesRead > artifact.size_bytes) {
-      throw new LocalCliError("cli_integrity_error", "Numbering output grew while it was being read.");
-    }
+  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal, chunk => {
     try {
       decoder.decode(chunk, { stream: true });
     } catch {
       throw new LocalCliError("cli_integrity_error", "Numbering returned invalid UTF-8.");
     }
-  }
+  });
   try {
     decoder.decode();
   } catch {
     throw new LocalCliError("cli_integrity_error", "Numbering returned incomplete UTF-8.");
   }
-  await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
 }
 
 function normalizeFileInspection(result: JsonObject): FileInspection {
@@ -932,30 +923,18 @@ function normalizeCapability(item: JsonObject): MachineCapability {
 
 async function readValidatedArtifactText(
   artifact: ValidatedBundleArtifact,
-  limitBytes: number,
+  signal?: AbortSignal,
 ): Promise<string> {
   try {
-    await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    const chunks: Array<Buffer<ArrayBufferLike>> = [];
-    let bytesRead = 0;
-    for await (const chunk of createReadStream(artifact.absolutePath) as AsyncIterable<Buffer<ArrayBufferLike>>) {
-      const bytes = Buffer.from(chunk);
-      bytesRead += bytes.length;
-      if (bytesRead > artifact.size_bytes || bytesRead > limitBytes) {
-        throw new LocalCliError("cli_integrity_error", "Artifact grew while it was being read.", {
-          artifactId: artifact.artifact_id,
-        });
-      }
-      chunks.push(bytes);
-    }
-    if (bytesRead !== artifact.size_bytes) {
-      throw new LocalCliError("cli_integrity_error", "Artifact size changed while it was being read.", {
-        artifactId: artifact.artifact_id,
-      });
-    }
-    await verifyArtifactIdentity(artifact, artifact.absolutePath, true);
-    return Buffer.concat(chunks, bytesRead).toString("utf8");
+    throwIfAborted(signal);
+    // The caller caps the declared size before allocating. Verification also checks every chunk.
+    const bytes = Buffer.allocUnsafe(artifact.size_bytes);
+    await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal, (chunk, offset) => {
+      chunk.copy(bytes, offset);
+    });
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch (error) {
+    throwIfAborted(signal);
     if (error instanceof LocalCliError && error.code === "cli_integrity_error") throw error;
     throw new LocalCliError("cli_integrity_error", "Unable to revalidate the Artifact Bundle report.", {
       artifactId: artifact.artifact_id,

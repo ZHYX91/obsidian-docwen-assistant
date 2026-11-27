@@ -35,6 +35,7 @@ export async function verifyArtifactIdentity(
   filePath: string,
   requireCanonicalPath: boolean,
   signal?: AbortSignal,
+  consume?: (chunk: Buffer, offset: number) => void,
 ): Promise<FileIdentity> {
   const before = await regularFileIdentity(filePath);
   if (before.size !== artifact.size_bytes) {
@@ -42,26 +43,23 @@ export async function verifyArtifactIdentity(
       artifactId: artifact.artifact_id,
     });
   }
-  if (requireCanonicalPath) {
-    const canonical = await realpath(filePath);
-    const left = path.resolve(canonical);
-    const right = path.resolve(artifact.absolutePath);
-    const samePath = process.platform === "win32"
-      ? left.toLowerCase() === right.toLowerCase()
-      : left === right;
-    if (!samePath) {
+  const assertCanonicalPath = async (): Promise<void> => {
+    if (requireCanonicalPath && !samePath(await realpath(filePath), artifact.absolutePath)) {
       throw new LocalCliError("cli_integrity_error", "Artifact canonical path changed before commit.", {
         artifactId: artifact.artifact_id,
       });
     }
-  }
-  const digest = await sha256File(filePath, artifact.size_bytes, signal);
+  };
+  await assertCanonicalPath();
+  const digest = await sha256File(filePath, artifact.size_bytes, signal, consume);
+  if (consume) await assertCanonicalPath();
   const after = await regularFileIdentity(filePath);
   if (!sameFileIdentity(before, after) || digest !== artifact.sha256) {
     throw new LocalCliError("cli_integrity_error", "Artifact identity changed before commit.", {
       artifactId: artifact.artifact_id,
     });
   }
+  throwIfAborted(signal);
   return after;
 }
 
@@ -105,9 +103,10 @@ export function sha256File(
   filePath: string,
   expectedBytes: number,
   signal?: AbortSignal,
+  consume?: (chunk: Buffer, offset: number) => void,
 ): Promise<string> {
   return hashFileAtSize(filePath, expectedBytes, () => throwIfAborted(signal),
-    (change) => new LocalCliError("cli_integrity_error", `File ${change} while it was being hashed.`, { filePath }));
+    (change) => new LocalCliError("cli_integrity_error", `File ${change} while it was being hashed.`, { filePath }), consume);
 }
 
 export async function hashFileAtSize(
@@ -115,6 +114,7 @@ export async function hashFileAtSize(
   expectedBytes: number,
   assertActive: (() => void) | undefined,
   sizeError: (change: "grew" | "size changed") => LocalCliError,
+  consume?: (chunk: Buffer, offset: number) => void,
 ): Promise<string> {
   const hash = createHash("sha256");
   let bytesRead = 0;
@@ -124,6 +124,7 @@ export async function hashFileAtSize(
     bytesRead += chunk.length;
     if (bytesRead > expectedBytes) throw sizeError("grew");
     hash.update(chunk);
+    consume?.(chunk, bytesRead - chunk.length);
   }
   assertActive?.();
   if (bytesRead !== expectedBytes) throw sizeError("size changed");
