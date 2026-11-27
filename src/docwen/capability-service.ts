@@ -11,6 +11,7 @@ import type {
 } from "./client";
 import type { MachineCapability } from "./machine-client";
 
+const MAX_CACHED_FILES = 128;
 const MARKDOWN_TO_DOCX_CAPABILITY_ID = "convert.markdown.to_docx";
 const MARKDOWN_SOURCE_TO_DOCX_CAPABILITY_ID = "convert.markdown_source.to_docx";
 
@@ -120,6 +121,7 @@ export class DocWenCapabilityService {
   }
 
   findConversionRoute(capability: FileCapability, target: ConvertTarget, optimizationId?: string): RuntimeRoute | null {
+    if (!this.supportsAction(capability, "convert")) return null;
     const matches = capability.source.routes.filter((route) =>
       route.target === target && route.available && (optimizationId === undefined
         ? route.operation === "conversion" && route.optimizationId === undefined
@@ -202,7 +204,37 @@ export class DocWenCapabilityService {
   }
 
   peek(filePath: string): FileCapability | Error | null {
-    return this.fileCache.get(filePath) ?? null;
+    const cached = this.fileCache.get(filePath);
+    if (!cached) return null;
+    this.fileCache.delete(filePath);
+    this.fileCache.set(filePath, cached);
+    return cached;
+  }
+
+  /** Sidebar discovery may share a file-open inspection; actions always inspect their own input. */
+  async previewFile(filePath: string, signal: AbortSignal, refresh: boolean): Promise<FileCapability> {
+    signal.throwIfAborted();
+    const pending = this.preloadRequests.get(filePath);
+    if (pending) {
+      // Closing the panel releases this caller. Navigation still owns the inspection and its cache entry.
+      let abort!: () => void;
+      const cancelled = new Promise<never>((_, reject) => {
+        abort = () => reject(signal.reason instanceof Error ? signal.reason
+          : new LocalCliError("cli_cancelled", "Sidebar discovery was cancelled."));
+        signal.addEventListener("abort", abort, { once: true });
+      });
+      try {
+        await Promise.race([pending.promise, cancelled]);
+      } finally {
+        signal.removeEventListener("abort", abort);
+      }
+      signal.throwIfAborted();
+      pending.controller.signal.throwIfAborted();
+    }
+    const cached = this.peek(filePath);
+    if (pending && cached instanceof Error) throw cached;
+    if ((!refresh || pending) && cached && !(cached instanceof Error)) return cached;
+    return this.forFile(filePath, signal);
   }
 
   preload(filePath: string, mode: "refresh" | "if-needed" = "refresh"): Promise<void> {
@@ -224,11 +256,11 @@ export class DocWenCapabilityService {
     };
     const promise = (this.preloadTail ? this.preloadTail.then(inspect) : inspect()).then(
       (capability) => {
-        if (this.isCurrentPreload(filePath, request)) this.fileCache.set(filePath, capability);
+        if (this.isCurrentPreload(filePath, request)) this.remember(filePath, capability);
       },
       (error: unknown) => {
         if (this.isCurrentPreload(filePath, request)) {
-          this.fileCache.set(filePath, error instanceof Error ? error : new Error(String(error)));
+          this.remember(filePath, error instanceof Error ? error : new Error(String(error)));
         }
       },
     ).finally(() => {
@@ -282,6 +314,15 @@ export class DocWenCapabilityService {
     request = { generation, promise };
     this.projectionRequest = request;
     return promise;
+  }
+
+  private remember(filePath: string, result: FileCapability | Error): void {
+    this.fileCache.delete(filePath);
+    this.fileCache.set(filePath, result);
+    if (this.fileCache.size > MAX_CACHED_FILES) {
+      const oldest = this.fileCache.keys().next();
+      if (!oldest.done) this.fileCache.delete(oldest.value);
+    }
   }
 
   private isCurrentPreload(filePath: string, request: PreloadRequest): boolean {

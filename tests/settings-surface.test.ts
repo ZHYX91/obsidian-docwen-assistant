@@ -615,6 +615,24 @@ describe("settings surface lifecycle", () => {
     expect((tab.containerEl as unknown as FakeElement).children).not.toHaveLength(0);
   });
 
+  it("reopening settings observes a connection check already in progress", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const plugin = settingsPlugin({ ...DEFAULT_SETTINGS, docwenConnectionMode: "automatic" });
+    let complete!: () => void;
+    const pending = new Promise<void>(resolve => { complete = resolve; });
+    plugin.getDocWenConnectionStatus.mockReturnValue({ state: "checking", mode: "automatic" });
+    plugin.checkDocWenConnectionSilently.mockReturnValue(pending);
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    tab.hide();
+    tab.display();
+    const current = settings.filter(row => row.nameEl.textContent === "DocWen connection").at(-1)!;
+    plugin.getDocWenConnectionStatus.mockReturnValue({ state: "connected", mode: "automatic", productVersion: "0.23.0" });
+    complete();
+    await vi.waitFor(() => expect(current.descEl.textContent).toContain("0.23.0"));
+  });
+
   it("updates a connected path status row without replacing the current page", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");

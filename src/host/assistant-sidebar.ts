@@ -18,10 +18,10 @@ export function createAssistantExportActions(
   app: App, capabilities: DocWenCapabilityService, exports: ExportActions, runner: ActionRunner,
 ): AssistantExportActions {
   return {
-    getExportTargets: async (file, signal) => {
+    getExportTargets: async (file, signal, refresh) => {
       const path = resolveAbsoluteFilePath(app.vault, file);
       if (!path) return [];
-      const capability = await capabilities.forFile(path, signal);
+      const capability = await capabilities.previewFile(path, signal, refresh);
       return (["docx", "xlsx", "md"] as const).filter((target) =>
         capabilities.findConversionRoute(capability, target) !== null);
     },

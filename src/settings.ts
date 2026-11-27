@@ -12,7 +12,6 @@ import {
 import {
   configureDocWenDownloadSetting,
   configureDocWenLocationSetting,
-  getDocWenPathStatus,
   pickDocWenCliPath,
   type DocWenLocationKind,
   type DocWenPathStatus,
@@ -28,7 +27,7 @@ import {
 } from "./settings-schema-compatibility";
 import { SettingsTabs } from "./settings-tabs";
 import { preserveSettingsView } from "./settings-view-state";
-import { configureConnectionActions, connectionDisplay } from "./settings-connection";
+import { configureConnectionActions, connectionDisplay, shouldCheckConnection } from "./settings-connection";
 
 export class SettingTab extends PluginSettingTab {
   plugin: DocWenPlugin;
@@ -252,14 +251,7 @@ export class SettingTab extends PluginSettingTab {
     this.pageCleanups.push(configureConnectionActions(setting, this.plugin, () => {
       if (this.isCurrentSurface(generation)) this.refreshPathStatus();
     }));
-    if (
-      this.plugin.getDocWenConnectionStatus().state === "unchecked"
-      && (
-        this.plugin.settings.docwenConnectionMode === "automatic"
-        || getDocWenPathStatus(this.plugin.settings.docwenCliPath).state === "valid"
-      )
-    ) {
-      const generation = this.surfaceGeneration;
+    if (shouldCheckConnection(this.plugin)) {
       const pending = this.plugin.checkDocWenConnectionSilently();
       this.refreshPathStatus();
       void pending.finally(() => {
