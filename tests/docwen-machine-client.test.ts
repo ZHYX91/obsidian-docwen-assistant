@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import packageJson from "../package.json";
 import { EventEmitter } from "node:events";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
@@ -214,6 +214,9 @@ class FakeChild extends EventEmitter {
       return;
     }
     if (message.method === "task/execute") {
+      if (serverState.notificationFault === "notification_before_acceptance") {
+        this.notify("task/progress", { task_id: "task.1", sequence: 1, phase: "conversion", completed: 0, total: 100, unit: "percent" });
+      }
       this.reply(id, { task_id: "task.1", state: "accepted" });
       serverState.taskAccepted = true;
       if (serverState.holdTask) return;
@@ -256,6 +259,7 @@ class FakeChild extends EventEmitter {
     if (message.method === "task/cancel") {
       serverState.cancelRequested = true;
       if (!serverState.ignoreCancellation) {
+        this.reply(id, { task_id: "task.1", state: "cancellation_requested" });
         const notifyCancelled = () => this.notify("task/cancelled", { task_id: "task.1", sequence: 1 });
         if (serverState.cancellationDelayMs > 0) setTimeout(notifyCancelled, serverState.cancellationDelayMs);
         else queueMicrotask(notifyCancelled);
@@ -270,11 +274,24 @@ class FakeChild extends EventEmitter {
   private notify(method: string, params: JsonObject): void {
     const fault = serverState.notificationFault;
     const completed = method === "task/completed";
+    if (completed && fault === "unknown_response") this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", id: 987, result: {} }));
+    if (completed && fault === "zero_sequence") params.sequence = 0;
+    if (completed && fault === "notification_before_acceptance") params.sequence = 2;
+    if (completed && fault === "unknown_diagnostic_artifact") {
+      const fixture = JSON.parse(readFileSync(new URL("../contracts/docwen/fixtures/invalid/machine.dangling-diagnostic-artifact.trace.json", import.meta.url), "utf8")) as { params: JsonObject }[];
+      params.diagnostics = fixture.at(-1)!.params.diagnostics;
+    }
+    if (completed && fault === "invalid_progress") {
+      this.stdout.write(encodeMachineFrame({ jsonrpc: "2.0", method: "task/progress",
+        params: { task_id: "task.1", sequence: 1, phase: "conversion", completed: 0, total: 1, unit: "percent" } }));
+      params.sequence = 2;
+    }
     if (completed && serverState.progressDelivery) {
       const frames = Array.from({ length: 65 }, (_, index) => encodeMachineFrame({
         jsonrpc: "2.0", method: "task/progress", params: {
           task_id: "task.1", sequence: index + 1, phase: "conversion",
-          completed: index === 64 ? 100 : index, total: 100, unit: "percent",
+          completed: serverState.progressDelivery === "noncoalescing" ? 100 - index : index === 64 ? 100 : index,
+          total: 100, unit: "percent",
         },
       }));
       frames.push(encodeMachineFrame({ jsonrpc: "2.0", method, params: { ...params, sequence: 66 } }));
@@ -547,7 +564,8 @@ describe("DocWenMachineClient", () => {
     expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
-  it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal"])("rejects %s without returning a task result", async (fault) => {
+  it.each(["nonmonotonic", "wrong_progress_task", "wrong_jsonrpc", "duplicate_terminal", "progress_after_terminal", "truncated_after_terminal",
+    "notification_before_acceptance", "unknown_response", "zero_sequence", "invalid_progress", "unknown_diagnostic_artifact"])("rejects %s without returning a task result", async (fault) => {
     serverState.notificationFault = fault;
     const root = await temporaryRoot();
     const input = path.join(root, "input.md");
@@ -910,7 +928,7 @@ describe("DocWenMachineClient", () => {
     }
   });
 
-  it("bounds timeout, stderr, and queued-message failures and terminates the owned child", async () => {
+  it("terminates the owned child on timeout, oversized stderr, and unrequested responses", async () => {
     for (const failure of ["timeout", "stderr", "queue"] as const) {
       const child = new FakeChild();
       spawnMock.mockReturnValueOnce(child);
@@ -920,13 +938,22 @@ describe("DocWenMachineClient", () => {
       const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
 
       await expect(client.query("health/check", {}, undefined, 20)).rejects.toMatchObject({
-        code: failure === "timeout" ? "cli_timeout" : "cli_output_limit",
+        code: failure === "timeout" ? "cli_timeout" : failure === "stderr" ? "cli_output_limit" : "cli_protocol_error",
       });
       expect(child.killed).toBe(true);
       serverState.holdHealth = false;
       serverState.stderrOverflow = false;
       serverState.floodHealth = false;
     }
+  });
+
+  it("bounds queued progress that cannot be coalesced", async () => {
+    serverState.progressDelivery = "noncoalescing";
+    const root = await temporaryRoot();
+    const client = new DocWenMachineClient(() => "C:\\DocWen\\DocWenCLI.exe", () => "en_US");
+    await expect(client.runTask(taskRequest(root, path.join(root, "input.md"), Buffer.from("# Input"))))
+      .rejects.toMatchObject({ code: "cli_output_limit" });
+    expect((spawnMock.mock.results[0].value as FakeChild).killed).toBe(true);
   });
 
   it("requests task cancellation and then settles the owned child", async () => {
