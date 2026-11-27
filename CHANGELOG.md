@@ -4,6 +4,12 @@ This changelog records notable source changes to DocWen Assistant. A source vers
 
 ## [Unreleased]
 
+## [3.6.5] - 2026-11-28
+
+- Keep file actions and Word export resources bound to the selected Vault files while the task starts.
+- Preserve cancellation deadlines, validate Machine events in order, and read reports from the verified artifact bytes.
+- Improve connection and export recovery, keyboard focus, and proofreading match selection.
+
 ## [3.6.4] - 2026-11-22
 
 - Keep Word-export images and links between opening horizontal rules and after an empty properties block. Resolve relative inline images missing from Obsidian's index, including in notes with Windows line endings.
