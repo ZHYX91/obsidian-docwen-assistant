@@ -260,6 +260,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen 校对",
     proofreadUnmatchedSymbol: "符号缺少配对",
     proofreadNoIssues: "未发现问题",
+    proofreadChecksDisabled: "所有校对规则均已关闭。请在校对设置中至少启用一项后再运行。",
     proofreadIssueCount: "显示 {shown} / {total} 个问题",
     proofreadLineNumber: "第 {line} 行",
     proofreadLoadMore: "再显示 {count} 个",
@@ -283,6 +284,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校对完成，发现 {count} 个问题",
     noticeProofreadFailed: "校对失败：{error}",
     noticeProofreadNoMdFile: "请先打开一个 Markdown 文件",
+    noticeProofreadSourceMissing: "找不到这份报告的源文件。请打开要检查的文件，再次运行校对。",
   },
 
   // Traditional Chinese
@@ -542,6 +544,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen 校對",
     proofreadUnmatchedSymbol: "符號缺少配對",
     proofreadNoIssues: "未發現問題",
+    proofreadChecksDisabled: "所有校對規則均已關閉。請在校對設定中至少啟用一項後再執行。",
     proofreadIssueCount: "顯示 {shown} / {total} 個問題",
     proofreadLineNumber: "第 {line} 行",
     proofreadLoadMore: "再顯示 {count} 個",
@@ -565,6 +568,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校對完成，發現 {count} 個問題",
     noticeProofreadFailed: "校對失敗：{error}",
     noticeProofreadNoMdFile: "請先開啟一個 Markdown 檔案",
+    noticeProofreadSourceMissing: "找不到這份報告的來源檔案。請開啟要檢查的檔案，再次執行校對。",
   },
 
   // English
@@ -824,7 +828,8 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Proofread",
     proofreadUnmatchedSymbol: "Unmatched symbol",
     proofreadNoIssues: "No issues found",
-    proofreadIssueCount: "Showing {shown} of {total} issues",
+    proofreadChecksDisabled: "All proofreading checks are off. Enable at least one in Proofreading settings, then try again.",
+    proofreadIssueCount: "Issues shown: {shown} of {total}",
     proofreadLineNumber: "Line {line}",
     proofreadLoadMore: "Show {count} more",
     proofreadCancelled: "Proofreading cancelled. Run it again to update the results.",
@@ -847,6 +852,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Proofread complete, {count} issue(s) found",
     noticeProofreadFailed: "Proofread failed: {error}",
     noticeProofreadNoMdFile: "Please open a Markdown file first",
+    noticeProofreadSourceMissing: "The source file for this report could not be found. Open the file you want to check and run proofreading again.",
   },
 
   // Arabic
@@ -1109,7 +1115,8 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Korrektur",
     proofreadUnmatchedSymbol: "Nicht gepaartes Symbol",
     proofreadNoIssues: "Keine Probleme gefunden",
-    proofreadIssueCount: "{shown} von {total} Problemen angezeigt",
+    proofreadChecksDisabled: "Alle Korrekturprüfungen sind ausgeschaltet. Aktivieren Sie mindestens eine Prüfung in den Korrektureinstellungen und versuchen Sie es erneut.",
+    proofreadIssueCount: "Angezeigte Probleme: {shown} von {total}",
     proofreadLineNumber: "Zeile {line}",
     proofreadLoadMore: "{count} weitere anzeigen",
     proofreadCancelled: "Korrektur abgebrochen. Starten Sie sie erneut, um die Ergebnisse zu aktualisieren.",
@@ -1132,6 +1139,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Korrektur abgeschlossen, {count} Problem(e) gefunden",
     noticeProofreadFailed: "Korrektur fehlgeschlagen: {error}",
     noticeProofreadNoMdFile: "Bitte öffnen Sie zuerst eine Markdown-Datei",
+    noticeProofreadSourceMissing: "Die Quelldatei für diesen Bericht wurde nicht gefunden. Öffnen Sie die gewünschte Datei und starten Sie die Korrektur erneut.",
   },
 
   // French
@@ -1391,7 +1399,8 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Relecture",
     proofreadUnmatchedSymbol: "Symbole non apparié",
     proofreadNoIssues: "Aucun problème trouvé",
-    proofreadIssueCount: "{shown} problèmes affichés sur {total}",
+    proofreadChecksDisabled: "Toutes les vérifications sont désactivées. Activez-en au moins une dans les paramètres de relecture, puis réessayez.",
+    proofreadIssueCount: "Problèmes affichés : {shown} sur {total}",
     proofreadLineNumber: "Ligne {line}",
     proofreadLoadMore: "Afficher {count} de plus",
     proofreadCancelled: "Relecture annulée. Relancez-la pour actualiser les résultats.",
@@ -1414,6 +1423,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Relecture terminée, {count} problème(s) trouvé(s)",
     noticeProofreadFailed: "Relecture échouée : {error}",
     noticeProofreadNoMdFile: "Veuillez d'abord ouvrir un fichier Markdown",
+    noticeProofreadSourceMissing: "Le fichier source de ce rapport est introuvable. Ouvrez le fichier à vérifier et relancez la relecture.",
   },
 
   // Russian
@@ -1673,6 +1683,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Корректура",
     proofreadUnmatchedSymbol: "Непарный символ",
     proofreadNoIssues: "Проблем не найдено",
+    proofreadChecksDisabled: "Все правила проверки отключены. Включите хотя бы одно правило в настройках проверки и повторите попытку.",
     proofreadIssueCount: "Показано проблем: {shown} из {total}",
     proofreadLineNumber: "Строка {line}",
     proofreadLoadMore: "Показать ещё {count}",
@@ -1696,6 +1707,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Проверка завершена, найдено проблем: {count}",
     noticeProofreadFailed: "Ошибка проверки: {error}",
     noticeProofreadNoMdFile: "Сначала откройте файл Markdown",
+    noticeProofreadSourceMissing: "Не удалось найти исходный файл этого отчёта. Откройте нужный файл и снова запустите проверку.",
   },
 
   // Portuguese (Brazil)
@@ -1955,7 +1967,8 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Revisão",
     proofreadUnmatchedSymbol: "Símbolo sem par",
     proofreadNoIssues: "Nenhum problema encontrado",
-    proofreadIssueCount: "Exibindo {shown} de {total} problemas",
+    proofreadChecksDisabled: "Todas as verificações estão desativadas. Ative pelo menos uma nas configurações de revisão e tente novamente.",
+    proofreadIssueCount: "Problemas exibidos: {shown} de {total}",
     proofreadLineNumber: "Linha {line}",
     proofreadLoadMore: "Mostrar mais {count}",
     proofreadCancelled: "Revisão cancelada. Execute-a novamente para atualizar os resultados.",
@@ -1978,6 +1991,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Revisão concluída, {count} problema(s) encontrado(s)",
     noticeProofreadFailed: "Falha na revisão: {error}",
     noticeProofreadNoMdFile: "Abra um arquivo Markdown primeiro",
+    noticeProofreadSourceMissing: "O arquivo de origem deste relatório não foi encontrado. Abra o arquivo que deseja verificar e execute a revisão novamente.",
   },
 
   // Japanese
@@ -2237,6 +2251,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen 校正",
     proofreadUnmatchedSymbol: "対応する記号がありません",
     proofreadNoIssues: "問題は見つかりませんでした",
+    proofreadChecksDisabled: "すべての校正項目がオフです。校正設定で少なくとも 1 項目を有効にしてから、もう一度実行してください。",
     proofreadIssueCount: "{total} 件中 {shown} 件を表示",
     proofreadLineNumber: "{line} 行目",
     proofreadLoadMore: "さらに {count} 件を表示",
@@ -2260,6 +2275,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "校正完了、{count} 件の問題が見つかりました",
     noticeProofreadFailed: "校正に失敗：{error}",
     noticeProofreadNoMdFile: "先に Markdown ファイルを開いてください",
+    noticeProofreadSourceMissing: "このレポートの元ファイルが見つかりません。確認したいファイルを開き、もう一度校正を実行してください。",
   },
 
   "ko": {
@@ -2518,6 +2534,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen 교정",
     proofreadUnmatchedSymbol: "짝이 없는 기호",
     proofreadNoIssues: "문제가 발견되지 않았습니다",
+    proofreadChecksDisabled: "모든 교정 항목이 꺼져 있습니다. 교정 설정에서 하나 이상 켠 다음 다시 실행하세요.",
     proofreadIssueCount: "전체 {total}개 중 {shown}개 표시",
     proofreadLineNumber: "{line}행",
     proofreadLoadMore: "{count}개 더 보기",
@@ -2541,6 +2558,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "교정 완료, {count}개 문제 발견",
     noticeProofreadFailed: "교정 실패: {error}",
     noticeProofreadNoMdFile: "먼저 Markdown 파일을 열어주세요",
+    noticeProofreadSourceMissing: "이 보고서의 원본 파일을 찾을 수 없습니다. 확인할 파일을 열고 교정을 다시 실행하세요.",
   },
 
   "es": {
@@ -2799,7 +2817,8 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Corrección",
     proofreadUnmatchedSymbol: "Símbolo sin pareja",
     proofreadNoIssues: "No se encontraron problemas",
-    proofreadIssueCount: "Mostrando {shown} de {total} problemas",
+    proofreadChecksDisabled: "Todas las comprobaciones están desactivadas. Activa al menos una en los ajustes de corrección y vuelve a intentarlo.",
+    proofreadIssueCount: "Problemas mostrados: {shown} de {total}",
     proofreadLineNumber: "Línea {line}",
     proofreadLoadMore: "Mostrar {count} más",
     proofreadCancelled: "Corrección cancelada. Ejecútela de nuevo para actualizar los resultados.",
@@ -2822,6 +2841,7 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Corrección completada, {count} problema(s) encontrado(s)",
     noticeProofreadFailed: "Corrección fallida: {error}",
     noticeProofreadNoMdFile: "Abra un archivo Markdown primero",
+    noticeProofreadSourceMissing: "No se ha encontrado el archivo de origen de este informe. Abre el archivo que quieras comprobar y vuelve a ejecutar la corrección.",
   },
 
   "vi": {
@@ -3080,6 +3100,7 @@ export const translations: Record<string, Translations> = {
     proofreadViewTitle: "DocWen Hiệu đính",
     proofreadUnmatchedSymbol: "Ký hiệu chưa có cặp",
     proofreadNoIssues: "Không tìm thấy vấn đề",
+    proofreadChecksDisabled: "Tất cả quy tắc hiệu đính đều đang tắt. Hãy bật ít nhất một quy tắc trong phần cài đặt hiệu đính rồi thử lại.",
     proofreadIssueCount: "Hiển thị {shown} / {total} vấn đề",
     proofreadLineNumber: "Dòng {line}",
     proofreadLoadMore: "Hiển thị thêm {count}",
@@ -3103,5 +3124,6 @@ export const translations: Record<string, Translations> = {
     noticeProofreadSuccess: "Hiệu đính hoàn tất, tìm thấy {count} vấn đề",
     noticeProofreadFailed: "Hiệu đính thất bại: {error}",
     noticeProofreadNoMdFile: "Vui lòng mở tệp Markdown trước",
+    noticeProofreadSourceMissing: "Không tìm thấy tệp nguồn của báo cáo này. Hãy mở tệp bạn muốn kiểm tra rồi chạy hiệu đính lại.",
   },
 };

@@ -253,8 +253,9 @@ export const AR_TRANSLATIONS: Translations = {
   proofreadViewTitle: "التدقيق اللغوي في DocWen",
   proofreadUnmatchedSymbol: "رمز بلا زوج مطابق",
   proofreadNoIssues: "لم تُكتشف مشكلات",
+  proofreadChecksDisabled: "جميع قواعد التدقيق معطّلة. فعّل قاعدة واحدة على الأقل في إعدادات التدقيق ثم أعد المحاولة.",
   proofreadLineNumber: "السطر {line}",
-  proofreadIssueCount: "عرض {shown} من {total} مشكلة",
+  proofreadIssueCount: "المشكلات المعروضة: {shown} من أصل {total}",
   proofreadLoadMore: "عرض {count} إضافية",
   proofreadCancelled: "أُلغي التدقيق. أعد تشغيله لتحديث النتائج.",
   proofreadOpenMdFile: "افتح ملف Markdown وشغّل التدقيق لعرض المشكلات",
@@ -276,4 +277,5 @@ export const AR_TRANSLATIONS: Translations = {
   noticeProofreadSuccess: "اكتمل التدقيق، وعُثر على {count} مشكلة",
   noticeProofreadFailed: "فشل التدقيق: {error}",
   noticeProofreadNoMdFile: "افتح ملف Markdown أولًا",
+  noticeProofreadSourceMissing: "تعذّر العثور على الملف المصدر لهذا التقرير. افتح الملف الذي تريد التحقق منه وشغّل التدقيق مجددًا.",
 };

@@ -259,6 +259,7 @@ export interface Translations {
   proofreadViewTitle: string;
   proofreadUnmatchedSymbol: string;
   proofreadNoIssues: string;
+  proofreadChecksDisabled: string;
   proofreadIssueCount: string;
   proofreadLineNumber: string;
   proofreadLoadMore: string;
@@ -282,4 +283,5 @@ export interface Translations {
   noticeProofreadSuccess: string;
   noticeProofreadFailed: string;
   noticeProofreadNoMdFile: string;
+  noticeProofreadSourceMissing: string;
 }

@@ -43,6 +43,24 @@ const RULE_LABELS: Readonly<Record<string, keyof Translations>> = {
 };
 
 export class AssistantView extends ItemView {
+  private static readonly leafOpenings = new WeakMap<WorkspaceLeaf, { count: number; view: AssistantView }>();
+
+  /** A pending host load may open one view on this leaf, even between two awaits. */
+  static captureLeafOpening(leaf: WorkspaceLeaf): () => boolean {
+    const initial = leaf.view;
+    if (initial instanceof AssistantView) {
+      const isOpen = initial.captureLifetime();
+      if (isOpen()) return () => leaf.view === initial && isOpen();
+    }
+    const before = AssistantView.leafOpenings.get(leaf);
+    return () => {
+      const opened = AssistantView.leafOpenings.get(leaf);
+      if (opened === before) return true;
+      return opened !== undefined && opened.count === (before?.count ?? 0) + 1
+        && leaf.view === opened.view && opened.view.sidebarOpen;
+    };
+  }
+
   private issues: ProofreadIssue[] = [];
   private issueIndices = new Map<ProofreadIssue, number>();
   private sortedIssuesCache: { revision: number; mode: SortMode; issues: ProofreadIssue[] } | null = null;
@@ -142,6 +160,8 @@ export class AssistantView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    const count = (AssistantView.leafOpenings.get(this.leaf)?.count ?? 0) + 1;
+    AssistantView.leafOpenings.set(this.leaf, { count, view: this });
     this.sidebarOpen = true;
     this.lifecycle += 1;
     (this.containerEl.children[1] as HTMLElement).addClass("docwen-proofread-root");
