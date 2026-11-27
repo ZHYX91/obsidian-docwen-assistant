@@ -66,6 +66,7 @@ export const AR_TRANSLATIONS: Translations = {
   contextMenuChooseAction: "اختر عملية…",
   contextMenuNoActions: "لا توجد عمليات تحويل أو تعديل متاحة لهذا الملف.",
   contextMenuCapabilityUnavailable: "تعذّر تحميل العمليات المتاحة",
+  contextMenuTargetChanged: "تغيّر الملف المقصود. افتح قائمة الملف الذي تريد استخدامه مرة أخرى.",
   contextMenuFolderTarget: "الملف المستهدف: {path}",
   settingsPreviousTabs: "إظهار علامات التبويب السابقة",
   settingsNextTabs: "إظهار علامات التبويب التالية",

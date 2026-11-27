@@ -63,6 +63,7 @@ export interface Translations {
   contextMenuChooseAction: string;
   contextMenuNoActions: string;
   contextMenuCapabilityUnavailable: string;
+  contextMenuTargetChanged: string;
   contextMenuFolderTarget: string;
 
   // Settings

@@ -70,6 +70,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "选择操作…",
     contextMenuNoActions: "当前文件没有可用的转换或编辑操作。",
     contextMenuCapabilityUnavailable: "无法获取可用操作",
+    contextMenuTargetChanged: "目标文件已变更。请在要使用的文件上重新打开菜单。",
     contextMenuFolderTarget: "目标文件：{path}",
 
     settingsPreviousTabs: "显示前面的选项卡",
@@ -354,6 +355,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "選擇操作…",
     contextMenuNoActions: "目前檔案沒有可用的轉換或編輯操作。",
     contextMenuCapabilityUnavailable: "無法取得可用操作",
+    contextMenuTargetChanged: "目標檔案已變更。請在要使用的檔案上重新開啟選單。",
     contextMenuFolderTarget: "目標檔案：{path}",
 
     settingsPreviousTabs: "顯示前面的分頁",
@@ -638,6 +640,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Choose an action…",
     contextMenuNoActions: "No conversion or editing actions are available for this file.",
     contextMenuCapabilityUnavailable: "Available actions could not be loaded",
+    contextMenuTargetChanged: "The target file has changed. Reopen the menu on the file you want to use.",
     contextMenuFolderTarget: "Target file: {path}",
 
     settingsPreviousTabs: "Show previous tabs",
@@ -925,6 +928,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Aktion auswählen…",
     contextMenuNoActions: "Für diese Datei sind keine Konvertierungs- oder Bearbeitungsaktionen verfügbar.",
     contextMenuCapabilityUnavailable: "Verfügbare Aktionen konnten nicht geladen werden",
+    contextMenuTargetChanged: "Die Zieldatei hat sich geändert. Öffne das Menü für die gewünschte Datei erneut.",
     contextMenuFolderTarget: "Zieldatei: {path}",
 
     settingsPreviousTabs: "Vorherige Tabs anzeigen",
@@ -1209,6 +1213,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Choisir une action…",
     contextMenuNoActions: "Aucune action de conversion ou de modification n’est disponible pour ce fichier.",
     contextMenuCapabilityUnavailable: "Impossible de charger les actions disponibles",
+    contextMenuTargetChanged: "Le fichier cible a changé. Rouvrez le menu du fichier que vous souhaitez utiliser.",
     contextMenuFolderTarget: "Fichier cible : {path}",
 
     settingsPreviousTabs: "Afficher les onglets précédents",
@@ -1493,6 +1498,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Выбрать действие…",
     contextMenuNoActions: "Для этого файла нет доступных действий преобразования или редактирования.",
     contextMenuCapabilityUnavailable: "Не удалось загрузить доступные действия",
+    contextMenuTargetChanged: "Целевой файл изменился. Снова откройте меню нужного файла.",
     contextMenuFolderTarget: "Целевой файл: {path}",
 
     settingsPreviousTabs: "Показать предыдущие вкладки",
@@ -1777,6 +1783,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Escolher uma ação…",
     contextMenuNoActions: "Não há ações de conversão ou edição disponíveis para este arquivo.",
     contextMenuCapabilityUnavailable: "Não foi possível carregar as ações disponíveis",
+    contextMenuTargetChanged: "O arquivo de destino mudou. Abra novamente o menu do arquivo que deseja usar.",
     contextMenuFolderTarget: "Arquivo de destino: {path}",
 
     settingsPreviousTabs: "Mostrar abas anteriores",
@@ -2061,6 +2068,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "操作を選択…",
     contextMenuNoActions: "このファイルで利用できる変換または編集操作はありません。",
     contextMenuCapabilityUnavailable: "利用可能な操作を読み込めませんでした",
+    contextMenuTargetChanged: "対象のファイルが変わりました。使用するファイルのメニューを開き直してください。",
     contextMenuFolderTarget: "対象ファイル：{path}",
 
     settingsPreviousTabs: "前のタブを表示",
@@ -2344,6 +2352,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "작업 선택…",
     contextMenuNoActions: "이 파일에 사용할 수 있는 변환 또는 편집 작업이 없습니다.",
     contextMenuCapabilityUnavailable: "사용 가능한 작업을 불러오지 못했습니다",
+    contextMenuTargetChanged: "대상 파일이 변경되었습니다. 사용할 파일의 메뉴를 다시 여세요.",
     contextMenuFolderTarget: "대상 파일: {path}",
 
     settingsPreviousTabs: "이전 탭 표시",
@@ -2627,6 +2636,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Elegir una acción…",
     contextMenuNoActions: "No hay acciones de conversión o edición disponibles para este archivo.",
     contextMenuCapabilityUnavailable: "No se pudieron cargar las acciones disponibles",
+    contextMenuTargetChanged: "El archivo de destino ha cambiado. Vuelve a abrir el menú del archivo que quieras usar.",
     contextMenuFolderTarget: "Archivo de destino: {path}",
 
     settingsPreviousTabs: "Mostrar pestañas anteriores",
@@ -2910,6 +2920,7 @@ export const translations: Record<string, Translations> = {
     contextMenuChooseAction: "Chọn thao tác…",
     contextMenuNoActions: "Không có thao tác chuyển đổi hoặc chỉnh sửa nào cho tệp này.",
     contextMenuCapabilityUnavailable: "Không thể tải các thao tác khả dụng",
+    contextMenuTargetChanged: "Tệp đích đã thay đổi. Hãy mở lại menu của tệp bạn muốn dùng.",
     contextMenuFolderTarget: "Tệp đích: {path}",
 
     settingsPreviousTabs: "Hiện các thẻ phía trước",

@@ -20,6 +20,8 @@ Switching tabs retains the report, task and each panel's scroll position without
 
 The file explorer **DocWen** submenu and Command Palette continue to expose independent actions. Export menu availability follows current-file inspection and Machine capabilities rather than extension guesses. Sidebar file eligibility does not replace execution-time inspection, capability checks or source-identity validation.
 
+File menu actions stay bound to the file and path where the menu was opened. If that file moves, disappears or is replaced before selection, reopen the menu on the intended file. The folder menu uses its unique same-name Markdown note, including case variants and equivalent Unicode spellings. When several notes match, open the menu on the intended note directly. The action picker finishes before the selected operation starts, so the status bar counts the operation once.
+
 When inspection and discovery succeed but no available Machine capability matches the file, explain that the feature is unsupported or unavailable in the current environment, rather than reporting a malformed response. Actual query failures remain failures and are never disguised as an empty capability list.
 
 ## Export flow

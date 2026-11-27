@@ -31,7 +31,6 @@ export interface FileMenuActions {
 
 export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void {
   let disposed = false;
-  const isActive = () => !disposed;
   plugin.register(() => { disposed = true; });
   plugin.registerEvent(
     plugin.app.workspace.on("file-menu", (menu: Menu, abstractFile: TAbstractFile) => {
@@ -40,15 +39,24 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
       const filePath = resolveAbsoluteFilePath(plugin.app.vault, targetFile);
       if (!filePath) return;
 
+      const vaultPath = targetFile.path;
+      let reportedChange = false;
+      const isActive = (): boolean => {
+        if (disposed || reportedChange) return false;
+        if (targetFile.path === vaultPath && plugin.app.vault.getFileByPath(vaultPath) === targetFile) return true;
+        reportedChange = true;
+        showNotice(t("contextMenuTargetChanged"));
+        return false;
+      };
       const cached = actions.capabilities.peek(filePath);
       if (!cached || cached instanceof Error) void actions.capabilities.preload(filePath);
       const folderTargetPath = targetFile === abstractFile ? null : targetFile.path;
       const chooseActions = async (): Promise<void> => {
-        if (disposed) return;
-        await actions.runner.run({ key: `file-menu:${filePath}`, kind: "choose-action" }, "noticeCapabilityFailed", async (lease) => {
+        if (!isActive()) return;
+        const action = await actions.runner.run({ key: `file-menu:${filePath}`, kind: "choose-action" }, "noticeCapabilityFailed", async (lease) => {
           showNotice(t("contextMenuLoading"));
           await actions.capabilities.preload(filePath);
-          if (disposed || !lease.isCurrent()) return;
+          if (!lease.isCurrent() || !isActive()) return;
           const current = actions.capabilities.peek(filePath);
           if (current instanceof Error) {
             actions.presentCapabilityFailure(current);
@@ -69,8 +77,9 @@ export function registerFileMenu(plugin: Plugin, actions: FileMenuActions): void
             t("contextMenuChooseAction"),
             lease.signal,
           );
-          if (chosen && !disposed && lease.isCurrent()) await available[Number(chosen.id)]?.action?.();
+          return chosen ? available[Number(chosen.id)]?.action : undefined;
         });
+        if (action && isActive()) await action();
       };
       let usedFallback = false;
 
