@@ -1,10 +1,12 @@
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { initI18n, t } from "../src/i18n";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const temporaryDirectories: string[] = [];
@@ -37,6 +39,18 @@ afterEach(async () => {
 describe("README standardization contract", () => {
   it("accepts all synchronized READMEs", () => {
     expect(runReadmeCheck()).toMatchObject({ status: 0 });
+  });
+
+  it("names the actual manual installation option in each setup guide", async () => {
+    const localized = await readdir(path.join(projectRoot, "docs/i18n"));
+    const guides = ["README.md", ...localized.map((name) => "docs/i18n/" + name)];
+    for (const guide of guides) {
+      const locale = /README\.([^.]+)\.md$/u.exec(guide)?.[1] ?? "en";
+      initI18n(locale);
+      const markdown = await readFile(path.join(projectRoot, guide), "utf8");
+      const setupStep = markdown.split("\n").find((line) => line.startsWith("4. "));
+      expect(setupStep, guide).toContain("**" + t("settingsConnectionManual") + "**");
+    }
   });
 
   it("keeps root links portable and translated guides usable offline", async () => {

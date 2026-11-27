@@ -52,7 +52,7 @@ DocWen Assistant связывает Obsidian с локальной устано�
 1. В Windows установите совместимую версию DocWen 0.23.0 или новее из [Microsoft Store](https://apps.microsoft.com/detail/9NR2211SJH97) либо распакуйте пакет Windows из [DocWen Releases](https://github.com/ZHYX91/docwen/releases). В Linux x64 полностью распакуйте пакет Linux с той же страницы.
 2. Установите DocWen Assistant через Community Plugins. Для ручной установки скачайте `docwen-assistant-x.y.z.zip` со [страницы выпусков плагина](https://github.com/ZHYX91/obsidian-docwen-assistant/releases) и скопируйте `main.js`, `manifest.json` и `styles.css` в `<Vault>/.obsidian/plugins/docwen-assistant/`.
 3. Перезагрузите Community Plugins и включите DocWen Assistant.
-4. Версия Windows из Store определяется автоматически. Для переносимой версии Windows или Linux откройте **Настройки → DocWen Assistant → Общие**, выберите ручное подключение, затем распакованную папку или исполняемый файл.
+4. Версия Windows из Store определяется автоматически. Для переносимой версии Windows или Linux откройте **Настройки → DocWen Assistant → Общие**, выберите **Выбрать установку вручную**, затем укажите распакованную папку или исполняемый файл.
 
 ### Сохранение настроек при обновлении
 
