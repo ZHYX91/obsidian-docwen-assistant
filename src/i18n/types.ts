@@ -11,6 +11,7 @@ export interface Translations {
   exportReviewDisabled: string;
   exportReviewStart: string;
   dialogOpenResultFolder: string;
+  dialogDismissNotice: string;
   noticeOpenResultFolderFailed: string;
   noticeCompletedWithWarnings: string;
   noticeConversionDiagnostics: string;
@@ -21,6 +22,7 @@ export interface Translations {
   errorWindowsOwnerRecovery: string;
   errorWindowsOwnerCleanup: string;
   dialogDiagnosticsPrivacy: string;
+  pickerNoMatches: string;
   dialogContinue: string;
   dialogDetectedFormat: string;
   dialogDeclaredFormat: string;
@@ -139,6 +141,7 @@ export interface Translations {
   dialogOpenSettings: string;
   dialogCopyDetails: string;
   dialogCopied: string;
+  dialogCopyFailed: string;
 
   // Notices
   noticeLaunchFailed: string;

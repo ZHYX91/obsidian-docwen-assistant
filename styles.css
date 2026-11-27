@@ -246,6 +246,21 @@
   }
 }
 
+.docwen-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+  margin-block-start: var(--size-4-2);
+}
+
+.docwen-notice-actions button {
+  height: auto;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .docwen-error-details {
   margin-block: 16px;
 }
@@ -256,6 +271,7 @@
 }
 
 .docwen-error-details pre {
+  user-select: text;
   background: var(--background-secondary);
   border-radius: var(--radius-s);
   font-family: var(--font-monospace);
@@ -721,8 +737,10 @@ button.docwen-proofread-item {
   gap: 0.5rem 1rem;
 }
 
+.docwen-export-summary dt,
+.docwen-export-summary dd { overflow-wrap: anywhere; }
 .docwen-export-summary dt { font-weight: var(--font-semibold); }
-.docwen-export-summary dd { margin: 0; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+.docwen-export-summary dd { margin: 0; unicode-bidi: plaintext; }
 
 /* Lightweight tutorial disclosure, without suppressing connection or save errors. */
 .docwen-settings-help.setting-item {

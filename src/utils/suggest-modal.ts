@@ -1,5 +1,7 @@
 /** A picker stays owned by its operation until selection, dismissal or cancellation. */
 import { App, SuggestModal } from "obsidian";
+import { applyInterfaceLocale } from "../host/interface-locale";
+import { t } from "../i18n";
 
 export interface PickerItem {
   id: string;
@@ -38,6 +40,9 @@ class ItemPickerModal extends SuggestModal<PickerItem> {
   ) {
     super(app);
     this.setPlaceholder(placeholder);
+    this.inputEl.setAttribute("aria-label", placeholder);
+    applyInterfaceLocale(this.inputEl, this.resultContainerEl);
+    this.emptyStateText = t("pickerNoMatches");
   }
 
   start(): void {

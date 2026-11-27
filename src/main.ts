@@ -388,8 +388,8 @@ export default class DocWenPlugin extends Plugin {
       numbering: this.numberingActions,
       proofread: this.proofreadActions,
       capabilities: this.capabilities,
-      presentCapabilityFailure: (error) =>
-        this.actionRunner.presentFailure("noticeCapabilityFailed", error),
+      presentCapabilityFailure: (error, presentation) =>
+        this.actionRunner.presentFailure("noticeCapabilityFailed", error, presentation),
     });
 
     } catch (error) {

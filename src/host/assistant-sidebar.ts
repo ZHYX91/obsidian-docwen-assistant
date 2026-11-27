@@ -30,7 +30,7 @@ export function createAssistantExportActions(
       if (target === "xlsx") return exports.toXlsx(file);
       return exports.toMarkdown(file);
     },
-    showExportFailure: (error) => runner.presentFailure("noticeCapabilityFailed", error),
+    showExportFailure: (error) => runner.presentFailure("noticeCapabilityFailed", error, "details"),
   };
 }
 

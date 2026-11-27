@@ -1,29 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { initI18n, t } from "../src/i18n";
 import { useObsidianDom } from "./helpers/obsidian-dom";
 
 const state = vi.hoisted(() => ({ hidden: vi.fn() }));
 vi.mock("obsidian", () => ({
   Notice: class Notice {
-    readonly element = document.createElement("div");
+    readonly messageEl = document.createElement("div");
     constructor(content: DocumentFragment) {
       // The real host consumes the fragment into its notice container.
-      this.element.append(content);
-      document.body.append(this.element);
+      this.messageEl.append(content);
+      this.messageEl.addEventListener("click", () => this.hide());
+      document.body.append(this.messageEl);
     }
-    hide(): void { state.hidden(); this.element.remove(); }
+    hide(): void { state.hidden(); this.messageEl.remove(); }
   },
 }));
 useObsidianDom();
 beforeEach(() => {
   state.hidden.mockClear();
+  initI18n("en");
   vi.stubGlobal("createFragment", () => {
     const fragment = document.createDocumentFragment();
     Object.assign(fragment, {
       appendText: (value: string) => fragment.append(document.createTextNode(value)),
-      createEl: (tag: string, options: { text?: string; attr?: Record<string, string> } = {}) => {
-        const element = document.createElement(tag);
-        if (options.text) element.textContent = options.text;
-        for (const [key, value] of Object.entries(options.attr ?? {})) element.setAttribute(key, value);
+      createDiv: (options: { cls: string }) => {
+        const element = document.createElement("div");
+        element.className = options.cls;
         fragment.append(element);
         return element;
       },
@@ -33,18 +35,54 @@ beforeEach(() => {
 });
 
 describe("completion notice actions", () => {
-  it.each([0, 1])("keeps both Details and Open result folder after the host consumes the fragment (action %i)", async (index) => {
+  it.each([0, 1])("keeps both actions usable and provides keyboard dismissal (first action %i)", async (first) => {
     const { showNoticeWithAction } = await import("../src/host/notices");
     const details = vi.fn();
     const folder = vi.fn();
     showNoticeWithAction("Exported with a cleanup warning", "Details", details, [{ label: "Open result folder", run: folder }]);
     const buttons = document.querySelectorAll("button");
-    expect([...buttons].map((button) => button.textContent)).toEqual(["Details", "Open result folder"]);
-    expect(details).not.toHaveBeenCalled();
-    expect(folder).not.toHaveBeenCalled();
-    buttons[index].click();
-    expect([details, folder][index]).toHaveBeenCalledOnce();
-    expect([details, folder][1 - index]).not.toHaveBeenCalled();
+    expect([...buttons].map((button) => button.textContent)).toEqual(["Details", "Open result folder", t("dialogDismissNotice")]);
+    buttons[first].click();
+    expect([details, folder][first]).toHaveBeenCalledOnce();
+    expect([details, folder][1 - first]).not.toHaveBeenCalled();
+    expect(state.hidden).not.toHaveBeenCalled();
+    buttons[1 - first].focus();
+    expect(document.activeElement).toBe(buttons[1 - first]);
+    buttons[1 - first].click();
+    expect([details, folder][1 - first]).toHaveBeenCalledOnce();
+    buttons[2].click();
+    expect(state.hidden).toHaveBeenCalledOnce();
+    expect(document.querySelector("button")).toBeNull();
+  });
+
+  it("lets a user dismiss a single-action notice without opening the result", async () => {
+    const { showNotice, showNoticeWithAction } = await import("../src/host/notices");
+    document.documentElement.lang = "en";
+    initI18n("ar");
+    showNotice("ملف");
+    const open = vi.fn();
+    showNoticeWithAction("اكتمل التصدير", "افتح المجلد", open);
+    const [plain, actionable] = document.body.children;
+    for (const message of [plain, actionable]) {
+      expect(message.getAttribute("lang")).toBe("ar");
+      expect(message.getAttribute("dir")).toBe("rtl");
+    }
+    const dismiss = actionable.querySelectorAll("button")[1];
+    expect(dismiss?.textContent).toBe(t("dialogDismissNotice"));
+    dismiss.focus();
+    expect(document.activeElement).toBe(dismiss);
+    dismiss.click();
+    expect(open).not.toHaveBeenCalled();
+    expect(actionable.isConnected).toBe(false);
+    expect(plain.isConnected).toBe(true);
+  });
+
+  it("dismisses a single-action notice immediately after selection", async () => {
+    const { showNoticeWithAction } = await import("../src/host/notices");
+    const open = vi.fn();
+    showNoticeWithAction("Exported", "Open folder", open);
+    document.querySelector<HTMLButtonElement>("button")!.click();
+    expect(open).toHaveBeenCalledOnce();
     expect(state.hidden).toHaveBeenCalledOnce();
   });
 });

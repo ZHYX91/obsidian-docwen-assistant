@@ -53,7 +53,7 @@ describe("file menu capability states", () => {
     expect(errorItem.title).not.toContain(failure.message);
     expect(preload).toHaveBeenCalledWith("D:\\Vault\\note.md");
     errorItem.click?.();
-    expect(present).toHaveBeenCalledWith(failure);
+    expect(present).toHaveBeenCalledWith(failure, "details");
     expectValidSections(submenu);
   });
 
@@ -121,6 +121,7 @@ describe("file menu capability states", () => {
     await Promise.resolve();
     expect(menuState.pickers).toHaveLength(0);
     expect(present).toHaveBeenCalledTimes(outcome === "error" ? 1 : 0);
+    if (outcome === "error") expect(present).toHaveBeenCalledWith(cached);
     expect(menuState.notices.includes("contextMenuNoActions")).toBe(outcome === "empty");
   });
 
