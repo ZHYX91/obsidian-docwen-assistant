@@ -699,7 +699,8 @@ export class DocWenMachineClient {
     timeoutMs: number,
     body: (session: MachineSession, setTaskId: (taskId: string) => void, productVersion: string) => Promise<T>,
   ): Promise<T> {
-    const run = (): Promise<T> => this.withUncoordinatedSession(signal, timeoutMs, body);
+    const deadline = performance.now() + timeoutMs;
+    const run = (): Promise<T> => this.withUncoordinatedSession(signal, timeoutMs, deadline, body);
     return this.processCoordinator
       ? this.processCoordinator.run(run, [signal, this.shutdown.signal], timeoutMs)
       : run();
@@ -708,6 +709,7 @@ export class DocWenMachineClient {
   private async withUncoordinatedSession<T>(
     signal: AbortSignal | undefined,
     timeoutMs: number,
+    deadline: number,
     body: (
       session: MachineSession,
       setTaskId: (taskId: string) => void,
@@ -717,12 +719,14 @@ export class DocWenMachineClient {
     if (this.disposed) throw new LocalCliError("cli_spawn_failed", "DocWen client has been disposed.");
     if (this.blockedCleanupError) throw this.blockedCleanupError;
     if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
+    const timeoutError = () => new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs });
     const assertStartAllowed = (): void => {
       if (this.blockedCleanupError) throw this.blockedCleanupError;
       if (this.disposed) {
         throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
       }
       if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
+      if (performance.now() >= deadline) throw timeoutError();
     };
     const session = await MachineSession.create(
       this.resolveBinaryPath(),
@@ -735,9 +739,9 @@ export class DocWenMachineClient {
     let cancellationTimer: ReturnType<typeof scheduleTimeout> | null = null;
     const timer = scheduleTimeout(() => {
       timedOut = true;
-      session.fail(new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs }));
+      session.fail(timeoutError());
       void session.terminate().catch(() => undefined);
-    }, timeoutMs);
+    }, Math.max(0, Math.ceil(deadline - performance.now())));
     const onAbort = (): void => {
       if (abortHandled || timedOut) return;
       abortHandled = true;
@@ -777,12 +781,10 @@ export class DocWenMachineClient {
         throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled during plugin unload.");
       }
       if (signal?.aborted) throw new LocalCliError("cli_cancelled", "DocWen operation was cancelled.");
-      if (timedOut) throw new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs });
+      if (timedOut || performance.now() >= deadline) throw timeoutError();
       return result;
     } catch (error) {
-      const primary = timedOut
-        ? new LocalCliError("cli_timeout", "DocWen Machine Protocol timed out.", { timeoutMs })
-        : error;
+      const primary = timedOut ? timeoutError() : error;
       if (primary instanceof LocalCliError && primary.code === "cli_cleanup_failed") this.blockedCleanupError = primary;
       try {
         await session.terminate();
