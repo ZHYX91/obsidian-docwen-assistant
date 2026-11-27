@@ -127,7 +127,7 @@ describe("accepted detected-format exports", () => {
     const app = {
       workspace: { getLeavesOfType: () => [] },
       vault: {
-        getFileByPath: (path: string) => path === file.path ? file : null,
+        getFileByPath: (path: string) => path === file.path ? file : path === image.path ? image : null,
         readBinary: async (target: typeof file | typeof image) =>
           target === file ? new TextEncoder().encode(source).buffer : png.buffer,
       },

@@ -230,12 +230,23 @@ describe.skipIf(packageBinding === null)("fixed packaged DocWen Machine v2", () 
     const { VaultReadSnapshot } = await import("../src/host/vault-read-snapshot");
     const note = Object.assign(new TFile(), { path: "notes/typed-source.md", extension: "md" });
     const image = Object.assign(new TFile(), { path: "assets/typed linked.png", extension: "png" });
+    const vaultFiles = new Map([
+      [note.path, { file: note, physicalPath: source }],
+      [image.path, { file: image, physicalPath: linked }],
+    ]);
     const token = "![[typed linked.png]]";
     const authored = sourceBytes.toString("utf8");
     const start = authored.indexOf(token);
     const app = {
       workspace: { getLeavesOfType: () => [] },
-      vault: { getFileByPath: (filePath: string) => filePath === note.path ? note : null, readBinary: async (file: unknown) => Uint8Array.from(file === note ? sourceBytes : declaredBytes).buffer },
+      vault: {
+        getFileByPath: (filePath: string) => vaultFiles.get(filePath)?.file ?? null,
+        readBinary: async (file: typeof note) => {
+          const record = vaultFiles.get(file.path);
+          if (record?.file !== file) throw new Error("Cannot read an unregistered Vault file.");
+          return Uint8Array.from(await readFile(record.physicalPath)).buffer;
+        },
+      },
       metadataCache: {
         getFileCache: () => ({ embeds: [{ link: "typed linked.png", original: token, position: { start: { offset: start }, end: { offset: start + token.length } } }] }),
         getFirstLinkpathDest: () => image,
