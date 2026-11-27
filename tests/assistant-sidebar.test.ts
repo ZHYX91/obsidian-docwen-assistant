@@ -72,6 +72,23 @@ function button(view: AssistantView, key: string): HTMLButtonElement {
 }
 
 describe("Assistant sidebar opening", () => {
+  it("enables first-run refresh only for eligible files, then keeps refresh bound to the report", async () => {
+    const fixture = createFixture();
+    const view = await fixture.open();
+    const isDisabled = () => button(view, "refresh").disabled;
+    expect(isDisabled()).toBe(true);
+    fixture.current.file = file("B.md");
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(false);
+    fixture.current.file = file("C.pdf");
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(true);
+    view.updateResults([], "B.md", "Notes/B.md", "b".repeat(64));
+    fixture.current.file = null;
+    view.refreshActiveFile();
+    expect(isDisabled()).toBe(false);
+  });
+
   it("opens with no file or backend and only runs actions after an explicit button click", async () => {
     const fixture = createFixture();
     const view = await fixture.open();
@@ -303,7 +320,7 @@ describe("Assistant sidebar file controls", () => {
     fixture.current.file = file("First.md");
     const view = await fixture.open();
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     expect(button(view, "proofread-current-file").disabled).toBe(true);
     expect(button(view, "open-gui").disabled).toBe(false);
     expect(button(view, "open-current-file").disabled).toBe(false);
@@ -335,7 +352,7 @@ describe("Assistant sidebar tabs and exports", () => {
     fixture.current.file = file("Source.md");
     const view = await fixture.open();
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     const proofread = root(view).querySelector<HTMLElement>('[role="tabpanel"]')!;
     const report = root(view).querySelector(".docwen-proofread-status");
     proofread.scrollTop = 90;
@@ -390,7 +407,7 @@ describe("Assistant sidebar tabs and exports", () => {
     expect(button(view, "tab-actions").textContent).toBe("操作");
     expect(root(view).querySelector<HTMLElement>('[role="tabpanel"]')!.hidden).toBe(true);
     const lease = fixture.operations.begin({ key: "proofread", kind: "proofread" });
-    view.ownOperation(lease);
+    view.ownOperation(lease, "Proofread.md");
     expect(view.getState().activeTab).toBe("proofread");
     lease.finish();
   });

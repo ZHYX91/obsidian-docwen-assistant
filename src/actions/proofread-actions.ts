@@ -60,7 +60,7 @@ export class ProofreadActions {
       { key: "proofread", kind: "proofread" },
       "noticeProofreadFailed",
       async (lease) => {
-        const canPublish = view.ownOperation(lease);
+        const canPublish = view.ownOperation(lease, file.path);
         if (!canPublish()) return null;
         const completed = await this.snapshots.run(file, lease.signal, async (snapshot) => {
           const source = snapshot.inputs[0];

@@ -546,8 +546,8 @@
     min-height: 44px;
   }
 
-  button.docwen-proofread-item {
-    min-height: 44px;
+  .docwen-proofread-list {
+    --docwen-issue-min-height: 44px;
   }
 }
 
@@ -565,6 +565,7 @@
 .docwen-proofread-status {
   flex-shrink: 0;
   text-wrap: balance;
+  overflow-wrap: anywhere;
   padding: 24px 16px;
   text-align: center;
   color: var(--text-muted);
@@ -587,7 +588,7 @@
 button.docwen-proofread-more {
   display: block;
   height: auto;
-  min-height: var(--input-height);
+  min-height: max(var(--input-height), var(--docwen-issue-min-height, 0px));
   max-width: calc(100% - 20px);
   margin: 10px auto;
   white-space: normal;
@@ -602,7 +603,7 @@ button.docwen-proofread-more {
 button.docwen-proofread-item {
   display: block;
   height: auto;
-  min-height: var(--input-height);
+  min-height: max(var(--input-height), var(--docwen-issue-min-height, 0px));
   width: 100%;
   color: inherit;
   font: inherit;
@@ -667,14 +668,33 @@ button.docwen-proofread-item {
   color: var(--text-success);
 }
 
+.docwen-settings-panel .docwen-settings-connection.setting-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(45%);
+  gap: var(--size-4-3);
+  align-items: start;
+}
+
 .docwen-settings-connection .setting-item-control {
-  flex-direction: column;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--size-4-2);
 }
 
-.docwen-cli-path-status {
-  white-space: pre-line;
+.docwen-settings-connection .setting-item-control button {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: auto;
+  min-block-size: var(--input-height);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@container (max-width: 560px) {
+  .docwen-settings-panel .docwen-settings-connection.setting-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .docwen-settings-support .setting-item-control {

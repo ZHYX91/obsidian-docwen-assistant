@@ -268,6 +268,9 @@ export interface Translations {
   proofreadOpenMdFile: string;
   proofreadSortByLine: string;
   proofreadSortByRule: string;
+  proofreadColumnNumber: string;
+  proofreadReportFile: string;
+  proofreadRefreshReport: string;
   proofreadRefresh: string;
   proofreadSourceChanged: string;
   proofreadLocationNeedsEditor: string;
