@@ -1,18 +1,15 @@
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, unlink } from "node:fs/promises";
-import { dirname, extname, join } from "node:path";
+import { copyFile, readFile, readdir, realpath } from "node:fs/promises";
+import { dirname, extname } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ExportActions } from "../src/actions/export-actions";
 import { DocWenCapabilityService } from "../src/docwen/capability-service";
 import type { ConvertRequest, FileInspection, TaskInput } from "../src/docwen/client";
 import type { MachineCapability } from "../src/docwen/machine-client";
 import { DEFAULT_SETTINGS } from "../src/settings-model";
+import { withAliasedTemp } from "./helpers/aliased-temp";
 
-const ui = vi.hoisted(() => ({ confirm: vi.fn(), review: vi.fn(), commit: vi.fn(), tempDirectory: "" }));
-vi.mock("node:os", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:os")>();
-  return { ...actual, tmpdir: () => ui.tempDirectory || actual.tmpdir() };
-});
+const ui = vi.hoisted(() => ({ confirm: vi.fn(), review: vi.fn(), commit: vi.fn() }));
 vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   return { ...actual, copyFile: vi.fn(actual.copyFile) };
@@ -111,7 +108,6 @@ async function fixture(extension = "txt", detectedMedia = DOCX, kind: "document"
 describe("accepted detected-format exports", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    ui.tempDirectory = "";
     ui.confirm.mockResolvedValue(true);
     ui.review.mockResolvedValue(true);
   });
@@ -193,16 +189,7 @@ describe("accepted detected-format exports", () => {
   });
 
   it("accepts a detected format when the temporary directory has a real filesystem alias", async () => {
-    const actualOs = await vi.importActual<typeof import("node:os")>("node:os");
-    const root = await realpath(await mkdtemp(join(actualOs.tmpdir(), "docwen-snapshot-alias-")));
-    const target = join(root, "actual-temp");
-    const alias = join(root, "alias-temp");
-    await mkdir(target);
-    await symlink(target, alias, process.platform === "win32" ? "junction" : "dir");
-    try {
-      expect(await realpath(alias)).toBe(target);
-      expect(alias).not.toBe(target);
-      ui.tempDirectory = alias;
+    await withAliasedTemp(async (target) => {
       const test = await fixture();
       await test.run();
       expect(ui.confirm).toHaveBeenCalledOnce();
@@ -214,11 +201,7 @@ describe("accepted detected-format exports", () => {
       }
       expect(test.inspections[2]).toMatchObject({ decision: "allow", detectedFormat: "docx" });
       expect(await readdir(target)).toEqual([]);
-    } finally {
-      ui.tempDirectory = "";
-      await unlink(alias);
-      await rm(root, { recursive: true, force: true });
-    }
+    });
   });
 
   it("cancels a real DOCX named .txt without starting review, conversion or publication", async () => {

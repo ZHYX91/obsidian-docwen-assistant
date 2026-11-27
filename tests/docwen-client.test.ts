@@ -728,6 +728,17 @@ describe("DocWenClient Machine semantics", () => {
     expect(runTask).not.toHaveBeenCalled();
   });
 
+  it.each([undefined, ""])("requires the inspected file path from the Machine response (%s)", async filePath => {
+    const root = await temporaryRoot();
+    const input = path.join(root, "note.md");
+    await writeFile(input, "# note");
+    const query = vi.fn().mockResolvedValue({ ...inspection(input), file_path: filePath });
+    const client = new DocWenClient(machine(query));
+    await expect(client.inspect(input)).rejects.toMatchObject({
+      code: "cli_invalid_envelope", details: { field: "file/inspect.file_path" },
+    });
+  });
+
   it.each(["markdown", "txt"])("reads the preferred JSON report for a Markdown file detected as %s", async (format) => {
     const root = await temporaryRoot();
     const input = path.join(root, "note.md");

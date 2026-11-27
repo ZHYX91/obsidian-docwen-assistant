@@ -240,7 +240,7 @@ export class DocWenClient {
     const source = typeof input === "string" ? sourceTaskInput(input, "document") : input;
     const handle = await inputHandle(source, "input.inspect", await inspectInputFile(source), signal);
     const result = await this.machine.query("file/inspect", { input: handle }, signal);
-    return normalizeFileInspection(result, source.path);
+    return normalizeFileInspection(result);
   }
 
   async runtimeCapabilities(signal?: AbortSignal): Promise<RuntimeCapabilityProjection> {
@@ -308,7 +308,7 @@ export class DocWenClient {
     return this.withTaskStaging(async (stagingRoot) => {
       let capabilityId = "";
       const result = await this.machine.runTask(async (query) => {
-        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }), source.path);
+        const inspection = normalizeFileInspection(await query("file/inspect", { input: inspectionHandle }));
         const prepared = await taskRequest("", request.inputs, stagingRoot, {}, signal);
         const capabilities = request.selectedCapability
           ? [request.selectedCapability]
@@ -484,10 +484,10 @@ async function validateNumberingOutput(bundle: ValidatedArtifactBundle, signal?:
   await verifyArtifactIdentity(artifact, artifact.absolutePath, true, signal);
 }
 
-function normalizeFileInspection(result: JsonObject, sourcePath: string): FileInspection {
+function normalizeFileInspection(result: JsonObject): FileInspection {
   const detectedFormat = requiredStringValue(result.detected_format, "file/inspect.detected_format");
   return {
-    filePath: stringValue(result.file_path) || sourcePath,
+    filePath: requiredStringValue(result.file_path, "file/inspect.file_path"),
     contentSha256: requiredStringValue(result.content_sha256, "file/inspect.content_sha256"),
     sizeBytes: requiredInteger(result.size_bytes, "file/inspect.size_bytes"),
     decision: requiredStringValue(result.decision, "file/inspect.decision"),
