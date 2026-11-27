@@ -116,6 +116,9 @@ jobs:
       - name: Lint, test, type-check, build, and verify assets
         run: npm run check
 
+      - name: Check settings dropdown geometry in Chromium
+        run: npm run test:settings-browser
+
       - name: Upload production plugin
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

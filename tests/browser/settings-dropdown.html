@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Settings dropdown layout</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; --size-4-5: 20px; --font-ui-small: 20px; }
+  #viewport { overflow: auto; }
+  .setting-item { display: flex; position: relative; padding: 16px; }
+  .setting-item-control { display: flex; }
+  select { font: 20px sans-serif; }
+  /* The host measures its selected option in a second, intrinsically sized select. */
+  .dropdown.is-measuring { position: absolute; visibility: hidden; width: max-content !important; max-width: none !important; }
+</style>
+<link rel="stylesheet" href="../../styles.css">
+<div id="viewport" class="docwen-settings-root">
+  <div class="docwen-settings-panel">
+    <div class="setting-item">
+      <div class="setting-item-info">Numbering scheme</div>
+      <div class="setting-item-control">
+        <select class="dropdown" aria-label="Numbering scheme"></select>
+        <select class="dropdown is-measuring" aria-hidden="true" tabindex="-1"></select>
+      </div>
+    </div>
+  </div>
+</div>
+<pre id="report"></pre>
+<script>
+  const viewport = document.querySelector("#viewport");
+  const field = viewport.querySelector("select");
+  const measure = viewport.querySelector(".is-measuring");
+  const problems = [];
+  for (const select of [field, measure]) {
+    select.add(new Option("Numbering scheme with a long name for a narrow settings panel", "saved"));
+  }
+  for (const direction of ["ltr", "rtl"]) {
+    viewport.dir = direction;
+    for (const width of [260, 320, 760]) {
+      viewport.style.width = width + "px";
+      field.focus();
+      const row = field.closest(".setting-item").getBoundingClientRect();
+      const rect = field.getBoundingClientRect();
+      if (viewport.scrollWidth > viewport.clientWidth + 1 || rect.left < row.left || rect.right > row.right
+          || document.activeElement !== field || (width === 260 && measure.offsetWidth <= field.offsetWidth)) {
+        problems.push({ direction, width, scrollWidth: viewport.scrollWidth, measured: measure.offsetWidth, visible: field.offsetWidth });
+      }
+    }
+  }
+  document.getElementById("report").textContent = JSON.stringify(problems);
+  document.documentElement.dataset.result = problems.length ? "failed" : "passed";
+</script>
+</html>

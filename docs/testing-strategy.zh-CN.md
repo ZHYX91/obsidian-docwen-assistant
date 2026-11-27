@@ -39,6 +39,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 本地诊断命令明确区分测试范围：
 
+- `npm run test:settings-browser` 使用 Chromium 分别在三种宽度、两个书写方向下渲染下拉框和宿主的隐藏测量控件。可用 `CHROME_BIN` 指定浏览器。
 - `npm run test:source` 运行 Linux Machine 生命周期文件以外的源码测试，仍会运行 Python 夹具辅助测试及当前平台的发布 helper 测试；这不证明 Machine 进程清理。
 - `npm run test:native:linux` 在 Linux x64/arm64 上测试 Machine 进程的启动和清理。开始前会检查内嵌的进程管理程序、`/usr/bin/python3` 的 pidfd 支持，以及能否从 `/proc` 读到测试进程自己的 PID 和子进程列表（`/proc/self/task/<pid>/children`）。接着会启动一个独立会话中的子进程，核对父子双方看到的进程信息，再通过启动时取得的进程句柄清理它。任一步失败，测试都会停止，输出失败原因，并将详情保存在临时目录的 `prerequisites.json` 中。
 - `npm run test:native:windows` 在 Windows 调用哈希绑定的配对实包门禁；原生 Job 测试由 Core 拥有，没有候选不能算实包验收通过。
@@ -53,7 +54,7 @@ Vitest 覆盖固定 LOCALAPPDATA 执行别名、PATH 相对启动目标拒绝、
 
 ## Obsidian 宿主
 
-真实宿主验收分别覆盖最低 Obsidian 1.12.7 与当前 1.13.x 的顶部页签界面，并各自使用全新隔离 Vault/profile。应检查默认与第三方主题、16/20 px 界面字号、中英文标签、窄布局、键盘与 RTL 导航、保存失败恢复、入口、侧栏取消、文件菜单、进程零残留和 `data.json` 保留。自动 DOM 测试不能替代这些观察结果。
+真实宿主验收分别覆盖最低支持的 Obsidian 1.12.7、引入新版设置 API 的 1.13.x 以及最新桌面稳定版 的顶部页签界面，并各自使用全新隔离 Vault/profile。应检查默认与第三方主题、16/20 px 界面字号、中英文标签、窄布局、键盘与 RTL 导航、保存失败恢复、入口、侧栏取消、文件菜单、进程零残留和 `data.json` 保留。自动 DOM 测试不能替代这些观察结果。
 
 ## 人工兼容矩阵
 

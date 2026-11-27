@@ -54,7 +54,7 @@ describe("DocWen settings guidance", () => {
     const setting = createSetting();
     const pages = getSettingsPages({
       settings: DEFAULT_SETTINGS, renderCliPath: vi.fn(), renderDocWenDownload: vi.fn(), renderCliStatus: vi.fn(),
-      renderPersistenceStatus: vi.fn(), isPersistencePending: () => false, renderNumberingScheme: vi.fn(),
+      renderNumberingScheme: vi.fn(),
       renderSupport: vi.fn(), renderGuide: (target, title, content) => renderSettingsGuide(target, title, content, new Set()),
     });
     const word = pages.find((page) => page.id === "word")!;

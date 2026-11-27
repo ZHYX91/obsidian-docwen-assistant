@@ -40,6 +40,7 @@ Under the pinned toolchain, `npm run check` runs runtime verification, lint, for
 
 Local diagnostic commands expose their test scope explicitly:
 
+- `npm run test:settings-browser` renders the dropdown and its hidden measurement control in Chromium at three widths in both directions. Set `CHROME_BIN` to select a Chromium executable.
 - `npm run test:source` runs the source suite except the Linux Machine lifetime file. It still exercises Python fixture helpers and platform-selected publication helpers; it does not establish Machine process cleanup.
 - `npm run test:native:linux` runs the Machine process lifecycle tests on Linux x64/arm64. Before the first case it checks the embedded owner image, Python pidfd support in `/usr/bin/python3`, and whether `/proc` reports the runner's PID and exposes its child list at `/proc/self/task/<pid>/children`. It then starts a detached child, compares the process identity reported by the child with what the runner sees, and closes the child using its process handle. If any check fails, the suite stops, prints the failed step, and saves the details to `prerequisites.json` in a temporary directory.
 - `npm run test:native:windows` invokes the hash-pinned paired package gate on Windows. Core owns the native Job tests; absence of a candidate cannot count as package acceptance.
@@ -54,7 +55,7 @@ The package suite checks Machine health, file admission and the Markdown-to-Word
 
 ## Obsidian host
 
-Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host and a current 1.13.x host, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
+Real host acceptance covers the top-tab surface on the minimum Obsidian 1.12.7 host, a 1.13.x host and the latest stable desktop release, each in a fresh isolated Vault and profile. It checks default and third-party themes, 16/20 px UI text, English and Chinese labels, narrow layouts, keyboard and RTL navigation, save-failure recovery, entry points, sidebar cancellation, file menus, zero process residue, and `data.json` preservation. Automated DOM tests do not replace those observations.
 
 ## Manual compatibility matrix
 

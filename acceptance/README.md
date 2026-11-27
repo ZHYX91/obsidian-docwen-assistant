@@ -36,7 +36,7 @@ scenario passes only when every declared case is observed; unavailable prerequis
 cases remain unverified. Run only scratch copies of the fixtures and never write outputs back to
 this repository.
 
-Each run proves only its recorded host/version. Minimum Obsidian 1.12.7 and current 1.13.x coverage,
+Each run proves only its recorded host/version. Coverage of Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release,
 or a profile that must be seeded before launch (such as newer-schema settings), requires separate
 prepared host runs and an explicit case summary. A single fixed host profile cannot prove all of
 those environments. Retain untested matrix entries as unverified.
@@ -76,7 +76,7 @@ retry carry-forward.
 
 The following broader checks retain their source/package/host evidence boundaries:
 
-- Custom tabbed settings on minimum Obsidian 1.12.7 and current 1.13.x hosts: all four pages and contextual help cards, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
+- Custom tabbed settings on Obsidian 1.12.7 (minimum), 1.13.x and the latest stable desktop release: all four pages and contextual help cards, index-time zero I/O, program/folder selection, canonical CLI-path save, failed-save pending state and Retry.
 - Settings compatibility: an invalid/newer schema requires a separately seeded temporary profile; controls remain visibly read-only and the stored bytes are unchanged. Normal writable-settings runs do not prove this boundary.
 - Popout: settings/proofreading use the owning document and window; closing the view cancels the active proofread child.
 - Capability: successful empty results stay empty; typed discovery failures remain visible and never produce default actions.

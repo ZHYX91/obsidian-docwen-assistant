@@ -41,4 +41,4 @@ DocWen Assistant 是 Windows 与 Linux 桌面端 Obsidian 插件，将当前笔�
 
 ## 验收边界
 
-源码测试、固定 DocWen 包测试、真实最低 Obsidian 1.12.7 与当前 1.13.x 宿主验收、Windows 人工检查、Linux x64 人工检查和公开发布是不同证据层。任一较低层通过都不能替代其后的候选或宿主证据。
+源码测试、固定 DocWen 包测试、真实最低支持的 Obsidian 1.12.7、引入新版设置 API 的 1.13.x 以及最新桌面稳定版 宿主验收、Windows 人工检查、Linux x64 人工检查和公开发布是不同证据层。任一较低层通过都不能替代其后的候选或宿主证据。

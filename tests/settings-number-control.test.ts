@@ -23,6 +23,8 @@ describe("number settings", () => {
       onChange(callback: (value: string) => void) { onChange = callback; return this; },
     };
     const setting = {
+      nameEl: document.createElement("div"),
+      descEl: document.createElement("div"),
       addText(callback: (control: typeof textControl) => void) { callback(textControl); },
     } as unknown as Setting;
     const save = vi.fn();
@@ -50,6 +52,8 @@ describe("number settings", () => {
       onChange(callback: (value: string) => void) { onChange = callback; return this; },
     };
     const setting = {
+      nameEl: document.createElement("div"),
+      descEl: document.createElement("div"),
       addText(callback: (control: typeof textControl) => void) { callback(textControl); },
     } as unknown as Setting;
     const save = vi.fn();

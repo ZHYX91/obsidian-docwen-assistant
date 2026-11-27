@@ -232,6 +232,7 @@ export interface Translations {
   settingsNumberingNone: string;
   settingsNumberingSchemeLoading: string;
   settingsNumberingSchemeError: string;
+  settingsNumberingSchemeSaved: string;
   settingsNumberingSchemeUnavailable: string;
 
   // Numbering

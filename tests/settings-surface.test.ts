@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { initI18n } from "../src/i18n";
+import type { SettingsSaveState } from "../src/runtime/settings-save";
 
 const lifecycle = vi.hoisted(() => [] as string[]);
 const hostState = vi.hoisted(() => ({
@@ -24,7 +25,7 @@ class FakeElement {
   readonly attributes = new Map<string, string>();
   readonly listeners = new Map<string, ((event: FakeKeyboardEvent) => void)[]>();
   readonly dataset: Record<string, string> = {};
-  readonly ownerDocument = { defaultView: {
+  readonly ownerDocument = { get activeElement() { return focusState.activeElement; }, defaultView: {
     requestAnimationFrame: (callback: FrameRequestCallback) => (callback(0), 1),
     cancelAnimationFrame: vi.fn(),
     getComputedStyle: () => ({ direction: "ltr" }),
@@ -179,6 +180,7 @@ class FakeDropdown {
   async choose(value: string): Promise<void> { this.value = value; await this.change?.(value); }
 }
 class FakeToggle {
+  readonly toggleEl = new FakeElement();
   change: ((value: boolean) => void | Promise<void>) | null = null;
   disabled = false;
   value = false;
@@ -265,8 +267,8 @@ describe("settings surface lifecycle", () => {
     expect(warning.descEl.textContent).toContain("supports schema 2");
     expect(warning.descEl.textContent).toContain("was not rewritten");
 
-    const persistence = settings.find((setting) => setting.nameEl.textContent === "Settings save status")!;
-    expect(persistence.descEl.textContent).toContain("unsupported schema 3");
+    expect(settings.filter((setting) => setting.descEl.textContent.includes("unsupported schema 3"))).toEqual([warning]);
+    expect(buttons.some((button) => button.label === "Retry")).toBe(false);
     expect(buttons.every((button) => button.disabled)).toBe(true);
     expect(dropdowns.every((dropdown) => dropdown.disabled)).toBe(true);
 
@@ -672,18 +674,48 @@ describe("settings surface lifecycle", () => {
     expect(lifecycle).not.toContain("base-update");
   });
 
-  it("renders persistence recovery on the custom tabbed surface after a failed save", async () => {
+  it("offers retry on the current page even after switching pages during a failed save", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
-    const save = vi.fn().mockRejectedValue(new Error("disk full"));
-    const plugin = settingsPlugin(DEFAULT_SETTINGS, save);
+    let rejectSave!: (error: Error) => void;
+    const plugin = settingsPlugin(DEFAULT_SETTINGS, vi.fn(() => new Promise<void>((_, reject) => { rejectSave = reject; })));
+    let state: SettingsSaveState = "saved";
+    plugin.getSettingsSaveState.mockImplementation(() => state);
     const tab = new SettingTab({} as never, plugin as never);
-    lifecycle.length = 0;
-
-    await expect(tab.setControlValue("extractImages", false)).rejects.toThrow("disk full");
-
-    expect(lifecycle).not.toContain("base-update");
-    expect((tab.containerEl as unknown as FakeElement).children).not.toHaveLength(0);
+    tab.display();
+    const root = (tab.containerEl as unknown as FakeElement).children[0];
+    const panel = root.children.find((el) => el.attributes.get("role") === "tabpanel")!;
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    tabs[3].dispatch("click");
+    await toggles.at(-1)!.choose(!DEFAULT_SETTINGS.proofreadSensitive);
+    tabs[1].dispatch("click");
+    state = "pending";
+    rejectSave(new Error("disk full"));
+    const feedback = panel.children[0];
+    await vi.waitFor(() => expect(feedback.children).toHaveLength(1));
+    expect(settings.find((row) => row.settingEl === feedback.children[0])?.descEl.textContent).toBe("Changes are not saved yet.");
+    const retry = buttons.find((btn) => btn.label === "Retry" && !btn.buttonEl.hidden)!;
+    let rejectRetry!: () => void;
+    plugin.retrySettingsSave.mockImplementationOnce(() => {
+      state = "saving";
+      return new Promise<void>((_, reject) => {
+        rejectRetry = () => { state = "pending"; reject(new Error("still full")); };
+      });
+    });
+    const retrying = retry.click?.();
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
+    await retry.click?.();
+    expect(plugin.retrySettingsSave).toHaveBeenCalledOnce();
+    rejectRetry();
+    await retrying;
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false");
+    expect(feedback.children).toHaveLength(1);
+    plugin.retrySettingsSave.mockImplementationOnce(async () => { state = "saved"; });
+    await retry.click?.();
+    expect(plugin.retrySettingsSave).toHaveBeenCalledTimes(2);
+    expect(feedback.children).toHaveLength(0);
+    expect(plugin.settings.proofreadSensitive).toBe(!DEFAULT_SETTINGS.proofreadSensitive);
+    expect(tabs[1].attributes.get("aria-selected")).toBe("true");
   });
 
   it("reopening settings observes a connection check already in progress", async () => {
@@ -744,11 +776,13 @@ describe("settings surface lifecycle", () => {
   it("exposes loading, error, and retry states for runtime numbering schemes", async () => {
     const { DEFAULT_SETTINGS } = await import("../src/settings-model");
     const { SettingTab } = await import("../src/settings");
+    let finishRetry!: (value: { id: string; name: string }[]) => void;
     let rejectFirst!: (error: Error) => void;
     const plugin = settingsPlugin(DEFAULT_SETTINGS);
     plugin.fetchNumberingSchemes = vi.fn()
       .mockImplementationOnce(() => new Promise((_, reject) => { rejectFirst = reject; }))
-      .mockResolvedValueOnce([{ id: "legal", name: "Legal" }]);
+      .mockRejectedValueOnce(new Error("Still offline"))
+      .mockImplementationOnce(() => new Promise(resolve => { finishRetry = resolve; }));
     const tab = new SettingTab({} as never, plugin as never);
     const setting = new FakeSetting(new FakeElement());
     const cleanup = (tab as unknown as {
@@ -767,11 +801,52 @@ describe("settings surface lifecycle", () => {
     expect(setting.descEl.textContent).toContain("Failed to load numbering schemes");
     expect(setting.settingEl.attributes.get("aria-busy")).toBe("false");
 
+    retry.buttonEl.focus();
     retry.click?.();
+    expect(retry.buttonEl.hidden).toBe(false);
+    expect(retry.disabled).toBe(false);
+    expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("true");
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(retry.buttonEl.attributes.get("aria-disabled")).toBe("false"));
+    expect(focusState.activeElement).toBe(retry.buttonEl);
+    retry.click?.();
+    finishRetry([{ id: "legal", name: "Legal" }]);
     await vi.waitFor(() => expect(dropdown.options.get("legal")).toBe("Legal"));
     expect(retry.buttonEl.hidden).toBe(true);
     expect(dropdown.disabled).toBe(false);
+    expect(focusState.activeElement).toBe(dropdown.selectEl);
     cleanup();
+    retry.click?.();
+    expect(plugin.fetchNumberingSchemes).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps language, direction and page text in sync through a failed save and retry", async () => {
+    const { DEFAULT_SETTINGS } = await import("../src/settings-model");
+    const { SettingTab } = await import("../src/settings");
+    const { t } = await import("../src/i18n");
+    const plugin = settingsPlugin(DEFAULT_SETTINGS);
+    let state: SettingsSaveState = "saved";
+    plugin.getSettingsSaveState.mockImplementation(() => state);
+    plugin.saveSettings.mockImplementationOnce(async () => {
+      initI18n(String(plugin.settings.language));
+      state = "pending";
+      throw new Error("disk full");
+    });
+    const tab = new SettingTab({} as never, plugin as never);
+    tab.display();
+    await dropdowns[0].choose("ar");
+    await vi.waitFor(() => expect(buttons.some((btn) => btn.label === t("settingsRetry"))).toBe(true));
+    const root = (tab.containerEl as unknown as FakeElement).children[0];
+    const tabs = (tab as unknown as { tabs: { buttons: FakeElement[] } }).tabs.buttons;
+    expect(root.attributes.get("lang")).toBe("ar");
+    expect(root.attributes.get("dir")).toBe("rtl");
+    expect(tabs[0].textContent).toBe(t("settingsGeneralTitle"));
+    expect(tabs[3].textContent).toBe(t("settingsProofreadTitle"));
+    plugin.retrySettingsSave.mockImplementationOnce(async () => { state = "saved"; });
+    await buttons.find((btn) => btn.label === t("settingsRetry"))!.click?.();
+    expect((tab.containerEl as unknown as FakeElement).children[0]).toBe(root);
+    expect(plugin.settings.language).toBe("ar");
   });
 
   it("keeps an unavailable saved numbering scheme visible without saving until user choice", async () => {
@@ -797,11 +872,11 @@ describe("settings surface lifecycle", () => {
     const dropdown = dropdowns.at(-1)!;
     const retry = buttons.at(-1)!;
 
-    expect(dropdown.options.get("unavailable-custom")).toContain("unavailable-custom");
+    expect(dropdown.options.get("unavailable-custom")).toBe("Saved scheme (unavailable-custom)");
     expect(dropdown.value).toBe("unavailable-custom");
     expect(save).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(retry.buttonEl.hidden).toBe(false));
-    expect(dropdown.options.get("unavailable-custom")).toContain("unavailable-custom");
+    expect(dropdown.options.get("unavailable-custom")).toBe("Saved scheme (unavailable-custom)");
     expect(save).not.toHaveBeenCalled();
 
     retry.click?.();
@@ -834,7 +909,7 @@ describe("settings surface lifecycle", () => {
     const dropdown = dropdowns.at(-1)!;
 
     await vi.waitFor(() => expect(dropdown.disabled).toBe(false));
-    expect(dropdown.options.get("orphaned-id")).toContain("orphaned-id");
+    expect(dropdown.options.get("orphaned-id")).toBe("Saved scheme unavailable (orphaned-id)");
     expect([...dropdown.options.keys()]).toEqual(["default", "none", "orphaned-id"]);
     expect(save).not.toHaveBeenCalled();
     cleanup();
@@ -854,7 +929,7 @@ function settingsPlugin(
   return {
     settings: { ...defaults },
     fetchNumberingSchemes: vi.fn().mockResolvedValue([]),
-    getSettingsSaveState: vi.fn(() => compatibility.status === "incompatible" ? "blocked" : "saved"),
+    getSettingsSaveState: vi.fn((): SettingsSaveState => compatibility.status === "incompatible" ? "blocked" : "saved"),
     getSettingsCompatibility: vi.fn(() => compatibility),
     retrySettingsSave: vi.fn().mockResolvedValue(undefined),
     runDoctorCheck: vi.fn().mockResolvedValue(undefined),
